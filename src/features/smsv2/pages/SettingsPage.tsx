@@ -476,27 +476,41 @@ function ToggleRow({
   title: string;
   children?: React.ReactNode;
 }) {
+  // PR 40 (Hugo 2026-04-27): "When you click toggle SMS, it overlaps
+  // things." Three fixes:
+  //   - Bigger track (40×20) + bigger knob (16×16) so the visual is
+  //     more legible and matches the Numbers tab toggle (consistent
+  //     across the app).
+  //   - Knob centred via top calc so it never clips the track edge
+  //     (was top-0.5 + h-3 inside h-4 = 1px clearance — fragile).
+  //   - flex-wrap on the row so when the children content (template
+  //     dropdown, task title, retry hours) is too wide for the
+  //     remaining space, it wraps under the title instead of pushing
+  //     the row's height + colliding with the column-detail border.
   return (
-    <div className="flex items-center gap-2">
+    <div className="flex items-center gap-2 flex-wrap">
       <button
         type="button"
         onClick={() => onToggle(!on)}
         className={cn(
-          'w-8 h-4 rounded-full relative transition-colors flex-shrink-0',
+          'w-10 h-5 rounded-full relative transition-colors flex-shrink-0',
           on ? 'bg-[#1E9A80]' : 'bg-[#E5E7EB]'
         )}
+        aria-pressed={on}
       >
         <span
           className={cn(
-            'absolute top-0.5 w-3 h-3 rounded-full bg-white transition-transform',
-            on ? 'translate-x-4' : 'translate-x-0.5'
+            'absolute top-1/2 -translate-y-1/2 w-4 h-4 rounded-full bg-white shadow-sm transition-transform',
+            on ? 'translate-x-[22px]' : 'translate-x-0.5'
           )}
         />
       </button>
       <span className="text-[12px] font-medium text-[#1A1A1A] w-[140px] flex-shrink-0">
         {title}
       </span>
-      <div className="flex-1 flex gap-1.5 items-center">{children}</div>
+      <div className="flex-1 flex gap-1.5 items-center min-w-[200px]">
+        {children}
+      </div>
     </div>
   );
 }
@@ -1292,27 +1306,32 @@ function NumbersTab() {
                     {' · '}max {n.max_calls_per_minute}/min
                   </div>
                 </div>
+                {/* PR 40: knob centred via top-1/2 + translate so it
+                    never clips. min-w on the label so the
+                    Enabled/Disabled text doesn't get squeezed under
+                    the knob on narrow screens. */}
                 <button
                   onClick={() => void toggleNumber(n.e164, !n.voice_enabled)}
-                  className="flex items-center gap-2 group"
+                  className="flex items-center gap-2 group flex-shrink-0"
                   title={n.voice_enabled ? 'Click to disable voice' : 'Click to enable voice'}
+                  aria-pressed={n.voice_enabled}
                 >
                   <span
                     className={cn(
-                      'relative w-10 h-6 rounded-full transition-colors',
+                      'relative w-10 h-6 rounded-full transition-colors flex-shrink-0',
                       n.voice_enabled ? 'bg-[#1E9A80]' : 'bg-[#E5E7EB]'
                     )}
                   >
                     <span
                       className={cn(
-                        'absolute top-0.5 w-5 h-5 bg-white rounded-full shadow-sm transition-transform',
+                        'absolute top-1/2 -translate-y-1/2 w-5 h-5 bg-white rounded-full shadow-sm transition-transform',
                         n.voice_enabled ? 'translate-x-[18px]' : 'translate-x-0.5'
                       )}
                     />
                   </span>
                   <span
                     className={cn(
-                      'text-[12px] font-medium tabular-nums',
+                      'text-[12px] font-medium min-w-[60px] text-left',
                       n.voice_enabled ? 'text-[#1E9A80]' : 'text-[#9CA3AF]'
                     )}
                   >
