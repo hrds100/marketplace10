@@ -98,6 +98,11 @@ interface CoachOptions {
   latestUtterance: string;
   speaker: 'caller' | 'agent';
   priorCards: string[];
+  // PR 42 (Hugo 2026-04-27): wk_calls.current_stage — human label of
+  // the last SCRIPT card's script_section. Injected into the user
+  // message so the model refuses to regress (no firing OPEN mid-call
+  // once we've already moved past it). Null on a fresh call.
+  currentStage: string | null;
   onChunk: (accumulated: string, isFirst: boolean) => void;
   isAborted: () => boolean;
 }
@@ -113,6 +118,7 @@ async function generateCoachSuggestion(
     latestUtterance,
     speaker,
     priorCards,
+    currentStage,
     onChunk,
     isAborted,
   } = opts;
@@ -334,9 +340,26 @@ async function generateCoachSuggestion(
       ? '(no openers to avoid yet)'
       : banList.map((b) => `- "${b}"`).join('\n');
 
+  // PR 42 (Hugo 2026-04-27): forward-only stage progression. The model
+  // is independent per utterance, so without this it'll happily fire
+  // SCRIPT — Open mid-call (Hugo's screenshot 2026-04-27). We inject
+  // the last fired SCRIPT stage so the model knows what's already
+  // happened and refuses to regress.
+  const stageLockBlock =
+    currentStage && currentStage.trim().length > 0
+      ? [
+          '=== STAGE LOCK ===',
+          `Your last SCRIPT card on this call was at: "${currentStage}".`,
+          'You are PAST this stage. Do NOT fire any earlier SCRIPT stage on this call (no SCRIPT — Open if you already fired Qualify; no SCRIPT — Qualify if you already fired Permission to pitch; etc.). Stage order: Open → Qualify → Permission to pitch → Pitch → Returns → SMS close → Follow-up lock.',
+          'Only fire SCRIPT cards that are at the same stage or LATER. If the caller diverges or asks something off-script, fire [SUGGESTION] or [EXPLAIN] — never roll back to an earlier SCRIPT stage.',
+        ].join('\n')
+      : '=== STAGE LOCK ===\n(no prior SCRIPT card yet — you may fire any stage that fits the caller\'s utterance)';
+
   const userMsg = [
     'Recent conversation (most recent line at bottom):',
     recentTranscript || '(no prior context yet)',
+    '',
+    stageLockBlock,
     '',
     '=== YOUR LAST FEW COACH CARDS (most recent first) ===',
     'Don\'t ship a card whose opening matches a recent one. Move forward through the script — don\'t loop the same line.',
@@ -589,7 +612,7 @@ serve(async (req: Request) => {
     // call script and substitute the contact's first name into it (PR 8).
     const { data: call } = await supa
       .from('wk_calls')
-      .select('id, ai_coach_enabled, agent_id, contact_id')
+      .select('id, ai_coach_enabled, agent_id, contact_id, current_stage')
       .eq('twilio_call_sid', callSid)
       .maybeSingle();
 
@@ -935,6 +958,7 @@ serve(async (req: Request) => {
             latestUtterance: transcriptText,
             speaker,
             priorCards,
+            currentStage: (call.current_stage as string | null) ?? null,
             onChunk: (accumulated) => {
               if (firstToken) {
                 log('first token');
@@ -971,6 +995,16 @@ serve(async (req: Request) => {
             })
             .eq('id', placeholderId);
           log('final update', `chars=${cleaned.body.length} kind=${cleaned.kind}${cleaned.scriptSection ? ` section="${cleaned.scriptSection}"` : ''}`);
+
+          // PR 42 (Hugo 2026-04-27): write the stage cursor on every
+          // SCRIPT card so the next generation can read it and refuse
+          // to regress (no firing OPEN once we're past it).
+          if (cleaned.kind === 'script' && cleaned.scriptSection) {
+            await supa
+              .from('wk_calls')
+              .update({ current_stage: cleaned.scriptSection })
+              .eq('id', call.id);
+          }
         } catch (e) {
           console.warn(`[wk-voice-transcription] [coach gen=${genShort}] pipeline threw`, e);
         }
