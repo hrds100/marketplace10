@@ -202,7 +202,7 @@ const CAMPAIGN_BUNDLE_TABS = [
   { id: 'kb', label: 'Coach facts', icon: Brain },
   { id: 'glossary', label: 'Glossary', icon: BookOpen },
   { id: 'agents', label: 'Assigned agents', icon: Users },
-  { id: 'numbers', label: 'Assigned numbers', icon: Phone },
+  { id: 'numbers', label: 'Assigned channels (SMS/WA/Email)', icon: Phone },
   { id: 'leads', label: 'Upload leads (CSV)', icon: Plus },
 ] as const;
 
@@ -657,7 +657,7 @@ function CampaignAgentsPanelStandalone({ campaignId }: { campaignId: string }) {
 
 function CampaignNumbersPanelStandalone({ campaignId }: { campaignId: string }) {
   return (
-    <Card title="Assigned numbers" hint="Twilio numbers the dialer uses as the from-line. None pinned = falls back to any voice-enabled workspace number.">
+    <Card title="Assigned channels" hint="Pin SMS / WhatsApp / Email channels to this campaign. Dialer + senders use the first active channel of the matching kind. None pinned = falls back to the workspace pool.">
       <CampaignNumbersPanel campaignId={campaignId} />
     </Card>
   );
@@ -1867,64 +1867,104 @@ function CampaignAgentsPanel({ campaignId }: { campaignId: string }) {
 function CampaignNumbersPanel({ campaignId }: { campaignId: string }) {
   const { rows, add, remove, setPriority } = useCampaignNumbers(campaignId);
   const [pickingNumberId, setPickingNumberId] = useState<string>('');
-  const [allNumbers, setAllNumbers] = useState<
-    Array<{ id: string; e164: string; voice_enabled: boolean; sms_enabled: boolean }>
-  >([]);
+  // PR 85 (Hugo 2026-04-27): show all channels — SMS / WhatsApp / Email —
+  // not just SMS numbers. Each row gets a channel-aware label + icon so
+  // it's obvious what's assigned. Picker groups by channel.
+  type Row = {
+    id: string;
+    e164: string;
+    channel: 'sms' | 'whatsapp' | 'email';
+    provider: 'twilio' | 'wazzup' | 'resend' | 'unipile';
+    voice_enabled: boolean;
+    sms_enabled: boolean;
+    is_active: boolean;
+  };
+  const [allNumbers, setAllNumbers] = useState<Row[]>([]);
 
   useEffect(() => {
     let cancelled = false;
     (async () => {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const { data } = await (supabase.from('wk_numbers' as any) as any)
-        .select('id, e164, voice_enabled, sms_enabled')
+        .select('id, e164, channel, provider, voice_enabled, sms_enabled, is_active')
+        .eq('is_active', true)
+        .order('channel', { ascending: true })
         .order('e164', { ascending: true });
-      if (!cancelled) {
-        setAllNumbers(
-          (data ?? []) as Array<{ id: string; e164: string; voice_enabled: boolean; sms_enabled: boolean }>
-        );
-      }
+      if (!cancelled) setAllNumbers((data ?? []) as Row[]);
     })();
-    return () => {
-      cancelled = true;
-    };
+    return () => { cancelled = true; };
   }, []);
 
   const assignedIds = new Set(rows.map((r) => r.number_id));
   const available = allNumbers.filter((n) => !assignedIds.has(n.id));
 
+  const channelLabel = (c: Row['channel']) =>
+    c === 'whatsapp' ? 'WhatsApp' : c === 'email' ? 'Email' : 'SMS';
+  const channelIcon = (c: Row['channel']) =>
+    c === 'whatsapp' ? '💬' : c === 'email' ? '✉️' : '📱';
+
   const onAdd = async () => {
     if (!pickingNumberId) return;
     try {
-      await add(pickingNumberId, rows.length); // priority ASC by insertion
+      await add(pickingNumberId, rows.length);
       setPickingNumberId('');
     } catch (e) {
       window.alert(e instanceof Error ? e.message : 'add failed');
     }
   };
 
+  // Group available channels for the picker.
+  const grouped = {
+    sms: available.filter((n) => n.channel === 'sms'),
+    whatsapp: available.filter((n) => n.channel === 'whatsapp'),
+    email: available.filter((n) => n.channel === 'email'),
+  };
+
   return (
     <div className="border border-[#E5E7EB] bg-white rounded-[10px] p-3">
       <div className="text-[11px] uppercase tracking-wide text-[#9CA3AF] font-semibold mb-2">
-        Assigned numbers
+        Assigned channels (SMS / WhatsApp / Email)
         <span className="ml-2 text-[10px] text-[#6B7280] normal-case font-normal">
           {rows.length === 0
-            ? 'no rows → dialer falls back to workspace pool'
-            : `${rows.length} number${rows.length === 1 ? '' : 's'} — first priority dials out`}
+            ? 'no rows → dialer + sender fall back to workspace pool'
+            : `${rows.length} channel${rows.length === 1 ? '' : 's'} — first priority is used`}
         </span>
       </div>
       <div className="space-y-1.5 mb-2">
         {rows.length === 0 && (
           <div className="text-[11px] text-[#9CA3AF] italic">
-            None pinned. wk-dialer-start uses any voice-enabled workspace number.
+            None pinned. wk-dialer-start picks any voice-enabled workspace number;
+            send fns pick the first active channel for their type.
           </div>
         )}
         {rows.map((r) => {
           const n = allNumbers.find((x) => x.id === r.number_id);
           return (
             <div key={r.id} className="flex items-center justify-between gap-2 text-[12px]">
-              <span className="text-[#1A1A1A] tabular-nums flex-1">
-                {n?.e164 ?? r.number_id.slice(0, 8)}
-                {n && !n.voice_enabled && (
+              <span className="text-[#1A1A1A] tabular-nums flex-1 inline-flex items-center gap-1.5">
+                {n && (
+                  <span
+                    className="inline-flex items-center gap-1 px-1.5 py-0.5 text-[9px] rounded uppercase font-bold tracking-wide"
+                    style={{
+                      background:
+                        n.channel === 'whatsapp'
+                          ? 'rgba(37, 211, 102, 0.12)'
+                          : n.channel === 'email'
+                            ? 'rgba(59, 130, 246, 0.12)'
+                            : 'rgba(30, 154, 128, 0.12)',
+                      color:
+                        n.channel === 'whatsapp'
+                          ? '#0E8B3E'
+                          : n.channel === 'email'
+                            ? '#1D4ED8'
+                            : '#1E9A80',
+                    }}
+                  >
+                    {channelIcon(n.channel)} {channelLabel(n.channel)}
+                  </span>
+                )}
+                <span>{n?.e164 ?? r.number_id.slice(0, 8)}</span>
+                {n && n.channel === 'sms' && !n.voice_enabled && (
                   <span className="ml-2 text-[9px] text-[#B45309] bg-[#FEF3C7] px-1 rounded">
                     not voice-enabled
                   </span>
@@ -1934,8 +1974,8 @@ function CampaignNumbersPanel({ campaignId }: { campaignId: string }) {
                 type="number"
                 defaultValue={r.priority}
                 onBlur={(e) => {
-                  const n = parseInt(e.target.value, 10);
-                  if (Number.isFinite(n) && n !== r.priority) void setPriority(r.id, n);
+                  const v = parseInt(e.target.value, 10);
+                  if (Number.isFinite(v) && v !== r.priority) void setPriority(r.id, v);
                 }}
                 className="w-12 px-1.5 py-0.5 text-[11px] border border-[#E5E7EB] rounded text-right tabular-nums"
                 title="Lower = picked first"
@@ -1956,12 +1996,30 @@ function CampaignNumbersPanel({ campaignId }: { campaignId: string }) {
           onChange={(e) => setPickingNumberId(e.target.value)}
           className="flex-1 px-2 py-1.5 text-[12px] bg-white border border-[#E5E7EB] rounded-[8px]"
         >
-          <option value="">Pick a number…</option>
-          {available.map((n) => (
-            <option key={n.id} value={n.id}>
-              {n.e164} {n.voice_enabled ? '' : '(no voice)'}
-            </option>
-          ))}
+          <option value="">Pick a channel to assign…</option>
+          {grouped.sms.length > 0 && (
+            <optgroup label="📱 SMS — Twilio">
+              {grouped.sms.map((n) => (
+                <option key={n.id} value={n.id}>
+                  {n.e164} {n.voice_enabled ? '' : '(no voice)'}
+                </option>
+              ))}
+            </optgroup>
+          )}
+          {grouped.whatsapp.length > 0 && (
+            <optgroup label="💬 WhatsApp — Unipile">
+              {grouped.whatsapp.map((n) => (
+                <option key={n.id} value={n.id}>{n.e164}</option>
+              ))}
+            </optgroup>
+          )}
+          {grouped.email.length > 0 && (
+            <optgroup label="✉️ Email — Resend">
+              {grouped.email.map((n) => (
+                <option key={n.id} value={n.id}>{n.e164}</option>
+              ))}
+            </optgroup>
+          )}
         </select>
         <button
           onClick={() => void onAdd()}
