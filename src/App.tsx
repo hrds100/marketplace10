@@ -136,6 +136,7 @@ import Smsv2TestPage from '@/features/smsv2/pages/TestPage';
 // keeps working. Internal folder + DB tables stay smsv2 / wk_* —
 // see docs/runbooks/CRM_RENAME.md.
 import CrmLoginPage from '@/features/smsv2/pages/CrmLoginPage';
+import AdminOnlyRoute from '@/features/smsv2/components/AdminOnlyRoute';
 
 // One-time wipe of stale CRM localStorage keys (from before DB-backed CRM)
 if (!localStorage.getItem('crm_localStorage_v2_cleared')) {
@@ -320,7 +321,9 @@ const App = () => (
           <Route path="/crm/login" element={<CrmLoginPage />} />
           <Route path="/crm" element={<Smsv2Layout />}>
             <Route index element={<Navigate to="inbox" replace />} />
-            <Route path="dashboard" element={<Smsv2DashboardPage />} />
+            {/* PR 62: Dashboard + Settings are admin-only; agents
+                redirected to /crm/inbox by AdminOnlyRoute. */}
+            <Route path="dashboard" element={<AdminOnlyRoute><Smsv2DashboardPage /></AdminOnlyRoute>} />
             <Route path="inbox" element={<Smsv2InboxPage />} />
             <Route path="calls" element={<Smsv2CallsPage />} />
             <Route path="calls/:callId" element={<Smsv2PastCallScreen />} />
@@ -329,7 +332,7 @@ const App = () => (
             <Route path="contacts/:id" element={<Smsv2ContactDetailPage />} />
             <Route path="pipelines" element={<Smsv2PipelinesPage />} />
             <Route path="reports" element={<Smsv2ReportsPage />} />
-            <Route path="settings" element={<Smsv2SettingsPage />} />
+            <Route path="settings" element={<AdminOnlyRoute><Smsv2SettingsPage /></AdminOnlyRoute>} />
             <Route path="test" element={<Smsv2TestPage />} />
           </Route>
           {/* Legacy /smsv2/* redirects → /crm/* so bookmarks survive. */}

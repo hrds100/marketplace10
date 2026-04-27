@@ -63,4 +63,11 @@ describe('rowToCampaign', () => {
     const c = rowToCampaign({ ...baseRow, created_by: null }, undefined);
     expect(c.ownerAgentId).toBe('');
   });
+
+  it('PR 60: maps is_active → isActive (used by Settings Active/Paused toggle)', () => {
+    const active = rowToCampaign({ ...baseRow, is_active: true }, undefined);
+    const paused = rowToCampaign({ ...baseRow, is_active: false }, undefined);
+    expect(active.isActive).toBe(true);
+    expect(paused.isActive).toBe(false);
+  });
 });

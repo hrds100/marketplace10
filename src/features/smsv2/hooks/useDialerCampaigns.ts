@@ -70,12 +70,18 @@ interface UseDialerCampaignsOpts {
    *  just created — even though new campaigns start inactive so a
    *  fresh row doesn't immediately start dialing. */
   includeInactive?: boolean;
+  /** PR 62 (Hugo 2026-04-27): when set, only return campaigns where
+   *  this agent has a row in wk_campaign_agents. Used by /crm/dialer
+   *  + /crm/contacts when an agent (non-admin) is signed in so they
+   *  only see their assigned campaigns. Pass null/undefined to skip
+   *  the filter (admin view). */
+  scopedToAgentId?: string | null;
 }
 
 export function useDialerCampaigns(
   opts: UseDialerCampaignsOpts = {},
 ): UseDialerCampaignsResult {
-  const { includeInactive = false } = opts;
+  const { includeInactive = false, scopedToAgentId = null } = opts;
   const [campaigns, setCampaigns] = useState<Campaign[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -87,6 +93,28 @@ export function useDialerCampaigns(
     async function load() {
       setLoading(true);
       setError(null);
+
+      // PR 62: when scopedToAgentId is set, first resolve the
+      // campaign IDs that agent is assigned to. Empty list = no
+      // campaigns visible (return early).
+      let allowedCampaignIds: string[] | null = null;
+      if (scopedToAgentId) {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const { data: assignments } = await (supabase.from('wk_campaign_agents' as any) as any)
+          .select('campaign_id')
+          .eq('agent_id', scopedToAgentId);
+        allowedCampaignIds = ((assignments ?? []) as { campaign_id: string }[]).map(
+          (r) => r.campaign_id
+        );
+        if (allowedCampaignIds.length === 0) {
+          if (!cancelled) {
+            setCampaigns([]);
+            setLoading(false);
+          }
+          return;
+        }
+      }
+
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       let campaignsQuery = (supabase.from('wk_dialer_campaigns' as any) as any)
         .select(
@@ -95,6 +123,9 @@ export function useDialerCampaigns(
         .order('name', { ascending: true });
       if (!includeInactive) {
         campaignsQuery = campaignsQuery.eq('is_active', true);
+      }
+      if (allowedCampaignIds) {
+        campaignsQuery = campaignsQuery.in('id', allowedCampaignIds);
       }
       const [campaignsRes, queueRes] = await Promise.all([
         campaignsQuery,
@@ -174,7 +205,7 @@ export function useDialerCampaigns(
       try { void supabase.removeChannel(queueChan); } catch { /* ignore */ }
       try { void supabase.removeChannel(campaignsChan); } catch { /* ignore */ }
     };
-  }, [seq, includeInactive]);
+  }, [seq, includeInactive, scopedToAgentId]);
 
   return {
     campaigns,

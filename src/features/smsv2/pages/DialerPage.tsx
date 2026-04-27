@@ -11,6 +11,7 @@ import { useActiveCallCtx } from '../components/live-call/ActiveCallContext';
 import { useSpendLimit } from '../hooks/useSpendLimit';
 import { useSmsV2 } from '../store/SmsV2Store';
 import { useDialerCampaigns } from '../hooks/useDialerCampaigns';
+import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
 import type { Campaign, Contact } from '../types';
 
@@ -32,7 +33,12 @@ interface DialerStartInvoke {
 }
 
 export default function DialerPage() {
-  const { campaigns: realCampaigns } = useDialerCampaigns();
+  // PR 62 (Hugo 2026-04-27): non-admins only see campaigns they're
+  // assigned to via wk_campaign_agents. Admins see everything.
+  const { user, isAdmin } = useAuth();
+  const { campaigns: realCampaigns } = useDialerCampaigns({
+    scopedToAgentId: !isAdmin && user ? user.id : null,
+  });
   const allCampaigns = useMemo<Campaign[]>(
     () => (realCampaigns.length > 0 ? realCampaigns : MOCK_CAMPAIGNS),
     [realCampaigns]
