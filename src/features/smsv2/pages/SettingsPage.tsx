@@ -44,7 +44,7 @@ import { useSmsTemplates, type SmsTemplate } from '../hooks/useSmsTemplates';
 import { useTerminologies, type Terminology } from '../hooks/useTerminologies';
 import { useCoachFacts, type CoachFact } from '../hooks/useCoachFacts';
 import { useCampaignAgents } from '../hooks/useCampaignAgents';
-import { useCampaignNumbers } from '../hooks/useCampaignNumbers';
+import { useCampaignNumbers, type CampaignNumber } from '../hooks/useCampaignNumbers';
 import { useAgentsToday } from '../hooks/useAgentsToday';
 import BulkUploadModal from '../components/contacts/BulkUploadModal';
 import { useTwilioAccount } from '../hooks/useTwilioAccount';
@@ -1971,7 +1971,6 @@ function CampaignNumbersPanel({ campaignId }: { campaignId: string }) {
   // the dropdown picks WHICH SMS / WhatsApp / email is assigned to that
   // slot. Reordering wasn't the right abstraction.
   const { rows, add, remove, swapNumber } = useCampaignNumbers(campaignId);
-  const [pickingNumberId, setPickingNumberId] = useState<string>('');
   // PR 85 (Hugo 2026-04-27): show all channels — SMS / WhatsApp / Email —
   // not just SMS numbers. Each row gets a channel-aware label + icon so
   // it's obvious what's assigned. Picker groups by channel.
@@ -2000,156 +1999,125 @@ function CampaignNumbersPanel({ campaignId }: { campaignId: string }) {
     return () => { cancelled = true; };
   }, []);
 
-  const assignedIds = new Set(rows.map((r) => r.number_id));
-  const available = allNumbers.filter((n) => !assignedIds.has(n.id));
-
   const channelLabel = (c: Row['channel']) =>
     c === 'whatsapp' ? 'WhatsApp' : c === 'email' ? 'Email' : 'SMS';
   const channelIcon = (c: Row['channel']) =>
     c === 'whatsapp' ? '💬' : c === 'email' ? '✉️' : '📱';
 
-  const onAdd = async () => {
-    if (!pickingNumberId) return;
-    try {
-      await add(pickingNumberId, rows.length);
-      setPickingNumberId('');
-    } catch (e) {
-      window.alert(e instanceof Error ? e.message : 'add failed');
-    }
+  // PR 95 (Hugo 2026-04-28): radically simplified UI to three fixed
+  // slots \u2014 one per channel. Hugo: "you only assign one SMS, one
+  // WhatsApp, one email per campaign." So no priority, no order, no
+  // arrows, no Add button. Each slot is a labelled dropdown.
+  //
+  // Picking a number creates the wk_campaign_numbers row. Picking
+  // "(unassigned)" deletes any existing rows for that channel. If
+  // multiple legacy rows exist (from PR 56 era), we treat the first one
+  // as the assigned slot and quietly drop extras when the user changes
+  // selection. This collapses cleanly to the new model.
+
+  const SLOTS: Array<{ channel: Row['channel']; label: string; icon: string }> = [
+    { channel: 'sms', label: 'SMS', icon: '📱' },
+    { channel: 'whatsapp', label: 'WhatsApp', icon: '💬' },
+    { channel: 'email', label: 'Email', icon: '✉️' },
+  ];
+
+  const slotState = (channel: Row['channel']) => {
+    const matching = rows
+      .map((r) => ({ r, n: allNumbers.find((x) => x.id === r.number_id) }))
+      .filter((x) => x.n?.channel === channel);
+    return {
+      current: matching[0] ?? null,
+      extras: matching.slice(1).map((x) => x.r),
+      options: allNumbers.filter((n) => n.channel === channel && n.is_active),
+    };
   };
 
-  // Group available channels for the picker.
-  const grouped = {
-    sms: available.filter((n) => n.channel === 'sms'),
-    whatsapp: available.filter((n) => n.channel === 'whatsapp'),
-    email: available.filter((n) => n.channel === 'email'),
+  const onSlotChange = async (
+    channel: Row['channel'],
+    newNumberId: string,
+    current: { r: CampaignNumber; n?: Row } | null,
+    extras: CampaignNumber[],
+  ) => {
+    try {
+      // Drop legacy extras first so the panel collapses to one row per channel.
+      for (const e of extras) await remove(e.id);
+
+      if (!newNumberId) {
+        if (current) await remove(current.r.id);
+        return;
+      }
+      if (!current) {
+        await add(newNumberId, 0);
+        return;
+      }
+      if (current.r.number_id !== newNumberId) {
+        await swapNumber(current.r.id, newNumberId);
+      }
+    } catch (err) {
+      window.alert(err instanceof Error ? err.message : 'save failed');
+    }
   };
 
   return (
     <div className="border border-[#E5E7EB] bg-white rounded-[10px] p-3">
       <div className="text-[11px] uppercase tracking-wide text-[#9CA3AF] font-semibold mb-1">
-        Assigned channels (SMS / WhatsApp / Email)
+        Channels for this campaign
       </div>
-      <div className="text-[11px] text-[#6B7280] mb-2 leading-snug">
-        {rows.length === 0
-          ? 'No channels pinned \u2014 dialer + sender fall back to the workspace pool.'
-          : `${rows.length} channel${rows.length === 1 ? '' : 's'} pinned. Use the dropdown on each row to swap which number / WhatsApp / email is assigned. Add another channel below.`}
+      <div className="text-[11px] text-[#6B7280] mb-3 leading-snug">
+        Pick one number / account per channel. Leave a slot on
+        <em> (unassigned)</em> if this campaign shouldn't use that channel.
       </div>
-      <div className="space-y-1.5 mb-2">
-        {rows.length === 0 && (
-          <div className="text-[11px] text-[#9CA3AF] italic">
-            None pinned. wk-dialer-start picks any voice-enabled workspace number;
-            send fns pick the first active channel for their type.
-          </div>
-        )}
-        {rows.map((r) => {
-          const n = allNumbers.find((x) => x.id === r.number_id);
-          // Same-channel pool the agent can swap to (active rows only,
-          // including the currently-assigned one so the dropdown shows
-          // the current value).
-          const sameChannel = n
-            ? allNumbers.filter(
-                (x) => x.channel === n.channel && (x.is_active || x.id === n.id)
-              )
-            : [];
+      <div className="space-y-2">
+        {SLOTS.map((slot) => {
+          const { current, extras, options } = slotState(slot.channel);
           return (
-            <div key={r.id} className="flex items-center justify-between gap-2 text-[12px]">
-              <span className="text-[#1A1A1A] tabular-nums flex-1 inline-flex items-center gap-1.5 min-w-0">
-                {n && (
-                  <span
-                    className="inline-flex items-center gap-1 px-1.5 py-0.5 text-[9px] rounded uppercase font-bold tracking-wide flex-shrink-0"
-                    style={{
-                      background:
-                        n.channel === 'whatsapp'
-                          ? 'rgba(37, 211, 102, 0.12)'
-                          : n.channel === 'email'
-                            ? 'rgba(59, 130, 246, 0.12)'
-                            : 'rgba(30, 154, 128, 0.12)',
-                      color:
-                        n.channel === 'whatsapp'
-                          ? '#0E8B3E'
-                          : n.channel === 'email'
-                            ? '#1D4ED8'
-                            : '#1E9A80',
-                    }}
-                  >
-                    {channelIcon(n.channel)} {channelLabel(n.channel)}
-                  </span>
-                )}
-                {/* PR 94: dropdown replaces the static label so agents
-                    can swap which number/account is in this slot without
-                    deleting + re-adding. */}
-                {n && sameChannel.length > 1 ? (
-                  <select
-                    value={r.number_id}
-                    onChange={(e) => void swapNumber(r.id, e.target.value)}
-                    title={`Pick a different ${channelLabel(n.channel)}`}
-                    className="px-1.5 py-0.5 text-[12px] bg-white border border-[#E5E7EB] rounded-[6px] flex-1 min-w-0 truncate"
-                  >
-                    {sameChannel.map((opt) => (
-                      <option key={opt.id} value={opt.id}>
-                        {opt.e164}
-                        {opt.channel === 'sms' && !opt.voice_enabled ? ' (no voice)' : ''}
-                      </option>
-                    ))}
-                  </select>
-                ) : (
-                  <span className="truncate">{n?.e164 ?? r.number_id.slice(0, 8)}</span>
-                )}
-                {n && n.channel === 'sms' && !n.voice_enabled && (
-                  <span className="ml-2 text-[9px] text-[#B45309] bg-[#FEF3C7] px-1 rounded flex-shrink-0">
-                    not voice-enabled
-                  </span>
-                )}
-              </span>
-              <button
-                onClick={() => void remove(r.id)}
-                className="text-[10px] text-[#EF4444] hover:underline flex-shrink-0"
+            <div
+              key={slot.channel}
+              className="flex items-center gap-3 text-[12px]"
+            >
+              <span
+                className="inline-flex items-center gap-1 px-2 py-1 text-[10px] rounded font-bold uppercase tracking-wide w-[110px] flex-shrink-0"
+                style={{
+                  background:
+                    slot.channel === 'whatsapp'
+                      ? 'rgba(37, 211, 102, 0.12)'
+                      : slot.channel === 'email'
+                        ? 'rgba(59, 130, 246, 0.12)'
+                        : 'rgba(30, 154, 128, 0.12)',
+                  color:
+                    slot.channel === 'whatsapp'
+                      ? '#0E8B3E'
+                      : slot.channel === 'email'
+                        ? '#1D4ED8'
+                        : '#1E9A80',
+                }}
               >
-                Remove
-              </button>
+                {slot.icon} {slot.label}
+              </span>
+              <select
+                value={current?.r.number_id ?? ''}
+                onChange={(e) =>
+                  void onSlotChange(slot.channel, e.target.value, current, extras)
+                }
+                disabled={options.length === 0 && !current}
+                data-testid={`campaign-channel-${slot.channel}`}
+                className="flex-1 px-2 py-1.5 text-[12px] bg-white border border-[#E5E7EB] rounded-[8px] disabled:opacity-60"
+              >
+                <option value="">
+                  {options.length === 0
+                    ? `(no ${channelLabel(slot.channel)} connected)`
+                    : '(unassigned)'}
+                </option>
+                {options.map((opt) => (
+                  <option key={opt.id} value={opt.id}>
+                    {opt.e164}
+                    {opt.channel === 'sms' && !opt.voice_enabled ? ' (no voice)' : ''}
+                  </option>
+                ))}
+              </select>
             </div>
           );
         })}
-      </div>
-      <div className="flex gap-1.5">
-        <select
-          value={pickingNumberId}
-          onChange={(e) => setPickingNumberId(e.target.value)}
-          className="flex-1 px-2 py-1.5 text-[12px] bg-white border border-[#E5E7EB] rounded-[8px]"
-        >
-          <option value="">Pick a channel to assign…</option>
-          {grouped.sms.length > 0 && (
-            <optgroup label="📱 SMS — Twilio">
-              {grouped.sms.map((n) => (
-                <option key={n.id} value={n.id}>
-                  {n.e164} {n.voice_enabled ? '' : '(no voice)'}
-                </option>
-              ))}
-            </optgroup>
-          )}
-          {grouped.whatsapp.length > 0 && (
-            <optgroup label="💬 WhatsApp — Unipile">
-              {grouped.whatsapp.map((n) => (
-                <option key={n.id} value={n.id}>{n.e164}</option>
-              ))}
-            </optgroup>
-          )}
-          {grouped.email.length > 0 && (
-            <optgroup label="✉️ Email — Resend">
-              {grouped.email.map((n) => (
-                <option key={n.id} value={n.id}>{n.e164}</option>
-              ))}
-            </optgroup>
-          )}
-        </select>
-        <button
-          onClick={() => void onAdd()}
-          disabled={!pickingNumberId}
-          className="bg-[#1E9A80] text-white text-[11px] font-semibold px-3 py-1.5 rounded-[8px] hover:bg-[#1E9A80]/90 disabled:opacity-60"
-        >
-          + Add
-        </button>
       </div>
     </div>
   );
