@@ -10,6 +10,8 @@ import { useEffect, useState } from 'react';
 import { Phone, PhoneCall } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useActiveDialerLegs, type DialerLegStatus } from '../../hooks/useActiveDialerLegs';
+import { supabase } from '@/integrations/supabase/client';
+import { useSmsV2 } from '../../store/SmsV2Store';
 
 const STATUS_BADGE: Record<DialerLegStatus, { bg: string; text: string; label: string }> = {
   queued: { bg: '#DBEAFE', text: '#1D4ED8', label: '📞 Dialing' },
@@ -33,6 +35,8 @@ interface Props {
 
 export default function ParallelDialerBoard({ active }: Props) {
   const { legs, loading } = useActiveDialerLegs();
+  const { pushToast } = useSmsV2();
+  const [hangingUp, setHangingUp] = useState<string | null>(null);
 
   // 1s tick so the elapsed-seconds counter on each leg refreshes.
   const [, setTick] = useState(0);
@@ -41,6 +45,34 @@ export default function ParallelDialerBoard({ active }: Props) {
     const id = window.setInterval(() => setTick((t) => t + 1), 1000);
     return () => window.clearInterval(id);
   }, [legs.length]);
+
+  // PR 89 (Hugo 2026-04-27): hang-up button was hardcoded `disabled` \u2014
+  // agents couldn't kill a stuck ringing leg. Now invokes
+  // wk-dialer-hangup-leg which cancels via Twilio REST + updates wk_calls.
+  const hangUp = async (callId: string) => {
+    setHangingUp(callId);
+    try {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const { data, error } = await (supabase.functions as any).invoke('wk-dialer-hangup-leg', {
+        body: { call_id: callId },
+      });
+      if (error || data?.error) {
+        pushToast(
+          `Hang up failed: ${error?.message ?? data?.error ?? 'unknown'}`,
+          'error'
+        );
+      } else {
+        pushToast('Leg cancelled', 'success');
+      }
+    } catch (e) {
+      pushToast(
+        `Hang up crashed: ${e instanceof Error ? e.message : 'unknown'}`,
+        'error'
+      );
+    } finally {
+      setHangingUp(null);
+    }
+  };
 
   // PR 54 (Hugo 2026-04-27): "Dialing now" label was showing even when
   // the board was empty. Tie the label visibility + dot pulse to the
@@ -125,8 +157,10 @@ export default function ParallelDialerBoard({ active }: Props) {
               <span className="text-[11px] text-[#9CA3AF] tabular-nums">{elapsed}s</span>
               <button
                 title="Hang up this leg"
-                disabled
-                className="p-1 text-[#EF4444] opacity-50 cursor-not-allowed"
+                disabled={hangingUp === leg.id}
+                onClick={() => void hangUp(leg.id)}
+                data-testid={`dialer-hangup-${leg.id}`}
+                className="p-1 text-[#EF4444] hover:bg-[#FEF2F2] rounded disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 <Phone className="w-3.5 h-3.5 rotate-[135deg]" />
               </button>

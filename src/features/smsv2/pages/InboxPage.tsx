@@ -94,6 +94,11 @@ export default function InboxPage() {
   const { firstName: agentFirstName } = useCurrentAgent();
   const [selectedTemplateId, setSelectedTemplateId] = useState<string>('');
 
+  // PR 89 (Hugo 2026-04-27): inbox search bar \u2014 was rendered with no
+  // onChange + no state, so typing did nothing. Now filters sidebarRows
+  // by name / phone / last message body (case-insensitive).
+  const [searchQuery, setSearchQuery] = useState('');
+
   // PR 52 (war room, Hugo 2026-04-27): the sidebar is now driven by
   // useInboxThreads (latest message per contact, ordered desc) merged
   // with any contact in the local store that doesn't have messages
@@ -164,11 +169,20 @@ export default function InboxPage() {
     // / 'missed' don't filter messages (calls etc. aren't message rows
     // here — those are timeline events). 'sms' / 'whatsapp' / 'email'
     // restrict to threads whose latest message was on that channel.
+    let rows = out;
     if (filter === 'sms' || filter === 'whatsapp' || filter === 'email') {
-      return out.filter((r) => r.lastChannel === filter || r.channelCounts[filter] > 0);
+      rows = rows.filter((r) => r.lastChannel === filter || r.channelCounts[filter] > 0);
     }
-    return out;
-  }, [inboxThreads, contacts, filter]);
+    // PR 89: free-text search across name, phone, last message body.
+    const q = searchQuery.trim().toLowerCase();
+    if (q.length > 0) {
+      rows = rows.filter((r) => {
+        const hay = `${r.name} ${r.phone} ${r.lastMessageBody ?? ''}`.toLowerCase();
+        return hay.includes(q);
+      });
+    }
+    return rows;
+  }, [inboxThreads, contacts, filter, searchQuery]);
 
   // Auto-select the newest thread on first load (Hugo's spec: newest
   // conversation must be visible without scrolling).
@@ -411,7 +425,10 @@ export default function InboxPage() {
           <div className="relative">
             <Search className="w-3.5 h-3.5 absolute left-2.5 top-1/2 -translate-y-1/2 text-[#9CA3AF]" />
             <input
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
               placeholder="Search inbox…"
+              data-testid="inbox-search"
               className="w-full pl-7 pr-2 py-1.5 text-[12px] bg-[#F3F3EE] border-0 rounded-[10px] focus:outline-none focus:ring-1 focus:ring-[#1E9A80]/30"
             />
           </div>

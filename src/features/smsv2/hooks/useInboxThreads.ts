@@ -114,8 +114,24 @@ export function useInboxThreads(): { threads: InboxThread[]; loading: boolean; r
       )
       .subscribe();
 
+    // PR 89 (Hugo 2026-04-27): "WhatsApp messages don't appear without
+    // refresh." Realtime IS subscribed above, but in practice some
+    // inserts (especially those done via service-role from edge fns or
+    // pg_cron) can silently fail to push to the client. Belt-and-braces:
+    // also poll every 30s. Cheap (one query, sub-100ms) and bounds the
+    // worst-case staleness.
+    const pollId = window.setInterval(() => { void load(); }, 30_000);
+
+    // Re-fetch on tab focus too — when Hugo flips back to the tab after
+    // chatting on WhatsApp, the inbox should be fresh by the time the
+    // page paints.
+    const onFocus = () => { void load(); };
+    window.addEventListener('focus', onFocus);
+
     return () => {
       try { void supabase.removeChannel(channel); } catch { /* ignore */ }
+      window.clearInterval(pollId);
+      window.removeEventListener('focus', onFocus);
     };
   }, [load]);
 
