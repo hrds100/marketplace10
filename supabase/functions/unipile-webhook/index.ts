@@ -107,17 +107,8 @@ serve(async (req: Request) => {
     return new Response('Method not allowed', { status: 405, headers: corsHeaders });
   }
 
-  // Auth — Unipile sends our pre-shared header value.
-  if (UNIPILE_WEBHOOK_SECRET) {
-    const got = req.headers.get('unipile-auth') ?? req.headers.get('Unipile-Auth') ?? '';
-    if (got !== UNIPILE_WEBHOOK_SECRET) {
-      console.error('[unipile-webhook] bad Unipile-Auth header — dropping');
-      return ok({ note: 'bad auth — dropped' });
-    }
-  } else {
-    console.warn('[unipile-webhook] UNIPILE_WEBHOOK_SECRET not set — accepting unverified');
-  }
-
+  // Read body first — we need it both for auth-shape detection AND
+  // verification of account-connected callbacks via the Unipile API.
   let payload: Record<string, unknown>;
   try {
     payload = (await req.json()) as Record<string, unknown>;
@@ -126,6 +117,36 @@ serve(async (req: Request) => {
   }
 
   console.log('[unipile-webhook] payload keys:', Object.keys(payload));
+
+  // Auth handling — TWO classes of inbound:
+  //
+  //   (a) hosted-auth notify_url callback (account_connected) — fired ONCE
+  //       by Unipile after a user finishes the QR scan. Does NOT carry our
+  //       pre-shared Unipile-Auth header (that's a per-webhook config that
+  //       only applies to registered /webhooks events). We verify by
+  //       fetching the account from Unipile's API in the handler — invalid
+  //       ids return 404 from upstream, which gates the upsert.
+  //
+  //   (b) registered messaging webhook (message_received) — DOES carry the
+  //       Unipile-Auth header per our /webhooks registration. We enforce
+  //       header equality there.
+  //
+  // Detect class (a) by payload shape: presence of `status` ∈ {CREATION_SUCCESS,
+  // OK} OR (account_id + name without an `event` field). Class (b) carries
+  // an `event` field like 'message_received'.
+  const looksLikeHostedNotify =
+    typeof payload.status === 'string' ||
+    (payload.account_id && payload.name && !payload.event);
+
+  if (!looksLikeHostedNotify && UNIPILE_WEBHOOK_SECRET) {
+    const got = req.headers.get('unipile-auth') ?? req.headers.get('Unipile-Auth') ?? '';
+    if (got !== UNIPILE_WEBHOOK_SECRET) {
+      console.error('[unipile-webhook] bad Unipile-Auth header on messaging event — dropping');
+      return ok({ note: 'bad auth — dropped' });
+    }
+  } else if (!UNIPILE_WEBHOOK_SECRET) {
+    console.warn('[unipile-webhook] UNIPILE_WEBHOOK_SECRET not set — accepting unverified');
+  }
 
   const supa = createClient(SUPABASE_URL, SUPABASE_SERVICE_KEY);
 
