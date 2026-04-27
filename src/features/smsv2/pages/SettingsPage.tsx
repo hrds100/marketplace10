@@ -501,6 +501,41 @@ function ToggleRow({
   );
 }
 
+function WebhookUrlRow({ label, path }: { label: string; path: string }) {
+  // Use the build-time SUPABASE_URL so admins always see the right host.
+  const projectRef = 'asazddtvjvmckouxcmmo';
+  const url = `https://${projectRef}.supabase.co${path}`;
+  const [copied, setCopied] = useState(false);
+  const copy = async () => {
+    try {
+      await navigator.clipboard.writeText(url);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 1500);
+    } catch {
+      /* ignore */
+    }
+  };
+  return (
+    <div className="py-2 border-b border-[#E5E7EB] last:border-0">
+      <div className="text-[11px] uppercase tracking-wide text-[#9CA3AF] font-semibold mb-1">
+        {label}
+      </div>
+      <div className="flex items-center gap-2">
+        <code className="flex-1 min-w-0 text-[11px] font-mono bg-[#F3F3EE] px-2 py-1.5 rounded-[8px] truncate">
+          {url}
+        </code>
+        <button
+          type="button"
+          onClick={() => void copy()}
+          className="text-[11px] font-medium border border-[#E5E7EB] hover:bg-[#F3F3EE] text-[#1A1A1A] px-2.5 py-1.5 rounded-[8px] flex-shrink-0"
+        >
+          {copied ? 'Copied ✓' : 'Copy'}
+        </button>
+      </div>
+    </div>
+  );
+}
+
 function Chip({ label, colour }: { label: string; colour: string }) {
   return (
     <span
@@ -1210,6 +1245,28 @@ function NumbersTab() {
             {error}
           </div>
         )}
+      </Card>
+
+      {/* PR 39 (Hugo 2026-04-27): inbound SMS wasn't being received.
+          Most common cause: Twilio's per-number 'A message comes in'
+          webhook URL isn't set / points elsewhere. Surface the URL
+          here so admins can copy it directly into the Twilio Console. */}
+      <Card
+        title="Webhook URLs (Twilio Console)"
+        hint="Set these on every active number's 'A message comes in' / 'A call comes in' fields"
+      >
+        <WebhookUrlRow
+          label="Inbound SMS"
+          path="/functions/v1/sms-webhook-incoming"
+        />
+        <WebhookUrlRow
+          label="Inbound WhatsApp"
+          path="/functions/v1/wa-webhook-incoming"
+        />
+        <WebhookUrlRow
+          label="Inbound voice"
+          path="/functions/v1/wk-voice-twiml-incoming"
+        />
       </Card>
 
       <Card
