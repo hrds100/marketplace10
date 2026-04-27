@@ -63,15 +63,19 @@ interface CreateAgentInvoke {
   }>;
 }
 
+// PR 60 (Hugo 2026-04-27): Campaigns lives at the TOP — admin picks a
+// campaign first, then drills into pipelines / SMS / AI / KB / Glossary
+// for that campaign. Workspace-level config (Agents, Numbers, Pacing,
+// Kill switches) sits at the bottom.
 const TABS = [
+  { id: 'campaigns', label: 'Campaigns', icon: Megaphone },
   { id: 'pipelines', label: 'Pipelines & outcomes', icon: Kanban },
   { id: 'templates', label: 'SMS templates', icon: MessageSquare },
-  { id: 'campaigns', label: 'Campaigns & leads', icon: Megaphone },
-  { id: 'agents', label: 'Agents & spend', icon: Users },
-  { id: 'numbers', label: 'Numbers', icon: Phone },
   { id: 'ai', label: 'AI coach', icon: Bot },
   { id: 'kb', label: 'Coach facts', icon: Brain },
   { id: 'glossary', label: 'Glossary', icon: BookOpen },
+  { id: 'agents', label: 'Agents & spend', icon: Users },
+  { id: 'numbers', label: 'Numbers', icon: Phone },
   { id: 'pacing', label: 'Pacing & safety', icon: Shield },
   { id: 'kill', label: 'Kill switches & audit', icon: Activity },
 ] as const;
@@ -140,7 +144,8 @@ function ScopeBadge({
 }
 
 export default function SettingsPage() {
-  const [tab, setTab] = useState<(typeof TABS)[number]['id']>('pipelines');
+  // PR 60: default to Campaigns since it's the parent of everything below.
+  const [tab, setTab] = useState<(typeof TABS)[number]['id']>('campaigns');
   const [selectedCampaignId, setSelectedCampaignId] = useState<string | null>(null);
   const showCampaignPicker = CAMPAIGN_SCOPED_TABS.has(tab);
 
@@ -959,7 +964,10 @@ function CampaignsTab() {
 //   - Assign numbers (dialer picks from-line via wk_campaign_numbers)
 //   - Duplicate a campaign (RPC wk_duplicate_campaign — copies bundle)
 function RealCampaignsPanel() {
-  const { campaigns, refetch } = useDialerCampaigns();
+  // PR 60 (Hugo 2026-04-27): Settings shows ALL campaigns (active +
+  // inactive). The dialer page passes the default opts so it still
+  // only sees runnable ones.
+  const { campaigns, refetch } = useDialerCampaigns({ includeInactive: true });
   const [creating, setCreating] = useState(false);
   const [newName, setNewName] = useState('');
   const [expandedId, setExpandedId] = useState<string | null>(null);
@@ -970,21 +978,29 @@ function RealCampaignsPanel() {
     if (!newName.trim()) return;
     setCreating(true);
     try {
+      // PR 60: default new campaigns to is_active=true so Hugo sees
+      // them right away. Admin can flip OFF later. (Pre-PR 60 the
+      // hook filtered is_active=true so newly-created campaigns were
+      // invisible — that was the "Create did nothing" bug.)
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const { error } = await (supabase.from('wk_dialer_campaigns' as any) as any)
+      const { data, error } = await (supabase.from('wk_dialer_campaigns' as any) as any)
         .insert({
           name: newName.trim(),
           parallel_lines: 3,
           auto_advance_seconds: 10,
           ai_coach_enabled: true,
-          is_active: false,
-        });
+          is_active: true,
+        })
+        .select('id')
+        .single();
       if (error) {
         setActionError(error.message);
         return;
       }
       setNewName('');
       refetch();
+      // Auto-expand the new campaign so the admin can configure it.
+      if (data?.id) setExpandedId(data.id as string);
     } finally {
       setCreating(false);
     }
@@ -1119,6 +1135,18 @@ function RealCampaignsPanel() {
                     </Field>
                   </div>
                   <div className="flex flex-wrap items-center gap-2">
+                    <button
+                      onClick={() => void patch(c.id, { is_active: !c.isActive })}
+                      className={cn(
+                        'inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[10px] font-semibold border transition-colors',
+                        c.isActive
+                          ? 'bg-[#ECFDF5] text-[#1E9A80] border-[#1E9A80]/30'
+                          : 'bg-[#FEF3C7] text-[#B45309] border-[#F59E0B]/30'
+                      )}
+                      title={c.isActive ? 'Active — agents can dial' : 'Paused — dialer refuses to start'}
+                    >
+                      {c.isActive ? '🟢 Active' : '⏸ Paused'}
+                    </button>
                     <button
                       onClick={() => void patch(c.id, { ai_coach_enabled: !c.aiCoachEnabled })}
                       className={cn(
