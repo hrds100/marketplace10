@@ -9,6 +9,7 @@ import {
   Pause,
   SkipForward,
   Phone,
+  ArrowLeft,
   type LucideIcon,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
@@ -26,7 +27,7 @@ const ICON_MAP: Record<string, LucideIcon> = {
 };
 
 export default function PostCallPanel() {
-  const { applyOutcome, call } = useActiveCallCtx();
+  const { applyOutcome, call, lastEndedContactId, openPreviousCall } = useActiveCallCtx();
   const store = useSmsV2();
   const columns = store.columns;
   const autoAdvanceSeconds = store.activeCampaign.autoAdvanceSeconds ?? 10;
@@ -205,9 +206,19 @@ export default function PostCallPanel() {
             </>
           )}
           <span className="ml-2 text-[10px] text-[#9CA3AF]">
-            ⌨ 1–9 · S skip · P pause · N call now
+            ⌨ 1–9 · S skip · P pause · N next call
           </span>
         </div>
+        {lastEndedContactId && (
+          <button
+            onClick={openPreviousCall}
+            disabled={submitted}
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-[10px] border border-[#E5E7EB] text-[12px] font-medium text-[#6B7280] hover:bg-white disabled:opacity-50"
+            title="Go back to the previous call's room (doesn't end the dial cycle)"
+          >
+            <ArrowLeft className="w-3.5 h-3.5" /> Previous call
+          </button>
+        )}
         <button
           onClick={() => setPaused((p) => !p)}
           className="flex items-center gap-1.5 px-3 py-1.5 rounded-[10px] border border-[#E5E7EB] text-[12px] font-medium text-[#6B7280] hover:bg-white"
@@ -232,7 +243,7 @@ export default function PostCallPanel() {
           }}
           className="flex items-center gap-1.5 px-3 py-1.5 rounded-[10px] bg-[#1E9A80] text-white text-[12px] font-semibold hover:bg-[#1E9A80]/90 shadow-[0_4px_12px_rgba(30,154,128,0.35)]"
         >
-          <Phone className="w-3.5 h-3.5" /> Call now
+          <Phone className="w-3.5 h-3.5" /> Next call
         </button>
       </div>
 

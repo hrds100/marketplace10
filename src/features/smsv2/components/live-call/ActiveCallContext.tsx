@@ -59,6 +59,12 @@ interface ActiveCallCtx {
   previewContactId: string | null;
   openCallRoom: (contactId: string) => void;
   closeCallRoom: () => void;
+  /** Hugo 2026-04-27 (PR 44): the contact whose call just ended. Lets
+   *  PostCallPanel show a "← Previous call" button that pops the agent
+   *  back into that lead's room (preview mode) without ending the dial
+   *  cycle. Null on first call of the session. */
+  lastEndedContactId: string | null;
+  openPreviousCall: () => void;
   /**
    * Manual dial — minted call_id server-side, dials Twilio Device, and
    * drives phase transitions via call event listeners. Returns the
@@ -109,6 +115,7 @@ export function ActiveCallProvider({ children }: { children: ReactNode }) {
   const [fullScreen, setFullScreen] = useState(true);
   const [muted, setMuted] = useState(false);
   const [previewContactId, setPreviewContactId] = useState<string | null>(null);
+  const [lastEndedContactId, setLastEndedContactId] = useState<string | null>(null);
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const activeTwilioCallRef = useRef<TwilioCall | null>(null);
 
@@ -161,6 +168,17 @@ export function ActiveCallProvider({ children }: { children: ReactNode }) {
       if (intervalRef.current) clearInterval(intervalRef.current);
     };
   }, [phase]);
+
+  // PR 44 (Hugo 2026-04-27): snapshot the contactId whenever a call
+  // ends (post_call), so the agent can pop back into that lead's room
+  // from PostCallPanel via "← Previous call" without ending the dial
+  // cycle. We don't clear it on idle — the snapshot survives across
+  // calls until the next one ends.
+  useEffect(() => {
+    if (phase === 'post_call' && call?.contactId) {
+      setLastEndedContactId(call.contactId);
+    }
+  }, [phase, call?.contactId]);
 
   // Subscribe to `dialer:<agentId>` for winner-takes-screen.
   // wk-dialer-answer broadcasts { call_id, contact_id, twilio_call_sid } on
@@ -439,6 +457,16 @@ export function ActiveCallProvider({ children }: { children: ReactNode }) {
       closeCallRoom: () => {
         setPreviewContactId(null);
       },
+      lastEndedContactId,
+      openPreviousCall: () => {
+        // PR 44: from PostCallPanel, pop the agent back into the just-
+        // ended call's room (preview mode). Doesn't dial. Skips if no
+        // prior call exists OR if a fresh call has already started.
+        if (!lastEndedContactId) return;
+        if (phase === 'in_call' || phase === 'placing') return;
+        setPreviewContactId(lastEndedContactId);
+        setFullScreen(true);
+      },
       muted,
       toggleMute,
       startCall,
@@ -572,7 +600,7 @@ export function ActiveCallProvider({ children }: { children: ReactNode }) {
         }
       },
     };
-  }, [phase, call, fullScreen, muted, toggleMute, store, startCall, resumeFromBroadcast, previewContactId]);
+  }, [phase, call, fullScreen, muted, toggleMute, store, startCall, resumeFromBroadcast, previewContactId, lastEndedContactId]);
 
   return <Ctx.Provider value={value}>{children}</Ctx.Provider>;
 }
