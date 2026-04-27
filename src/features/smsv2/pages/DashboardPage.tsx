@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { Bot, Pause } from 'lucide-react';
 import StatCards from '../components/dashboard/StatCards';
 import LiveActivityFeed from '../components/dashboard/LiveActivityFeed';
@@ -7,6 +8,10 @@ import { useKillSwitch } from '../hooks/useKillSwitch';
 
 export default function DashboardPage() {
   const ks = useKillSwitch();
+  // PR 54 (Hugo 2026-04-27): clicking an agent row filters the
+  // dashboard's Live Activity feed to that agent. Click again or hit
+  // the "clear" chip on AgentsTable to reset.
+  const [selectedAgentId, setSelectedAgentId] = useState<string | null>(null);
   return (
     <div className="p-6 max-w-[1400px] mx-auto space-y-5">
       <header className="flex items-center justify-between">
@@ -37,8 +42,11 @@ export default function DashboardPage() {
       <StatCards />
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
-        <LiveActivityFeed />
-        <AgentsTable />
+        <LiveActivityFeed selectedAgentId={selectedAgentId} />
+        <AgentsTable
+          selectedAgentId={selectedAgentId}
+          onSelectAgent={setSelectedAgentId}
+        />
       </div>
 
       <KillSwitches />

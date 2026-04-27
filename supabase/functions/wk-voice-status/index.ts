@@ -124,8 +124,10 @@ async function runWinnerOrchestration(
   }).eq('id', thisCall.id);
 
   // Hang up every other ringing leg for the same agent + campaign.
+  // Capture each loser's contact_id so we can increment their
+  // wk_dialer_queue.attempts counter (PR 54 — three-strikes rule).
   const { data: losers } = await supa.from('wk_calls')
-    .select('twilio_call_sid')
+    .select('twilio_call_sid, contact_id')
     .eq('agent_id', thisCall.agent_id)
     .eq('campaign_id', thisCall.campaign_id)
     .in('status', ['queued', 'ringing'])
@@ -135,13 +137,45 @@ async function runWinnerOrchestration(
     if (l.twilio_call_sid) await twilioHangup(l.twilio_call_sid);
   }
 
-  // Roll losing queue rows back to 'pending' so they re-enter the
-  // pool for the next dial burst (no permanent loss of leads).
-  await supa.from('wk_dialer_queue')
-    .update({ status: 'pending', agent_id: null })
-    .eq('agent_id', thisCall.agent_id)
-    .eq('campaign_id', thisCall.campaign_id)
-    .eq('status', 'dialing');
+  // PR 54 (Hugo 2026-04-27): when losing legs are returned to the
+  // queue, increment attempts + bump priority so they go to the
+  // BACK. Old behaviour rolled them straight back to 'pending' with
+  // no counter change → wk_pick_next_lead picked the same contact
+  // again on the next burst. The wk_dialer_three_strikes RPC
+  // (migration 20260430000019) handles attempts >= 3 → status='lost'
+  // + auto-activity, so we don't need to special-case that here.
+  const loserContactIds = (losers ?? [])
+    .map((l) => l.contact_id)
+    .filter((id): id is string => !!id);
+
+  if (loserContactIds.length > 0) {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { error: rpcErr } = await (supa as any).rpc(
+      'wk_dialer_strike_losers',
+      {
+        p_campaign_id: thisCall.campaign_id,
+        p_contact_ids: loserContactIds,
+      },
+    );
+    if (rpcErr) {
+      console.warn('[wk-voice-status] strike-losers rpc failed', rpcErr);
+      // Fallback to the old behaviour so dial still progresses if the
+      // RPC isn't deployed yet.
+      await supa.from('wk_dialer_queue')
+        .update({ status: 'pending', agent_id: null })
+        .eq('agent_id', thisCall.agent_id)
+        .eq('campaign_id', thisCall.campaign_id)
+        .eq('status', 'dialing');
+    }
+  } else {
+    // No loser contacts (shouldn't happen for parallel dial > 1) —
+    // still clear any leftover 'dialing' rows for safety.
+    await supa.from('wk_dialer_queue')
+      .update({ status: 'pending', agent_id: null })
+      .eq('agent_id', thisCall.agent_id)
+      .eq('campaign_id', thisCall.campaign_id)
+      .eq('status', 'dialing');
+  }
 
   // Broadcast — frontend morphs Parallel Dialer → Live Call screen.
   // ActiveCallContext listens on dialer:<agentId> and reads payload
