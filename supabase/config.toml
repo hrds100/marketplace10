@@ -139,6 +139,13 @@ verify_jwt = false
 [functions.wazzup-sync-channels]
 verify_jwt = true
 
+# CRM Email — PR 62 (multi-channel PR 3). Resend on inbox.nfstay.com subdomain.
+[functions.wk-email-send]
+verify_jwt = true
+
+[functions.wk-email-webhook]
+verify_jwt = false
+
 # PR 59 — admin Listen / Whisper on a live call
 [functions.wk-supervisor-join]
 verify_jwt = true
