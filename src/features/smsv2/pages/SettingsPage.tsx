@@ -28,6 +28,8 @@ import {
   Settings,
   Wand2,
   Loader2,
+  ChevronUp,
+  ChevronDown,
   type LucideIcon,
 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
@@ -1968,6 +1970,25 @@ function CampaignAgentsPanel({ campaignId }: { campaignId: string }) {
 function CampaignNumbersPanel({ campaignId }: { campaignId: string }) {
   const { rows, add, remove, setPriority } = useCampaignNumbers(campaignId);
   const [pickingNumberId, setPickingNumberId] = useState<string>('');
+
+  // PR 93 (Hugo 2026-04-28): swap row priorities so the top is always
+  // the primary. We swap the priority *values* of the two rows being
+  // moved \u2014 not a renumber of the whole list \u2014 so concurrent edits
+  // don't fight. wk-dialer-start orders by priority asc, so a swap is
+  // enough to put a row above its neighbour.
+  const moveRow = async (idx: number, dir: -1 | 1) => {
+    const sorted = [...rows].sort((a, b) => a.priority - b.priority);
+    const a = sorted[idx];
+    const b = sorted[idx + dir];
+    if (!a || !b) return;
+    // If priorities are equal (legacy data), nudge so they differ before swap.
+    const aP = a.priority;
+    const bP = b.priority === aP ? aP + dir : b.priority;
+    await Promise.all([
+      setPriority(a.id, bP),
+      setPriority(b.id, aP),
+    ]);
+  };
   // PR 85 (Hugo 2026-04-27): show all channels — SMS / WhatsApp / Email —
   // not just SMS numbers. Each row gets a channel-aware label + icon so
   // it's obvious what's assigned. Picker groups by channel.
@@ -2029,7 +2050,7 @@ function CampaignNumbersPanel({ campaignId }: { campaignId: string }) {
       <div className="text-[11px] text-[#6B7280] mb-2 leading-snug">
         {rows.length === 0
           ? 'No channels pinned \u2014 dialer + sender fall back to the workspace pool.'
-          : `${rows.length} channel${rows.length === 1 ? '' : 's'} pinned. The "Order" number on each row decides which one is tried first \u2014 lowest order wins. So 1st = primary, 2nd = backup, etc.`}
+          : `${rows.length} channel${rows.length === 1 ? '' : 's'} pinned. The top row is the primary; the others are backups in order. Use \u2191 / \u2193 to reorder.`}
       </div>
       <div className="space-y-1.5 mb-2">
         {rows.length === 0 && (
@@ -2038,7 +2059,7 @@ function CampaignNumbersPanel({ campaignId }: { campaignId: string }) {
             send fns pick the first active channel for their type.
           </div>
         )}
-        {rows.map((r) => {
+        {rows.map((r, idx) => {
           const n = allNumbers.find((x) => x.id === r.number_id);
           return (
             <div key={r.id} className="flex items-center justify-between gap-2 text-[12px]">
@@ -2071,20 +2092,33 @@ function CampaignNumbersPanel({ campaignId }: { campaignId: string }) {
                   </span>
                 )}
               </span>
-              <label className="inline-flex items-center gap-1 text-[10px] text-[#6B7280]">
-                <span className="uppercase tracking-wide font-semibold">Order</span>
-                <input
-                  type="number"
-                  min={0}
-                  defaultValue={r.priority}
-                  onBlur={(e) => {
-                    const v = parseInt(e.target.value, 10);
-                    if (Number.isFinite(v) && v !== r.priority) void setPriority(r.id, v);
-                  }}
-                  className="w-12 px-1.5 py-0.5 text-[11px] border border-[#E5E7EB] rounded text-right tabular-nums"
-                  title="Lower number = tried first. So 0 is the primary, 1 is the backup, etc."
-                />
-              </label>
+              {/* PR 93 (Hugo 2026-04-28): typing "10" in the priority box
+                  was meaningless. Replaced with up/down arrows that just
+                  swap this row with its neighbour. The list is sorted by
+                  priority, so the top row is always the primary. */}
+              <span className="text-[10px] text-[#6B7280] tabular-nums w-8 text-right">
+                {idx === 0 ? 'primary' : `#${idx + 1}`}
+              </span>
+              <div className="inline-flex flex-col">
+                <button
+                  type="button"
+                  onClick={() => void moveRow(idx, -1)}
+                  disabled={idx === 0}
+                  title="Move up"
+                  className="p-0.5 text-[#6B7280] hover:text-[#1A1A1A] disabled:opacity-30 disabled:cursor-not-allowed"
+                >
+                  <ChevronUp className="w-3 h-3" />
+                </button>
+                <button
+                  type="button"
+                  onClick={() => void moveRow(idx, +1)}
+                  disabled={idx === rows.length - 1}
+                  title="Move down"
+                  className="p-0.5 text-[#6B7280] hover:text-[#1A1A1A] disabled:opacity-30 disabled:cursor-not-allowed"
+                >
+                  <ChevronDown className="w-3 h-3" />
+                </button>
+              </div>
               <button
                 onClick={() => void remove(r.id)}
                 className="text-[10px] text-[#EF4444] hover:underline"
