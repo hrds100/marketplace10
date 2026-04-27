@@ -68,6 +68,134 @@ async function validateTwilioSignature(
 }
 
 // ----------------------------------------------------------------------------
+// PR 58 (Hugo 2026-04-27): stage cursor from agent voice.
+//
+// The stage cursor (wk_calls.current_stage) used to advance ONLY when
+// the coach itself fired a SCRIPT card. If the agent read aloud a
+// section's opening line themselves, the cursor stayed put — so the
+// coach could later regress to an earlier stage. This block detects
+// the agent's progression by matching their transcript against the
+// script's anchor lines and bumping current_stage forward when a
+// match lands at a later stage than the cursor's current position.
+// ----------------------------------------------------------------------------
+
+const STAGE_ORDER = [
+  'Open',
+  'Qualify',
+  'Permission to pitch',
+  'Pitch',
+  'Returns',
+  'SMS close',
+  'Follow-up lock',
+];
+
+function stageIndex(stage: string | null): number {
+  if (!stage) return -1;
+  const target = stage.trim().toLowerCase();
+  return STAGE_ORDER.findIndex((s) => s.toLowerCase() === target);
+}
+
+interface ScriptSection {
+  stage: string;
+  anchors: string[];
+}
+
+/** Parse the script body into a `## N. <Stage>` section list, capturing
+ *  the FIRST read-aloud bullet under each heading as that section's
+ *  anchor. Anchors can be quoted (`- "Hi…"`) or unquoted (`- Hi…`). */
+export function parseScriptAnchors(scriptBody: string): ScriptSection[] {
+  const lines = scriptBody.split('\n');
+  const out: ScriptSection[] = [];
+  let current: ScriptSection | null = null;
+
+  for (const raw of lines) {
+    const headingMatch = raw.match(/^\s*##\s*\d+\.\s*(.+?)\s*$/);
+    if (headingMatch) {
+      if (current) out.push(current);
+      current = { stage: headingMatch[1].trim(), anchors: [] };
+      continue;
+    }
+    if (!current) continue;
+    // Only capture the FIRST quoted bullet — that's the section's
+    // primary read-aloud line. Variant lines inside `If yes:` /
+    // `If no:` branches are noisy for matching.
+    if (current.anchors.length > 0) continue;
+    const quoted = raw.match(/^\s*-\s*"(.+?)"\s*$/);
+    if (quoted) {
+      current.anchors.push(quoted[1]);
+    }
+  }
+  if (current) out.push(current);
+  return out;
+}
+
+/** Returns true when a long-enough run of consecutive content words
+ *  from `anchor` appears in `transcript`. Strict enough that filler
+ *  ("yeah, ok, sure") never matches; loose enough to allow agent
+ *  paraphrasing ("we run airbnbs as a JV partnership"). */
+export function anchorMatches(transcript: string, anchor: string): boolean {
+  const STOP = new Set([
+    'a', 'an', 'and', 'are', 'as', 'at', 'be', 'but', 'by', 'do', 'for', 'from',
+    'i', 'if', 'in', 'is', 'it', 'just', 'me', 'of', 'on', 'or', 'so', 'that',
+    'the', 'this', 'to', 'we', 'with', 'you', 'your', "i'll", "i'm", 'now',
+    'um', 'uh', 'er', 'erm', 'really', 'right', 'yeah', 'ok', 'okay',
+  ]);
+  const tokenize = (s: string) =>
+    s
+      .toLowerCase()
+      .replace(/[^a-z0-9'\s]/g, ' ')
+      .split(/\s+/)
+      .filter((w) => w.length > 2 && !STOP.has(w));
+
+  const aw = tokenize(anchor);
+  const tw = tokenize(transcript);
+  if (aw.length < 3) return false;
+
+  // Slide through the transcript; for each starting position count
+  // how many anchor content-words appear in order within a 12-token
+  // window. 3+ matches OR ≥ 40% of anchor content tokens hit = match.
+  for (let i = 0; i < tw.length; i++) {
+    let aIdx = 0;
+    let hits = 0;
+    for (let tIdx = i; tIdx < tw.length && tIdx - i < 12 && aIdx < aw.length; tIdx++) {
+      if (tw[tIdx] === aw[aIdx]) {
+        hits++;
+        aIdx++;
+      }
+    }
+    if (hits >= 3 || hits / aw.length >= 0.4) return true;
+  }
+  return false;
+}
+
+/** Returns the stage NAME the agent has just advanced to (forward-only
+ *  vs `currentStage`), or null when the transcript doesn't match any
+ *  later section anchor. */
+export function detectStageFromAgent(
+  transcript: string,
+  sections: ScriptSection[],
+  currentStage: string | null,
+): string | null {
+  // Skip very short utterances — backchannel filler rarely conveys
+  // a section transition.
+  if (!transcript || transcript.trim().split(/\s+/).length < 5) return null;
+  const currIdx = stageIndex(currentStage);
+
+  // Walk sections RIGHT-to-LEFT and pick the highest-stage anchor
+  // that matches — agents who skip a section out loud should land
+  // at the right place rather than the next-numbered one.
+  for (let i = sections.length - 1; i >= 0; i--) {
+    const sec = sections[i];
+    const secIdx = stageIndex(sec.stage);
+    if (secIdx <= currIdx) continue;
+    for (const anchor of sec.anchors) {
+      if (anchorMatches(transcript, anchor)) return sec.stage;
+    }
+  }
+  return null;
+}
+
+// ----------------------------------------------------------------------------
 // Coaching — fire OpenAI Chat per caller utterance, in the background. We
 // don't want to block returning 200 to Twilio (which may retry or get noisy).
 // ----------------------------------------------------------------------------
@@ -484,11 +612,10 @@ async function streamCoachInternal(args: {
       // v8: tag this prompt prefix so OpenAI prompt-caching buckets
       // calls with the same three system messages together. Cache TTL
       // is ~5 min; back-to-back calls in a session reuse the prefix.
-      // PR 55 (Hugo 2026-04-27 night): bumped v13→v14 — added
-      // compliance bans (Guaranteed / Risk-free / Definitely) and
-      // required safety phrases. Material change to the style
-      // prompt; cache key bumped so v14 calls don't reuse v13's
-      // cached prefix.
+      // PR 58 (Hugo 2026-04-27): same prompt as v14 — stage cursor
+      // changes are at the orchestration layer, not in the prompt
+      // itself. Keeping cache key on v14 so the prefix cache is
+      // hot.
       prompt_cache_key: 'nfstay-coach-v14',
       messages: [
         ...systemMessages
@@ -734,6 +861,72 @@ serve(async (req: Request) => {
         speaker,
         body: transcriptText,
       });
+
+      // PR 58 (Hugo 2026-04-27): when the agent reads aloud one of
+      // the script's section anchor lines, advance current_stage to
+      // that section so the coach's STAGE LOCK accounts for what
+      // the agent just covered. Forward-only — never moves the
+      // cursor backward.
+      if (speaker === 'agent' && call.ai_coach_enabled) {
+        try {
+          // Resolve the agent's effective script body (own > campaign-
+          // pinned > workspace default) — same chain useAgentScript
+          // applies on the client so the matcher sees what the agent
+          // actually has on screen.
+          let scriptBody = '';
+          if (call.agent_id) {
+            const { data: own } = await supa
+              .from('wk_call_scripts')
+              .select('body_md')
+              .eq('owner_agent_id', call.agent_id)
+              .limit(1);
+            if (own && own.length > 0) {
+              scriptBody = own[0].body_md as string;
+            }
+          }
+          if (!scriptBody && call.campaign_id) {
+            const { data: campRow } = await supa
+              .from('wk_dialer_campaigns')
+              .select('call_script_id')
+              .eq('id', call.campaign_id)
+              .maybeSingle();
+            const pinnedId = campRow?.call_script_id as string | null | undefined;
+            if (pinnedId) {
+              const { data: pinned } = await supa
+                .from('wk_call_scripts')
+                .select('body_md')
+                .eq('id', pinnedId)
+                .maybeSingle();
+              if (pinned) scriptBody = pinned.body_md as string;
+            }
+          }
+          if (!scriptBody) {
+            const { data: def } = await supa
+              .from('wk_call_scripts')
+              .select('body_md')
+              .eq('is_default', true)
+              .limit(1);
+            if (def && def.length > 0) scriptBody = def[0].body_md as string;
+          }
+
+          if (scriptBody) {
+            const sections = parseScriptAnchors(scriptBody);
+            const currentStage = (call.current_stage as string | null) ?? null;
+            const advancedTo = detectStageFromAgent(transcriptText, sections, currentStage);
+            if (advancedTo) {
+              console.log(
+                `[wk-voice-transcription] [stage-from-voice] call=${call.id.slice(0, 8)} from='${currentStage ?? 'null'}' → '${advancedTo}' triggered by agent: "${transcriptText.slice(0, 80)}"`,
+              );
+              await supa
+                .from('wk_calls')
+                .update({ current_stage: advancedTo })
+                .eq('id', call.id);
+            }
+          }
+        } catch (e) {
+          console.warn('[wk-voice-transcription] stage-from-voice threw', e);
+        }
+      }
     }
 
     // Coaching path — fires on BOTH interim and final chunks for the
