@@ -28,6 +28,7 @@ import { cn } from '@/lib/utils';
 import { supabase } from '@/integrations/supabase/client';
 import { useSmsV2 } from '../../store/SmsV2Store';
 import { useContactPersistence } from '../../hooks/useContactPersistence';
+import { interpolateTemplate } from '../../lib/interpolateTemplate';
 import type { Contact } from '../../types';
 
 type Channel = 'sms' | 'whatsapp' | 'email';
@@ -216,9 +217,10 @@ export default function ContactSmsModal({
     }
     const tpl = filteredTemplates.find((t) => t.id === id);
     if (!tpl) return;
-    const expanded = tpl.body_md
-      .replace(/\{\{\s*first_name\s*\}\}/gi, firstName)
-      .replace(/\{\{\s*agent_first_name\s*\}\}/gi, agentFirstName ?? '');
+    const expanded = interpolateTemplate(tpl.body_md, {
+      firstName,
+      agentFirstName,
+    });
     setBody(expanded);
     setShowSentBanner(false);
   };

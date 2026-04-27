@@ -178,13 +178,18 @@ async function handleSendSms(
   ).trim();
   const agentFirstName = agentName.split(/\s+/)[0] || '';
 
-  // Substitute merge fields. Template syntax in seed data is `{name}`
-  // and `{agent}` — keep the existing convention (no `{{ }}` here).
+  // Substitute merge fields. Accepts {x} and {{x}} for first_name /
+  // agent_first_name (PR 87 unification — Hugo: "if value missing, drop
+  // placeholder, never send literal {agent_first_name}"). Also accepts
+  // legacy {name} / {agent} from seed data.
   const body = rawBody
-    .replace(/\{\s*name\s*\}/gi, contactFirstName)
-    .replace(/\{\s*first_name\s*\}/gi, contactFirstName)
-    .replace(/\{\s*agent\s*\}/gi, agentFirstName)
-    .replace(/\{\s*agent_first_name\s*\}/gi, agentFirstName);
+    .replace(/\{\{?\s*name\s*\}?\}/gi, contactFirstName)
+    .replace(/\{\{?\s*first_name\s*\}?\}/gi, contactFirstName)
+    .replace(/\{\{?\s*agent\s*\}?\}/gi, agentFirstName)
+    .replace(/\{\{?\s*agent_first_name\s*\}?\}/gi, agentFirstName)
+    .replace(/[ \t]{2,}/g, ' ')
+    .replace(/\s+([,.;:!?])/g, '$1')
+    .trim();
 
   // Call sms-send via service-role bearer so it lands in sms_messages
   // and follows the Twilio path. fetch direct rather than using

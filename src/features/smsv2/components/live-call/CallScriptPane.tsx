@@ -20,6 +20,7 @@ import { cn } from '@/lib/utils';
 import { useAgentScript } from '../../hooks/useAgentScript';
 import { parseBlocks, type Block } from '../../lib/scriptParser';
 import { useScriptReadTracking } from '../../hooks/useScriptReadTracking';
+import { interpolateTemplate } from '../../lib/interpolateTemplate';
 import EditScriptModal from './EditScriptModal';
 
 interface Props {
@@ -42,9 +43,10 @@ export default function CallScriptPane({
   const rendered = useMemo(() => {
     const body = (script.body_md || '').trim();
     if (!body) return '';
-    return body
-      .replace(/\{\{\s*first_name\s*\}\}/gi, contactFirstName)
-      .replace(/\{\{\s*agent_first_name\s*\}\}/gi, agentFirstName);
+    return interpolateTemplate(body, {
+      firstName: contactFirstName,
+      agentFirstName,
+    });
   }, [script.body_md, contactFirstName, agentFirstName]);
 
   // Teleprompter state — fuzzy-matches agent voice to script blocks.
