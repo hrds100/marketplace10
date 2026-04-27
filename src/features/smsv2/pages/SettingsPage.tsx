@@ -45,6 +45,7 @@ import { useCampaignNumbers } from '../hooks/useCampaignNumbers';
 import { useAgentsToday } from '../hooks/useAgentsToday';
 import BulkUploadModal from '../components/contacts/BulkUploadModal';
 import { useTwilioAccount } from '../hooks/useTwilioAccount';
+import { useColumnPersistence } from '../hooks/useColumnPersistence';
 import ChannelsTab from '../components/settings/ChannelsTab';
 import { useSmsV2 } from '../store/SmsV2Store';
 import { supabase } from '@/integrations/supabase/client';
@@ -808,25 +809,27 @@ function Card({
 // ─── Pipelines tab — fully editable ────────────────────────────────
 function PipelinesTab() {
   const { columns: cols, patchColumn, upsertColumn, removeColumn } = useSmsV2();
+  const persist = useColumnPersistence();
   const [expandedId, setExpandedId] = useState<string | null>(null);
 
+  // PR 84: every store mutation also persists to wk_pipeline_columns +
+  // wk_pipeline_automations so changes survive a refresh. Previously the
+  // tab was local-only — Hugo's stages reverted on reload.
   const update = (id: string, patch: Partial<PipelineColumn>) => {
     patchColumn(id, patch);
+    void persist.updateColumn(id, patch);
   };
   const updateAuto = (id: string, patch: Partial<PipelineColumn['automation']>) => {
     const target = cols.find((c) => c.id === id);
     if (!target) return;
     patchColumn(id, { automation: { ...target.automation, ...patch } });
+    void persist.updateAutomation(id, patch);
   };
-  const addColumn = () => {
-    const id = `col-new-${Date.now()}`;
-    // Use the pipelineId from the first real hydrated column. Falls back
-    // to the mock ACTIVE_PIPELINE.id only when no real columns exist
-    // (fresh workspace with no rows yet) so writes land on a real
-    // pipeline UUID instead of the mock string.
+  const addColumn = async () => {
+    const tempId = `col-new-${Date.now()}`;
     const realPipelineId = cols[0]?.pipelineId ?? ACTIVE_PIPELINE.id;
-    upsertColumn({
-      id,
+    const draft: PipelineColumn = {
+      id: tempId,
       pipelineId: realPipelineId,
       name: 'New stage',
       colour: COLOUR_PALETTE[cols.length % COLOUR_PALETTE.length],
@@ -838,18 +841,29 @@ function PipelinesTab() {
         retryDial: false,
         addTag: false,
       },
-    });
-    setExpandedId(id);
+    };
+    upsertColumn(draft); // optimistic local insert
+    setExpandedId(tempId);
+    // Persist + replace tempId with the real UUID so future edits hit
+    // the right row.
+    const newId = await persist.insertColumn(draft);
+    if (newId) {
+      removeColumn(tempId);
+      upsertColumn({ ...draft, id: newId });
+      setExpandedId(newId);
+    }
   };
   const remove = (id: string) => {
     removeColumn(id);
     if (expandedId === id) setExpandedId(null);
+    void persist.deleteColumn(id);
   };
   const setTimeoutDefault = (id: string, checked: boolean) => {
     cols.forEach((c) => {
       const shouldBe = c.id === id ? checked : false;
       if ((c.isDefaultOnTimeout ?? false) !== shouldBe) {
         patchColumn(c.id, { isDefaultOnTimeout: shouldBe });
+        void persist.updateColumn(c.id, { isDefaultOnTimeout: shouldBe });
       }
     });
   };
