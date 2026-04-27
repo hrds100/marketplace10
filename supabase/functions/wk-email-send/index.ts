@@ -147,7 +147,18 @@ serve(async (req: Request) => {
     const rsBody = await rsResp.text();
     if (!rsResp.ok) {
       console.error('[wk-email-send] resend error', rsResp.status, rsBody);
-      return json(502, { error: `Resend ${rsResp.status}: ${rsBody.slice(0, 500)}` });
+      // 200-with-error so the picker UI surfaces the real reason
+      // (Supabase invoke() drops the body on non-2xx).
+      let parsedDesc = rsBody.slice(0, 500);
+      try {
+        const j = JSON.parse(rsBody);
+        parsedDesc = j?.message || j?.error || parsedDesc;
+      } catch { /* keep raw */ }
+      return json(200, {
+        error: `Resend ${rsResp.status}: ${parsedDesc}`,
+        resend_status: rsResp.status,
+        resend_body: rsBody.slice(0, 1000),
+      });
     }
     let rsJson: { id?: string } = {};
     try {
