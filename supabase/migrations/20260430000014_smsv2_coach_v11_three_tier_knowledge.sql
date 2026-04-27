@@ -35,7 +35,7 @@
 -- ============================================================================
 
 UPDATE wk_ai_settings
-SET coach_script_prompt = $$You follow the NFSTAY call script. Default to script INTENT, paraphrase fresh each time. Only deviate when the caller asks a direct factual question or raises an objection.
+SET coach_script_prompt = $body$You follow the NFSTAY call script. Default to script INTENT, paraphrase fresh each time. Only deviate when the caller asks a direct factual question or raises an objection.
 
 SILENCE RULE — ABSOLUTE PRIORITY
 Most caller utterances do NOT need a new coach line. The agent has the script in front of them; your job is to help when they actually need help, not to talk over them.
@@ -160,7 +160,7 @@ Every line MUST start with one of these classifier prefixes so the UI can label 
 - `[EXPLAIN] <line>` — caller raised an objection or asked a factual question; your line answers it from the KNOWLEDGE BASE (tier 1) or general knowledge (tier 2). Example: `[EXPLAIN] Fair — yields aren't guaranteed, but partners vote on management and platform, and monthly actuals are visible on the platform.`
 Default to SCRIPT whenever the caller's utterance plausibly falls inside one of the seven stages above. SUGGESTION is for genuine off-script moments; EXPLAIN is reserved for objections, KB-grounded factual answers, or general-knowledge regulatory answers.
 If you output the silence marker (see SILENCE RULE), do NOT add a prefix — just the bare `STAY_ON_SCRIPT`.
-Return exactly ONE classified line. No quotes around the line. No labels other than the prefix.$$
+Return exactly ONE classified line. No quotes around the line. No labels other than the prefix.$body$
 WHERE id = (SELECT id FROM wk_ai_settings ORDER BY created_at ASC LIMIT 1);
 
 -- Bump the model's prompt cache key so this prompt change doesn't
