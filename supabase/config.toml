@@ -289,3 +289,6 @@ verify_jwt = false
 
 [functions.wk-ai-live-coach]
 verify_jwt = false
+
+[functions.wk-ai-template]
+verify_jwt = false

@@ -24,6 +24,9 @@ import { useContactTimeline } from '../hooks/useContactTimeline';
 import { useContactMessages } from '../hooks/useContactMessages';
 import { useInboxThreads } from '../hooks/useInboxThreads';
 import { useContactPersistence } from '../hooks/useContactPersistence';
+import { useSmsTemplates } from '../hooks/useSmsTemplates';
+import { useCurrentAgent } from '../hooks/useCurrentAgent';
+import { interpolateTemplate } from '../lib/interpolateTemplate';
 import { supabase } from '@/integrations/supabase/client';
 import type { Contact } from '../types';
 
@@ -84,6 +87,12 @@ export default function InboxPage() {
   const [sending, setSending] = useState(false);
   const { startCall, openCallRoom } = useActiveCallCtx();
   const threadScrollRef = useRef<HTMLDivElement>(null);
+
+  // PR 88 (Hugo 2026-04-27): templates dropdown in the inbox composer.
+  // Filter by selected channel; universal templates show in every channel.
+  const { items: templates } = useSmsTemplates();
+  const { firstName: agentFirstName } = useCurrentAgent();
+  const [selectedTemplateId, setSelectedTemplateId] = useState<string>('');
 
   // PR 52 (war room, Hugo 2026-04-27): the sidebar is now driven by
   // useInboxThreads (latest message per contact, ordered desc) merged
@@ -288,6 +297,44 @@ export default function InboxPage() {
     patchContact(activeContact.id, { pipelineColumnId: col });
     void persist.moveToColumn(activeContact.id, col);
   };
+
+  // PR 88: filter templates by reply channel (universal templates always show).
+  const visibleTemplates = useMemo(
+    () =>
+      templates.filter(
+        (t) => t.channel == null || t.channel === replyChannel
+      ),
+    [templates, replyChannel]
+  );
+
+  const contactFirstName = useMemo(() => {
+    if (!activeContact) return '';
+    return (activeContact.name ?? '').trim().split(/\s+/)[0] ?? '';
+  }, [activeContact]);
+
+  const applyTemplate = (id: string) => {
+    setSelectedTemplateId(id);
+    if (!id) return;
+    const tpl = visibleTemplates.find((t) => t.id === id);
+    if (!tpl) return;
+    const expandedBody = interpolateTemplate(tpl.body_md, {
+      firstName: contactFirstName,
+      agentFirstName,
+    });
+    setReply(expandedBody);
+    if (replyChannel === 'email' && tpl.subject) {
+      const expandedSubject = interpolateTemplate(tpl.subject, {
+        firstName: contactFirstName,
+        agentFirstName,
+      });
+      setReplySubject(expandedSubject);
+    }
+  };
+
+  // Reset template selection when channel changes (different template list).
+  useEffect(() => {
+    setSelectedTemplateId('');
+  }, [replyChannel, activeContactId]);
 
   const send = async () => {
     if (!reply.trim() || !activeContact || sending) return;
@@ -612,6 +659,26 @@ export default function InboxPage() {
                 </span>
               )}
             </div>
+            {/* PR 88: templates dropdown — filtered by selected channel.
+                Picking a template fills body (and subject for email),
+                substituting {first_name}/{agent_first_name}. */}
+            {replyChannel !== null && visibleTemplates.length > 0 && (
+              <select
+                value={selectedTemplateId}
+                onChange={(e) => applyTemplate(e.target.value)}
+                disabled={sending}
+                data-testid="inbox-reply-template"
+                className="px-2 py-1 text-[11px] bg-white border border-[#E5E7EB] rounded-[8px] disabled:opacity-60 max-w-[200px]"
+                title="Insert a template"
+              >
+                <option value="">Templates ({visibleTemplates.length})…</option>
+                {visibleTemplates.map((t) => (
+                  <option key={t.id} value={t.id}>
+                    {t.name}{t.channel ? ` · ${t.channel}` : ' · universal'}
+                  </option>
+                ))}
+              </select>
+            )}
             {replyChannel === 'email' && (
               <input
                 value={replySubject}
