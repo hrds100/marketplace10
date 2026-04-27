@@ -1,9 +1,10 @@
 // useChannels — list paired channels (SMS / WhatsApp / Email) from
-// wk_numbers grouped by provider, plus an admin sync action that
-// pulls Wazzup24 paired channels into the table via the
-// wazzup-sync-channels edge function.
+// wk_numbers grouped by provider. Unipile pairs via the hosted-auth
+// link flow (unipile-create-link); Resend/Twilio pair manually in admin.
 //
 // PR 64 (multi-channel PR 5), Hugo 2026-04-27.
+// PR 69 migrated WhatsApp from Wazzup24 → Unipile.
+// 'wazzup' kept in ChannelProvider for legacy DB rows (CHECK constraint).
 
 import { useEffect, useState, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
