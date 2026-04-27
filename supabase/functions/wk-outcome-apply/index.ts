@@ -96,18 +96,32 @@ serve(async (req: Request) => {
   }
 });
 
-// PR 30: poke wk-jobs-worker right after queuing a job so the queue
-// doesn't depend on a non-existent scheduler. Fire-and-forget.
+// PR 37 (Hugo 2026-04-27): wrapped in EdgeRuntime.waitUntil so the
+// kick survives the webhook's 200 response. The original void-fetch
+// version was being cancelled the moment serve() returned.
 function kickJobsWorker(): void {
   const url = `${SUPABASE_URL}/functions/v1/wk-jobs-worker`;
-  void fetch(url, {
+  const promise = fetch(url, {
     method: 'POST',
     headers: {
       Authorization: `Bearer ${SUPABASE_SERVICE_KEY}`,
       'Content-Type': 'application/json',
     },
     body: '{}',
-  }).catch(() => {
-    /* fire-and-forget — next request will retry */
-  });
+  })
+    .then((r) => {
+      if (!r.ok) {
+        console.warn('[wk-outcome-apply] kick wk-jobs-worker non-2xx', r.status);
+      }
+    })
+    .catch((e) => {
+      console.warn('[wk-outcome-apply] kick wk-jobs-worker failed', e);
+    });
+  // deno-lint-ignore no-explicit-any
+  const er = (globalThis as any).EdgeRuntime;
+  if (er && typeof er.waitUntil === 'function') {
+    er.waitUntil(promise);
+  } else {
+    void promise;
+  }
 }

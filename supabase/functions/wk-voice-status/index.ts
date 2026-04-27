@@ -46,6 +46,36 @@ async function validateTwilioSignature(
   return signature === expected;
 }
 
+// PR 37: kick wk-jobs-worker fire-and-forget after queueing post-call
+// jobs. Wrapped in EdgeRuntime.waitUntil so the call survives the
+// 200 response — earlier void-fetch was being cancelled.
+function kickJobsWorker(): void {
+  const url = `${SUPABASE_URL}/functions/v1/wk-jobs-worker`;
+  const promise = fetch(url, {
+    method: 'POST',
+    headers: {
+      Authorization: `Bearer ${SUPABASE_SERVICE_KEY}`,
+      'Content-Type': 'application/json',
+    },
+    body: '{}',
+  })
+    .then((r) => {
+      if (!r.ok) {
+        console.warn('[wk-voice-status] kick wk-jobs-worker non-2xx', r.status);
+      }
+    })
+    .catch((e) => {
+      console.warn('[wk-voice-status] kick wk-jobs-worker failed', e);
+    });
+  // deno-lint-ignore no-explicit-any
+  const er = (globalThis as any).EdgeRuntime;
+  if (er && typeof er.waitUntil === 'function') {
+    er.waitUntil(promise);
+  } else {
+    void promise;
+  }
+}
+
 // Map Twilio CallStatus → our wk_calls.status enum
 function mapStatus(twilioStatus: string): string {
   switch (twilioStatus) {
@@ -148,6 +178,11 @@ serve(async (req: Request) => {
       } catch (e) {
         console.warn('wk_jobs insert failed (non-fatal):', e);
       }
+      // PR 37: also kick wk-jobs-worker so any pending recording_ingest
+      // jobs from the recording webhook (which may have raced with this
+      // status callback) get drained immediately. Wrapped in
+      // EdgeRuntime.waitUntil so it survives the response.
+      kickJobsWorker();
     }
 
     // Twilio expects a 200 with empty TwiML on action callbacks.
