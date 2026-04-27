@@ -74,7 +74,7 @@ interface CreateAgentInvoke {
 const TABS = [
   { id: 'campaigns', label: 'Campaigns', icon: Megaphone },
   { id: 'pipelines', label: 'Pipelines & outcomes', icon: Kanban },
-  { id: 'templates', label: 'SMS templates', icon: MessageSquare },
+  { id: 'templates', label: 'Templates (SMS / WA / Email)', icon: MessageSquare },
   { id: 'ai', label: 'AI coach', icon: Bot },
   { id: 'kb', label: 'Coach facts', icon: Brain },
   { id: 'glossary', label: 'Glossary', icon: BookOpen },
@@ -148,6 +148,33 @@ function ScopeBadge({
   );
 }
 
+// PR 64 (Hugo 2026-04-27): tiny pill that shows which channel a
+// template targets. Universal templates (channel=null) get a neutral
+// "any" badge; SMS / WhatsApp / Email each get their own colour.
+function ChannelBadge({ channel }: { channel: 'sms' | 'whatsapp' | 'email' | null }) {
+  if (channel === null) {
+    return (
+      <span className="text-[9px] uppercase font-bold tracking-wide text-[#9CA3AF] bg-[#F3F3EE] px-1.5 py-0.5 rounded">
+        any
+      </span>
+    );
+  }
+  const styles: Record<'sms' | 'whatsapp' | 'email', { bg: string; fg: string; label: string }> = {
+    sms:      { bg: '#DBEAFE', fg: '#1D4ED8', label: 'SMS' },
+    whatsapp: { bg: '#D1FAE5', fg: '#065F46', label: 'WhatsApp' },
+    email:    { bg: '#FEF3C7', fg: '#B45309', label: 'Email' },
+  };
+  const s = styles[channel];
+  return (
+    <span
+      className="text-[9px] uppercase font-bold tracking-wide px-1.5 py-0.5 rounded"
+      style={{ background: s.bg, color: s.fg }}
+    >
+      {s.label}
+    </span>
+  );
+}
+
 // PR 62 (Hugo 2026-04-27): scope = which "container" the user is editing.
 //   - 'workspace'         → workspace defaults (the master template)
 //   - 'campaign:<uuid>'   → a specific campaign's overrides + bundle
@@ -160,7 +187,7 @@ type Scope =
 
 const WORKSPACE_BUNDLE_TABS = [
   { id: 'pipelines', label: 'Pipeline & outcomes', icon: Kanban },
-  { id: 'templates', label: 'SMS templates', icon: MessageSquare },
+  { id: 'templates', label: 'Templates (SMS / WA / Email)', icon: MessageSquare },
   { id: 'ai', label: 'AI coach', icon: Bot },
   { id: 'kb', label: 'Coach facts', icon: Brain },
   { id: 'glossary', label: 'Glossary', icon: BookOpen },
@@ -169,7 +196,7 @@ const WORKSPACE_BUNDLE_TABS = [
 const CAMPAIGN_BUNDLE_TABS = [
   { id: 'overview', label: 'Overview', icon: Megaphone },
   { id: 'pipelines', label: 'Pipeline', icon: Kanban },
-  { id: 'templates', label: 'SMS templates', icon: MessageSquare },
+  { id: 'templates', label: 'Templates (SMS / WA / Email)', icon: MessageSquare },
   { id: 'ai', label: 'AI coach', icon: Bot },
   { id: 'kb', label: 'Coach facts', icon: Brain },
   { id: 'glossary', label: 'Glossary', icon: BookOpen },
@@ -1190,6 +1217,9 @@ function Chip({ label, colour }: { label: string; colour: string }) {
 function TemplatesTab({ campaignId = null }: { campaignId?: string | null } = {}) {
   // PR 62: campaign-aware. workspace rows show as inherited; new rows
   // when campaignId is set go into wk_campaign_sms_templates.
+  // PR 64 (Hugo 2026-04-27): templates are multi-channel — SMS /
+  // WhatsApp / Email / Universal (any). Email channel adds a Subject
+  // field validated client-side.
   const { items, loading, error, add, patch, remove } = useSmsTemplates({ campaignId });
   const { columns } = useSmsV2();
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -1197,7 +1227,9 @@ function TemplatesTab({ campaignId = null }: { campaignId?: string | null } = {}
     name: string;
     body_md: string;
     move_to_stage_id: string | null;
-  }>({ name: '', body_md: '', move_to_stage_id: null });
+    channel: 'sms' | 'whatsapp' | 'email' | null;
+    subject: string;
+  }>({ name: '', body_md: '', move_to_stage_id: null, channel: null, subject: '' });
   const [actionError, setActionError] = useState<string | null>(null);
 
   const startEdit = (t: SmsTemplate) => {
@@ -1206,11 +1238,13 @@ function TemplatesTab({ campaignId = null }: { campaignId?: string | null } = {}
       name: t.name,
       body_md: t.body_md,
       move_to_stage_id: t.move_to_stage_id,
+      channel: t.channel,
+      subject: t.subject ?? '',
     });
   };
   const startNew = () => {
     setEditingId('new');
-    setDraft({ name: '', body_md: '', move_to_stage_id: null });
+    setDraft({ name: '', body_md: '', move_to_stage_id: null, channel: null, subject: '' });
   };
   const cancel = () => {
     setEditingId(null);
@@ -1219,7 +1253,13 @@ function TemplatesTab({ campaignId = null }: { campaignId?: string | null } = {}
 
   const save = async () => {
     setActionError(null);
+    // PR 64: email channel REQUIRES a subject.
+    if (draft.channel === 'email' && !draft.subject.trim()) {
+      setActionError('Email templates need a subject line.');
+      return;
+    }
     try {
+      const subjectValue = draft.channel === 'email' ? draft.subject.trim() : null;
       if (editingId === 'new') {
         await add({
           name: draft.name.trim(),
@@ -1227,12 +1267,16 @@ function TemplatesTab({ campaignId = null }: { campaignId?: string | null } = {}
           is_global: true,
           owner_agent_id: null,
           move_to_stage_id: draft.move_to_stage_id,
+          channel: draft.channel,
+          subject: subjectValue,
         });
       } else if (editingId) {
         await patch(editingId, {
           name: draft.name.trim(),
           body_md: draft.body_md.trim(),
           move_to_stage_id: draft.move_to_stage_id,
+          channel: draft.channel,
+          subject: subjectValue,
         });
       }
       cancel();
@@ -1252,7 +1296,7 @@ function TemplatesTab({ campaignId = null }: { campaignId?: string | null } = {}
   };
 
   return (
-    <Card title="SMS templates" hint={`${items.length} templates · stage-coupled = sending moves contact`}>
+    <Card title="SMS / WhatsApp / Email templates" hint={`${items.length} templates · pick channel per template · stage-coupled = sending moves contact`}>
       <div className="text-[11px] text-[#6B7280] leading-snug mb-3">
         Each template can optionally <strong>move the contact to a pipeline stage</strong> when an
         agent uses it to send. Replaces the old "AI auto-detects stage" idea
@@ -1307,8 +1351,10 @@ function TemplatesTab({ campaignId = null }: { campaignId?: string | null } = {}
               ) : (
                 <>
                   <div className="flex items-center justify-between mb-1.5">
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-2 flex-wrap">
                       <span className="text-[13px] font-semibold text-[#1A1A1A]">{t.name}</span>
+                      {/* PR 64: channel badge */}
+                      <ChannelBadge channel={t.channel} />
                       {targetStage && (
                         <span className="text-[10px] bg-[#ECFDF5] text-[#1E9A80] px-1.5 py-0.5 rounded font-semibold inline-flex items-center gap-0.5">
                           → {targetStage.name}
@@ -1330,6 +1376,12 @@ function TemplatesTab({ campaignId = null }: { campaignId?: string | null } = {}
                       </button>
                     </div>
                   </div>
+                  {/* PR 64: surface email subject inline above the body. */}
+                  {t.channel === 'email' && t.subject && (
+                    <div className="text-[11px] text-[#1A1A1A] mb-1">
+                      <span className="font-semibold">Subject:</span> {t.subject}
+                    </div>
+                  )}
                   <div className="text-[12px] text-[#6B7280] leading-snug whitespace-pre-wrap">
                     {t.body_md}
                   </div>
@@ -1348,6 +1400,14 @@ function TemplatesTab({ campaignId = null }: { campaignId?: string | null } = {}
   );
 }
 
+interface TemplateDraft {
+  name: string;
+  body_md: string;
+  move_to_stage_id: string | null;
+  channel: 'sms' | 'whatsapp' | 'email' | null;
+  subject: string;
+}
+
 function TemplateEditor({
   draft,
   setDraft,
@@ -1355,15 +1415,21 @@ function TemplateEditor({
   onSave,
   onCancel,
 }: {
-  draft: { name: string; body_md: string; move_to_stage_id: string | null };
-  setDraft: (d: { name: string; body_md: string; move_to_stage_id: string | null }) => void;
+  draft: TemplateDraft;
+  setDraft: (d: TemplateDraft) => void;
   columns: PipelineColumn[];
   onSave: () => void;
   onCancel: () => void;
 }) {
-  const set = <K extends keyof typeof draft>(k: K, v: (typeof draft)[K]) =>
+  const set = <K extends keyof TemplateDraft>(k: K, v: TemplateDraft[K]) =>
     setDraft({ ...draft, [k]: v });
-  const canSave = draft.name.trim().length > 0 && draft.body_md.trim().length > 0;
+  // PR 64 (Hugo 2026-04-27): when channel is email, subject is required.
+  const subjectInvalid =
+    draft.channel === 'email' && draft.subject.trim().length === 0;
+  const canSave =
+    draft.name.trim().length > 0 &&
+    draft.body_md.trim().length > 0 &&
+    !subjectInvalid;
   return (
     <div className="border border-[#1E9A80]/40 bg-[#ECFDF5] rounded-xl p-3 mb-3 space-y-2">
       <div className="grid grid-cols-2 gap-2">
@@ -1378,20 +1444,55 @@ function TemplateEditor({
           />
         </div>
         <div>
-          <Label>Move contact to stage (optional)</Label>
+          <Label>Channel</Label>
           <select
-            value={draft.move_to_stage_id ?? ''}
-            onChange={(e) => set('move_to_stage_id', e.target.value || null)}
+            value={draft.channel ?? ''}
+            onChange={(e) => {
+              const v = e.target.value as '' | 'sms' | 'whatsapp' | 'email';
+              set('channel', v === '' ? null : v);
+            }}
             className="w-full px-3 py-2 text-[12px] border border-[#E5E7EB] rounded-[10px] bg-white"
           >
-            <option value="">— No stage move —</option>
-            {columns.map((c) => (
-              <option key={c.id} value={c.id}>
-                {c.name}
-              </option>
-            ))}
+            <option value="">Universal (any channel)</option>
+            <option value="sms">SMS</option>
+            <option value="whatsapp">WhatsApp</option>
+            <option value="email">Email</option>
           </select>
         </div>
+      </div>
+      {/* PR 64: subject only when channel = email. */}
+      {draft.channel === 'email' && (
+        <div>
+          <Label>Email subject (required)</Label>
+          <input
+            type="text"
+            value={draft.subject}
+            onChange={(e) => set('subject', e.target.value)}
+            placeholder="e.g. Your NFSTAY breakdown"
+            className={cn(
+              'w-full px-3 py-2 text-[12px] border rounded-[10px] bg-white',
+              subjectInvalid ? 'border-[#EF4444]' : 'border-[#E5E7EB]'
+            )}
+          />
+          {subjectInvalid && (
+            <div className="text-[10px] text-[#EF4444] mt-1">Email templates need a subject.</div>
+          )}
+        </div>
+      )}
+      <div>
+        <Label>Move contact to stage (optional)</Label>
+        <select
+          value={draft.move_to_stage_id ?? ''}
+          onChange={(e) => set('move_to_stage_id', e.target.value || null)}
+          className="w-full px-3 py-2 text-[12px] border border-[#E5E7EB] rounded-[10px] bg-white"
+        >
+          <option value="">— No stage move —</option>
+          {columns.map((c) => (
+            <option key={c.id} value={c.id}>
+              {c.name}
+            </option>
+          ))}
+        </select>
       </div>
       <div>
         <Label>Body (use {'{{first_name}}'} / {'{{agent_first_name}}'})</Label>
@@ -1399,7 +1500,11 @@ function TemplateEditor({
           value={draft.body_md}
           onChange={(e) => set('body_md', e.target.value)}
           rows={4}
-          placeholder="Hi {{first_name}}, …"
+          placeholder={
+            draft.channel === 'email'
+              ? 'Hi {{first_name}},\n\nHere\'s the breakdown…'
+              : 'Hi {{first_name}}, …'
+          }
           className="w-full px-3 py-2 text-[12px] border border-[#E5E7EB] rounded-[10px] bg-white"
         />
       </div>
