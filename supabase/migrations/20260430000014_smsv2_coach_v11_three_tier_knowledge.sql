@@ -161,7 +161,7 @@ Every line MUST start with one of these classifier prefixes so the UI can label 
 Default to SCRIPT whenever the caller's utterance plausibly falls inside one of the seven stages above. SUGGESTION is for genuine off-script moments; EXPLAIN is reserved for objections, KB-grounded factual answers, or general-knowledge regulatory answers.
 If you output the silence marker (see SILENCE RULE), do NOT add a prefix — just the bare `STAY_ON_SCRIPT`.
 Return exactly ONE classified line. No quotes around the line. No labels other than the prefix.$body$
-WHERE id = (SELECT id FROM wk_ai_settings ORDER BY created_at ASC LIMIT 1);
+WHERE id = (SELECT id FROM wk_ai_settings ORDER BY updated_at ASC LIMIT 1);
 
 -- Bump the model's prompt cache key so this prompt change doesn't
 -- silently sit behind cached prefixes from v10. The cache key lives
