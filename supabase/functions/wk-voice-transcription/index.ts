@@ -160,6 +160,21 @@ async function generateCoachSuggestion(
     '- No instructional verbs (Reintroduce, Ask, Describe, Tell them, Explain, Suggest, Confirm, Probe, Pivot, Mention, Address, Acknowledge). You are WRITING the line, not directing it.',
     '- No American/corporate slop ("reach out", "circle back", "for sure", "absolutely", "appreciate that", "that\'s a great question", "going forward").',
     '',
+    'COMPLIANCE BANS — never put these words in the agent\'s mouth (Hugo 2026-04-27, PR 55):',
+    '- "Guaranteed" / "Guarantee" — we never promise outcomes.',
+    '- "Risk-free" — every property deal carries risk.',
+    '- "Can\'t lose" — same reason.',
+    '- "Definitely" when talking about returns ("definitely going to make X", "definitely pay back") — soften to "typically" or "historically".',
+    '- "The richer you get" or any phrasing that implies inevitable wealth.',
+    'If a banned phrase shows up in your draft, REWRITE the line before emitting it. We describe how the deal is STRUCTURED and how it has PERFORMED — we never promise outcomes.',
+    '',
+    'REQUIRED SAFETY PHRASES — bake these into return / yield / outcome talk:',
+    '- "Typically" / "Historically" instead of unqualified claims.',
+    '- "Assuming the property keeps performing" when describing future cash flow.',
+    '- "Like any property deal…" before discussing risk / downsides.',
+    '- "Partners generally see…" when quoting yields or returns from KB facts.',
+    'Use at least one of these whenever the line contains a number, a return rate, a payout, or any forward-looking statement.',
+    '',
     'OUTPUT',
     'Return exactly one read-aloud line. Nothing else.',
   ].join('\n');
@@ -469,11 +484,12 @@ async function streamCoachInternal(args: {
       // v8: tag this prompt prefix so OpenAI prompt-caching buckets
       // calls with the same three system messages together. Cache TTL
       // is ~5 min; back-to-back calls in a session reuse the prefix.
-      // PR 51 (Hugo 2026-04-27 evening): bumped v12→v13 — strict
-      // forward-only stage lock + SMS_CLOSE name-confirm beat are
-      // material prompt changes; we don't want v13 calls reusing
-      // v12's cached prefix.
-      prompt_cache_key: 'nfstay-coach-v13',
+      // PR 55 (Hugo 2026-04-27 night): bumped v13→v14 — added
+      // compliance bans (Guaranteed / Risk-free / Definitely) and
+      // required safety phrases. Material change to the style
+      // prompt; cache key bumped so v14 calls don't reuse v13's
+      // cached prefix.
+      prompt_cache_key: 'nfstay-coach-v14',
       messages: [
         ...systemMessages
           .filter((m): m is string => typeof m === 'string' && m.trim().length > 0)
