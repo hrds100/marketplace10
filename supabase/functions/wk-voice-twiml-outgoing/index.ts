@@ -144,8 +144,75 @@ serve(async (req: Request) => {
       });
     }
 
-    // Resolve agent + caller-ID number
     const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_KEY);
+
+    // PR 46 (Hugo 2026-04-27): parallel-dial branch. wk-dialer-start
+    // originates calls with From=<twilio_number> (NOT 'client:<uuid>').
+    // When the contact picks up, Twilio fetches THIS endpoint for
+    // instructions. The right TwiML is to bridge the answered contact
+    // to the agent's browser softphone via <Dial><Client>agent_id</Client></Dial>.
+    // Returning the legacy <Dial><Number>To</Number></Dial> here would
+    // dial the contact a SECOND time — broken since day one and the
+    // root cause of "agent never enters the call room" + "no audio
+    // bridge" on parallel dial.
+    if (!identity) {
+      // Look up the agent_id from wk_calls (wk-dialer-start pre-inserts
+      // a row keyed on the Twilio CallSid before originating).
+      const { data: dialerCall } = await supabase
+        .from('wk_calls')
+        .select('agent_id, ai_coach_enabled, campaign_id')
+        .eq('twilio_call_sid', callSid)
+        .maybeSingle();
+
+      if (dialerCall?.agent_id && dialerCall?.campaign_id) {
+        const transcriptionCallbackUrl = dialerCall.ai_coach_enabled
+          ? `${PUBLIC_FN_BASE}/wk-voice-transcription`
+          : null;
+        if (transcriptionCallbackUrl) {
+          // pre-warm the transcription pod (same as the agent-initiated path)
+          void fetch(`${transcriptionCallbackUrl}?warmup=1`, { method: 'GET' }).catch(() => null);
+        }
+        const transcriptionBlock = transcriptionCallbackUrl
+          ? [
+              '<Start>',
+              '  <Transcription',
+              `    statusCallbackUrl="${escapeXml(transcriptionCallbackUrl)}"`,
+              '    statusCallbackMethod="POST"',
+              '    track="both_tracks"',
+              '    languageCode="en-GB"',
+              '    enableAutomaticPunctuation="true"',
+              '    profanityFilter="false"',
+              '    speechModel="telephony"',
+              '    inboundTrackLabel="agent"',
+              '    outboundTrackLabel="caller"',
+              '    partialResults="false"',
+              '  />',
+              '</Start>',
+            ].join('\n')
+          : '';
+        const dialBlock = [
+          '<Dial answerOnBridge="true" timeout="60"',
+          `      action="${escapeXml(`${PUBLIC_FN_BASE}/wk-voice-status`)}"`,
+          '      method="POST">',
+          `  <Client>${escapeXml(dialerCall.agent_id)}</Client>`,
+          '</Dial>',
+        ].join('\n');
+        const body = [transcriptionBlock, dialBlock].filter((s) => s.length > 0).join('\n');
+        const twiml = `<?xml version="1.0" encoding="UTF-8"?>\n<Response>\n${body}\n</Response>`;
+        return new Response(twiml, {
+          status: 200,
+          headers: { 'Content-Type': 'text/xml' },
+        });
+      }
+      // No matching wk_calls row + no client identity: nothing safe to
+      // do. Return a polite hangup so Twilio doesn't loop.
+      return new Response(
+        '<?xml version="1.0" encoding="UTF-8"?><Response><Hangup/></Response>',
+        { status: 200, headers: { 'Content-Type': 'text/xml' } }
+      );
+    }
+
+    // Resolve agent + caller-ID number (agent-initiated path)
     let callerIdE164: string | null = null;
     let agentId: string | null = null;
     let numberId: string | null = null;

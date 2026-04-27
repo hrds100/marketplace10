@@ -196,7 +196,8 @@ export interface SmsV2API {
 
   // Queue actions
   setQueue: (ids: string[]) => void;
-  popNextFromQueue: () => string | null;
+  popNextFromQueue: (excludeContactId?: string | null) => string | null;
+  removeFromQueue: (contactId: string) => void;
 
   // Note actions
   saveNote: (contactId: string, body: string) => void;
@@ -223,11 +224,24 @@ const Ctx = createContext<SmsV2API | null>(null);
 export function SmsV2Provider({ children }: { children: ReactNode }) {
   const [state, dispatch] = useReducer(reducer, initialState);
 
-  const popNextFromQueue = useCallback((): string | null => {
-    const next = state.queue[0] ?? null;
-    if (next) dispatch({ type: 'queue/remove', id: next });
-    return next;
-  }, [state.queue]);
+  // PR 46 (Hugo 2026-04-27): popNextFromQueue accepts an optional
+  // `excludeContactId` (the contact whose call just ended) so the
+  // sentinel paths (Skip / Next-now / auto-advance) skip past it
+  // even if startCall hadn't yet removed it. Belt-and-braces: even
+  // after startCall's queue/remove dispatch (PR 46), React batching
+  // could leave state.queue[0] still pointing at the just-finished
+  // contact mid-render. This guard removes that race.
+  const popNextFromQueue = useCallback(
+    (excludeContactId?: string | null): string | null => {
+      const filtered = excludeContactId
+        ? state.queue.filter((id) => id !== excludeContactId)
+        : state.queue;
+      const next = filtered[0] ?? null;
+      if (next) dispatch({ type: 'queue/remove', id: next });
+      return next;
+    },
+    [state.queue]
+  );
 
   const pushToast = useCallback((text: string, kind: ToastMsg['kind'] = 'success') => {
     const id = `t-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
@@ -337,9 +351,26 @@ export function SmsV2Provider({ children }: { children: ReactNode }) {
         dispatch({ type: 'note/set', contactId, body: note });
       }
 
-      // 5. Pop the next contact from the queue
+      // 5. Pop the next contact from the queue.
+      //
+      // PR 46 (Hugo 2026-04-27): phone dedupe on real applyOutcome
+      // (not Skip/Next-now sentinels — those flow through a different
+      // branch in ActiveCallContext and intentionally allow re-dialling
+      // the same phone for testing). We never auto-advance to a contact
+      // whose phone matches the just-finished call's phone — that's how
+      // the dialer was re-ringing the same person right after hangup.
+      // Different contacts that happen to share a phone are left in
+      // the queue (they don't get dropped, just skipped).
       dispatch({ type: 'queue/remove', id: contactId });
-      const remaining = state.queue.filter((id) => id !== contactId);
+      const justCalledPhone = (contact.phone ?? '').trim();
+      const remaining = state.queue
+        .filter((id) => id !== contactId)
+        .filter((id) => {
+          if (!justCalledPhone) return true;
+          const c = state.contacts.find((x) => x.id === id);
+          const p = (c?.phone ?? '').trim();
+          return p !== justCalledPhone;
+        });
       const nextContactId = remaining[0] ?? null;
 
       return { nextContactId, badges, columnName };
@@ -386,6 +417,7 @@ export function SmsV2Provider({ children }: { children: ReactNode }) {
       // Queue
       setQueue: (ids) => dispatch({ type: 'queue/set', ids }),
       popNextFromQueue,
+      removeFromQueue: (id) => dispatch({ type: 'queue/remove', id }),
 
       // Notes
       saveNote: (contactId, body) => dispatch({ type: 'note/set', contactId, body }),
