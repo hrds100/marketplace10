@@ -121,8 +121,33 @@ export function useHydratePipelineColumns(): void {
 
     void load();
 
+    // PR 96 (Hugo 2026-04-28): cross-page consistency \u2014 when admin
+    // renames a pipeline column on /crm/settings, /crm/contacts must
+    // reflect the new name without a refresh. Subscribe to changes
+    // on wk_pipeline_columns + wk_pipeline_automations and re-load.
+    const colsCh = supabase
+      .channel('wk_pipeline_columns-hydrate')
+      .on(
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        'postgres_changes' as any,
+        { event: '*', schema: 'public', table: 'wk_pipeline_columns' },
+        () => { if (!cancelled) void load(); }
+      )
+      .subscribe();
+    const autoCh = supabase
+      .channel('wk_pipeline_automations-hydrate')
+      .on(
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        'postgres_changes' as any,
+        { event: '*', schema: 'public', table: 'wk_pipeline_automations' },
+        () => { if (!cancelled) void load(); }
+      )
+      .subscribe();
+
     return () => {
       cancelled = true;
+      try { void supabase.removeChannel(colsCh); } catch { /* ignore */ }
+      try { void supabase.removeChannel(autoCh); } catch { /* ignore */ }
     };
   }, []);
 }

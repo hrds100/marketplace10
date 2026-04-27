@@ -257,6 +257,7 @@ export default function LiveCallScreen() {
               contactPhone={contact.phone}
               contactEmail={contact.email}
               agentFirstName={myFirstName ?? ''}
+              campaignId={call?.campaignId ?? null}
             />
             {/* Phase 6 (Hugo 2026-04-30): timeline below SMS — sends,
                 coach lines, stage moves, notes. Reads wk_call_timeline. */}

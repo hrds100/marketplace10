@@ -33,6 +33,11 @@ interface SendBody {
   // Optional — defaults to the workspace's first voice/SMS-enabled
   // wk_numbers row. Pass when an agent has multiple lines.
   from_e164?: string;
+  /** PR 96 (Hugo 2026-04-28): when set, resolve from-line via
+   *  wk_campaign_numbers (channel='sms') for this campaign, mirroring
+   *  unipile-send + wk-email-send. Falls through to from_e164 then
+   *  workspace default. */
+  campaign_id?: string;
 }
 
 const json = (status: number, payload: Record<string, unknown>) =>
@@ -80,8 +85,33 @@ serve(async (req: Request) => {
     const toE164 = (contact.phone as string | null)?.trim();
     if (!toE164) return json(400, { error: 'Contact has no phone number' });
 
-    // Resolve sender number.
+    // Resolve sender number. Precedence (mirrors unipile-send + wk-email-send):
+    //   1. explicit from_e164 (caller pinned)
+    //   2. campaign_id → first wk_campaign_numbers row whose wk_numbers
+    //      row is sms_enabled
+    //   3. workspace default — first sms_enabled wk_numbers row
     let fromE164 = (payload.from_e164 ?? '').trim();
+
+    if (!fromE164 && payload.campaign_id) {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const { data: pinned } = await (supa.from('wk_campaign_numbers' as any) as any)
+        .select('priority, number_id, wk_numbers(id, e164, channel, sms_enabled, is_active)')
+        .eq('campaign_id', payload.campaign_id)
+        .order('priority', { ascending: true });
+      const pinnedRows = (pinned ?? []) as Array<{
+        priority: number;
+        number_id: string;
+        wk_numbers: { id: string; e164: string; channel: string; sms_enabled: boolean; is_active: boolean } | null;
+      }>;
+      for (const r of pinnedRows) {
+        const n = r.wk_numbers;
+        if (n && n.channel === 'sms' && n.sms_enabled && n.is_active) {
+          fromE164 = n.e164;
+          break;
+        }
+      }
+    }
+
     if (!fromE164) {
       const { data: defaultNum } = await supa
         .from('wk_numbers')
@@ -135,8 +165,13 @@ serve(async (req: Request) => {
       .insert({
         contact_id: contactId,
         direction: 'outbound',
+        // PR 96: was implicit (DB default 'sms'); now explicit so the
+        // row matches what unipile-send / wk-email-send do for their
+        // channels and the inbox channel-glyph rendering is correct.
+        channel: 'sms',
         body,
         twilio_sid: twJson.sid ?? null,
+        external_id: twJson.sid ?? null,
         from_e164: fromE164,
         to_e164: toE164,
         status: twJson.status ?? 'queued',

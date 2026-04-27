@@ -24,6 +24,11 @@ interface ActiveCall {
    *  we skip the wk-outcome-apply round-trip and rely on the local store
    *  only — used by the Phase 0 mock data and offline demos. */
   callId?: string | null;
+  /** PR 96 (Hugo 2026-04-28): campaign this call belongs to. Lets the
+   *  mid-call sender route through wk_campaign_numbers for the from-line
+   *  (matches PR 86's backend resolution). null when the call wasn't
+   *  initiated under a campaign (manual dial). */
+  campaignId?: string | null;
 }
 
 interface OutcomeInvoke {
@@ -200,6 +205,7 @@ export function ActiveCallProvider({ children }: { children: ReactNode }) {
               payload?: {
                 call_id?: string;
                 contact_id?: string;
+                campaign_id?: string | null;
                 twilio_call_sid?: string;
               };
             }) => {
@@ -212,6 +218,7 @@ export function ActiveCallProvider({ children }: { children: ReactNode }) {
                 phone: contact?.phone ?? '',
                 startedAt: Date.now(),
                 callId: p.call_id ?? null,
+                campaignId: p.campaign_id ?? null,
               });
               setPhase('in_call');
               setFullScreen(true);

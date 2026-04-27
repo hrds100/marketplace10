@@ -202,8 +202,12 @@ export default function MidCallSmsSender({
       const camp = campaignId ?? undefined;
       let resp: Awaited<ReturnType<SendInvoke['invoke']>>;
       if (channel === 'sms') {
-        resp = await fn.invoke('sms-send', {
-          body: { to: contactPhone, body: trimBody },
+        // PR 96 (Hugo 2026-04-28): legacy `sms-send` route wrote to the
+        // legacy `sms_messages` table, which the CRM inbox doesn't read.
+        // Switched to wk-sms-send so the bubble appears in /crm/inbox
+        // realtime + carries campaign context.
+        resp = await fn.invoke('wk-sms-send', {
+          body: { contact_id: contactId, body: trimBody, campaign_id: camp },
         });
       } else if (channel === 'whatsapp') {
         resp = await fn.invoke('unipile-send', {
