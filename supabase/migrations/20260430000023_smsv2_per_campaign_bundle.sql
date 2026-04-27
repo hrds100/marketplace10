@@ -178,32 +178,7 @@ ALTER TABLE wk_dialer_campaigns
 COMMENT ON COLUMN wk_dialer_campaigns.call_script_id IS
   'PR 56 (Hugo 2026-04-27): pins a specific wk_call_scripts row to this campaign. Resolution: agent-own > campaign-pinned > workspace-default.';
 
--- ─── Realtime publication ──────────────────────────────────────────
-DO $$
-BEGIN
-  FOR tname IN ARRAY['wk_campaign_ai_settings',
-                     'wk_campaign_facts',
-                     'wk_campaign_terminologies',
-                     'wk_campaign_agents',
-                     'wk_campaign_numbers']
-  LOOP
-    IF NOT EXISTS (
-      SELECT 1 FROM pg_publication_tables
-      WHERE pubname = 'supabase_realtime'
-        AND schemaname = 'public'
-        AND tablename = tname
-    ) THEN
-      EXECUTE format('ALTER PUBLICATION supabase_realtime ADD TABLE %I', tname);
-    END IF;
-  END LOOP;
-EXCEPTION
-  WHEN OTHERS THEN
-    -- pg_publication_tables / FOR ARRAY combo isn't valid in plain
-    -- PL/pgSQL; fall back to one-by-one (idempotent).
-    NULL;
-END $$;
-
--- One-by-one fallback (works in any pg version).
+-- ─── Realtime publication (one-by-one, idempotent) ────────────────
 DO $$
 BEGIN
   IF NOT EXISTS (SELECT 1 FROM pg_publication_tables WHERE pubname='supabase_realtime' AND schemaname='public' AND tablename='wk_campaign_ai_settings') THEN
