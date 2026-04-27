@@ -1,15 +1,15 @@
 # Multi-Channel Inbox — SMS + WhatsApp + Email
 
-> **Status:** PR 60 (schema only) — 2026-04-27. PR 61 wires WhatsApp send/receive. PR 62 wires Email. PR 63 adds the channel picker UI. PR 64 adds the Settings → Channels tab.
-> **Owner:** Hugo. Build approved 2026-04-27.
+> **Status:** PRs 60–64 + 668 shipped 2026-04-27. Live config: SMS via Twilio (✓ operational), WhatsApp via Wazzup24 on `+447868778292` (✓ outbound rejected by tariff — see notes), Email via Resend on `mail.nfstay.com` (outbound ✓, inbound pending DNS cleanup).
+> **Owner:** Hugo. Build approved + deployed 2026-04-27.
 
 ## What this is
 
-Today the CRM inbox at `/crm/inbox` only sends + receives **SMS via Twilio**. After this build, the same inbox handles three channels in one thread:
+The CRM inbox at `/crm/inbox` mixes three channels in one thread:
 
 - **SMS** — Twilio (existing, unchanged)
-- **WhatsApp** — Wazzup24 personal-WhatsApp gateway ($15/mo per channel, no template approval needed because it's not Meta WABA)
-- **Email** — Resend, on a new `inbox.nfstay.com` subdomain so existing `nfstay.com` mail isn't disturbed
+- **WhatsApp** — Wazzup24 personal-WhatsApp gateway, $15/mo on the START tariff (no template approval — not Meta WABA). Hugo is currently on the **INBOX tariff** which is reply-only; outbound initiations are rejected with `MESSAGES_NOT_TEXT_FIRST`. Upgrade to START / PRO at wazzup24.com to enable initiating.
+- **Email** — Resend on `mail.nfstay.com` (NOT `inbox.nfstay.com` — that earlier plan was abandoned in favour of using the existing verified subdomain). `elijah@mail.nfstay.com` and `georgia@mail.nfstay.com` are the seeded send-from addresses.
 
 The agent picks SMS / WhatsApp / Email from a small radio next to the Send button. The thread is shared per contact — a reply on any channel lands in the same conversation.
 
@@ -113,13 +113,32 @@ Public Wazzup docs **do not specify a signature scheme**. Hugo's call (2026-04-2
 
 We may add HMAC verification later if Wazzup support confirms a scheme.
 
-## Resend — what we know
+## Resend — current live setup (2026-04-27)
 
-- **Inbound IS supported** (launched 2026). Webhook event type is `email.received`.
-- **DNS:** add MX record for **`inbox.nfstay.com`** (subdomain). Existing `nfstay.com` outbound stays untouched.
-- **Webhook payload:** does NOT include the body. We get `email_id` and metadata, then call `GET /api/v1/emails/{id}` to fetch html + text. Adds ~200ms per inbound email.
-- **Signature:** HMAC-SHA256 via Svix headers (`svix-id`, `svix-timestamp`, `svix-signature`). Verified against the raw request body (not parsed JSON).
-- **Pricing:** inbound is free across all tiers. Free tier covers 3,000 emails/mo · 100/day.
+- **Verified domain:** `mail.nfstay.com` (id `75a81681-a84d-4b8f-acbe-304e3a612dc2`). Capabilities: `sending=enabled`, `receiving=enabled`. Status: `partially_verified` (see DNS notes below).
+- **Webhook:** id `8fd2944f-3a4a-46ca-aa51-89c16abcdc86`, endpoint `https://asazddtvjvmckouxcmmo.supabase.co/functions/v1/wk-email-webhook`, events `["email.received"]`, status `enabled`.
+- **Webhook payload:** metadata only (no body). `wk-email-webhook` follows up with `GET /api/v1/emails/{id}` to fetch html + text. Adds ~200ms per inbound.
+- **Signature:** HMAC-SHA256 via Svix headers. Secret stored as Supabase Edge Function secret `RESEND_WEBHOOK_SECRET` (whsec_-prefixed). Verified against the raw request body in `wk-email-webhook`.
+- **API keys (separate Resend keys, same NFsTay org):**
+  - `RESEND_API_KEY` (Supabase secret) → full-access key, used by `send-email`, `wk-email-send`, and `wk-email-webhook` for body fetch.
+  - A second restricted "send-only" key is also available (`re_6hZYZm69_…`) but unused after the switch to the full-access key.
+
+### DNS state on `mail.nfstay.com` (the inbound blocker)
+
+`dig MX mail.nfstay.com` currently returns:
+
+```
+0 mxa.mailgun.org.
+10 mxb.mailgun.org.
+0 inbound-smtp.ap-northeast-1.amazonaws.com.
+```
+
+**Conflict.** A previous Mailgun setup left `mxa.mailgun.org` and `mxb.mailgun.org` on the record. Resend's inbound expects ONLY `inbound-smtp.ap-northeast-1.amazonaws.com` at priority 10 (currently set at priority 0). Until the Mailgun records are removed (and ideally Resend's set to priority 10 to match the docs), Resend keeps reporting the receiving record as `pending` and inbound emails go to Mailgun half the time.
+
+**To fix:** at the DNS provider, on `mail.nfstay.com`:
+1. Delete `MX 0 mxa.mailgun.org` and `MX 10 mxb.mailgun.org`.
+2. Change the Resend MX from priority 0 → priority 10 (or leave as 0 — works once Mailgun is gone, but priority 10 matches Resend's docs).
+3. Wait for DNS TTL (~5–60 min) and call `POST https://api.resend.com/domains/75a81681…/verify`.
 
 ## What to read before changing this code
 
@@ -141,11 +160,9 @@ We may add HMAC verification later if Wazzup support confirms a scheme.
 
 ## How to verify multi-channel inbox is healthy
 
-After all five PRs ship:
-
-1. `/crm/contacts` → click a contact → Send Message → SMS works (existing baseline).
-2. Send Message → switch to WhatsApp → message lands on the test phone.
-3. Reply from the test phone → appears in the same `/crm/inbox` thread within ~2s.
-4. Send Message → switch to Email → enter subject + body → email lands.
-5. Reply to the email → comes back into the same thread via Resend webhook.
-6. `/crm/settings` → Channels tab → all three providers show green "Connected" badge.
+1. `/crm/contacts` → click a contact → Send Message → SMS works (Twilio, baseline).
+2. Send Message → switch to WhatsApp → if Wazzup tariff is START or above, message lands on the test phone. If on INBOX tariff, the picker now surfaces `Wazzup 400: Can't write by first on inbox tariff` (PR 668 fix).
+3. Reply from the test phone → appears in the same `/crm/inbox` thread within ~2s (works even on INBOX tariff via the 24-hour reply window).
+4. Send Message → switch to Email → pick "From: elijah@mail.nfstay.com" → enter subject + body → email lands at the recipient. Verified end-to-end 2026-04-27 (Resend id `d6cc050d-ad1e-4b21-8d54-19b33be5cb55`).
+5. **Inbound email pending the DNS Mailgun-conflict fix above.** Once cleared, replies to elijah@/georgia@ will hit `wk-email-webhook` and land in `wk_sms_messages` with `direction='inbound'`.
+6. `/crm/settings` → Channels tab → SMS / WhatsApp / Email each show their "Connected" badge.
