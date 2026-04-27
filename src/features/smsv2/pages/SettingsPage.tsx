@@ -24,6 +24,7 @@ import {
   BookOpen,
   Brain,
   FileText,
+  Radio,
   type LucideIcon,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
@@ -42,6 +43,7 @@ import { useCampaignAgents } from '../hooks/useCampaignAgents';
 import { useCampaignNumbers } from '../hooks/useCampaignNumbers';
 import { useAgentsToday } from '../hooks/useAgentsToday';
 import { useTwilioAccount } from '../hooks/useTwilioAccount';
+import ChannelsTab from '../components/settings/ChannelsTab';
 import { useSmsV2 } from '../store/SmsV2Store';
 import { supabase } from '@/integrations/supabase/client';
 import type { Agent, PipelineColumn } from '../types';
@@ -76,6 +78,7 @@ const TABS = [
   { id: 'glossary', label: 'Glossary', icon: BookOpen },
   { id: 'agents', label: 'Agents & spend', icon: Users },
   { id: 'numbers', label: 'Numbers', icon: Phone },
+  { id: 'channels', label: 'Channels', icon: Radio },
   { id: 'pacing', label: 'Pacing & safety', icon: Shield },
   { id: 'kill', label: 'Kill switches & audit', icon: Activity },
 ] as const;
@@ -192,6 +195,7 @@ export default function SettingsPage() {
           {tab === 'campaigns' && <CampaignsTab />}
           {tab === 'agents' && <AgentsTab />}
           {tab === 'numbers' && <NumbersTab />}
+          {tab === 'channels' && <ChannelsTab />}
           {tab === 'ai' && <AITab campaignId={selectedCampaignId} />}
           {tab === 'kb' && <KnowledgeBaseTab campaignId={selectedCampaignId} />}
           {tab === 'glossary' && <GlossaryTab campaignId={selectedCampaignId} />}
