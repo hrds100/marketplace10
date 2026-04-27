@@ -48,7 +48,11 @@ interface SendBody {
   subject: string;
   body: string;
   html?: string;
+  /** Pin a specific wk_numbers row as the from-line. Highest priority. */
   channel_id?: string;
+  /** PR 86: campaign-aware resolution — picks from wk_campaign_numbers
+   *  (channel='email') for this campaign, same precedence as wk-dialer-start. */
+  campaign_id?: string;
 }
 
 const json = (status: number, payload: Record<string, unknown>) =>
@@ -97,24 +101,62 @@ serve(async (req: Request) => {
     const toEmail = (contact.email as string | null)?.trim();
     if (!toEmail) return json(400, { error: 'Contact has no email' });
 
-    // 2. Resolve sender row.
+    // 2. Resolve sender row. Precedence (mirrors unipile-send + wk-dialer-start):
+    //    1. explicit channel_id
+    //    2. campaign_id → first wk_campaign_numbers row whose wk_numbers
+    //       row is email + active
+    //    3. workspace default — first active email row
     let fromEmail = DEFAULT_FROM_EMAIL;
     let channelRowId: string | null = null;
-    {
-      let q = supa
+    let resolvedRow: { id: string; e164: string } | null = null;
+
+    if (payload.channel_id) {
+      const { data } = await supa
         .from('wk_numbers')
         .select('id, e164, is_active, channel, provider')
+        .eq('id', payload.channel_id)
+        .maybeSingle();
+      const r = data as { id: string; e164: string; is_active: boolean; channel: string; provider: string } | null;
+      if (r && r.channel === 'email' && r.provider === 'resend' && r.is_active) {
+        resolvedRow = { id: r.id, e164: r.e164 };
+      }
+    }
+
+    if (!resolvedRow && payload.campaign_id) {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const { data: pinned } = await (supa.from('wk_campaign_numbers' as any) as any)
+        .select('priority, number_id, wk_numbers(id, e164, channel, provider, is_active)')
+        .eq('campaign_id', payload.campaign_id)
+        .order('priority', { ascending: true });
+      const rows = (pinned ?? []) as Array<{
+        priority: number;
+        number_id: string;
+        wk_numbers: { id: string; e164: string; channel: string; provider: string; is_active: boolean } | null;
+      }>;
+      for (const r of rows) {
+        const n = r.wk_numbers;
+        if (n && n.channel === 'email' && n.provider === 'resend' && n.is_active) {
+          resolvedRow = { id: n.id, e164: n.e164 };
+          break;
+        }
+      }
+    }
+
+    if (!resolvedRow) {
+      const { data } = await supa
+        .from('wk_numbers')
+        .select('id, e164')
         .eq('channel', 'email')
         .eq('provider', 'resend')
-        .eq('is_active', true);
-      if (payload.channel_id) {
-        q = q.eq('id', payload.channel_id);
-      }
-      const { data } = await q
+        .eq('is_active', true)
         .order('created_at', { ascending: true })
         .limit(1)
         .maybeSingle();
-      const row = data as { id: string; e164: string } | null;
+      resolvedRow = (data as { id: string; e164: string } | null) ?? null;
+    }
+
+    {
+      const row = resolvedRow;
       if (row?.e164) {
         // For email channels, e164 stores the email address itself
         // (column reused; renaming to a generic 'address' is tracked
