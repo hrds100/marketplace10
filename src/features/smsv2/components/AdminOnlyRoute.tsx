@@ -19,8 +19,17 @@ export default function AdminOnlyRoute({ children }: Props) {
   const [workspaceRole, setWorkspaceRole] = useState<string | null | undefined>(undefined);
 
   useEffect(() => {
+    // PR 62 (Hugo 2026-04-27): wait for auth to settle BEFORE flipping
+    // workspaceRole. Earlier code immediately set workspaceRole=null
+    // when user was still null (auth loading), then briefly rendered
+    // "not admin" → redirect → wrong route. Now we explicitly leave
+    // workspaceRole as `undefined` (= "still loading") until auth
+    // either resolves to a user (→ query DB) or confirms no user (→
+    // null).
+    if (authLoading) return;
     if (!user) { setWorkspaceRole(null); return; }
     let cancelled = false;
+    setWorkspaceRole(undefined);
     void (async () => {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const { data } = await (supabase.from('profiles' as any) as any)
@@ -30,7 +39,7 @@ export default function AdminOnlyRoute({ children }: Props) {
       if (!cancelled) setWorkspaceRole((data?.workspace_role as string | null) ?? null);
     })();
     return () => { cancelled = true; };
-  }, [user]);
+  }, [authLoading, user]);
 
   if (authLoading || (user && workspaceRole === undefined)) {
     return (
