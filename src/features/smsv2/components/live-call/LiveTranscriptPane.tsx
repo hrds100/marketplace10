@@ -21,6 +21,7 @@ import { useSmsV2 } from '../../store/SmsV2Store';
 import { supabase } from '@/integrations/supabase/client';
 import { useAgentScript } from '../../hooks/useAgentScript';
 import { parseBlocks } from '../../lib/scriptParser';
+import { interpolateTemplate } from '../../lib/interpolateTemplate';
 
 interface Props {
   durationSec: number;
@@ -502,7 +503,8 @@ function extractOpenerFromScript(
     .replace(/^["“”'`]+|["“”'`]+$/g, '')
     .trim();
   if (!stripped) return null;
-  return stripped
-    .replace(/\{\{\s*first_name\s*\}\}/gi, contactFirstName)
-    .replace(/\{\{\s*agent_first_name\s*\}\}/gi, agentFirstName);
+  return interpolateTemplate(stripped, {
+    firstName: contactFirstName,
+    agentFirstName,
+  });
 }

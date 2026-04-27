@@ -346,10 +346,11 @@ describe('wk-voice-transcription — OpenAI request contract', () => {
     expect(source).toMatch(/owner_agent_id/);
     expect(source).toContain('agentScriptSystemPrompt');
     expect(source).toContain("=== AGENT'S CALL SCRIPT");
-    // Substitution of {{first_name}} / {{agent_first_name}} happens
-    // BEFORE the body lands in the prompt — model never echoes raw
-    // placeholders into the agent UI.
-    expect(source).toMatch(/\\\{\\\{\\s\*first_name\\s\*\\\}\\\}/);
-    expect(source).toMatch(/\\\{\\\{\\s\*agent_first_name\\s\*\\\}\\\}/);
+    // Substitution of {first_name} / {agent_first_name} (PR 87 accepts
+    // both single AND double brace forms) happens BEFORE the body lands
+    // in the prompt — model never echoes raw placeholders into the
+    // agent UI.
+    expect(source).toMatch(/\\\{\\\{\?\\s\*first_name\\s\*\\\}\?\\\}/);
+    expect(source).toMatch(/\\\{\\\{\?\\s\*agent_first_name\\s\*\\\}\?\\\}/);
   });
 });

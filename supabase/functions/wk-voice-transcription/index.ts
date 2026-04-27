@@ -1233,10 +1233,12 @@ serve(async (req: Request) => {
           ).trim();
           const contactFirstName = contactName.split(/\s+/)[0] || 'the caller';
 
+          // PR 87: accept both {x} and {{x}} so single-brace templates
+          // don't leak the literal placeholder into the LLM prompt.
           const agentScriptBody = resolvedAgentScript
             ? resolvedAgentScript.body_md
-                .replace(/\{\{\s*first_name\s*\}\}/gi, contactFirstName)
-                .replace(/\{\{\s*agent_first_name\s*\}\}/gi, agentFirstName)
+                .replace(/\{\{?\s*first_name\s*\}?\}/gi, contactFirstName)
+                .replace(/\{\{?\s*agent_first_name\s*\}?\}/gi, agentFirstName)
             : '';
 
           // PR 56: merge workspace + campaign facts. Campaign wins on
