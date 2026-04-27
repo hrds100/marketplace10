@@ -1,4 +1,5 @@
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { Check, ChevronDown } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { ACTIVE_PIPELINE } from '../../data/mockPipelines';
@@ -15,6 +16,10 @@ interface Props {
  * needs to be visible + editable (inbox, contacts list, pipeline cards,
  * contact detail, etc.).
  *
+ * PR 41 (Hugo 2026-04-27): the dropdown now portals to document.body
+ * with viewport-fixed positioning so parent overflow:hidden / auto
+ * (Pipelines kanban columns, live-call resizable panels) can't clip it.
+ *
  * Size variants:
  *   - xs: very compact, for inline embedding (e.g. mid-call SMS card header)
  *   - sm: default
@@ -22,14 +27,64 @@ interface Props {
  */
 export default function StageSelector({ value, onChange, size = 'sm', className }: Props) {
   const [open, setOpen] = useState(false);
+  const triggerRef = useRef<HTMLButtonElement>(null);
+  const popoverRef = useRef<HTMLDivElement>(null);
+  const [popoverPos, setPopoverPos] = useState<{ top: number; left: number } | null>(null);
   const current = ACTIVE_PIPELINE.columns.find((c) => c.id === value);
+
+  // Compute viewport position whenever opening or on resize/scroll.
+  useEffect(() => {
+    if (!open) {
+      setPopoverPos(null);
+      return;
+    }
+    const place = () => {
+      const t = triggerRef.current?.getBoundingClientRect();
+      if (!t) return;
+      // Try below the trigger; flip above if there's no room.
+      const POPOVER_HEIGHT = 240; // approximate, capped via max-h
+      const spaceBelow = window.innerHeight - t.bottom;
+      const top =
+        spaceBelow >= POPOVER_HEIGHT || t.top < POPOVER_HEIGHT
+          ? t.bottom + 4
+          : t.top - POPOVER_HEIGHT - 4;
+      // Keep within viewport horizontally.
+      const POPOVER_WIDTH = 200;
+      const left = Math.min(t.left, window.innerWidth - POPOVER_WIDTH - 8);
+      setPopoverPos({ top, left: Math.max(8, left) });
+    };
+    place();
+    window.addEventListener('scroll', place, true);
+    window.addEventListener('resize', place);
+    return () => {
+      window.removeEventListener('scroll', place, true);
+      window.removeEventListener('resize', place);
+    };
+  }, [open]);
+
+  // Close on click outside.
+  useEffect(() => {
+    if (!open) return;
+    const onDocDown = (e: MouseEvent) => {
+      const target = e.target as Node;
+      if (
+        triggerRef.current?.contains(target) ||
+        popoverRef.current?.contains(target)
+      ) {
+        return;
+      }
+      setOpen(false);
+    };
+    document.addEventListener('mousedown', onDocDown);
+    return () => document.removeEventListener('mousedown', onDocDown);
+  }, [open]);
 
   return (
     <div className={cn('relative inline-block', className)}>
       <button
+        ref={triggerRef}
         type="button"
         onClick={() => setOpen((v) => !v)}
-        onBlur={() => setTimeout(() => setOpen(false), 120)}
         className={cn(
           'inline-flex items-center gap-1 rounded-full font-medium border transition-colors',
           size === 'xs'
@@ -55,10 +110,11 @@ export default function StageSelector({ value, onChange, size = 'sm', className 
         {current?.name ?? 'Set stage…'}
         <ChevronDown className="w-3 h-3 opacity-60" />
       </button>
-      {open && (
+      {open && popoverPos && createPortal(
         <div
-          className="absolute left-0 top-full mt-1 z-50 min-w-[180px] bg-white border border-[#E5E7EB] rounded-xl shadow-[0_8px_32px_rgba(0,0,0,0.1)] py-1"
-          onMouseDown={(e) => e.preventDefault()}
+          ref={popoverRef}
+          className="fixed z-[400] min-w-[180px] max-w-[260px] max-h-[260px] overflow-y-auto bg-white border border-[#E5E7EB] rounded-xl shadow-[0_8px_32px_rgba(0,0,0,0.1)] py-1"
+          style={{ top: popoverPos.top, left: popoverPos.left }}
         >
           {ACTIVE_PIPELINE.columns.map((c) => (
             <button
@@ -80,7 +136,8 @@ export default function StageSelector({ value, onChange, size = 'sm', className 
               )}
             </button>
           ))}
-        </div>
+        </div>,
+        document.body
       )}
     </div>
   );
