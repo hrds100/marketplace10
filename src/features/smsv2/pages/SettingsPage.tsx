@@ -2023,13 +2023,13 @@ function CampaignNumbersPanel({ campaignId }: { campaignId: string }) {
 
   return (
     <div className="border border-[#E5E7EB] bg-white rounded-[10px] p-3">
-      <div className="text-[11px] uppercase tracking-wide text-[#9CA3AF] font-semibold mb-2">
+      <div className="text-[11px] uppercase tracking-wide text-[#9CA3AF] font-semibold mb-1">
         Assigned channels (SMS / WhatsApp / Email)
-        <span className="ml-2 text-[10px] text-[#6B7280] normal-case font-normal">
-          {rows.length === 0
-            ? 'no rows → dialer + sender fall back to workspace pool'
-            : `${rows.length} channel${rows.length === 1 ? '' : 's'} — first priority is used`}
-        </span>
+      </div>
+      <div className="text-[11px] text-[#6B7280] mb-2 leading-snug">
+        {rows.length === 0
+          ? 'No channels pinned \u2014 dialer + sender fall back to the workspace pool.'
+          : `${rows.length} channel${rows.length === 1 ? '' : 's'} pinned. The "Order" number on each row decides which one is tried first \u2014 lowest order wins. So 1st = primary, 2nd = backup, etc.`}
       </div>
       <div className="space-y-1.5 mb-2">
         {rows.length === 0 && (
@@ -2071,16 +2071,20 @@ function CampaignNumbersPanel({ campaignId }: { campaignId: string }) {
                   </span>
                 )}
               </span>
-              <input
-                type="number"
-                defaultValue={r.priority}
-                onBlur={(e) => {
-                  const v = parseInt(e.target.value, 10);
-                  if (Number.isFinite(v) && v !== r.priority) void setPriority(r.id, v);
-                }}
-                className="w-12 px-1.5 py-0.5 text-[11px] border border-[#E5E7EB] rounded text-right tabular-nums"
-                title="Lower = picked first"
-              />
+              <label className="inline-flex items-center gap-1 text-[10px] text-[#6B7280]">
+                <span className="uppercase tracking-wide font-semibold">Order</span>
+                <input
+                  type="number"
+                  min={0}
+                  defaultValue={r.priority}
+                  onBlur={(e) => {
+                    const v = parseInt(e.target.value, 10);
+                    if (Number.isFinite(v) && v !== r.priority) void setPriority(r.id, v);
+                  }}
+                  className="w-12 px-1.5 py-0.5 text-[11px] border border-[#E5E7EB] rounded text-right tabular-nums"
+                  title="Lower number = tried first. So 0 is the primary, 1 is the backup, etc."
+                />
+              </label>
               <button
                 onClick={() => void remove(r.id)}
                 className="text-[10px] text-[#EF4444] hover:underline"
