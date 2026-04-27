@@ -256,6 +256,7 @@ export default function LiveCallScreen() {
               contactId={contact.id}
               contactName={contact.name}
               contactPhone={contact.phone}
+              contactEmail={contact.email}
               agentFirstName={myFirstName ?? ''}
             />
             {/* Phase 6 (Hugo 2026-04-30): timeline below SMS — sends,

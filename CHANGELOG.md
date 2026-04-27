@@ -1,5 +1,30 @@
 # Changelog
 
+## 2026-04-27 — Multi-channel inbox (PRs 60–64): SMS + WhatsApp + Email
+
+**One inbox, three channels.** The `/crm/inbox` thread now mixes SMS
+(Twilio), WhatsApp (via Wazzup24 personal-WA gateway, $15/mo per
+channel — no template approval), and Email (via Resend, on a new
+`inbox.nfstay.com` subdomain so existing `nfstay.com` mail is
+untouched). The agent picks the channel from a small radio next to
+the Send button.
+
+Five-PR rollout:
+- **PR 60** schema: `wk_sms_messages.channel`, `.external_id`, `.subject`;
+  `wk_numbers.channel`, `.provider`, `.external_id`, `.is_active`;
+  `wk_sms_templates.channel`; new `wk_channel_credentials` table.
+- **PR 61** Wazzup24 send + webhook + sync edge functions. 3 paired
+  WhatsApp channels already on Hugo's account
+  (441618189073 / 447487589933 / 447868778292).
+- **PR 62** Resend email send (`wk-email-send`) + inbound webhook
+  (`wk-email-webhook`) with Svix HMAC-SHA256 signature verification.
+- **PR 63** Channel picker UI in `ContactSmsModal` + `MidCallSmsSender`.
+  Templates filter by channel; subject input shown for email.
+- **PR 64** Settings → Channels tab. List paired numbers, on/off
+  toggle per channel, sync-from-Wazzup button.
+
+Full architecture + endpoints + verification: `docs/runbooks/MULTI_CHANNEL_INBOX.md`.
+
 ## 2026-04-27 — CRM rename (PR 45) + Watch Agent + post-call nav (PRs 42–44)
 
 **Public rename: SMSV2 → CRM** (user-facing only).

@@ -1,36 +1,40 @@
-// MidCallSmsSender — embedded in COL 1 of LiveCallScreen.
+// MidCallSmsSender — mid-call quick-send embedded in COL 1 of LiveCallScreen.
 //
-// Hugo's 2026-04-26 ask: "Mid-call actions (send templated SMS …) need
-// to be reachable from the live-call screen". Hugo 2026-04-30 update:
-// templates can now carry a target pipeline stage (move_to_stage_id).
-// Sending a stage-coupled template moves the contact to that stage.
+// History:
+//   PR 16 (2026-04-26): mandatory stage picker before send.
+//   PR 50/57 (2026-04-30): stage-coupled templates auto-pick the stage.
+//   PR 63 (2026-04-27 / multi-channel PR 4): channel picker — agent
+//     can mid-call switch from SMS to WhatsApp or Email so a "I'll
+//     send you the details now" promise can land on whatever channel
+//     fits best.
 //
-// Reuses the same `sms-send` edge function used on InboxPage so the
-// message lands in sms_messages and follows the GHL/Twilio path.
-// Merge fields {{first_name}} + {{agent_first_name}} are substituted
-// at render time before send.
+// File name stays MidCallSmsSender for back-compat with imports from
+// LiveCallScreen.tsx; the displayed title changes per channel.
 
 import { useEffect, useMemo, useState } from 'react';
-import { Send, MessageSquare, ArrowRight } from 'lucide-react';
+import { Send, MessageSquare, ArrowRight, Phone, Mail } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { supabase } from '@/integrations/supabase/client';
 import { useSmsV2 } from '../../store/SmsV2Store';
 import { useContactPersistence } from '../../hooks/useContactPersistence';
 import StageSelector from '../shared/StageSelector';
 
+type Channel = 'sms' | 'whatsapp' | 'email';
+
 interface Template {
   id: string;
   name: string;
   body_md: string;
   move_to_stage_id: string | null;
+  channel: Channel | null;
 }
 
-interface SmsSendInvoke {
+interface SendInvoke {
   invoke: (
     name: string,
     options: { body: Record<string, unknown> }
   ) => Promise<{
-    data: { sid?: string; error?: string } | null;
+    data: { sid?: string; error?: string; external_id?: string; message_id?: string } | null;
     error: { message: string } | null;
   }>;
 }
@@ -50,28 +54,33 @@ interface Props {
   contactId: string;
   contactName: string;
   contactPhone: string;
+  contactEmail?: string;
   agentFirstName: string;
 }
+
+const CHANNEL_LABEL: Record<Channel, string> = {
+  sms: 'SMS',
+  whatsapp: 'WhatsApp',
+  email: 'Email',
+};
 
 export default function MidCallSmsSender({
   contactId,
   contactName,
   contactPhone,
+  contactEmail,
   agentFirstName,
 }: Props) {
   const { pushToast, columns, patchContact, contacts } = useSmsV2();
   const currentContact = contacts.find((c) => c.id === contactId);
   const persist = useContactPersistence();
+  const [channel, setChannel] = useState<Channel>('sms');
   const [templates, setTemplates] = useState<Template[]>([]);
   const [selectedTemplateId, setSelectedTemplateId] = useState<string>('');
   const [body, setBody] = useState('');
+  const [subject, setSubject] = useState('');
   const [sending, setSending] = useState(false);
   const [loadingTpls, setLoadingTpls] = useState(true);
-  // PR 16 (Hugo 2026-04-26): "Before send I'm obliged to choose the
-  // stage." We deliberately do NOT default this to the contact's
-  // current pipelineColumnId — the agent must consciously pick the
-  // stage that this SMS is associated with, so the pipeline stays
-  // accurate after the send.
   const [pickedStageId, setPickedStageId] = useState<string | null>(null);
 
   useEffect(() => {
@@ -80,7 +89,7 @@ export default function MidCallSmsSender({
       try {
         const { data } = await (supabase as unknown as TemplatesTable)
           .from('wk_sms_templates')
-          .select('id, name, body_md, move_to_stage_id')
+          .select('id, name, body_md, move_to_stage_id, channel')
           .order('name', { ascending: true });
         if (!cancelled && data) setTemplates(data);
       } catch {
@@ -99,9 +108,14 @@ export default function MidCallSmsSender({
     [contactName]
   );
 
+  const filteredTemplates = useMemo(
+    () => templates.filter((t) => t.channel == null || t.channel === channel),
+    [templates, channel]
+  );
+
   const selectedTemplate = useMemo(
-    () => templates.find((t) => t.id === selectedTemplateId) ?? null,
-    [templates, selectedTemplateId]
+    () => filteredTemplates.find((t) => t.id === selectedTemplateId) ?? null,
+    [filteredTemplates, selectedTemplateId]
   );
 
   const targetStage = useMemo(() => {
@@ -115,49 +129,72 @@ export default function MidCallSmsSender({
       setBody('');
       return;
     }
-    const tpl = templates.find((t) => t.id === id);
+    const tpl = filteredTemplates.find((t) => t.id === id);
     if (!tpl) return;
-    // Templates use {first_name} (single-brace) per the seed. Also
-    // accept {{first_name}} for back-compat with hand-written entries.
     const expanded = tpl.body_md
       .replace(/\{\{?\s*first_name\s*\}?\}/gi, firstName)
       .replace(/\{\{?\s*agent_first_name\s*\}?\}/gi, agentFirstName);
     setBody(expanded);
-    // If the template carries a stage, pre-pick it. Agent can still
-    // change the picked stage before sending.
     if (tpl.move_to_stage_id) {
       setPickedStageId(tpl.move_to_stage_id);
     }
   };
 
+  // Reset transient state on channel switch.
+  useEffect(() => {
+    setSelectedTemplateId('');
+    setBody('');
+    if (channel !== 'email') setSubject('');
+  }, [channel]);
+
+  const channelDisabledReason = useMemo<string | null>(() => {
+    if (channel === 'sms' && !contactPhone) return 'No phone';
+    if (channel === 'whatsapp' && !contactPhone) return 'No phone';
+    if (channel === 'email' && !contactEmail) return 'No email on file';
+    return null;
+  }, [channel, contactPhone, contactEmail]);
+
+  const stageMissing = pickedStageId === null;
+
+  const isSendDisabled =
+    !body.trim() ||
+    sending ||
+    stageMissing ||
+    !!channelDisabledReason ||
+    (channel === 'email' && !subject.trim());
+
   const send = async () => {
-    const trimmed = body.trim();
-    // PR 16: stage is a hard prerequisite — the agent must have picked
-    // (or confirmed) a stage for this send. UI also disables the Send
-    // button when no stage is picked, this is the belt-and-braces.
-    if (!trimmed || sending || !pickedStageId) return;
+    if (isSendDisabled) return;
     setSending(true);
     try {
-      const { data, error } = await (
-        supabase.functions as unknown as SmsSendInvoke
-      ).invoke('sms-send', {
-        body: { to: contactPhone, body: trimmed },
-      });
+      const trimBody = body.trim();
+      const trimSubject = subject.trim();
+      const fn = supabase.functions as unknown as SendInvoke;
+
+      let resp: Awaited<ReturnType<SendInvoke['invoke']>>;
+      if (channel === 'sms') {
+        resp = await fn.invoke('sms-send', {
+          body: { to: contactPhone, body: trimBody },
+        });
+      } else if (channel === 'whatsapp') {
+        resp = await fn.invoke('wazzup-send', {
+          body: { contact_id: contactId, body: trimBody },
+        });
+      } else {
+        resp = await fn.invoke('wk-email-send', {
+          body: { contact_id: contactId, subject: trimSubject, body: trimBody },
+        });
+      }
+      const { data, error } = resp;
       if (error || data?.error) {
         pushToast(
-          `SMS send failed: ${error?.message ?? data?.error ?? 'unknown'}`,
+          `${CHANNEL_LABEL[channel]} send failed: ${error?.message ?? data?.error ?? 'unknown'}`,
           'error'
         );
         return;
       }
-      pushToast('SMS sent', 'success');
+      pushToast(`${CHANNEL_LABEL[channel]} sent`, 'success');
 
-      // PR 16: every send moves the contact to the picked stage. The
-      // optimistic store update happens immediately so the pipeline +
-      // col-1 meta header reflect the new stage; the persistence layer
-      // mirrors it server-side. If persistence fails, the optimistic
-      // store update stays — operator can retry server-side via the
-      // outcome card.
       const target = columns.find((c) => c.id === pickedStageId);
       if (target && target.id !== currentContact?.pipelineColumnId) {
         patchContact(contactId, { pipelineColumnId: target.id });
@@ -172,11 +209,12 @@ export default function MidCallSmsSender({
         }
       }
       setBody('');
+      if (channel === 'email') setSubject('');
       setSelectedTemplateId('');
       setPickedStageId(null);
     } catch (e) {
       pushToast(
-        `SMS send crashed: ${e instanceof Error ? e.message : 'unknown'}`,
+        `${CHANNEL_LABEL[channel]} send crashed: ${e instanceof Error ? e.message : 'unknown'}`,
         'error'
       );
     } finally {
@@ -185,42 +223,74 @@ export default function MidCallSmsSender({
   };
 
   const length = body.length;
-  const stageMissing = pickedStageId === null;
+  const charLimit = channel === 'sms' ? 160 : channel === 'whatsapp' ? 4096 : 10000;
+  const ChannelIcon =
+    channel === 'email' ? Mail : channel === 'whatsapp' ? MessageSquare : Phone;
 
   return (
     <div className="border border-[#E5E7EB] rounded-xl p-2.5 bg-white">
-      {/* Header — SMS title only. Stage selector moved into the body
-          (PR 16) and is now mandatory before send. */}
-      <div className="flex items-center gap-1.5 mb-2">
-        <MessageSquare className="w-3.5 h-3.5 text-[#1E9A80]" />
-        <span className="text-[11px] font-bold uppercase tracking-wide text-[#1A1A1A]">
-          Send SMS to {firstName || contactName}
-        </span>
+      <div className="flex items-center justify-between gap-1.5 mb-2">
+        <div className="flex items-center gap-1.5 min-w-0">
+          <ChannelIcon className="w-3.5 h-3.5 text-[#1E9A80] flex-none" />
+          <span className="text-[11px] font-bold uppercase tracking-wide text-[#1A1A1A] truncate">
+            Send {CHANNEL_LABEL[channel]} to {firstName || contactName}
+          </span>
+        </div>
+        <div
+          role="radiogroup"
+          aria-label="Channel"
+          className="inline-flex p-0.5 bg-[#F3F3EE] rounded-[6px] border border-[#E5E5E5] gap-0.5 flex-none"
+        >
+          {(['sms', 'whatsapp', 'email'] as const).map((c) => (
+            <button
+              key={c}
+              role="radio"
+              aria-checked={channel === c}
+              onClick={() => setChannel(c)}
+              className={cn(
+                'px-1.5 py-0.5 text-[10px] font-semibold rounded-[4px] transition-colors',
+                channel === c
+                  ? 'bg-white text-[#1E9A80] shadow-sm'
+                  : 'text-[#6B7280] hover:text-[#1A1A1A]'
+              )}
+              type="button"
+            >
+              {c === 'sms' ? 'SMS' : c === 'whatsapp' ? 'WA' : 'Email'}
+            </button>
+          ))}
+        </div>
       </div>
+
+      {channelDisabledReason && (
+        <div
+          className="text-[10px] text-[#B45309] bg-[#FFFBEB] border border-[#F59E0B]/40 rounded-[6px] px-2 py-1 mb-2"
+          role="alert"
+        >
+          {channelDisabledReason}
+        </div>
+      )}
+
       <select
         value={selectedTemplateId}
         onChange={(e) => applyTemplate(e.target.value)}
-        disabled={loadingTpls || templates.length === 0}
+        disabled={loadingTpls || filteredTemplates.length === 0}
         className="w-full mb-2 px-2 py-1.5 text-[11px] border border-[#E5E5E5] rounded-[8px] bg-white disabled:bg-[#F9FAFB] disabled:text-[#9CA3AF]"
       >
         <option value="">
           {loadingTpls
             ? 'Loading templates…'
-            : templates.length === 0
-              ? 'No templates yet'
+            : filteredTemplates.length === 0
+              ? `No ${CHANNEL_LABEL[channel]} templates yet`
               : 'Insert template…'}
         </option>
-        {templates.map((t) => (
+        {filteredTemplates.map((t) => (
           <option key={t.id} value={t.id}>
             {t.name}
             {t.move_to_stage_id ? ' →' : ''}
           </option>
         ))}
       </select>
-      {/* Stage picker — required before send. Hugo 2026-04-26: "before
-          send I'm obliged to choose the stage." We deliberately don't
-          default to the contact's current stage — the agent must
-          confirm where this SMS is taking the lead. */}
+
       <div
         className={cn(
           'mb-2 px-2 py-1.5 rounded-[8px] border flex items-center gap-2',
@@ -248,33 +318,46 @@ export default function MidCallSmsSender({
           </span>
         )}
       </div>
-      {/* PR 31 (Hugo 2026-04-27): "let us expand the box where you
-          write the message bigger so we can read the entire message
-          there." rows bumped 3 → 5 for default height; resize-y lets
-          the agent drag the bottom edge to make it as tall as needed. */}
+
+      {channel === 'email' && (
+        <input
+          value={subject}
+          onChange={(e) => setSubject(e.target.value)}
+          placeholder="Email subject"
+          className="w-full mb-2 px-2 py-1.5 text-[12px] border border-[#E5E5E5] rounded-[8px] focus:outline-none focus:ring-1 focus:ring-[#1E9A80]/30 focus:border-[#1E9A80]"
+        />
+      )}
+
       <textarea
         value={body}
         onChange={(e) => setBody(e.target.value)}
-        placeholder="Type a message, or pick a template above."
-        rows={5}
+        placeholder={
+          channel === 'email'
+            ? 'Type the email body…'
+            : 'Type a message, or pick a template above.'
+        }
+        rows={channel === 'email' ? 7 : 5}
         className="w-full px-2 py-1.5 text-[12px] border border-[#E5E5E5] rounded-[8px] focus:outline-none focus:ring-1 focus:ring-[#1E9A80]/30 focus:border-[#1E9A80] resize-y min-h-[80px]"
       />
       <div className="flex items-center justify-between mt-1.5">
         <span
           className={cn(
             'text-[10px] tabular-nums',
-            length > 160 ? 'text-[#F59E0B]' : 'text-[#9CA3AF]'
+            length > charLimit ? 'text-[#F59E0B]' : 'text-[#9CA3AF]'
           )}
         >
-          {length}/160
+          {length}/{charLimit}
         </span>
         <button
           onClick={() => void send()}
-          disabled={!body.trim() || sending || stageMissing}
+          disabled={isSendDisabled}
           title={
-            stageMissing
-              ? 'Pick a stage before sending — every SMS routes the lead through the pipeline.'
-              : undefined
+            channelDisabledReason ??
+            (stageMissing
+              ? 'Pick a stage before sending — every send routes the lead through the pipeline.'
+              : channel === 'email' && !subject.trim()
+                ? 'Email subject required'
+                : undefined)
           }
           className="bg-[#1E9A80] text-white text-[11px] font-semibold px-3 py-1.5 rounded-[8px] inline-flex items-center gap-1 hover:bg-[#1E9A80]/90 disabled:opacity-50 disabled:cursor-not-allowed"
         >
