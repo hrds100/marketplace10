@@ -258,7 +258,12 @@ verify_jwt = false
 verify_jwt = false
 
 [functions.wk-dialer-start]
-verify_jwt = false
+# PR 98 (Hugo 2026-04-28): defense-in-depth. The fn does manual JWT
+# verification (line 94 supa.auth.getUser) but flipping config-level
+# verify_jwt to true rejects unauthenticated requests at the platform
+# edge before our handler runs. supabase.functions.invoke() forwards
+# the user's JWT automatically so the call path is unchanged.
+verify_jwt = true
 
 [functions.wk-dialer-answer]
 verify_jwt = false
@@ -294,4 +299,7 @@ verify_jwt = false
 verify_jwt = false
 
 [functions.wk-dialer-hangup-leg]
-verify_jwt = false
+# PR 98 (Hugo 2026-04-28): defense-in-depth. The fn does manual JWT
+# verification but config-level verify_jwt=true rejects unauthenticated
+# requests at the platform edge before they hit our handler.
+verify_jwt = true
