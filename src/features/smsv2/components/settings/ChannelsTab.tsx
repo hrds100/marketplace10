@@ -10,7 +10,6 @@ import {
   Phone,
   MessageSquare,
   Mail,
-  RefreshCw,
   ExternalLink,
   CheckCircle2,
   XCircle,
@@ -55,17 +54,6 @@ const SECTIONS: SectionDef[] = [
     unipileConnect: { provider: 'WHATSAPP', label: 'Connect via QR', icon: QrCode },
   },
   {
-    provider: 'wazzup',
-    channelKind: 'whatsapp',
-    label: 'WhatsApp — Wazzup24 (legacy)',
-    Icon: MessageSquare,
-    hint: 'Legacy gateway — being phased out in favour of Unipile. Existing chats keep working until you disconnect the channel.',
-    externalLink: {
-      href: 'https://app.wazzup24.com/',
-      label: 'Open Wazzup24',
-    },
-  },
-  {
     provider: 'resend',
     channelKind: 'email',
     label: 'Email — Resend',
@@ -88,9 +76,7 @@ export default function ChannelsTab() {
     credentials,
     loading,
     error,
-    syncing,
     toggleActive,
-    syncWazzup,
     connectUnipile,
   } = useChannels();
   const { pushToast } = useSmsV2();
@@ -124,19 +110,6 @@ export default function ChannelsTab() {
     } finally {
       setBusyRowId(null);
     }
-  };
-
-  const handleSync = async () => {
-    const r = await syncWazzup();
-    if (r.error) {
-      pushToast(`Wazzup sync failed: ${r.error}`, 'error');
-      return;
-    }
-    pushToast(
-      `Synced ${r.synced} WhatsApp ${r.synced === 1 ? 'channel' : 'channels'}` +
-        (r.skipped ? ` (${r.skipped} skipped)` : ''),
-      'success'
-    );
   };
 
   const handleUnipileConnect = async (provider: UnipileProvider) => {
@@ -212,16 +185,6 @@ export default function ChannelsTab() {
                     {connectingUnipile === section.unipileConnect.provider
                       ? 'Opening…'
                       : section.unipileConnect.label}
-                  </button>
-                )}
-                {section.provider === 'wazzup' && (
-                  <button
-                    onClick={() => void handleSync()}
-                    disabled={syncing}
-                    className="inline-flex items-center gap-1.5 text-[12px] font-medium border border-[#E5E7EB] text-[#1A1A1A] hover:bg-[#F3F3EE] px-3 py-1.5 rounded-[10px] disabled:opacity-60"
-                  >
-                    <RefreshCw className={cn('w-3 h-3', syncing && 'animate-spin')} />
-                    {syncing ? 'Syncing…' : 'Sync from Wazzup'}
                   </button>
                 )}
                 {section.externalLink && (
@@ -332,8 +295,8 @@ function CircleDot({ active }: { active: boolean }) {
 
 function EmptyState({ section }: { section: SectionDef }) {
   const msg =
-    section.provider === 'wazzup'
-      ? 'No WhatsApp channels yet. Pair one on wazzup24.com, then click Sync.'
+    section.provider === 'unipile'
+      ? 'No WhatsApp / LinkedIn / Email channels yet. Click "Connect via QR" to pair one — Unipile will open a hosted page where you scan the QR.'
       : section.provider === 'resend'
         ? 'No email address yet. Set up the Resend domain inbox.nfstay.com and a wk_numbers row will appear after the first inbound or send.'
         : 'No SMS numbers yet. Add one in the Numbers tab.';

@@ -6,7 +6,7 @@
 //
 // Channels:
 //   sms       → POST sms-send (legacy fn, takes { to, body })
-//   whatsapp  → POST wazzup-send (PR 61, takes { contact_id, body })
+//   whatsapp  → POST unipile-send (PR 61, takes { contact_id, body })
 //   email     → POST wk-email-send (PR 62, takes { contact_id, subject, body })
 //
 // Per-channel rules:
@@ -241,7 +241,7 @@ export default function ContactSmsModal({
           body: { to: contact.phone, body: trimBody },
         });
       } else if (channel === 'whatsapp') {
-        resp = await fn.invoke('wazzup-send', {
+        resp = await fn.invoke('unipile-send', {
           body: { contact_id: contact.id, body: trimBody },
         });
       } else {
