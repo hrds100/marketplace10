@@ -80,6 +80,7 @@ export default function ChannelsTab() {
     error,
     toggleActive,
     connectUnipile,
+    setLabel,
   } = useChannels();
   const { pushToast } = useSmsV2();
   const [busyRowId, setBusyRowId] = useState<string | null>(null);
@@ -230,22 +231,40 @@ export default function ChannelsTab() {
                       key={row.id}
                       className="flex items-center justify-between gap-3 px-3 py-2 rounded-[10px] border border-[#E5E7EB] bg-white"
                     >
-                      <div className="flex items-center gap-2 min-w-0">
+                      <div className="flex items-center gap-2 min-w-0 flex-1">
                         <CircleDot active={row.is_active} />
-                        <span className="text-[13px] font-mono text-[#1A1A1A] truncate">
+                        <span className="text-[13px] font-mono text-[#1A1A1A] truncate flex-shrink-0">
                           {row.e164}
                         </span>
                         {row.external_id && (
-                          <span className="text-[10px] text-[#9CA3AF] font-mono truncate">
+                          <span className="text-[10px] text-[#9CA3AF] font-mono truncate flex-shrink-0 hidden md:inline">
                             · {row.external_id.slice(0, 8)}…
                           </span>
                         )}
+                        {/* PR 115 (Hugo 2026-04-28): admin-editable label
+                            per row. Free-text. Saves on blur. Empty → null. */}
+                        <input
+                          type="text"
+                          defaultValue={row.label ?? ''}
+                          onBlur={(e) => {
+                            const next = e.target.value;
+                            if ((row.label ?? '') === next.trim()) return;
+                            void setLabel(row.id, next).catch((err) =>
+                              pushToast(
+                                `Save failed: ${err instanceof Error ? err.message : 'unknown'}`,
+                                'error'
+                              )
+                            );
+                          }}
+                          placeholder="Add a label (e.g. Free, Trial, Elijah)"
+                          className="flex-1 min-w-0 px-2 py-1 text-[12px] bg-transparent border border-transparent hover:border-[#E5E7EB] focus:border-[#1E9A80] focus:bg-white rounded-[6px] focus:outline-none focus:ring-1 focus:ring-[#1E9A80]/30"
+                        />
                       </div>
                       <button
                         onClick={() => void handleToggle(row.id, !row.is_active)}
                         disabled={busyRowId === row.id}
                         className={cn(
-                          'inline-flex items-center text-[11px] font-semibold px-3 py-1 rounded-full transition-colors',
+                          'inline-flex items-center text-[11px] font-semibold px-3 py-1 rounded-full transition-colors flex-shrink-0',
                           row.is_active
                             ? 'bg-[#1E9A80] text-white hover:bg-[#1E9A80]/90'
                             : 'bg-[#F3F3EE] text-[#6B7280] hover:bg-[#E5E7EB]',

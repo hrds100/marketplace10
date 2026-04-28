@@ -23,20 +23,24 @@ interface Smsv2SidebarProps {
   onCollapse: (collapsed: boolean) => void;
 }
 
+// PR 115 (Hugo 2026-04-28): nav order — Dialer first (action-first
+// for agents), then Inbox, Pipelines, Contacts, Reports, Leaderboard,
+// then Call history at the bottom. Dashboard + Settings stay
+// admin-only at the ends. "Calls" renamed to "Call history".
 const NAV_ITEMS = [
   { label: 'Dashboard', path: '/crm/dashboard', icon: LayoutDashboard, adminOnly: true },
-  { label: 'Inbox', path: '/crm/inbox', icon: MessageSquare },
-  { label: 'Calls', path: '/crm/calls', icon: PhoneCall },
   { label: 'Dialer', path: '/crm/dialer', icon: Radio },
-  { label: 'Contacts', path: '/crm/contacts', icon: Users },
+  { label: 'Inbox', path: '/crm/inbox', icon: MessageSquare },
   { label: 'Pipelines', path: '/crm/pipelines', icon: Kanban },
+  { label: 'Contacts', path: '/crm/contacts', icon: Users },
   { label: 'Reports', path: '/crm/reports', icon: BarChart3 },
   { label: 'Leaderboard', path: '/crm/leaderboard', icon: Trophy },
+  { label: 'Call history', path: '/crm/calls', icon: PhoneCall },
   { label: 'Settings', path: '/crm/settings', icon: Settings, adminOnly: true },
 ] as const;
 
 const MOBILE_TAB_ITEMS = NAV_ITEMS.filter(({ label }) =>
-  ['Dashboard', 'Inbox', 'Dialer', 'Contacts', 'Pipelines'].includes(label)
+  ['Dialer', 'Inbox', 'Pipelines', 'Contacts', 'Dashboard'].includes(label)
 );
 
 export default function Smsv2Sidebar({ collapsed, onCollapse }: Smsv2SidebarProps) {

@@ -11,7 +11,8 @@ import {
   Activity,
   Plus,
   Trash2,
-  GripVertical,
+  ChevronUp,
+  ChevronDown,
   Sparkles,
   Clock,
   PhoneMissed,
@@ -280,6 +281,7 @@ export default function SettingsPage() {
               campaignId={scope.campaignId}
               tab={bundleTab}
               onTabChange={setBundleTab}
+              onCampaignDeleted={() => setScope({ kind: 'workspace' })}
             />
           )}
           {scope.kind === 'workspace-only' && (
@@ -484,10 +486,12 @@ function CampaignBundle({
   campaignId,
   tab,
   onTabChange,
+  onCampaignDeleted,
 }: {
   campaignId: string;
   tab: string;
   onTabChange: (t: string) => void;
+  onCampaignDeleted: () => void;
 }) {
   const { campaigns, refetch } = useDialerCampaigns({ includeInactive: true });
   const camp = campaigns.find((c) => c.id === campaignId);
@@ -503,7 +507,12 @@ function CampaignBundle({
 
   return (
     <>
-      <CampaignBundleHeader campaign={camp} onChanged={refetch} onSelected={(id) => {/* parent handles via setScope on next render */ void id;}} />
+      <CampaignBundleHeader
+        campaign={camp}
+        onChanged={refetch}
+        onSelected={(id) => { void id; }}
+        onScopeReset={onCampaignDeleted}
+      />
       <div className="flex gap-1 mb-3 overflow-x-auto">
         {CAMPAIGN_BUNDLE_TABS.map((t) => (
           <button
@@ -539,10 +548,12 @@ function CampaignBundleHeader({
   campaign,
   onChanged,
   onSelected,
+  onScopeReset,
 }: {
   campaign: { id: string; name: string; isActive: boolean; aiCoachEnabled: boolean; parallelLines: number; totalLeads: number };
   onChanged: () => void;
   onSelected: (id: string) => void;
+  onScopeReset: () => void;
 }) {
   const [actionErr, setActionErr] = useState<string | null>(null);
 
@@ -576,8 +587,17 @@ function CampaignBundleHeader({
     const { error } = await (supabase.from('wk_dialer_campaigns' as any) as any)
       .delete()
       .eq('id', campaign.id);
-    if (error) setActionErr(error.message);
-    else onChanged();
+    if (error) {
+      setActionErr(error.message);
+      return;
+    }
+    // PR 115 (Hugo 2026-04-28): after delete, navigate the URL back to
+    // workspace scope so the user isn't staring at "Campaign not found"
+    // on the deleted campaign + the sidebar list updates immediately
+    // (the realtime DELETE event sometimes lags up to 500ms; this gives
+    // an instant UI flip).
+    onChanged();
+    onScopeReset();
   };
 
   return (
@@ -895,6 +915,25 @@ function PipelinesTab() {
     patchColumn(id, { automation: { ...target.automation, ...patch } });
     void persist.updateAutomation(id, patch);
   };
+
+  // PR 115 (Hugo 2026-04-28): drag-to-reorder never worked (GripVertical
+  // had no DnD handler — purely cosmetic). Replaced with up/down arrows
+  // that swap positions, same pattern as PR 93/94 channel slot picker.
+  const moveColumn = async (idx: number, dir: -1 | 1) => {
+    const sorted = [...cols].sort((a, b) => a.position - b.position);
+    const a = sorted[idx];
+    const b = sorted[idx + dir];
+    if (!a || !b) return;
+    // Swap positions in the store optimistically.
+    patchColumn(a.id, { position: b.position });
+    patchColumn(b.id, { position: a.position });
+    // Persist both swaps.
+    await Promise.all([
+      persist.updateColumn(a.id, { position: b.position }),
+      persist.updateColumn(b.id, { position: a.position }),
+    ]);
+  };
+
   const addColumn = async () => {
     const tempId = `col-new-${Date.now()}`;
     const realPipelineId = cols[0]?.pipelineId ?? ACTIVE_PIPELINE.id;
@@ -942,10 +981,10 @@ function PipelinesTab() {
     <>
       <Card
         title="Pipeline columns = outcome buttons (CRITICAL)"
-        hint="Click a row to edit automations · drag to reorder · 1–9 = keyboard"
+        hint="Click a row to edit automations · ↑↓ to reorder · 1–9 = keyboard"
       >
         <div className="space-y-2">
-          {cols.map((col) => {
+          {[...cols].sort((a, b) => a.position - b.position).map((col, idx, sortedArr) => {
             const Icon = ICON_MAP[col.icon] ?? Sparkles;
             const a = col.automation;
             const isOpen = expandedId === col.id;
@@ -955,7 +994,28 @@ function PipelinesTab() {
                 className="border border-[#E5E7EB] rounded-xl overflow-hidden"
               >
                 <div className="flex items-center gap-3 p-3">
-                  <GripVertical className="w-4 h-4 text-[#9CA3AF] flex-shrink-0 cursor-grab" />
+                  {/* PR 115: up/down arrows replace the inert GripVertical
+                      drag handle. Swap with neighbour. */}
+                  <div className="inline-flex flex-col flex-shrink-0">
+                    <button
+                      type="button"
+                      onClick={() => void moveColumn(idx, -1)}
+                      disabled={idx === 0}
+                      title="Move up"
+                      className="p-0.5 text-[#6B7280] hover:text-[#1A1A1A] disabled:opacity-30 disabled:cursor-not-allowed"
+                    >
+                      <ChevronUp className="w-3 h-3" />
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => void moveColumn(idx, 1)}
+                      disabled={idx === sortedArr.length - 1}
+                      title="Move down"
+                      className="p-0.5 text-[#6B7280] hover:text-[#1A1A1A] disabled:opacity-30 disabled:cursor-not-allowed"
+                    >
+                      <ChevronDown className="w-3 h-3" />
+                    </button>
+                  </div>
                   <div
                     className="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0"
                     style={{ background: `${col.colour}1A`, color: col.colour }}

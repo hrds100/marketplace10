@@ -17,6 +17,8 @@ import {
 } from 'lucide-react';
 import CallTranscriptModal from '../components/calls/CallTranscriptModal';
 import StageSelector from '../components/shared/StageSelector';
+import EditContactModal from '../components/contacts/EditContactModal';
+import { useAgentsToday } from '../hooks/useAgentsToday';
 import { MOCK_CALLS } from '../data/mockCalls';
 import { MOCK_CONTACTS } from '../data/mockContacts';
 import { MOCK_AGENTS } from '../data/mockAgents';
@@ -27,7 +29,7 @@ import { useSmsV2 } from '../store/SmsV2Store';
 import { useContactPersistence } from '../hooks/useContactPersistence';
 import { useActiveCallCtx } from '../components/live-call/ActiveCallContext';
 import { useDemoMode } from '../lib/useDemoMode';
-import type { CallRecord } from '../types';
+import type { CallRecord, Contact } from '../types';
 
 const STATUS_ICON = {
   inbound: <PhoneIncoming className="w-3.5 h-3.5 text-[#1E9A80]" />,
@@ -58,10 +60,13 @@ export default function CallsPage() {
   const [playing, setPlaying] = useState<string | null>(null);
   const [signedUrl, setSignedUrl] = useState<string | null>(null);
   const [transcriptCallId, setTranscriptCallId] = useState<string | null>(null);
+  // PR 115: edit-contact modal — opened by clicking a prospect name.
+  const [editing, setEditing] = useState<Contact | null>(null);
 
   const { calls: realCalls } = useCalls();
-  const { contacts: realContacts, columns, patchContact, pushToast } = useSmsV2();
+  const { contacts: realContacts, columns, patchContact, upsertContact, pushToast } = useSmsV2();
   const persist = useContactPersistence();
+  const { agents: realAgentsToday } = useAgentsToday();
   const { openCallRoom } = useActiveCallCtx();
   const demoMode = useDemoMode();
   // PR 107: avoid the "unused" warning when columns are only consumed
@@ -145,7 +150,7 @@ export default function CallsPage() {
     <div className="p-6 max-w-[1400px] mx-auto space-y-5">
       <header className="flex items-center justify-between">
         <div>
-          <h1 className="text-[26px] font-bold text-[#1A1A1A] tracking-tight">Calls</h1>
+          <h1 className="text-[26px] font-bold text-[#1A1A1A] tracking-tight">Call history</h1>
           <p className="text-[13px] text-[#6B7280]">
             {filteredCalls.length} of {calls.length} calls · click row for previous calls to same prospect
           </p>
@@ -274,9 +279,20 @@ export default function CallsPage() {
                       )}
                     </td>
                     <td className="px-2 py-2.5">
-                      <div className="font-semibold text-[#1A1A1A]">
-                        {contact?.name ?? '—'}
-                      </div>
+                      {/* PR 115 (Hugo 2026-04-28): clickable prospect
+                          name → opens EditContactModal so the agent
+                          can edit anything from Call history. */}
+                      {contact ? (
+                        <button
+                          onClick={() => setEditing(contact)}
+                          className="font-semibold text-[#1A1A1A] hover:text-[#1E9A80] hover:underline text-left"
+                          title="Click to edit contact"
+                        >
+                          {contact.name ?? '—'}
+                        </button>
+                      ) : (
+                        <div className="font-semibold text-[#1A1A1A]">—</div>
+                      )}
                       <div className="text-[10px] text-[#9CA3AF] tabular-nums">
                         {contact?.phone}
                       </div>
@@ -487,6 +503,29 @@ export default function CallsPage() {
           />
         );
       })()}
+      {/* PR 115: edit contact directly from Call history. Same modal +
+          persist pattern used elsewhere. */}
+      <EditContactModal
+        contact={editing}
+        agents={realAgentsToday}
+        onClose={() => setEditing(null)}
+        onSave={async (updated) => {
+          const previous = contacts.find((c) => c.id === updated.id);
+          upsertContact(updated);
+          setEditing(null);
+          try {
+            await persist.patchContact(updated.id, {
+              name: updated.name,
+              email: updated.email,
+              pipeline_column_id: updated.pipelineColumnId,
+            });
+            pushToast('Contact saved', 'success');
+          } catch (e) {
+            if (previous) upsertContact(previous);
+            pushToast(`Save failed: ${e instanceof Error ? e.message : 'unknown'}`, 'error');
+          }
+        }}
+      />
     </div>
   );
 }
