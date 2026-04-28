@@ -22,6 +22,10 @@ export interface ChannelRow {
   is_active: boolean;
   voice_enabled: boolean;
   sms_enabled: boolean;
+  /** PR 115 (Hugo 2026-04-28): admin-editable label per number row.
+   *  Free-text — agents use it to mark "free for any agent" /
+   *  "Belongs to Elijah" / "Trial line" etc. */
+  label: string | null;
   created_at: string;
 }
 
@@ -48,6 +52,8 @@ export function useChannels(): {
     provider: UnipileProvider,
     label?: string
   ) => Promise<{ url?: string; error?: string }>;
+  /** PR 115: save the agent-editable label for a wk_numbers row. */
+  setLabel: (id: string, label: string) => Promise<void>;
 } {
   const [rows, setRows] = useState<ChannelRow[]>([]);
   const [credentials, setCredentials] = useState<CredentialRow[]>([]);
@@ -62,7 +68,7 @@ export function useChannels(): {
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         (supabase.from('wk_numbers' as any) as any)
           .select(
-            'id, e164, channel, provider, external_id, is_active, voice_enabled, sms_enabled, created_at'
+            'id, e164, channel, provider, external_id, is_active, voice_enabled, sms_enabled, label, created_at'
           )
           .order('channel', { ascending: true })
           .order('e164', { ascending: true }),
@@ -123,6 +129,19 @@ export function useChannels(): {
     []
   );
 
+  // PR 115: persist the editable label.
+  const setLabel = useCallback(async (id: string, label: string) => {
+    const trimmed = label.trim();
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { error: e } = await (supabase.from('wk_numbers' as any) as any)
+      .update({ label: trimmed === '' ? null : trimmed })
+      .eq('id', id);
+    if (e) throw new Error(e.message);
+    setRows((rs) =>
+      rs.map((r) => (r.id === id ? { ...r, label: trimmed === '' ? null : trimmed } : r))
+    );
+  }, []);
+
   return {
     rows,
     credentials,
@@ -131,5 +150,6 @@ export function useChannels(): {
     reload,
     toggleActive,
     connectUnipile,
+    setLabel,
   };
 }
