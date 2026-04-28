@@ -36,21 +36,54 @@ describe('rowToCampaign', () => {
       doneLeads: 0,
       connectedLeads: 0,
       voicemailLeads: 0,
+      pendingLeads: 0,
+      dialingLeads: 0,
+      missedLeads: 0,
+      skippedLeads: 0,
     });
   });
 
-  it('totalLeads = pending + done from rollup', () => {
+  it('totalLeads sums all 7 statuses; doneLeads = done + missed + skipped', () => {
+    // PR (Hugo 2026-04-28): the old rollup ignored missed/skipped/dialing.
+    // Now every status is bucketed. Tajul scenario: 11 pending, 0 done,
+    // 0 connected, 0 voicemail, 9 missed → "Done" should be 9, not 0.
+    const c = rowToCampaign(baseRow, {
+      campaign_id: 'camp-1',
+      pending: 11,
+      dialing: 0,
+      connected: 0,
+      voicemail: 0,
+      missed: 9,
+      done: 0,
+      skipped: 0,
+    });
+    expect(c.totalLeads).toBe(20);
+    expect(c.pendingLeads).toBe(11);
+    expect(c.doneLeads).toBe(9); // missed counts as Done
+    expect(c.missedLeads).toBe(9);
+    expect(c.connectedLeads).toBe(0);
+    expect(c.voicemailLeads).toBe(0);
+  });
+
+  it('mixed rollup: pending + done + connected + voicemail + skipped', () => {
     const c = rowToCampaign(baseRow, {
       campaign_id: 'camp-1',
       pending: 7,
-      done: 3,
+      dialing: 1,
       connected: 2,
       voicemail: 1,
+      missed: 3,
+      done: 3,
+      skipped: 2,
     });
-    expect(c.totalLeads).toBe(10);
-    expect(c.doneLeads).toBe(3);
+    expect(c.totalLeads).toBe(19);
+    expect(c.pendingLeads).toBe(7);
+    expect(c.dialingLeads).toBe(1);
+    expect(c.doneLeads).toBe(3 + 3 + 2); // done + missed + skipped
     expect(c.connectedLeads).toBe(2);
     expect(c.voicemailLeads).toBe(1);
+    expect(c.missedLeads).toBe(3);
+    expect(c.skippedLeads).toBe(2);
   });
 
   it('null script + prompt id coerce to undefined', () => {

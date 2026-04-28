@@ -132,10 +132,27 @@ export interface Campaign {
   name: string;
   pipelineId: string;
   ownerAgentId: string;
+  /** Sum of every wk_dialer_queue row for this campaign across all 7
+   *  statuses (pending + dialing + connected + voicemail + missed +
+   *  done + skipped). Was previously `pending + done` only, which
+   *  silently dropped missed/skipped/dialing rows from the UI rollup
+   *  and made it look like 9 leads disappeared after Tajul ran a
+   *  campaign. Hugo 2026-04-28. */
   totalLeads: number;
+  /** Terminal / "attempted, no live conversation" — done + missed +
+   *  skipped. Used for the "Done" mini-stat on the dialer card. Does
+   *  NOT include connected (separate stat) or voicemail (separate
+   *  stat). */
   doneLeads: number;
   connectedLeads: number;
   voicemailLeads: number;
+  /** PR (Hugo 2026-04-28): expose every queue bucket so the UI can
+   *  show queue=pending without subtracting from totalLeads (the old
+   *  arithmetic only worked when totalLeads = pending + done). */
+  pendingLeads: number;
+  dialingLeads: number;
+  missedLeads: number;
+  skippedLeads: number;
   mode: 'parallel' | 'power' | 'manual';
   parallelLines: number;
   aiCoachEnabled: boolean;
