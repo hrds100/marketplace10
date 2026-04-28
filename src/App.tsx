@@ -2,6 +2,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Route, Routes, Navigate } from "react-router-dom";
 // i18n — must be imported before any component that uses useTranslation
 import '@/core/i18n/i18n';
+import '@/core/runtime/preloadErrorHandler';
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 // Auth
