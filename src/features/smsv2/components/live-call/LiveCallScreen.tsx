@@ -36,6 +36,7 @@ import {
 export default function LiveCallScreen() {
   const {
     phase,
+    callPhase,
     call,
     durationSec,
     endCall,
@@ -289,37 +290,46 @@ export default function LiveCallScreen() {
             </button>
           )}
 
-          {/* PR 131 (Hugo 2026-04-28): single button now.
-              - active call (placing / in_call / post_call) → minimise
-                only. Hugo's call: "the call room should not close.
-                Should not minimize if I don't minimize it. And if I
-                minimize it, there should always be a button to
-                maximize again." Removed the X (close) button that
-                PR 114 added — Hugo flipped that decision.
-              - preview mode → X (close preview entirely). Preview
-                isn't a live call, so closing exits cleanly. */}
-          {isPreview ? (
-            <button
-              onClick={() => closeCallRoom()}
-              className="p-1.5 rounded-lg hover:bg-black/[0.04]"
-              title="Close call room"
-              data-testid="livecall-close-preview"
-            >
-              <X className="w-4 h-4" />
-            </button>
-          ) : (
-            <button
-              onClick={() => setFullScreen(false)}
-              className={cn(
-                'p-1.5 rounded-lg',
-                phase === 'in_call' ? 'hover:bg-white/15' : 'hover:bg-black/[0.04]'
-              )}
-              title="Minimise (call continues — maximise from the floating bar)"
-              data-testid="livecall-minimise"
-            >
-              <Minimize2 className="w-4 h-4" />
-            </button>
-          )}
+          {/* PR 138 (Hugo 2026-04-28, Rules 6, 7): the room ALWAYS has
+              a Minimise button. The Close button is visible only when
+              the call isn't live (idle / preview / *_waiting_outcome /
+              outcome_done) — you can't close a live call's room
+              without hanging up first. */}
+          <button
+            onClick={() => setFullScreen(false)}
+            className={cn(
+              'p-1.5 rounded-lg',
+              phase === 'in_call' ? 'hover:bg-white/15' : 'hover:bg-black/[0.04]'
+            )}
+            title="Minimise (call continues — maximise from the floating bar)"
+            data-testid="livecall-minimise"
+          >
+            <Minimize2 className="w-4 h-4" />
+          </button>
+          {/* Close: hidden during dialing / ringing / in_call. Once
+              the call has ended (any *_waiting_outcome) or we're in
+              preview, the agent can close out cleanly. */}
+          {callPhase !== 'dialing' &&
+            callPhase !== 'ringing' &&
+            callPhase !== 'in_call' && (
+              <button
+                onClick={() => closeCallRoom()}
+                className={cn(
+                  'p-1.5 rounded-lg',
+                  phase === 'in_call' ? 'hover:bg-white/15' : 'hover:bg-black/[0.04]'
+                )}
+                title={
+                  isPreview
+                    ? 'Close call room'
+                    : 'Close call room (outcome saved)'
+                }
+                data-testid={
+                  isPreview ? 'livecall-close-preview' : 'livecall-close'
+                }
+              >
+                <X className="w-4 h-4" />
+              </button>
+            )}
         </div>
       </header>
 
