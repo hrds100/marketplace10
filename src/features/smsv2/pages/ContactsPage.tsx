@@ -7,6 +7,7 @@ import StageSelector from '../components/shared/StageSelector';
 import BulkUploadModal from '../components/contacts/BulkUploadModal';
 import ContactSmsModal from '../components/contacts/ContactSmsModal';
 import EditContactModal from '../components/contacts/EditContactModal';
+import FollowupPromptModal from '../components/followups/FollowupPromptModal';
 import { useCurrentAgent } from '../hooks/useCurrentAgent';
 import { useSmsV2 } from '../store/SmsV2Store';
 import { useContactPersistence, isRealContactId } from '../hooks/useContactPersistence';
@@ -44,6 +45,14 @@ export default function ContactsPage() {
   // PR 83: which channel the modal opens with when an icon is clicked.
   // null = picker stays unselected (when clicking the generic Edit/Call buttons).
   const [smsChannel, setSmsChannel] = useState<'sms' | 'whatsapp' | 'email' | null>(null);
+  // PR 122 (Hugo 2026-04-28): follow-up prompt is owned by the parent
+  // page now so it sequences AFTER the SMS modal closes (was rendering
+  // BEHIND the SMS modal at z-230 vs z-300, flashing then vanishing).
+  const [followupTarget, setFollowupTarget] = useState<{
+    contactId: string;
+    contactName: string;
+    columnId: string;
+  } | null>(null);
   const { firstName: agentFirstName } = useCurrentAgent();
 
   const startNewContact = () => {
@@ -337,7 +346,36 @@ export default function ContactsPage() {
         }}
         agentFirstName={agentFirstName ?? ''}
         defaultChannel={smsChannel}
+        onSent={(info) => {
+          // PR 122: close the SMS modal first so the follow-up prompt
+          // renders alone — not behind a still-mounted send box.
+          setSmsTo(null);
+          setSmsChannel(null);
+          setFollowupTarget(info);
+        }}
       />
+      {followupTarget && (
+        <FollowupPromptModal
+          open
+          onOpenChange={(o) => { if (!o) setFollowupTarget(null); }}
+          contactId={followupTarget.contactId}
+          contactName={followupTarget.contactName}
+          columnId={followupTarget.columnId}
+          columnName={
+            columns.find((c) => c.id === followupTarget.columnId)?.name ?? 'Stage'
+          }
+          suggestedHoursAhead={(() => {
+            const lc = columns
+              .find((c) => c.id === followupTarget.columnId)
+              ?.name.toLowerCase();
+            if (lc === 'callback') return 2;
+            if (lc === 'interested') return 24;
+            return 24 * 3;
+          })()}
+          callId={null}
+          onSaved={() => setFollowupTarget(null)}
+        />
+      )}
       <EditContactModal
         contact={editing}
         agents={agents}
