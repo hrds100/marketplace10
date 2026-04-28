@@ -415,7 +415,13 @@ export default function DialerPage() {
                 so duplicating it here invited drift. */}
 
             <div className="grid grid-cols-4 gap-3 pt-2 border-t border-[#E5E7EB]">
-              <Mini label="Queue" value={camp.totalLeads - camp.doneLeads} />
+              {/* PR (Hugo 2026-04-28): use pendingLeads directly. The old
+                  arithmetic `totalLeads - doneLeads` quietly hid every row
+                  whose status had transitioned to missed/skipped/dialing
+                  because totalLeads only counted pending+done. doneLeads
+                  now also includes missed+skipped, so "Done" reflects every
+                  attempted lead — what Tajul actually wants to see. */}
+              <Mini label="Queue" value={camp.pendingLeads} />
               <Mini label="Done" value={camp.doneLeads} tone="green" />
               <Mini label="Connected" value={camp.connectedLeads} tone="green" />
               <Mini label="Voicemail" value={camp.voicemailLeads} />

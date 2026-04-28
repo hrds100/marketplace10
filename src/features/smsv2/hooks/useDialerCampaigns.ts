@@ -26,23 +26,45 @@ interface WkCampaignRow {
 interface QueueRollup {
   campaign_id: string;
   pending: number;
-  done: number;
+  dialing: number;
   connected: number;
   voicemail: number;
+  missed: number;
+  done: number;
+  skipped: number;
 }
 
 export function rowToCampaign(row: WkCampaignRow, queue: QueueRollup | undefined): Campaign {
+  // PR (Hugo 2026-04-28): wk_dialer_queue.status has 7 values
+  // (pending | dialing | connected | voicemail | missed | done | skipped).
+  // The previous rollup only counted 4 (pending/done/connected/voicemail),
+  // so any row that ended in `missed` or `skipped` vanished from the UI —
+  // Tajul ran a campaign, dialed 9 leads with no answer, and the dashboard
+  // still said "0 done · 0 connected" while Queue dropped from 20 → 11.
+  // Now every status is bucketed and `totalLeads` is the true row count.
   const pending = queue?.pending ?? 0;
+  const dialing = queue?.dialing ?? 0;
+  const connected = queue?.connected ?? 0;
+  const voicemail = queue?.voicemail ?? 0;
+  const missed = queue?.missed ?? 0;
   const done = queue?.done ?? 0;
+  const skipped = queue?.skipped ?? 0;
   return {
     id: row.id,
     name: row.name,
     pipelineId: row.pipeline_id ?? '',
     ownerAgentId: row.created_by ?? '',
-    totalLeads: pending + done,
-    doneLeads: done,
-    connectedLeads: queue?.connected ?? 0,
-    voicemailLeads: queue?.voicemail ?? 0,
+    totalLeads: pending + dialing + connected + voicemail + missed + done + skipped,
+    // "Done" = call attempt completed without a live conversation
+    // (done + missed + skipped). connected/voicemail are kept as
+    // their own buckets because they're informative on their own.
+    doneLeads: done + missed + skipped,
+    connectedLeads: connected,
+    voicemailLeads: voicemail,
+    pendingLeads: pending,
+    dialingLeads: dialing,
+    missedLeads: missed,
+    skippedLeads: skipped,
     mode: 'parallel',
     parallelLines: row.parallel_lines,
     aiCoachEnabled: row.ai_coach_enabled,
@@ -147,14 +169,22 @@ export function useDialerCampaigns(
         const r = rollups.get(row.campaign_id) ?? {
           campaign_id: row.campaign_id,
           pending: 0,
-          done: 0,
+          dialing: 0,
           connected: 0,
           voicemail: 0,
+          missed: 0,
+          done: 0,
+          skipped: 0,
         };
+        // PR (Hugo 2026-04-28): count every wk_dialer_queue status
+        // value, not just 4. Was silently dropping missed/skipped/dialing.
         if (row.status === 'pending') r.pending += 1;
-        else if (row.status === 'done') r.done += 1;
+        else if (row.status === 'dialing') r.dialing += 1;
         else if (row.status === 'connected') r.connected += 1;
         else if (row.status === 'voicemail') r.voicemail += 1;
+        else if (row.status === 'missed') r.missed += 1;
+        else if (row.status === 'done') r.done += 1;
+        else if (row.status === 'skipped') r.skipped += 1;
         rollups.set(row.campaign_id, r);
       }
 

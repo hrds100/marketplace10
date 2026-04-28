@@ -58,7 +58,9 @@ export default function CampaignList({ activeId, onSelect, campaigns }: Props) {
               </span>
             </div>
             <div className="text-[11px] text-[#6B7280] tabular-nums mt-1 ml-5">
-              {c.totalLeads - c.doneLeads} left · {c.doneLeads} done
+              {/* PR (Hugo 2026-04-28): pendingLeads, not totalLeads-doneLeads.
+                  See useDialerCampaigns.ts comment. */}
+              {c.pendingLeads} left · {c.doneLeads} done
             </div>
           </button>
         ))}
