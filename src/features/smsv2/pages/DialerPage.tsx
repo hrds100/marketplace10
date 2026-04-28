@@ -2,7 +2,12 @@ import { useEffect, useMemo, useState } from 'react';
 import { Play, Pause, Square, ArrowRight, Pencil } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import CampaignList from '../components/dialer/CampaignList';
-import ParallelDialerBanner from '../components/dialer/ParallelDialerBanner';
+// PR 121 (Hugo 2026-04-28): banner moved to LiveCallScreen — see
+// components/live-call/LiveCallScreen.tsx. This page is now just
+// "press Start" + campaign config; the ringing UX lives in the
+// call room.
+import { useActiveDialerLegs } from '../hooks/useActiveDialerLegs';
+import { useAgentMessageCounts } from '../hooks/useAgentMessageCounts';
 import SpendBanner from '../components/dialer/SpendBanner';
 import StageSelector from '../components/shared/StageSelector';
 import EditContactModal from '../components/contacts/EditContactModal';
@@ -127,6 +132,17 @@ export default function DialerPage() {
     3
   );
 
+  // PR 121: read the agent's currently-ringing legs so Pause/Stop can
+  // hang each one up via wk-dialer-hangup-leg. Without this, Pause
+  // flipped is_active=false on the campaign but the Twilio calls kept
+  // ringing the contacts.
+  const { legs: activeLegs } = useActiveDialerLegs();
+
+  // PR 121: today's outbound message counts by channel — wired from
+  // wk_sms_messages.created_by + created_at. Powers the SMS / WhatsApp
+  // / Email mini stats next to Queue / Done / Connected / Voicemail.
+  const msgCounts = useAgentMessageCounts(user?.id ?? null);
+
   const handleStart = async () => {
     setRunning(true);
     // Looks like a UUID? Then it's likely a real wk_dialer_campaigns row —
@@ -231,6 +247,11 @@ export default function DialerPage() {
 
   // PR 23: Pause = flip is_active=false on the server. New dial calls
   // refuse until the agent presses Start (which flips it back).
+  // PR 121 (Hugo 2026-04-28): also cancel currently-ringing legs so
+  // the call-room banner stops lying. Without this, Pause flips the
+  // campaign's is_active flag but the in-flight Twilio legs keep
+  // ringing the contacts and the banner keeps ticking the timer
+  // until Twilio's 60s outbound timeout — confusing UX.
   const handlePause = async () => {
     setRunning(false);
     if (!isUuid(activeId)) return;
@@ -243,7 +264,25 @@ export default function DialerPage() {
         pushToast(`Pause failed: ${error.message}`, 'error');
         return;
       }
-      pushToast('Campaign paused', 'info');
+      // Best-effort hang-up of every leg currently visible to this
+      // agent. If wk-dialer-hangup-leg fails for any one (Twilio
+      // hiccup, race), we log but keep going — the next Start will
+      // re-pick those queue rows since the campaign is now inactive.
+      const cancellations = activeLegs.map((leg) =>
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        (supabase.functions as any)
+          .invoke('wk-dialer-hangup-leg', { body: { call_id: leg.id } })
+          .catch((e: Error) =>
+            console.warn('[handlePause] hangup leg failed', leg.id, e)
+          )
+      );
+      await Promise.allSettled(cancellations);
+      pushToast(
+        cancellations.length > 0
+          ? `Campaign paused · ${cancellations.length} leg(s) cancelled`
+          : 'Campaign paused',
+        'info'
+      );
     } catch (e) {
       pushToast(
         `Pause crashed: ${e instanceof Error ? e.message : 'unknown'}`,
@@ -268,9 +307,20 @@ export default function DialerPage() {
         pushToast(`Stop failed: ${pauseErr.message}`, 'error');
         return;
       }
-      const { data, error: rpcErr } = await sp.rpc('wk_dialer_revert_inflight', {
-        p_campaign_id: activeId,
-      });
+      // PR 121: cancel currently-ringing Twilio legs in parallel with
+      // the queue revert so the banner stops ticking immediately.
+      const cancellations = activeLegs.map((leg) =>
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        (supabase.functions as any)
+          .invoke('wk-dialer-hangup-leg', { body: { call_id: leg.id } })
+          .catch((e: Error) =>
+            console.warn('[handleStop] hangup leg failed', leg.id, e)
+          )
+      );
+      const [{ data, error: rpcErr }] = await Promise.all([
+        sp.rpc('wk_dialer_revert_inflight', { p_campaign_id: activeId }),
+        Promise.allSettled(cancellations),
+      ]);
       if (rpcErr) {
         pushToast(`Stop reverted partial: ${rpcErr.message}`, 'error');
         return;
@@ -299,13 +349,10 @@ export default function DialerPage() {
         </div>
       </header>
 
-      <SpendBanner />
-
-      {/* PR 119 (Hugo 2026-04-28): top dark banner with every active leg
-          (L1, L2, L3, …) showing phone + status dot + ticking timer +
-          per-leg hang-up. Replaces the old ParallelDialerBoard which
-          sat in the right column. Hidden when idle. */}
-      <ParallelDialerBanner />
+      {/* PR 121 (Hugo 2026-04-28): SpendBanner is admin-only — agents
+          don't need (or want) to see daily spend. Killswitch + spend
+          gate still enforce limits server-side. */}
+      {isEffectiveAdmin && <SpendBanner />}
 
       <div className="grid grid-cols-12 gap-5">
         {/* Left — campaigns + queue */}
@@ -436,12 +483,18 @@ export default function DialerPage() {
               </div>
             </div>
 
+            {/* PR 121 (Hugo 2026-04-28): Mode / Lines / Auto-advance are
+                ADMIN-ONLY. Agents see the values their admin configured
+                but can't change them. The dropdowns become read-only
+                pills for non-admin agents. */}
             <div className="grid grid-cols-3 gap-3">
               <Field label="Mode">
                 <select
                   value={mode}
                   onChange={(e) => setMode(e.target.value as Campaign['mode'])}
-                  className="w-full px-2 py-1.5 text-[13px] bg-[#F3F3EE] border border-[#E5E7EB] rounded-[10px]"
+                  disabled={!isEffectiveAdmin}
+                  className="w-full px-2 py-1.5 text-[13px] bg-[#F3F3EE] border border-[#E5E7EB] rounded-[10px] disabled:opacity-70 disabled:cursor-not-allowed"
+                  title={isEffectiveAdmin ? undefined : 'Admin-only setting'}
                 >
                   <option value="parallel">Parallel</option>
                   <option value="power">Power</option>
@@ -452,7 +505,9 @@ export default function DialerPage() {
                 <select
                   value={lines}
                   onChange={(e) => setLines(Number(e.target.value))}
-                  className="w-full px-2 py-1.5 text-[13px] bg-[#F3F3EE] border border-[#E5E7EB] rounded-[10px]"
+                  disabled={!isEffectiveAdmin}
+                  className="w-full px-2 py-1.5 text-[13px] bg-[#F3F3EE] border border-[#E5E7EB] rounded-[10px] disabled:opacity-70 disabled:cursor-not-allowed"
+                  title={isEffectiveAdmin ? undefined : 'Admin-only setting'}
                 >
                   {[1, 2, 3, 4, 5].map((n) => (
                     <option key={n} value={n}>
@@ -465,7 +520,9 @@ export default function DialerPage() {
                 <select
                   value={autoAdvance}
                   onChange={(e) => setAutoAdvance(Number(e.target.value))}
-                  className="w-full px-2 py-1.5 text-[13px] bg-[#F3F3EE] border border-[#E5E7EB] rounded-[10px]"
+                  disabled={!isEffectiveAdmin}
+                  className="w-full px-2 py-1.5 text-[13px] bg-[#F3F3EE] border border-[#E5E7EB] rounded-[10px] disabled:opacity-70 disabled:cursor-not-allowed"
+                  title={isEffectiveAdmin ? undefined : 'Admin-only setting'}
                 >
                   {[5, 10, 15, 20, 30].map((n) => (
                     <option key={n} value={n}>
@@ -482,17 +539,19 @@ export default function DialerPage() {
                 control is already on the top-nav StatusBar (kill switch),
                 so duplicating it here invited drift. */}
 
-            <div className="grid grid-cols-4 gap-3 pt-2 border-t border-[#E5E7EB]">
-              {/* PR (Hugo 2026-04-28): use pendingLeads directly. The old
-                  arithmetic `totalLeads - doneLeads` quietly hid every row
-                  whose status had transitioned to missed/skipped/dialing
-                  because totalLeads only counted pending+done. doneLeads
-                  now also includes missed+skipped, so "Done" reflects every
-                  attempted lead — what Tajul actually wants to see. */}
-              <Mini label="Queue" value={camp.pendingLeads} />
-              <Mini label="Done" value={camp.doneLeads} tone="green" />
-              <Mini label="Connected" value={camp.connectedLeads} tone="green" />
-              <Mini label="Voicemail" value={camp.voicemailLeads} />
+            {/* PR 121 (Hugo 2026-04-28): seven smaller stats — campaign
+                queue counters PLUS today's outbound message counts by
+                channel. SMS / WhatsApp / Email read from
+                useAgentMessageCounts (wk_sms_messages.created_by today).
+                Hugo's brief: "make boxes smaller and add a few others". */}
+            <div className="grid grid-cols-4 sm:grid-cols-7 gap-2 pt-2 border-t border-[#E5E7EB]">
+              <Mini label="Queue" value={camp.pendingLeads} compact />
+              <Mini label="Done" value={camp.doneLeads} tone="green" compact />
+              <Mini label="Connected" value={camp.connectedLeads} tone="green" compact />
+              <Mini label="Voicemail" value={camp.voicemailLeads} compact />
+              <Mini label="SMS" value={msgCounts.sms} compact />
+              <Mini label="WhatsApp" value={msgCounts.whatsapp} compact />
+              <Mini label="Email" value={msgCounts.email} compact />
             </div>
           </div>
 
@@ -523,19 +582,30 @@ function Mini({
   label,
   value,
   tone = 'default',
+  compact = false,
 }: {
   label: string;
   value: number;
   tone?: 'default' | 'green';
+  /** PR 121: smaller padding + smaller numbers when 7 stats share the
+   *  row. Used on /crm/dialer where Queue/Done/Connected/Voicemail sit
+   *  alongside SMS/WhatsApp/Email today counters. */
+  compact?: boolean;
 }) {
   return (
-    <div className="bg-[#F3F3EE] rounded-xl p-2.5">
-      <div className="text-[10px] uppercase tracking-wide text-[#9CA3AF] font-semibold">
+    <div className={compact ? 'bg-[#F3F3EE] rounded-lg p-1.5' : 'bg-[#F3F3EE] rounded-xl p-2.5'}>
+      <div
+        className={
+          (compact ? 'text-[9px] ' : 'text-[10px] ') +
+          'uppercase tracking-wide text-[#9CA3AF] font-semibold truncate'
+        }
+      >
         {label}
       </div>
       <div
         className={
-          'text-[18px] font-bold tabular-nums mt-0.5 ' +
+          (compact ? 'text-[14px] ' : 'text-[18px] ') +
+          'font-bold tabular-nums mt-0.5 ' +
           (tone === 'green' ? 'text-[#1E9A80]' : 'text-[#1A1A1A]')
         }
       >
