@@ -180,8 +180,12 @@ export function useDialerCampaigns(
         if (!cancelled) void load();
       }, 500);
     };
+    // PR 116 (Hugo 2026-04-28): unique channel names per consumer so
+    // multiple instances of this hook (sidebar + right panel) don't
+    // race on registration. Was 'dialer-campaigns-meta' shared.
+    const channelSuffix = `${seq}-${Math.random().toString(36).slice(2, 8)}`;
     const queueChan = supabase
-      .channel('dialer-campaigns-queue')
+      .channel(`dialer-campaigns-queue-${channelSuffix}`)
       .on(
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         'postgres_changes' as any,
@@ -190,7 +194,7 @@ export function useDialerCampaigns(
       )
       .subscribe();
     const campaignsChan = supabase
-      .channel('dialer-campaigns-meta')
+      .channel(`dialer-campaigns-meta-${channelSuffix}`)
       .on(
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         'postgres_changes' as any,
@@ -199,9 +203,18 @@ export function useDialerCampaigns(
       )
       .subscribe();
 
+    // PR 116: 10s polling backup. DELETE events from Supabase realtime
+    // sometimes arrive without a payload or are silently dropped when
+    // multiple consumers share a channel. Polling guarantees each
+    // consumer's view stays accurate without hard refresh. Cheap query.
+    const pollId = window.setInterval(() => {
+      if (!cancelled) void load();
+    }, 10_000);
+
     return () => {
       cancelled = true;
       if (pending) clearTimeout(pending);
+      window.clearInterval(pollId);
       try { void supabase.removeChannel(queueChan); } catch { /* ignore */ }
       try { void supabase.removeChannel(campaignsChan); } catch { /* ignore */ }
     };

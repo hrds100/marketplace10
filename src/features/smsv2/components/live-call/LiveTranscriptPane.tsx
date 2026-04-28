@@ -254,11 +254,11 @@ export default function LiveTranscriptPane({ durationSec, contactId, callId, age
             setLiveEvents((prev) =>
               prev.some((e) => e.id === next.id) ? prev : [...prev, next]
             );
-            // PR 113 + PR 114: drop the filler when the real coach line
-            // arrives, but hold for at least 1.5s so a fast AI doesn't
-            // make the chip flash by invisibly. Hugo: "I made a real
-            // call and could not see the fillers."
-            window.setTimeout(() => setFiller(null), 1500);
+            // PR 116 (Hugo 2026-04-28): filler stays UP alongside the
+            // coach line. Both clear together when the next caller
+            // utterance lands. Was clearing 1.5s after coach event
+            // arrived; Hugo: "the filler stays there, and the green
+            // with it from the AI coach stays there."
           } else if (evType === 'UPDATE' && payload.new) {
             const next = payload.new;
             setLiveEvents((prev) =>

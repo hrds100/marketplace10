@@ -96,6 +96,37 @@ export default function MidCallSmsSender({
   const [sending, setSending] = useState(false);
   const [loadingTpls, setLoadingTpls] = useState(true);
   const [pickedStageId, setPickedStageId] = useState<string | null>(null);
+  // PR 116 (Hugo 2026-04-28): show "From: …" above the send box so the
+  // agent sees which line the message will go from. Reads the first
+  // active wk_numbers row matching the picked channel. Doesn't try to
+  // resolve campaign-pinned numbers client-side — the send fns do that
+  // on the server; we just surface a sensible default for visibility.
+  const [fromLine, setFromLine] = useState<string | null>(null);
+  useEffect(() => {
+    if (!channel) {
+      setFromLine(null);
+      return;
+    }
+    let cancelled = false;
+    (async () => {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const { data } = await (supabase.from('wk_numbers' as any) as any)
+        .select('e164, label')
+        .eq('channel', channel)
+        .eq('is_active', true)
+        .order('created_at', { ascending: true })
+        .limit(1)
+        .maybeSingle();
+      if (cancelled) return;
+      const row = data as { e164?: string; label?: string | null } | null;
+      if (row?.e164) {
+        setFromLine(row.label ? `${row.e164} · ${row.label}` : row.e164);
+      } else {
+        setFromLine(null);
+      }
+    })();
+    return () => { cancelled = true; };
+  }, [channel]);
   // PR 107 (Hugo 2026-04-28): every successful send opens the follow-up
   // prompt so the agent always commits to a next-touch time.
   const [followupTarget, setFollowupTarget] = useState<{
@@ -383,6 +414,15 @@ export default function MidCallSmsSender({
           </span>
         )}
       </div>
+
+      {/* PR 116: from-line indicator. Tiny caption above the send box
+          so the agent always knows which number/account is sending. */}
+      {channel && fromLine && (
+        <div className="text-[10px] text-[#6B7280] mb-1.5 flex items-center gap-1">
+          <span className="font-semibold uppercase tracking-wide text-[#9CA3AF]">From:</span>
+          <span className="font-mono text-[#1A1A1A]">{fromLine}</span>
+        </div>
+      )}
 
       {channel === 'email' && (
         <input

@@ -13,6 +13,7 @@ import {
   Trash2,
   ChevronUp,
   ChevronDown,
+  GripVertical,
   Sparkles,
   Clock,
   PhoneMissed,
@@ -916,22 +917,51 @@ function PipelinesTab() {
     void persist.updateAutomation(id, patch);
   };
 
-  // PR 115 (Hugo 2026-04-28): drag-to-reorder never worked (GripVertical
-  // had no DnD handler — purely cosmetic). Replaced with up/down arrows
-  // that swap positions, same pattern as PR 93/94 channel slot picker.
+  // PR 116 (Hugo 2026-04-28): real HTML5 drag-and-drop. PR 115's arrows
+  // were too clunky — Hugo wants to drag rows. Swap-on-drop via row
+  // index. Each row gets draggable + onDragStart/Over/Drop. Reorder
+  // happens on drop, persists both swap positions.
+  const [draggedColId, setDraggedColId] = useState<string | null>(null);
+
   const moveColumn = async (idx: number, dir: -1 | 1) => {
     const sorted = [...cols].sort((a, b) => a.position - b.position);
     const a = sorted[idx];
     const b = sorted[idx + dir];
     if (!a || !b) return;
-    // Swap positions in the store optimistically.
     patchColumn(a.id, { position: b.position });
     patchColumn(b.id, { position: a.position });
-    // Persist both swaps.
     await Promise.all([
       persist.updateColumn(a.id, { position: b.position }),
       persist.updateColumn(b.id, { position: a.position }),
     ]);
+  };
+
+  const dropOnRow = async (targetId: string) => {
+    if (!draggedColId || draggedColId === targetId) {
+      setDraggedColId(null);
+      return;
+    }
+    const sorted = [...cols].sort((a, b) => a.position - b.position);
+    const fromIdx = sorted.findIndex((c) => c.id === draggedColId);
+    const toIdx = sorted.findIndex((c) => c.id === targetId);
+    if (fromIdx < 0 || toIdx < 0) {
+      setDraggedColId(null);
+      return;
+    }
+    // Re-order: pull dragged out, splice at target index.
+    const reordered = [...sorted];
+    const [moved] = reordered.splice(fromIdx, 1);
+    reordered.splice(toIdx, 0, moved);
+    // Re-number positions sequentially (1..N) and persist.
+    setDraggedColId(null);
+    await Promise.all(
+      reordered.map((c, i) => {
+        const newPos = i + 1;
+        if (c.position === newPos) return Promise.resolve(true);
+        patchColumn(c.id, { position: newPos });
+        return persist.updateColumn(c.id, { position: newPos });
+      })
+    );
   };
 
   const addColumn = async () => {
@@ -981,7 +1011,7 @@ function PipelinesTab() {
     <>
       <Card
         title="Pipeline columns = outcome buttons (CRITICAL)"
-        hint="Click a row to edit automations · ↑↓ to reorder · 1–9 = keyboard"
+        hint="Click a row to edit automations · drag rows or use ↑↓ to reorder · 1–9 = keyboard"
       >
         <div className="space-y-2">
           {[...cols].sort((a, b) => a.position - b.position).map((col, idx, sortedArr) => {
@@ -991,11 +1021,41 @@ function PipelinesTab() {
             return (
               <div
                 key={col.id}
-                className="border border-[#E5E7EB] rounded-xl overflow-hidden"
+                draggable
+                onDragStart={(e) => {
+                  setDraggedColId(col.id);
+                  e.dataTransfer.effectAllowed = 'move';
+                  // Some Firefox versions need data set to enable drag.
+                  e.dataTransfer.setData('text/plain', col.id);
+                }}
+                onDragOver={(e) => {
+                  if (draggedColId && draggedColId !== col.id) {
+                    e.preventDefault();
+                    e.dataTransfer.dropEffect = 'move';
+                  }
+                }}
+                onDrop={(e) => {
+                  e.preventDefault();
+                  void dropOnRow(col.id);
+                }}
+                onDragEnd={() => setDraggedColId(null)}
+                className={cn(
+                  'border border-[#E5E7EB] rounded-xl overflow-hidden transition-colors',
+                  draggedColId === col.id && 'opacity-40',
+                  draggedColId && draggedColId !== col.id &&
+                    'hover:border-[#1E9A80] hover:bg-[#ECFDF5]/50'
+                )}
               >
                 <div className="flex items-center gap-3 p-3">
-                  {/* PR 115: up/down arrows replace the inert GripVertical
-                      drag handle. Swap with neighbour. */}
+                  {/* PR 116 (Hugo 2026-04-28): proper drag-and-drop. Grip
+                      icon is the drag handle (cursor-grab). Up/down arrows
+                      kept as keyboard-friendly fallback. */}
+                  <span
+                    className="text-[#9CA3AF] cursor-grab active:cursor-grabbing flex-shrink-0"
+                    title="Drag to reorder"
+                  >
+                    <GripVertical className="w-4 h-4" />
+                  </span>
                   <div className="inline-flex flex-col flex-shrink-0">
                     <button
                       type="button"
