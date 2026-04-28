@@ -561,27 +561,48 @@ export function ActiveCallProvider({ children }: { children: ReactNode }) {
         // WebRTC client-side disconnect. The agent's mic stopped, but the
         // PSTN leg stayed up on Twilio's side — Hugo's complaint:
         // "Tajul pressed End but call kept going until guest hung up".
-        // Fire wk-dialer-hangup-leg first (fire-and-forget — we don't want
-        // the agent's UI waiting on a round-trip) so Twilio gets a REST
-        // POST Calls/{sid}.json with Status=canceled|completed and the
-        // callee's leg actually drops.
-        const callIdToHangup = call?.callId ?? null;
-        if (callIdToHangup) {
-          void (async () => {
-            try {
-              const { error } = await (
-                supabase.functions as unknown as HangupInvoke
-              ).invoke('wk-dialer-hangup-leg', {
-                body: { call_id: callIdToHangup },
-              });
-              if (error) {
-                console.warn('[endCall] hangup-leg failed:', error.message);
+        // PR 130 (Hugo 2026-04-28): belt-and-braces. The local
+        // call.callId is NULL on the first dial (broadcast hasn't
+        // landed yet), and previous legs may be lingering after the
+        // 35s no-answer auto-advance. Hugo: "There is one call in
+        // the background running." Now we sweep every queued /
+        // ringing / in_progress wk_calls row for THIS agent and hang
+        // each one up — guaranteed no zombies even when callId is
+        // unknown.
+        void (async () => {
+          try {
+            const { data: userData } = await supabase.auth.getUser();
+            const uid = userData.user?.id ?? null;
+            const ids = new Set<string>();
+            if (call?.callId) ids.add(call.callId);
+            if (uid) {
+              // eslint-disable-next-line @typescript-eslint/no-explicit-any
+              const { data: legs } = await (supabase.from('wk_calls' as any) as any)
+                .select('id')
+                .eq('agent_id', uid)
+                .in('status', ['queued', 'ringing', 'in_progress']);
+              for (const l of (legs ?? []) as Array<{ id: string }>) {
+                ids.add(l.id);
               }
-            } catch (e) {
-              console.warn('[endCall] hangup-leg threw:', e);
             }
-          })();
-        }
+            await Promise.all(
+              Array.from(ids).map(async (callId) => {
+                try {
+                  const { error } = await (
+                    supabase.functions as unknown as HangupInvoke
+                  ).invoke('wk-dialer-hangup-leg', { body: { call_id: callId } });
+                  if (error) {
+                    console.warn('[endCall] hangup-leg', callId, error.message);
+                  }
+                } catch (e) {
+                  console.warn('[endCall] hangup-leg threw', callId, e);
+                }
+              })
+            );
+          } catch (e) {
+            console.warn('[endCall] sweep failed', e);
+          }
+        })();
         // Disconnect EVERY Call on the Device — not just the active ref.
         // The "callee still hears me" zombie Calls (see toggleMute comment)
         // also need to be evicted so they stop streaming the mic.
