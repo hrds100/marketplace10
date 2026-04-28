@@ -43,10 +43,11 @@ describe('rowToCampaign', () => {
     });
   });
 
-  it('totalLeads sums all 7 statuses; doneLeads = done + missed + skipped', () => {
-    // PR (Hugo 2026-04-28): the old rollup ignored missed/skipped/dialing.
-    // Now every status is bucketed. Tajul scenario: 11 pending, 0 done,
-    // 0 connected, 0 voicemail, 9 missed → "Done" should be 9, not 0.
+  it('totalLeads sums all 7 statuses; doneLeads counts every non-pending non-dialing row', () => {
+    // PR 126 (Hugo 2026-04-28): "Done" = every queue row that's no
+    // longer pending or actively dialing. Hugo's mental model:
+    // "I called them, that's done." Tajul scenario: 11 pending, 9
+    // missed → "Done" should be 9.
     const c = rowToCampaign(baseRow, {
       campaign_id: 'camp-1',
       pending: 11,
@@ -59,13 +60,13 @@ describe('rowToCampaign', () => {
     });
     expect(c.totalLeads).toBe(20);
     expect(c.pendingLeads).toBe(11);
-    expect(c.doneLeads).toBe(9); // missed counts as Done
+    expect(c.doneLeads).toBe(9);
     expect(c.missedLeads).toBe(9);
     expect(c.connectedLeads).toBe(0);
     expect(c.voicemailLeads).toBe(0);
   });
 
-  it('mixed rollup: pending + done + connected + voicemail + skipped', () => {
+  it('mixed rollup: connected + voicemail also count toward Done (PR 126)', () => {
     const c = rowToCampaign(baseRow, {
       campaign_id: 'camp-1',
       pending: 7,
@@ -79,7 +80,8 @@ describe('rowToCampaign', () => {
     expect(c.totalLeads).toBe(19);
     expect(c.pendingLeads).toBe(7);
     expect(c.dialingLeads).toBe(1);
-    expect(c.doneLeads).toBe(3 + 3 + 2); // done + missed + skipped
+    // PR 126: connected + voicemail + missed + skipped + done
+    expect(c.doneLeads).toBe(2 + 1 + 3 + 2 + 3);
     expect(c.connectedLeads).toBe(2);
     expect(c.voicemailLeads).toBe(1);
     expect(c.missedLeads).toBe(3);
