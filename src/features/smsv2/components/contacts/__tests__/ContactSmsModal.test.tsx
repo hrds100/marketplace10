@@ -47,6 +47,21 @@ vi.mock('@/integrations/supabase/client', () => {
       functions: {
         invoke: (...args: unknown[]) => invokeMock(...args),
       },
+      // PR 110: PR 107 wired FollowupPromptModal into ContactSmsModal,
+      // and that modal's useFollowups hook calls supabase.auth.getUser.
+      // Without this stub, vitest emits 3 unhandled errors per run (no
+      // assertion failures, just noise). Stubbing keeps the suite quiet.
+      auth: {
+        getUser: vi.fn().mockResolvedValue({
+          data: { user: { id: 'test-agent', email: 'test@nfstay.com' } },
+          error: null,
+        }),
+      },
+      channel: vi.fn().mockReturnValue({
+        on: vi.fn().mockReturnThis(),
+        subscribe: vi.fn().mockReturnThis(),
+      }),
+      removeChannel: vi.fn(),
     },
   };
 });

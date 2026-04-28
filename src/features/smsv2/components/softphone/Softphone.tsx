@@ -4,8 +4,6 @@ import {
   PhoneOff,
   MicOff,
   Mic,
-  Pause,
-  PhoneForwarded,
   Maximize2,
   Minus,
   X,
@@ -118,15 +116,16 @@ export default function Softphone() {
           <div className="text-[14px] font-semibold text-[#1A1A1A]">{call?.contactName}</div>
           <div className="text-[12px] text-[#6B7280] tabular-nums">{call?.phone}</div>
         </div>
-        <div className="px-3 py-2 border-t border-[#E5E7EB] grid grid-cols-4 gap-1">
+        <div className="px-3 py-2 border-t border-[#E5E7EB] grid grid-cols-2 gap-1">
+          {/* PR 110 (Hugo 2026-04-28): Hold + Xfer were rendered with no
+              onClick — pure dead UI. PR 89 removed them from
+              LiveCallScreen for the same reason. Removed here too. */}
           <CallBtn
             icon={muted ? <Mic className="w-4 h-4" /> : <MicOff className="w-4 h-4" />}
             label={muted ? 'Unmute' : 'Mute'}
             onClick={toggleMute}
             active={muted}
           />
-          <CallBtn icon={<Pause className="w-4 h-4" />} label="Hold" />
-          <CallBtn icon={<PhoneForwarded className="w-4 h-4" />} label="Xfer" />
           <CallBtn
             icon={<PhoneOff className="w-4 h-4" />}
             label="End"

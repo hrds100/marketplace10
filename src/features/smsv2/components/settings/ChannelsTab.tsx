@@ -300,7 +300,7 @@ function EmptyState({ section }: { section: SectionDef }) {
     section.provider === 'unipile'
       ? 'No WhatsApp / LinkedIn / Email channels yet. Click "Connect via QR" to pair one — Unipile will open a hosted page where you scan the QR.'
       : section.provider === 'resend'
-        ? 'No email address yet. Set up the Resend domain inbox.nfstay.com and a wk_numbers row will appear after the first inbound or send.'
+        ? 'No email address yet. Resend domain mail.nfstay.com is verified — a wk_numbers row appears once the first inbound or send lands.'
         : 'No SMS numbers yet. Add one in the Numbers tab.';
   return <div className="text-[12px] text-[#9CA3AF] py-3">{msg}</div>;
 }

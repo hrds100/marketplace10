@@ -1,4 +1,5 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import {
   Kanban,
   MessageSquare,
@@ -217,8 +218,40 @@ const WORKSPACE_ONLY_TABS = [
 ];
 
 export default function SettingsPage() {
-  const [scope, setScope] = useState<Scope>({ kind: 'workspace' });
-  const [bundleTab, setBundleTab] = useState<string>('overview');
+  // PR 110 (Hugo 2026-04-28): scope + tab live in the URL so a browser
+  // tab switch (or refresh, or share-link) preserves where the agent
+  // was. Falls back to workspace + overview defaults on first visit.
+  const [searchParams, setSearchParams] = useSearchParams();
+  const scope = useMemo<Scope>(() => {
+    const kind = searchParams.get('scope') ?? 'workspace';
+    if (kind === 'campaign') {
+      const campaignId = searchParams.get('campaignId') ?? '';
+      if (campaignId) return { kind: 'campaign', campaignId };
+    }
+    if (kind === 'workspace-only') {
+      const tabId = (searchParams.get('section') ?? 'agents') as
+        | 'agents' | 'numbers' | 'channels' | 'pacing' | 'kill';
+      return { kind: 'workspace-only', tabId };
+    }
+    return { kind: 'workspace' };
+  }, [searchParams]);
+  const bundleTab = searchParams.get('tab') ?? (scope.kind === 'campaign' ? 'overview' : 'pipelines');
+
+  const setScope = (next: Scope) => {
+    const sp = new URLSearchParams(searchParams);
+    sp.set('scope', next.kind);
+    if (next.kind === 'campaign') sp.set('campaignId', next.campaignId);
+    else sp.delete('campaignId');
+    if (next.kind === 'workspace-only') sp.set('section', next.tabId);
+    else sp.delete('section');
+    sp.set('tab', next.kind === 'campaign' ? 'overview' : 'pipelines');
+    setSearchParams(sp, { replace: false });
+  };
+  const setBundleTab = (tab: string) => {
+    const sp = new URLSearchParams(searchParams);
+    sp.set('tab', tab);
+    setSearchParams(sp, { replace: false });
+  };
 
   return (
     <div className="p-6 max-w-[1400px] mx-auto">
@@ -230,7 +263,7 @@ export default function SettingsPage() {
       </header>
 
       <div className="grid grid-cols-12 gap-5">
-        <SettingsSidebar scope={scope} onScopeChange={(s) => { setScope(s); setBundleTab(s.kind === 'campaign' ? 'overview' : 'pipelines'); }} />
+        <SettingsSidebar scope={scope} onScopeChange={setScope} />
         <main className="col-span-12 lg:col-span-9">
           {scope.kind === 'workspace' && (
             <WorkspaceBundle
@@ -684,12 +717,38 @@ function CampaignLeadsCsvPanel({
           Each row becomes a contact + a queue entry pinned to <strong className="text-[#1A1A1A]">{campaignName}</strong>.
           Agents on this campaign immediately see them in the dialer queue.
         </div>
-        <button
-          onClick={() => setOpen(true)}
-          className="bg-[#1E9A80] text-white text-[12px] font-semibold px-4 py-2 rounded-[10px] hover:bg-[#1E9A80]/90 inline-flex items-center gap-1.5"
-        >
-          <Plus className="w-3.5 h-3.5" /> Upload CSV
-        </button>
+        <div className="flex items-center gap-2 flex-wrap">
+          <button
+            onClick={() => setOpen(true)}
+            className="bg-[#1E9A80] text-white text-[12px] font-semibold px-4 py-2 rounded-[10px] hover:bg-[#1E9A80]/90 inline-flex items-center gap-1.5"
+          >
+            <Plus className="w-3.5 h-3.5" /> Upload CSV
+          </button>
+          {/* PR 110 (Hugo 2026-04-28): "Download CSV template" so the agent
+              gets the exact header row + an example. Browser-side blob, no
+              server hit. */}
+          <button
+            onClick={() => {
+              const csv =
+                'name,phone,email,company,notes\n' +
+                'Jane Doe,+447700900001,jane@example.com,Acme Lettings,Knows the area\n' +
+                'John Smith,+447700900002,,,\n';
+              const blob = new Blob([csv], { type: 'text/csv;charset=utf-8' });
+              const url = URL.createObjectURL(blob);
+              const a = document.createElement('a');
+              a.href = url;
+              a.download = 'nfstay-leads-template.csv';
+              document.body.appendChild(a);
+              a.click();
+              document.body.removeChild(a);
+              URL.revokeObjectURL(url);
+            }}
+            className="bg-white border border-[#E5E7EB] text-[#1A1A1A] text-[12px] font-medium px-4 py-2 rounded-[10px] hover:bg-[#F3F3EE] inline-flex items-center gap-1.5"
+            title="Download a template CSV with the right headers + an example row"
+          >
+            ↓ Download template
+          </button>
+        </div>
         <div className="text-[10px] text-[#9CA3AF]">
           Accepted columns (case-insensitive):{' '}
           <code className="bg-[#F3F3EE] px-1 rounded">phone</code> /{' '}
@@ -697,6 +756,8 @@ function CampaignLeadsCsvPanel({
           <code className="bg-[#F3F3EE] px-1 rounded">number</code> + optional{' '}
           <code className="bg-[#F3F3EE] px-1 rounded">name</code>,{' '}
           <code className="bg-[#F3F3EE] px-1 rounded">email</code>. Anything else is stored as a custom field.
+          <br />
+          The pipeline + initial stage selectors appear after you pick a file.
         </div>
       </div>
       <BulkUploadModal

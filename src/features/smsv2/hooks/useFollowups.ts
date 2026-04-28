@@ -191,5 +191,22 @@ export function useFollowups() {
     []
   );
 
-  return { items, agentId, loading, error, create, setStatus, snooze };
+  // PR 110 (Hugo 2026-04-28): reschedule a follow-up to an explicit
+  // datetime (ISO). Unlike snooze() which is relative-hours-from-now,
+  // this takes an absolute timestamp. Status stays 'pending' so the
+  // banner countdown picks it up. Used by EditContactModal.
+  const reschedule = useCallback(
+    async (id: string, dueIsoString: string) => {
+      const client = supabase as unknown as FollowupsTable;
+      const { error: e } = await client
+        .from('wk_contact_followups')
+        .update({ due_at: dueIsoString, status: 'pending' })
+        .eq('id', id);
+      if (e) setError(e.message);
+      return !e;
+    },
+    []
+  );
+
+  return { items, agentId, loading, error, create, setStatus, snooze, reschedule };
 }
