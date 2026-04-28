@@ -88,12 +88,35 @@ const COACH_ICONS: Record<
 const LATEST_BODY_CLASS = 'text-[22px] leading-[1.35] font-semibold tracking-[-0.005em]';
 const OLDER_BODY_CLASS = 'text-[11px] leading-tight line-clamp-1';
 
+// PR 113 (Hugo 2026-04-28): buy-time filler chip. The instant a caller
+// utterance lands, we surface a short filler ("Got it, got it" /
+// "Right, right" / "Mhm") so the agent has something to say while the
+// AI coach line is still generating. Replaced the moment the real
+// coach event arrives. Local-only — no DB hit.
+const BUYTIME_FILLERS = [
+  'Got it, got it…',
+  'Right, right…',
+  'Mhm, mhm…',
+  'Makes sense…',
+  'Sure, sure…',
+  'I see, I see…',
+  'Fair enough…',
+];
+function pickFiller(): string {
+  return BUYTIME_FILLERS[Math.floor(Math.random() * BUYTIME_FILLERS.length)];
+}
+
 export default function LiveTranscriptPane({ durationSec, contactId, callId, agentFirstName }: Props) {
   const { aiCoach } = useKillSwitch();
   const store = useSmsV2();
   const scrollRef = useRef<HTMLDivElement>(null);
   const [liveLines, setLiveLines] = useState<LiveTranscriptRow[]>([]);
   const [liveEvents, setLiveEvents] = useState<LiveCoachRow[]>([]);
+  // PR 113: filler chip state. Set when caller speaks. Cleared the
+  // moment a coach event arrives. Caller-utterance counter used so a
+  // re-pick fires for each new utterance (not just the first).
+  const [filler, setFiller] = useState<string | null>(null);
+  const [callerUtteranceCount, setCallerUtteranceCount] = useState(0);
   // Real contact name → first-name label for the caller side. Falls back
   // to "Caller" if we can't resolve a name (e.g. inbound from a number we
   // don't have a wk_contacts row for yet).
@@ -197,6 +220,12 @@ export default function LiveTranscriptPane({ durationSec, contactId, callId, age
           setLiveLines((prev) =>
             prev.some((l) => l.id === payload.new.id) ? prev : [...prev, payload.new]
           );
+          // PR 113: caller just spoke → flash a filler chip so the
+          // agent has a buy-time line ready while AI generates.
+          if (payload.new.speaker !== 'agent') {
+            setFiller(pickFiller());
+            setCallerUtteranceCount((n) => n + 1);
+          }
         }
       )
       .subscribe();
@@ -225,6 +254,8 @@ export default function LiveTranscriptPane({ durationSec, contactId, callId, age
             setLiveEvents((prev) =>
               prev.some((e) => e.id === next.id) ? prev : [...prev, next]
             );
+            // PR 113: real coach line is here, drop the filler.
+            setFiller(null);
           } else if (evType === 'UPDATE' && payload.new) {
             const next = payload.new;
             setLiveEvents((prev) =>
@@ -369,6 +400,25 @@ export default function LiveTranscriptPane({ durationSec, contactId, callId, age
             <div className="sticky top-0 -mt-3 -mx-4 px-4 py-1.5 mb-2 bg-white/95 backdrop-blur text-[10px] font-bold uppercase tracking-wide text-[#1E9A80]">
               AI coach — read this aloud
             </div>
+            {/* PR 113: buy-time filler chip. Pops the instant a caller
+                utterance lands. Replaced when the real coach line
+                arrives. Same uppercase+pulse pattern as the OBJECTION
+                cards so the agent's eye picks it up fast. */}
+            {filler && useLive && (
+              <div
+                key={`filler-${callerUtteranceCount}`}
+                className="rounded-lg border border-[#F59E0B] bg-[#FFFBEB] p-3 mb-2 animate-pulse"
+                style={{ borderLeftWidth: 4 }}
+                data-testid="buy-time-filler"
+              >
+                <div className="text-[9px] font-bold uppercase tracking-wide text-[#B45309] mb-1">
+                  ⏱ BUY TIME — say this while reading
+                </div>
+                <div className="text-[16px] font-semibold text-[#1A1A1A]">
+                  "{filler}"
+                </div>
+              </div>
+            )}
             {events.length === 0 && !aiCoach && useLive && (
               // Hugo 2026-04-28: the rep should never stare at an empty
               // teleprompter. Pre-fill the opener immediately on call
