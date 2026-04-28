@@ -60,11 +60,15 @@ interface ContactRow {
 }
 
 /** Statuses that count as "still in flight" — the board shows these.
- *  Once a call resolves (completed / failed / etc) it drops off. */
+ *  Once a call resolves (completed / failed / etc) it drops off.
+ *  PR 123 (Hugo 2026-04-28): includes 'voicemail' so AMD-detected
+ *  voicemail legs stay visible — the agent needs to see "Voicemail"
+ *  on that specific leg and decide whether to hang up or wait. */
 const ACTIVE_STATUSES = new Set<string>([
   'queued',
   'ringing',
   'in_progress',
+  'voicemail',
 ]);
 
 /** PR 54 (Hugo 2026-04-27): max age for an in-flight leg before we

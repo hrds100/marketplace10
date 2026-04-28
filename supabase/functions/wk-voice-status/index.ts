@@ -296,6 +296,16 @@ serve(async (req: Request) => {
     if (answeredBy) {
       // Map Twilio AnsweredBy values onto our 2-value enum.
       update.answered_by = answeredBy.startsWith('machine') ? 'machine' : 'human';
+      // PR 123 (Hugo 2026-04-28): when AMD detects voicemail (machine_*)
+      // mid-call, surface that on the leg's status so the parallel-dial
+      // banner shows "Voicemail" on THIS leg specifically. Hugo's brief:
+      // "show clear which one is the voicemail so the agent can press
+      // the red button on it; leave the other two ringing."
+      // We override mapped='in_progress' → 'voicemail'. Terminal status
+      // (completed/canceled/etc.) keeps its mapped value.
+      if (answeredBy.startsWith('machine') && mapped === 'in_progress') {
+        update.status = 'voicemail';
+      }
     }
     if (isTerminal) update.ended_at = new Date().toISOString();
 
