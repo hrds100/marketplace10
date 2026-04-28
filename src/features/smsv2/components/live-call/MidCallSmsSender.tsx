@@ -19,6 +19,8 @@ import { useSmsV2 } from '../../store/SmsV2Store';
 import { useContactPersistence } from '../../hooks/useContactPersistence';
 import { interpolateTemplate } from '../../lib/interpolateTemplate';
 import StageSelector from '../shared/StageSelector';
+import FollowupPromptModal from '../followups/FollowupPromptModal';
+import { useActiveCallCtx } from './ActiveCallContext';
 
 type Channel = 'sms' | 'whatsapp' | 'email';
 
@@ -94,6 +96,12 @@ export default function MidCallSmsSender({
   const [sending, setSending] = useState(false);
   const [loadingTpls, setLoadingTpls] = useState(true);
   const [pickedStageId, setPickedStageId] = useState<string | null>(null);
+  // PR 107 (Hugo 2026-04-28): every successful send opens the follow-up
+  // prompt so the agent always commits to a next-touch time.
+  const [followupTarget, setFollowupTarget] = useState<{
+    columnId: string;
+  } | null>(null);
+  const { call } = useActiveCallCtx();
 
   useEffect(() => {
     let cancelled = false;
@@ -249,6 +257,11 @@ export default function MidCallSmsSender({
       setBody('');
       if (channel === 'email') setSubject('');
       setSelectedTemplateId('');
+      // PR 107: open follow-up prompt anchored to the just-picked stage,
+      // BEFORE we wipe pickedStageId for the next compose.
+      if (pickedStageId) {
+        setFollowupTarget({ columnId: pickedStageId });
+      }
       setPickedStageId(null);
       // PR 105: force re-pick of channel after every successful send.
       setChannel(null);
@@ -267,7 +280,19 @@ export default function MidCallSmsSender({
   const ChannelIcon =
     channel === 'email' ? Mail : channel === 'whatsapp' ? MessageSquare : Phone;
 
+  // PR 107: lookup column for follow-up modal.
+  const followupColumn = followupTarget
+    ? columns.find((c) => c.id === followupTarget.columnId)
+    : null;
+  const followupSuggestedHours = (() => {
+    const lc = followupColumn?.name.toLowerCase();
+    if (lc === 'callback') return 2;
+    if (lc === 'interested') return 24;
+    return 24 * 3;
+  })();
+
   return (
+    <>
     <div className="border border-[#E5E7EB] rounded-xl p-2.5 bg-white">
       <div className="flex items-center justify-between gap-1.5 mb-2">
         <div className="flex items-center gap-1.5 min-w-0">
@@ -416,5 +441,19 @@ export default function MidCallSmsSender({
         </button>
       </div>
     </div>
+    {followupTarget && (
+      <FollowupPromptModal
+        open
+        onOpenChange={(o) => { if (!o) setFollowupTarget(null); }}
+        contactId={contactId}
+        contactName={contactName}
+        columnId={followupTarget.columnId}
+        columnName={followupColumn?.name ?? 'Stage'}
+        suggestedHoursAhead={followupSuggestedHours}
+        callId={call?.callId ?? null}
+        onSaved={() => setFollowupTarget(null)}
+      />
+    )}
+    </>
   );
 }

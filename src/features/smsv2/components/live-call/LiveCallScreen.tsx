@@ -179,6 +179,19 @@ export default function LiveCallScreen() {
             </button>
           )}
 
+          {/* PR 107 (Hugo 2026-04-28): cancel a call mid-ring. Without
+              this the only way out of the placing phase was waiting for
+              Twilio to time out. Same endCall handler as in_call. */}
+          {phase === 'placing' && (
+            <button
+              onClick={endCall}
+              className="flex items-center gap-1.5 bg-[#EF4444] hover:bg-[#DC2626] text-white px-3 py-1.5 rounded-[10px] text-[12px] font-semibold"
+              data-testid="livecall-cancel-placing"
+            >
+              <PhoneOff className="w-3.5 h-3.5" /> Cancel
+            </button>
+          )}
+
           {/* Preview mode: agent can dial the lead from inside the call
               room without bouncing back to the inbox. Closing the room
               uses closeCallRoom() instead of fullScreen toggle. */}

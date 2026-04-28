@@ -1,4 +1,5 @@
 import { useState, useMemo, useEffect, useRef } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import {
   MessageSquare,
   PhoneIncoming,
@@ -19,6 +20,7 @@ import { formatRelativeTime, formatTimeOnly, formatDuration } from '../data/help
 import { useActiveCallCtx } from '../components/live-call/ActiveCallContext';
 import StageSelector from '../components/shared/StageSelector';
 import EditContactModal from '../components/contacts/EditContactModal';
+import FollowupPromptModal from '../components/followups/FollowupPromptModal';
 import { useSmsV2 } from '../store/SmsV2Store';
 import { useContactTimeline } from '../hooks/useContactTimeline';
 import { useContactMessages } from '../hooks/useContactMessages';
@@ -70,12 +72,20 @@ function ChannelGlyph({
 }
 
 export default function InboxPage() {
-  const { contacts, patchContact, upsertContact, pushToast } = useSmsV2();
+  const { contacts, columns: storeColumns, patchContact, upsertContact, pushToast } = useSmsV2();
   const persist = useContactPersistence();
   const demoMode = useDemoMode();
   const [filter, setFilter] = useState<Filter>('all');
   const [activeContactId, setActiveContactId] = useState<string>('');
   const [editing, setEditing] = useState<Contact | null>(null);
+  // PR 107 (Hugo 2026-04-28): every successful send opens the follow-up
+  // prompt so the agent always commits to a next-touch time. Skip is
+  // still allowed via the modal's close handler — non-blocking nudge.
+  const [followupTarget, setFollowupTarget] = useState<{
+    contactId: string;
+    contactName: string;
+    columnId: string;
+  } | null>(null);
   const [reply, setReply] = useState('');
   const [replySubject, setReplySubject] = useState('');
   // PR 80 safety: channel starts UNSELECTED. Send is disabled and a
@@ -186,7 +196,18 @@ export default function InboxPage() {
 
   // Auto-select the newest thread on first load (Hugo's spec: newest
   // conversation must be visible without scrolling).
+  // PR 107: also honour ?contact=<uuid> deep links from FollowupBanner.
+  const [searchParams, setSearchParams] = useSearchParams();
   useEffect(() => {
+    const deepLinked = searchParams.get('contact');
+    if (deepLinked) {
+      setActiveContactId(deepLinked);
+      // Strip the param so a refresh/back doesn't re-pin the selection.
+      const next = new URLSearchParams(searchParams);
+      next.delete('contact');
+      setSearchParams(next, { replace: true });
+      return;
+    }
     if (!activeContactId && sidebarRows.length > 0) {
       setActiveContactId(sidebarRows[0].id);
     }
@@ -195,7 +216,7 @@ export default function InboxPage() {
     if (activeContactId && !sidebarRows.some((r) => r.id === activeContactId) && sidebarRows.length > 0) {
       setActiveContactId(sidebarRows[0].id);
     }
-  }, [sidebarRows, activeContactId]);
+  }, [sidebarRows, activeContactId, searchParams, setSearchParams]);
 
   // Resolve activeContact from the store first (full Contact shape
   // for stage selector / edit modal) — fall back to a synthesized
@@ -392,6 +413,15 @@ export default function InboxPage() {
         if (replyChannel === 'email') setReplySubject('');
         // PR 105: force re-pick of channel after every successful send.
         setReplyChannel(null);
+        // PR 107: prompt the agent for a follow-up time. Skipped silently
+        // when the contact has no pipeline column yet (nothing to anchor).
+        if (activeContact.pipelineColumnId) {
+          setFollowupTarget({
+            contactId: activeContact.id,
+            contactName: activeContact.name,
+            columnId: activeContact.pipelineColumnId,
+          });
+        }
       }
     } catch (e) {
       pushToast(`Send crashed: ${e instanceof Error ? e.message : 'unknown'}`, 'error');
@@ -768,6 +798,25 @@ export default function InboxPage() {
         </div>
       </aside>
     </div>
+    {followupTarget && (() => {
+      const col = storeColumns.find((c) => c.id === followupTarget.columnId);
+      const lc = col?.name.toLowerCase();
+      const suggestedHours =
+        lc === 'callback' ? 2 : lc === 'interested' ? 24 : 24 * 3;
+      return (
+        <FollowupPromptModal
+          open
+          onOpenChange={(o) => { if (!o) setFollowupTarget(null); }}
+          contactId={followupTarget.contactId}
+          contactName={followupTarget.contactName}
+          columnId={followupTarget.columnId}
+          columnName={col?.name ?? 'Stage'}
+          suggestedHoursAhead={suggestedHours}
+          callId={null}
+          onSaved={() => setFollowupTarget(null)}
+        />
+      );
+    })()}
     <EditContactModal
       contact={editing}
       onClose={() => setEditing(null)}
