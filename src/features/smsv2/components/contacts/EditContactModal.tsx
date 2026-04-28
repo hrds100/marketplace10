@@ -36,7 +36,7 @@ export default function EditContactModal({ contact, onClose, onSave, agents }: P
   // PR 110 (Hugo 2026-04-28): edit follow-up time inline. Shows the next
   // PENDING follow-up for this contact; saving the modal also reschedules
   // the follow-up if the agent changed it.
-  const { items: allFollowups, reschedule } = useFollowups();
+  const { items: allFollowups, reschedule, create: createFollowup } = useFollowups();
   const nextFollowup = useMemo(
     () =>
       contact
@@ -61,7 +61,16 @@ export default function EditContactModal({ contact, onClose, onSave, agents }: P
       const local = `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
       setFollowupDueLocal(local);
     } else {
-      setFollowupDueLocal('');
+      // PR 114: when no follow-up exists, default the input to "tomorrow
+      // at 10am" so the agent can schedule one in two clicks (edit time
+      // if needed, then "Schedule"). Hugo: "I should be able to schedule
+      // a follow-up time from the edit modal at any stage, even before
+      // a call."
+      const tomorrow = new Date(Date.now() + 24 * 60 * 60 * 1000);
+      tomorrow.setHours(10, 0, 0, 0);
+      const pad = (n: number) => String(n).padStart(2, '0');
+      const local = `${tomorrow.getFullYear()}-${pad(tomorrow.getMonth() + 1)}-${pad(tomorrow.getDate())}T${pad(tomorrow.getHours())}:${pad(tomorrow.getMinutes())}`;
+      setFollowupDueLocal(local);
     }
   }, [contact, nextFollowup]);
 
@@ -146,49 +155,71 @@ export default function EditContactModal({ contact, onClose, onSave, agents }: P
             </Field>
           </div>
 
-          {/* PR 110: edit follow-up time when one is scheduled. */}
-          {nextFollowup && (
-            <div className="bg-[#FFFBEB] border border-[#F59E0B]/40 rounded-[10px] p-3">
-              <div className="flex items-center gap-1.5 mb-2 text-[11px] uppercase tracking-wide text-[#B45309] font-bold">
-                <Bell className="w-3 h-3" />
-                Next follow-up
-              </div>
-              <div className="flex items-end gap-2">
-                <div className="flex-1">
-                  <Label>Due (local time)</Label>
-                  <input
-                    type="datetime-local"
-                    value={followupDueLocal}
-                    onChange={(e) => setFollowupDueLocal(e.target.value)}
-                    className="w-full px-3 py-2 text-[13px] border border-[#E5E7EB] rounded-[10px] bg-white tabular-nums"
-                  />
-                </div>
-                <button
-                  type="button"
-                  onClick={async () => {
-                    if (!nextFollowup || !followupDueLocal) return;
-                    setSavingFollowup(true);
-                    const iso = new Date(followupDueLocal).toISOString();
-                    await reschedule(nextFollowup.id, iso);
-                    setSavingFollowup(false);
-                  }}
-                  disabled={
-                    savingFollowup ||
-                    !followupDueLocal ||
-                    new Date(followupDueLocal).toISOString() === nextFollowup.due_at
-                  }
-                  className="px-3 py-2 bg-[#B45309] text-white text-[12px] font-semibold rounded-[10px] hover:bg-[#92400E] disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                  {savingFollowup ? 'Saving…' : 'Update'}
-                </button>
-              </div>
-              {nextFollowup.note && (
-                <div className="text-[11px] text-[#6B7280] mt-1 italic">
-                  Note: {nextFollowup.note}
-                </div>
-              )}
+          {/* PR 110 + 114: schedule / edit a follow-up. PR 114 (Hugo
+              2026-04-28): if NO follow-up exists yet, allow creating
+              one right here. Default time = tomorrow 10:00 local. */}
+          <div className="bg-[#FFFBEB] border border-[#F59E0B]/40 rounded-[10px] p-3">
+            <div className="flex items-center gap-1.5 mb-2 text-[11px] uppercase tracking-wide text-[#B45309] font-bold">
+              <Bell className="w-3 h-3" />
+              {nextFollowup ? 'Next follow-up' : 'Schedule a follow-up'}
             </div>
-          )}
+            <div className="flex items-end gap-2">
+              <div className="flex-1">
+                <Label>Due (local time)</Label>
+                <input
+                  type="datetime-local"
+                  value={followupDueLocal}
+                  onChange={(e) => setFollowupDueLocal(e.target.value)}
+                  className="w-full px-3 py-2 text-[13px] border border-[#E5E7EB] rounded-[10px] bg-white tabular-nums"
+                />
+              </div>
+              <button
+                type="button"
+                onClick={async () => {
+                  if (!followupDueLocal) return;
+                  setSavingFollowup(true);
+                  const iso = new Date(followupDueLocal).toISOString();
+                  if (nextFollowup) {
+                    await reschedule(nextFollowup.id, iso);
+                  } else if (contact && draft.pipelineColumnId) {
+                    // Create needs a column. If contact has no stage,
+                    // we can't create here — skip silently and the
+                    // agent can pick a stage first.
+                    await createFollowup({
+                      contact_id: contact.id,
+                      column_id: draft.pipelineColumnId,
+                      due_at: iso,
+                    });
+                  }
+                  setSavingFollowup(false);
+                }}
+                disabled={
+                  savingFollowup ||
+                  !followupDueLocal ||
+                  (!!nextFollowup &&
+                    new Date(followupDueLocal).toISOString() === nextFollowup.due_at) ||
+                  (!nextFollowup && !draft.pipelineColumnId)
+                }
+                className="px-3 py-2 bg-[#B45309] text-white text-[12px] font-semibold rounded-[10px] hover:bg-[#92400E] disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {savingFollowup
+                  ? 'Saving…'
+                  : nextFollowup
+                    ? 'Update'
+                    : 'Schedule'}
+              </button>
+            </div>
+            {nextFollowup?.note && (
+              <div className="text-[11px] text-[#6B7280] mt-1 italic">
+                Note: {nextFollowup.note}
+              </div>
+            )}
+            {!nextFollowup && !draft.pipelineColumnId && (
+              <div className="text-[10px] text-[#B45309] mt-1.5 italic">
+                Pick a pipeline stage above first to schedule.
+              </div>
+            )}
+          </div>
 
           {/* Tags */}
           <div>

@@ -254,8 +254,11 @@ export default function LiveTranscriptPane({ durationSec, contactId, callId, age
             setLiveEvents((prev) =>
               prev.some((e) => e.id === next.id) ? prev : [...prev, next]
             );
-            // PR 113: real coach line is here, drop the filler.
-            setFiller(null);
+            // PR 113 + PR 114: drop the filler when the real coach line
+            // arrives, but hold for at least 1.5s so a fast AI doesn't
+            // make the chip flash by invisibly. Hugo: "I made a real
+            // call and could not see the fillers."
+            window.setTimeout(() => setFiller(null), 1500);
           } else if (evType === 'UPDATE' && payload.new) {
             const next = payload.new;
             setLiveEvents((prev) =>
@@ -283,6 +286,17 @@ export default function LiveTranscriptPane({ durationSec, contactId, callId, age
   const useLive = !!callId;
   const allowMock = !useLive && demoMode;
   const showEmptyState = !useLive && !demoMode;
+
+  // PR 114 (Hugo 2026-04-28): in demo mode, force a sample filler chip
+  // visible so the agent / Hugo can SEE what it looks like without
+  // needing a live call. In live mode, the realtime hook above sets it
+  // organically.
+  useEffect(() => {
+    if (allowMock && !filler) {
+      setFiller(pickFiller());
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [allowMock]);
 
   const lines = useLive
     ? liveLines.map((r) => ({
@@ -404,7 +418,7 @@ export default function LiveTranscriptPane({ durationSec, contactId, callId, age
                 utterance lands. Replaced when the real coach line
                 arrives. Same uppercase+pulse pattern as the OBJECTION
                 cards so the agent's eye picks it up fast. */}
-            {filler && useLive && (
+            {filler && (useLive || allowMock) && (
               <div
                 key={`filler-${callerUtteranceCount}`}
                 className="rounded-lg border border-[#F59E0B] bg-[#FFFBEB] p-3 mb-2 animate-pulse"

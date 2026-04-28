@@ -5,6 +5,7 @@ import {
   Minimize2,
   Flame,
   Pencil,
+  X,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import {
@@ -218,6 +219,36 @@ export default function LiveCallScreen() {
             title={isPreview ? 'Close call room' : 'Minimise (call continues)'}
           >
             <Minimize2 className="w-4 h-4" />
+          </button>
+          {/* PR 114 (Hugo 2026-04-28): explicit Close button. Hugo:
+              "I should be able to close the call room altogether — I
+              can minimize but I want a way to fully close." Behaviour:
+                preview → closeCallRoom (exit preview)
+                in_call / post_call → setFullScreen(false) AND
+                  closeCallRoom (collapses to softphone bar; active
+                  call NOT ended — the End button is for that)
+              X icon makes the close intent visually obvious vs the
+              minimize icon next to it. */}
+          <button
+            onClick={() => {
+              if (isPreview) closeCallRoom();
+              else {
+                setFullScreen(false);
+                closeCallRoom();
+              }
+            }}
+            className={cn(
+              'p-1.5 rounded-lg',
+              phase === 'in_call' ? 'hover:bg-white/15' : 'hover:bg-black/[0.04]'
+            )}
+            title={
+              phase === 'in_call'
+                ? 'Close (call continues in background — use End to hang up)'
+                : 'Close call room'
+            }
+            data-testid="livecall-close"
+          >
+            <X className="w-4 h-4" />
           </button>
         </div>
       </header>
