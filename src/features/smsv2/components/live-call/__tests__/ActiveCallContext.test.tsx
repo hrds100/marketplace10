@@ -430,3 +430,168 @@ describe('ActiveCallProvider — PR 138 reducer state', () => {
     expect(snapshot!.callPhase).toBe('idle');
   });
 });
+
+// ────────────────────────────────────────────────────────────────────────────
+// PR 138 follow-up (11/10) — requestNextCall regression test
+//   Before this fix the reducer defined NEXT_CALL_REQUESTED but no
+//   caller dispatched it: Skip / N / Next call all flipped to
+//   outcome_done and STOPPED. This test pins the chain:
+//     applyOutcome → outcome_done → requestNextCall → dial fires
+// ────────────────────────────────────────────────────────────────────────────
+
+const SECOND_CONTACT = {
+  id: '33333333-3333-3333-3333-333333333333',
+  name: 'Tajul',
+  phone: '+447900000002',
+};
+const SECOND_CALL_UUID = '44444444-4444-4444-4444-444444444444';
+
+function ProbeWithTwoSeeds() {
+  const store = useSmsV2();
+  useEffect(() => {
+    store.upsertContact({
+      id: CONTACT.id,
+      name: CONTACT.name,
+      phone: CONTACT.phone,
+      tags: [],
+      isHot: false,
+      customFields: {},
+      createdAt: '2026-04-25T00:00:00Z',
+    });
+    store.upsertContact({
+      id: SECOND_CONTACT.id,
+      name: SECOND_CONTACT.name,
+      phone: SECOND_CONTACT.phone,
+      tags: [],
+      isHot: false,
+      customFields: {},
+      createdAt: '2026-04-25T00:00:00Z',
+    });
+    // Queue the second contact so popNextFromQueue resolves it.
+    store.setQueue([SECOND_CONTACT.id]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+  return null;
+}
+
+function renderProviderWithQueue() {
+  return render(
+    <SmsV2Provider>
+      <ProbeWithTwoSeeds />
+      <ActiveCallProvider>
+        <Probe />
+      </ActiveCallProvider>
+    </SmsV2Provider>
+  );
+}
+
+describe('ActiveCallProvider.requestNextCall — PR 138 follow-up', () => {
+  it('skip → outcome_done → requestNextCall → dial fires for next contact', async () => {
+    const firstCall = makeFakeCall();
+    const secondCall = makeFakeCall();
+    invokeMock
+      // wk-calls-create for first call
+      .mockResolvedValueOnce({
+        data: { call_id: CALL_UUID, allowed: true },
+        error: null,
+      })
+      // wk-calls-create for second (next) call
+      .mockResolvedValueOnce({
+        data: { call_id: SECOND_CALL_UUID, allowed: true },
+        error: null,
+      });
+    dialMock
+      .mockResolvedValueOnce(firstCall)
+      .mockResolvedValueOnce(secondCall);
+
+    renderProviderWithQueue();
+    await waitFor(() => snapshot && expect(snapshot).not.toBeNull());
+
+    // First call: dial → accept → disconnect
+    await act(async () => {
+      await snapshot!.startCall(CONTACT.id);
+    });
+    await act(async () => {
+      firstCall.fire('accept');
+    });
+    await act(async () => {
+      firstCall.fire('disconnect');
+    });
+    expect(snapshot!.callPhase).toBe('stopped_waiting_outcome');
+
+    // Skip → outcome_done
+    await act(async () => {
+      snapshot!.applyOutcome('skipped');
+    });
+    expect(snapshot!.callPhase).toBe('outcome_done');
+
+    const dialCallsBefore = dialMock.mock.calls.length;
+    expect(dialCallsBefore).toBe(1);
+
+    // requestNextCall should pick the queued contact and dial.
+    await act(async () => {
+      await snapshot!.requestNextCall();
+    });
+
+    // CRITICAL: Twilio dial actually fired for the next contact.
+    expect(dialMock.mock.calls.length).toBe(2);
+    expect(dialMock.mock.calls[1][0]).toBe(SECOND_CONTACT.phone);
+    expect(dialMock.mock.calls[1][1]).toEqual({
+      CallId: SECOND_CALL_UUID,
+      ContactId: SECOND_CONTACT.id,
+    });
+
+    // Reducer flipped to dialing for the new contact.
+    expect(snapshot!.callPhase).toBe('dialing');
+    expect(snapshot!.call?.contactId).toBe(SECOND_CONTACT.id);
+  });
+
+  it('requestNextCall is a no-op when callPhase is not outcome_done', async () => {
+    renderProviderWithQueue();
+    await waitFor(() => snapshot && expect(snapshot).not.toBeNull());
+
+    // From idle, no dial should fire.
+    await act(async () => {
+      await snapshot!.requestNextCall();
+    });
+    expect(dialMock).not.toHaveBeenCalled();
+    expect(invokeMock).not.toHaveBeenCalled();
+    expect(snapshot!.callPhase).toBe('idle');
+  });
+
+  it('requestNextCall stays in outcome_done with toast when queue is empty', async () => {
+    const firstCall = makeFakeCall();
+    invokeMock.mockResolvedValueOnce({
+      data: { call_id: CALL_UUID, allowed: true },
+      error: null,
+    });
+    dialMock.mockResolvedValueOnce(firstCall);
+
+    // Render without queueing a second contact — local queue empty,
+    // call.campaignId is null so wk-leads-next won't be invoked.
+    renderProvider();
+    await waitFor(() => snapshot && expect(snapshot).not.toBeNull());
+
+    await act(async () => {
+      await snapshot!.startCall(CONTACT.id);
+    });
+    await act(async () => {
+      firstCall.fire('accept');
+    });
+    await act(async () => {
+      firstCall.fire('disconnect');
+    });
+    await act(async () => {
+      snapshot!.applyOutcome('skipped');
+    });
+    expect(snapshot!.callPhase).toBe('outcome_done');
+
+    const dialCallsBefore = dialMock.mock.calls.length;
+    await act(async () => {
+      await snapshot!.requestNextCall();
+    });
+    // No new dial — agent stays in outcome_done.
+    expect(dialMock.mock.calls.length).toBe(dialCallsBefore);
+    expect(snapshot!.callPhase).toBe('outcome_done');
+  });
+});

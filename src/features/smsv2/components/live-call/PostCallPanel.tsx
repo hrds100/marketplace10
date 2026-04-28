@@ -47,7 +47,8 @@ const ICON_MAP: Record<string, LucideIcon> = {
 //   - FollowupPromptModal for stages with requires_followup.
 
 export default function PostCallPanel() {
-  const { applyOutcome, call, callPhase, endCall } = useActiveCallCtx();
+  const { applyOutcome, call, callPhase, endCall, requestNextCall } =
+    useActiveCallCtx();
   const store = useSmsV2();
   const columns = store.columns;
   // Submission state lives in the reducer. The agent has clicked an
@@ -85,9 +86,21 @@ export default function PostCallPanel() {
     // PR 138: synchronous dispatch — reducer flips to
     // outcome_submitting → outcome_done. No setTimeout dance.
     applyOutcome(columnId, note);
+    // PR 138 follow-up (11/10): the agent's outcome click IS the
+    // advance signal (Hugo's clarification: "no auto-advance" meant
+    // no TIMER-driven advance). After the reducer settles to
+    // outcome_done, dial the next contact. Skip / Next-call buttons
+    // do their own dial — only real outcome cards land here.
+    void Promise.resolve().then(() => {
+      void requestNextCall();
+    });
   };
 
   // Keyboard shortcuts (PR 138: dispatch immediately, no setTimeout).
+  // PR 138 follow-up (11/10): S / N now trigger requestNextCall after
+  // applyOutcome — previously they flipped state to outcome_done and
+  // stopped. Real outcomes 1-9 also dial next via commitOutcome →
+  // handleClick.
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       if (submitted) return;
@@ -97,8 +110,18 @@ export default function PostCallPanel() {
         if (col) handleClick(col.id);
       } else if (e.key.toLowerCase() === 's') {
         applyOutcome('skipped', quickNote.trim() || undefined);
+        void Promise.resolve().then(() => {
+          void requestNextCall();
+        });
       } else if (e.key.toLowerCase() === 'n') {
-        applyOutcome('next-now', quickNote.trim() || undefined);
+        // Mirror the Next-call button: hang up first to sweep zombie
+        // legs, then advance.
+        void (async () => {
+          await endCall();
+          applyOutcome('next-now', quickNote.trim() || undefined);
+          await Promise.resolve();
+          await requestNextCall();
+        })();
       }
     };
     window.addEventListener('keydown', onKey);
@@ -222,12 +245,19 @@ export default function PostCallPanel() {
           </span>
         </div>
         <button
-          onClick={() => {
+          onClick={async () => {
             if (submitted) return;
+            // PR 138 follow-up (11/10): Skip = no stage move + advance.
+            // applyOutcome('skipped') flips reducer to outcome_done
+            // synchronously; awaiting one microtask is enough for
+            // requestNextCall to see the new phase.
             applyOutcome('skipped', quickNote.trim() || undefined);
+            await Promise.resolve();
+            await requestNextCall();
           }}
           disabled={submitted}
           className="flex items-center gap-1.5 px-3 py-1.5 rounded-[10px] border border-[#E5E7EB] text-[12px] font-medium text-[#6B7280] hover:bg-white disabled:opacity-50"
+          data-testid="postcall-skip"
         >
           <SkipForward className="w-3.5 h-3.5" /> Skip
         </button>
@@ -241,11 +271,19 @@ export default function PostCallPanel() {
             // but crucially it SWEEPS any zombie wk_calls + WebRTC
             // legs that would otherwise trip "A Call is already
             // active" on the next dial.
+            //
+            // PR 138 follow-up (11/10): after applyOutcome lands the
+            // reducer in outcome_done, fire requestNextCall to actually
+            // dial the next contact — previously this button was a no-
+            // op once the reducer reached outcome_done.
             await endCall();
             applyOutcome('next-now', quickNote.trim() || undefined);
+            await Promise.resolve();
+            await requestNextCall();
           }}
           disabled={submitted}
           className="flex items-center gap-1.5 px-3 py-1.5 rounded-[10px] bg-[#1E9A80] text-white text-[12px] font-semibold hover:bg-[#1E9A80]/90 shadow-[0_4px_12px_rgba(30,154,128,0.35)] disabled:opacity-50"
+          data-testid="postcall-next-call"
         >
           <Phone className="w-3.5 h-3.5" /> Next call
         </button>

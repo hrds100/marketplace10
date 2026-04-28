@@ -84,6 +84,11 @@ interface HangupInvoke {
   }>;
 }
 
+// PR 138 follow-up (Hugo 2026-04-28): wk-leads-next is invoked from
+// requestNextCall when the local Zustand queue is empty but the agent
+// is on a campaign-driven session. The edge fn atomically picks the
+// next row from wk_dialer_queue (priority + scheduled_for + attempts,
+// SKIP LOCKED) and marks it 'dialing' for this agent.
 interface NextLeadInvoke {
   invoke: (
     name: string,
@@ -147,6 +152,14 @@ interface ActiveCallCtx {
   minimiseRoom: () => void;
   /** Maximise from minimised state. */
   maximiseRoom: () => void;
+  /** PR 138 follow-up (11/10): the agent has finished one call and
+   *  picked an outcome (callPhase === 'outcome_done'). Resolve the
+   *  next contact from the local queue first, then wk-leads-next as a
+   *  fallback for campaign sessions, and start the dial. No-op if
+   *  callPhase isn't outcome_done. Used by Next call / Skip / S / N
+   *  shortcuts AND by real outcome card clicks once the reducer
+   *  settles. */
+  requestNextCall: () => Promise<void>;
 }
 
 const Ctx = createContext<ActiveCallCtx | null>(null);
@@ -163,6 +176,12 @@ export function ActiveCallProvider({ children }: { children: ReactNode }) {
   const [, setTick] = useReducer((n: number) => n + 1, 0);
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const activeTwilioCallRef = useRef<TwilioCall | null>(null);
+
+  // PR 138 follow-up (11/10): requestNextCall needs to read the LATEST
+  // callPhase + call to decide whether to advance. useCallback closures
+  // capture stale snapshots, so we mirror state into a ref every render.
+  const stateRef = useRef(state);
+  stateRef.current = state;
 
   useEffect(() => {
     if (callPhase === 'in_call') {
@@ -621,6 +640,85 @@ export function ActiveCallProvider({ children }: { children: ReactNode }) {
     [call, store]
   );
 
+  // ─── Request next call ──────────────────────────────────────────
+  // PR 138 follow-up (11/10): the reducer defines NEXT_CALL_REQUESTED
+  // (outcome_done → dialing) but nothing in the codebase dispatched
+  // it before — Next call / Skip / S / N were silent no-ops post-
+  // outcome. This is the dispatch site.
+  //
+  // Resolution order for the next contact:
+  //   1. store.popNextFromQueue(prevContactId) — local Zustand mirror
+  //      (manual queue / RecentCallsPanel pre-loaded leads)
+  //   2. wk-leads-next on the call's campaign — falls back to the
+  //      server-side wk_dialer_queue (priority + scheduled_for +
+  //      attempts, SKIP LOCKED) so campaign sessions don't dead-end
+  //      when the local mirror is empty.
+  //   3. Genuinely empty → toast + STAY in outcome_done. The agent
+  //      decides what to do next (close room / pick from Recent Calls
+  //      / dial manually). Hugo's Rule 3/4 (no auto-advance, no auto-
+  //      outcome) is preserved: this fires because the AGENT clicked
+  //      Next/Skip/an outcome card, not because of a timer.
+  //
+  // Twilio dial fires via the existing `startCall` path, which already
+  // wires every Twilio listener (accept/disconnect/cancel/reject/
+  // error/mute) onto the new TwilioCall — duplicating that here would
+  // be a regression magnet. startCall internally dispatches
+  // START_CALL; the reducer accepts it from outcome_done identically
+  // to NEXT_CALL_REQUESTED (both flip to dialing + open_full + new
+  // call). NEXT_CALL_REQUESTED stays in the reducer for direct
+  // dispatch paths (e.g. future RecentCallsPanel "redial").
+  const requestNextCall = useCallback(async (): Promise<void> => {
+    const cur = stateRef.current;
+    if (cur.callPhase !== 'outcome_done') {
+      // Defensive — UI shouldn't allow this, but never advance from
+      // mid-call or pre-outcome states.
+      console.info('[requestNextCall] ignored — callPhase is', cur.callPhase);
+      return;
+    }
+
+    const prevContactId = cur.call?.contactId ?? null;
+    const campaignId = cur.call?.campaignId ?? null;
+
+    // 1. Local queue
+    let nextContactId = store.popNextFromQueue(prevContactId);
+
+    // 2. Campaign fallback
+    if (!nextContactId && campaignId) {
+      try {
+        const { data, error: fnError } = await (
+          supabase.functions as unknown as NextLeadInvoke
+        ).invoke('wk-leads-next', {
+          body: { campaign_id: campaignId },
+        });
+        if (fnError) {
+          console.warn('[requestNextCall] wk-leads-next failed:', fnError.message);
+        } else if (data && !data.empty && data.contact_id) {
+          nextContactId = data.contact_id;
+          // Make sure the contact mirror has at least a stub so
+          // startCall can resolve a phone (real hydration happens via
+          // realtime / store).
+          if (!store.getContact(nextContactId)) {
+            console.info(
+              '[requestNextCall] contact not in local mirror — startCall will use phone from server later'
+            );
+          }
+        }
+      } catch (e) {
+        console.warn('[requestNextCall] wk-leads-next threw:', e);
+      }
+    }
+
+    // 3. Empty
+    if (!nextContactId) {
+      store.pushToast('Queue is empty — no more leads', 'info');
+      return;
+    }
+
+    // 4. Dial. startCall handles dispatch + Twilio wiring + spend gate
+    //    + listener registration. This is the SINGLE dial path.
+    await startCall(nextContactId);
+  }, [store, startCall]);
+
   // ─── Public context value ───────────────────────────────────────
   const legacyPhase = mapToLegacyPhase(callPhase);
   // `fullScreen` mirrors `roomView !== 'open_min'` — preserves the
@@ -672,6 +770,7 @@ export function ActiveCallProvider({ children }: { children: ReactNode }) {
       dispositionSignal,
       minimiseRoom: () => dispatch({ type: 'MINIMISE_ROOM' }),
       maximiseRoom: () => dispatch({ type: 'MAXIMISE_ROOM' }),
+      requestNextCall,
     };
   }, [
     legacyPhase,
@@ -690,6 +789,7 @@ export function ActiveCallProvider({ children }: { children: ReactNode }) {
     enterDialingPlaceholder,
     endCall,
     applyOutcome,
+    requestNextCall,
   ]);
 
   return <Ctx.Provider value={value}>{children}</Ctx.Provider>;
