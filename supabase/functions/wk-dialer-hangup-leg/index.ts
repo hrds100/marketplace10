@@ -145,14 +145,17 @@ serve(async (req: Request) => {
       .eq('id', callId);
     if (updErr) return json(500, { error: updErr.message });
 
-    // PR 123: also revert the matching wk_dialer_queue row from
-    // 'dialing' back to 'pending' so the contact can be re-picked
-    // on the next Start. Without this, a hung-up leg leaves its queue
-    // row stuck in 'dialing' forever.
+    // PR 129 (Hugo 2026-04-28): mark the queue row 'missed', NOT
+    // 'pending'. Hugo's mental model: "I called them, that's done."
+    // PR 123 reverted to 'pending' so the contact could be re-picked,
+    // but that meant Done counter undercounted by every Cancel +
+    // every no-answer auto-hangup. Now Cancel = a completed attempt
+    // that lands in the Missed bucket. Hugo can manually retry from
+    // /crm/contacts if needed.
     if (row.contact_id && row.campaign_id) {
       await supa
         .from('wk_dialer_queue')
-        .update({ status: 'pending', agent_id: null })
+        .update({ status: 'missed' })
         .eq('contact_id', row.contact_id)
         .eq('campaign_id', row.campaign_id)
         .eq('status', 'dialing');

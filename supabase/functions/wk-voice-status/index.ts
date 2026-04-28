@@ -353,6 +353,40 @@ serve(async (req: Request) => {
       }
     }
 
+    // PR 129 (Hugo 2026-04-28): on terminal Twilio status, push the
+    // matching wk_dialer_queue row out of 'dialing' so the Done
+    // counter reflects reality and wk-dialer-tick doesn't later
+    // revert it back to 'pending'. Mapping:
+    //   completed (and was 'dialing', not winner) → 'missed'
+    //     (rare — usually winner orchestration already moved it to
+    //     'connected' on in_progress).
+    //   no_answer / busy / failed / canceled → 'missed'
+    // 'voicemail' is set on wk_calls earlier when AnsweredBy=machine
+    // mid-call; the queue row is moved to 'voicemail' by the winner
+    // orchestrator at that point. Don't double-write here.
+    if (isTerminal) {
+      try {
+        const { data: callRow } = await supabase
+          .from('wk_calls')
+          .select('id, contact_id, campaign_id')
+          .eq('twilio_call_sid', callSid)
+          .maybeSingle();
+        const cr = callRow as
+          | { contact_id: string | null; campaign_id: string | null }
+          | null;
+        if (cr?.contact_id && cr?.campaign_id) {
+          await supabase
+            .from('wk_dialer_queue')
+            .update({ status: 'missed' })
+            .eq('contact_id', cr.contact_id)
+            .eq('campaign_id', cr.campaign_id)
+            .eq('status', 'dialing');
+        }
+      } catch (e) {
+        console.warn('[wk-voice-status] queue terminal-update failed', e);
+      }
+    }
+
     // On terminal state → enqueue post-call AI + cost compute.
     if (isTerminal && mapped === 'completed') {
       try {

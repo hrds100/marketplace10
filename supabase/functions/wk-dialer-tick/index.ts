@@ -81,8 +81,12 @@ serve(async (req: Request) => {
 
       if (!safeToReQueue) continue; // ringing or in_progress — leave it
 
+      // PR 129 (Hugo 2026-04-28): orphaned 'dialing' rows whose call
+      // already hit a terminal state are completed attempts — push to
+      // 'missed' so the Done counter reflects them. Was 'pending', which
+      // re-queued the contact and undercounted Done.
       const { error: revertErr } = await supa.from('wk_dialer_queue')
-        .update({ status: 'pending', agent_id: null })
+        .update({ status: 'missed' })
         .eq('id', row.id);
       if (!revertErr) unstuckCount++;
     }

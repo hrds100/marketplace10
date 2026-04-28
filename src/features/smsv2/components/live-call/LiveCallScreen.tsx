@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import {
   MicOff,
   PhoneOff,
@@ -44,6 +44,7 @@ export default function LiveCallScreen() {
     previewContactId,
     closeCallRoom,
     startCall,
+    applyOutcome,
   } = useActiveCallCtx();
   const store = useSmsV2();
   const { agent: me, firstName: myFirstName, talkRatioPercent } = useCurrentAgent();
@@ -76,6 +77,44 @@ export default function LiveCallScreen() {
     phase === 'placing' && activeLegs[0]?.startedAt
       ? Math.max(0, Math.floor((Date.now() - activeLegs[0].startedAt) / 1000))
       : 0;
+  // PR 129 (Hugo 2026-04-28): show the actual Twilio leg status
+  // ('Dialing' / 'Ringing') so the agent sees Twilio's reported state
+  // rather than a generic "Calling".
+  const placingLegStatus = phase === 'placing' ? activeLegs[0]?.status : null;
+  const placingStatusLabel =
+    placingLegStatus === 'ringing'
+      ? 'Ringing'
+      : placingLegStatus === 'in_progress'
+        ? 'Connecting…'
+        : 'Dialing';
+
+  // PR 129 (Hugo 2026-04-28): no-answer auto-hangup. Hugo: "if it
+  // takes 30 seconds, 40 seconds, and it doesn't start ringing because
+  // the phone is off, you have to know — has to go to hang up and go
+  // to the next call." Threshold: 35s. We trigger only when the leg
+  // is still 'queued' or 'ringing' — never on 'in_progress' (real
+  // conversation in progress). After hangup, fire applyOutcome
+  // 'next-now' sentinel so we skip the post-call review and dial the
+  // next contact straight away.
+  const NO_ANSWER_AUTO_HANGUP_SEC = 35;
+  const autoHangupFiredRef = useRef(false);
+  useEffect(() => {
+    if (phase !== 'placing') {
+      autoHangupFiredRef.current = false;
+      return;
+    }
+    if (autoHangupFiredRef.current) return;
+    if (placingElapsedSec < NO_ANSWER_AUTO_HANGUP_SEC) return;
+    const stillRinging =
+      placingLegStatus === 'queued' ||
+      placingLegStatus === 'ringing' ||
+      placingLegStatus == null; // null = no leg row yet — also stuck
+    if (!stillRinging) return;
+    autoHangupFiredRef.current = true;
+    endCall();
+    // Skip post-call review for an auto-canceled no-answer; advance.
+    setTimeout(() => applyOutcome('next-now'), 200);
+  }, [phase, placingElapsedSec, placingLegStatus, endCall, applyOutcome]);
 
   // Preview mode (PR 10): no active call, but agent opened the room for
   // a specific contact from the inbox. Use that contact instead of the
@@ -91,25 +130,25 @@ export default function LiveCallScreen() {
 
   return (
     <div className="fixed inset-0 z-[200] bg-[#F3F3EE] flex flex-col">
-      {/* Top bar — three visual states:
-            placing  → black bar with ringing dots (Hugo: no orange/red here)
+      {/* Top bar — four visual states:
+            placing  → tall black bar absorbing the design Hugo liked
+                       from the dark banner (status pill + big timer)
             in_call  → green bar with pulsing dot + duration
-            post_call → white bar, muted */}
+            post_call → white bar, muted
+            idle     → white bar */}
       <header
         className={cn(
-          'h-14 flex items-center px-5 gap-3 flex-shrink-0 transition-colors',
+          'flex items-center px-5 gap-3 flex-shrink-0 transition-colors',
+          // PR 129: taller during placing so the absorbed design from
+          // the deleted second banner has room to breathe.
+          phase === 'placing' ? 'h-[68px]' : 'h-14',
           phase === 'in_call' && 'bg-[#1E9A80] text-white',
-          phase === 'placing' && 'bg-[#1A1A1A] text-white',
+          phase === 'placing' && 'bg-[#0A0A0A] text-white',
           phase === 'post_call' && 'bg-white border-b border-[#E5E7EB] text-[#1A1A1A]',
           phase === 'idle' && 'bg-white border-b border-[#E5E7EB] text-[#1A1A1A]'
         )}
       >
-        {phase === 'placing' ? (
-          <span className="relative w-2.5 h-2.5 inline-flex">
-            <span className="absolute inset-0 rounded-full bg-white animate-ping" />
-            <span className="relative w-2.5 h-2.5 rounded-full bg-white" />
-          </span>
-        ) : (
+        {phase !== 'placing' && (
           <span
             className={cn(
               'w-2.5 h-2.5 rounded-full',
@@ -120,20 +159,37 @@ export default function LiveCallScreen() {
         )}
         <span className="text-[14px] font-semibold flex items-center gap-2">
           {phase === 'placing' && (
-            <>
-              <span>Calling {placingDisplayName}</span>
-              <span className="inline-flex gap-0.5">
-                <span className="w-1 h-1 rounded-full bg-white animate-bounce" style={{ animationDelay: '0ms' }} />
-                <span className="w-1 h-1 rounded-full bg-white animate-bounce" style={{ animationDelay: '150ms' }} />
-                <span className="w-1 h-1 rounded-full bg-white animate-bounce" style={{ animationDelay: '300ms' }} />
+            // PR 129 (Hugo 2026-04-28): absorbed the dark banner's
+            // design — status pill + big tabular timer + ringing dot.
+            // This is the SINGLE call surface now (PR 128 killed the
+            // second banner). Layout reads: ●ringing · Hugo · DIALING · 0:14
+            <span className="flex items-center gap-3">
+              <span className="relative w-2.5 h-2.5 inline-flex">
+                <span className="absolute inset-0 rounded-full bg-[#1E9A80] animate-ping opacity-75" />
+                <span className="relative w-2.5 h-2.5 rounded-full bg-[#1E9A80]" />
               </span>
-              {placingElapsedSec > 0 && (
-                <span className="ml-2 tabular-nums opacity-80 text-[12px] font-normal">
-                  {Math.floor(placingElapsedSec / 60)}:
-                  {(placingElapsedSec % 60).toString().padStart(2, '0')}
-                </span>
-              )}
-            </>
+              <span className="text-[15px] font-semibold">
+                Calling {placingDisplayName}
+              </span>
+              <span
+                className={cn(
+                  'inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wide',
+                  placingLegStatus === 'ringing'
+                    ? 'bg-[#1E9A80]/20 text-[#1E9A80]'
+                    : 'bg-white/10 text-white/80'
+                )}
+                data-testid="livecall-leg-status"
+              >
+                {placingStatusLabel}
+              </span>
+              <span
+                className="text-[18px] font-bold tabular-nums tracking-tight"
+                data-testid="livecall-ringing-timer"
+              >
+                {Math.floor(placingElapsedSec / 60)}:
+                {(placingElapsedSec % 60).toString().padStart(2, '0')}
+              </span>
+            </span>
           )}
           {phase === 'in_call' && (
             <>

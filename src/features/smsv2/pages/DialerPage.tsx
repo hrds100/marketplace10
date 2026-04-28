@@ -12,6 +12,7 @@ import SpendBanner from '../components/dialer/SpendBanner';
 import StageSelector from '../components/shared/StageSelector';
 import EditContactModal from '../components/contacts/EditContactModal';
 import { MOCK_CAMPAIGNS } from '../data/mockCampaigns';
+import { useDemoMode } from '../lib/useDemoMode';
 import { useActiveCallCtx } from '../components/live-call/ActiveCallContext';
 import { useSpendLimit } from '../hooks/useSpendLimit';
 import { useKillSwitch } from '../hooks/useKillSwitch';
@@ -65,15 +66,27 @@ export default function DialerPage() {
   }, [user]);
   const isEffectiveAdmin =
     workspaceRole === 'admin' || (workspaceRole === null && isAdmin);
-  const { campaigns: realCampaigns } = useDialerCampaigns({
+  const { campaigns: realCampaigns, loading: campaignsLoading } = useDialerCampaigns({
     scopedToAgentId: !isEffectiveAdmin && user ? user.id : null,
   });
+  // PR 129 (Hugo 2026-04-28): "When I hard refresh it shows the dummy
+  // data" — was showing MOCK_CAMPAIGNS while the real fetch was in
+  // flight, so an admin saw "April landlord outreach 127 left · 18
+  // done" for ~300ms before reality replaced it. Now: only fall back
+  // to MOCK_CAMPAIGNS in `?demo=1` mode. Real users see an empty
+  // skeleton until the fetch resolves.
+  const demoMode = useDemoMode();
   const allCampaigns = useMemo<Campaign[]>(
-    () => (realCampaigns.length > 0 ? realCampaigns : MOCK_CAMPAIGNS),
-    [realCampaigns]
+    () =>
+      realCampaigns.length > 0
+        ? realCampaigns
+        : demoMode
+          ? MOCK_CAMPAIGNS
+          : [],
+    [realCampaigns, demoMode]
   );
 
-  const [activeId, setActiveId] = useState<string>(allCampaigns[0]?.id ?? MOCK_CAMPAIGNS[0].id);
+  const [activeId, setActiveId] = useState<string>(allCampaigns[0]?.id ?? '');
   const [running, setRunning] = useState(true);
   const [editing, setEditing] = useState<Contact | null>(null);
   const { startCall, enterDialingPlaceholder } = useActiveCallCtx();
@@ -100,18 +113,21 @@ export default function DialerPage() {
     }
   }, [allCampaigns, activeId]);
 
-  const camp = allCampaigns.find((c) => c.id === activeId) ?? allCampaigns[0] ?? MOCK_CAMPAIGNS[0];
+  // PR 129: don't synthesize a MOCK campaign when the user has none —
+  // the empty-state branch below renders instead.
+  const camp: Campaign | null =
+    allCampaigns.find((c) => c.id === activeId) ?? allCampaigns[0] ?? null;
 
   // PR 126: power-dialer-only. mode + lines are constants now —
   // kept for back-compat with wk-dialer-start (which also caps to 1
   // server-side). autoAdvance still configurable.
   const mode: Campaign['mode'] = 'power';
   const lines = 1;
-  const [autoAdvance, setAutoAdvance] = useState<number>(camp.autoAdvanceSeconds);
+  const [autoAdvance, setAutoAdvance] = useState<number>(camp?.autoAdvanceSeconds ?? 10);
 
   useEffect(() => {
-    setAutoAdvance(camp.autoAdvanceSeconds);
-  }, [camp.id, camp.autoAdvanceSeconds]);
+    if (camp) setAutoAdvance(camp.autoAdvanceSeconds);
+  }, [camp?.id, camp?.autoAdvanceSeconds]);
 
   const isUuid = (s: string) =>
     /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(s);
@@ -359,7 +375,11 @@ export default function DialerPage() {
           <CampaignList
             activeId={activeId}
             onSelect={setActiveId}
-            campaigns={realCampaigns.length > 0 ? realCampaigns : undefined}
+            // PR 129: in production always pass real campaigns (even
+            // when empty) so the sidebar shows "No campaigns yet"
+            // instead of mock placeholders. Demo mode keeps the
+            // mock fallback intact.
+            campaigns={demoMode ? undefined : realCampaigns}
           />
 
           <div className="bg-white border border-[#E5E7EB] rounded-2xl overflow-hidden">
@@ -445,6 +465,21 @@ export default function DialerPage() {
 
         {/* Right — campaign detail + dialer */}
         <div className="col-span-12 lg:col-span-8 space-y-3">
+          {!camp ? (
+            // PR 129 (Hugo 2026-04-28): empty / loading state in
+            // production replaces the brief MOCK_CAMPAIGNS flash on
+            // hard refresh.
+            <div className="bg-white border border-[#E5E7EB] rounded-2xl p-8 text-center">
+              <div className="text-[14px] font-semibold text-[#1A1A1A] mb-1">
+                {campaignsLoading ? 'Loading campaigns…' : 'No campaigns yet'}
+              </div>
+              <div className="text-[12px] text-[#6B7280]">
+                {campaignsLoading
+                  ? ' '
+                  : 'Ask an admin to create a campaign and assign you to it.'}
+              </div>
+            </div>
+          ) : (
           <div className="bg-white border border-[#E5E7EB] rounded-2xl p-5 space-y-4">
             <div className="flex items-center justify-between">
               <div>
@@ -525,6 +560,7 @@ export default function DialerPage() {
               <Mini label="Email" value={msgCounts.email} compact />
             </div>
           </div>
+          )}
 
         </div>
       </div>
