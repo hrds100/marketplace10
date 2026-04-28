@@ -5,9 +5,27 @@
 // entry, summarising the latest message + direction + timestamp.
 // Sorted by latest activity descending. Realtime-subscribed:
 // any INSERT into wk_sms_messages re-runs the load.
+//
+// PR 119 (Hugo 2026-04-28): per-agent inbox isolation.
+// Migration 20260430000018 (PR 52) deliberately opened up
+// wk_sms_messages SELECT to any CRM-eligible role with the comment
+// "per-contact filtering is done by the application — the sidebar
+// shows contacts the user owns; admins see all". That app-side
+// filter never landed, so logging in as an agent showed every
+// other agent's inbox. We now do that filter here:
+//   - Admins (hardcoded email OR profiles.workspace_role = 'admin')
+//     keep the whole-workspace view.
+//   - Agents see only contacts they own (wk_contacts.owner_agent_id)
+//     OR are actively assigned to (wk_lead_assignments status
+//     IN ('assigned','in_progress')) — the same predicate used by
+//     the wk_contacts RLS policy.
 
 import { useCallback, useEffect, useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
+
+// Mirrors src/core/auth/useAuth.ts ADMIN_EMAILS and the SQL helper
+// wk_is_admin() in migration 20260425000002. Keep in sync.
+const ADMIN_EMAILS = ['admin@hub.nfstay.com', 'hugo@nfstay.com', 'chris@nfstay.com'];
 
 export type ChannelKind = 'sms' | 'whatsapp' | 'email';
 
@@ -49,20 +67,72 @@ export function useInboxThreads(): { threads: InboxThread[]; loading: boolean; r
   const [loading, setLoading] = useState(true);
 
   const load = useCallback(async () => {
+    // PR 119: resolve current user + admin status before querying so
+    // we can scope the inbox per-user. RLS on wk_sms_messages is open
+    // to any CRM role (PR 52); ownership filtering is the app's job.
+    const { data: authData } = await supabase.auth.getUser();
+    const uid = authData.user?.id ?? null;
+    const email = authData.user?.email ?? '';
+
+    let isAdmin = ADMIN_EMAILS.includes(email);
+    if (!isAdmin && uid) {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const { data: profile } = await (supabase.from('profiles' as any) as any)
+        .select('workspace_role')
+        .eq('id', uid)
+        .maybeSingle();
+      if ((profile as { workspace_role: string | null } | null)?.workspace_role === 'admin') {
+        isAdmin = true;
+      }
+    }
+
+    // Build the contact-id allow-list for non-admins. Mirrors the
+    // wk_contacts RLS predicate: owner OR active lead-assignment.
+    let allowedContactIds: string[] | null = null;
+    if (!isAdmin && uid) {
+      const [ownedRes, assignedRes] = await Promise.all([
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        (supabase.from('wk_contacts' as any) as any)
+          .select('id')
+          .eq('owner_agent_id', uid),
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        (supabase.from('wk_lead_assignments' as any) as any)
+          .select('contact_id')
+          .eq('agent_id', uid)
+          .in('status', ['assigned', 'in_progress']),
+      ]);
+      const ids = new Set<string>();
+      for (const r of (ownedRes.data ?? []) as Array<{ id: string }>) ids.add(r.id);
+      for (const r of (assignedRes.data ?? []) as Array<{ contact_id: string }>) {
+        ids.add(r.contact_id);
+      }
+      allowedContactIds = Array.from(ids);
+
+      // Agent owns nothing → empty inbox. Skip the round-trip.
+      if (allowedContactIds.length === 0) {
+        setThreads([]);
+        setLoading(false);
+        return;
+      }
+    }
+
     // Strategy: pull the last 500 messages, group client-side. Cheap
     // for typical CRM volume (under a few thousand messages/day) and
     // doesn't require a server-side window function. If volume grows,
     // swap to a SQL function returning latest-per-contact directly.
-    const [msgsRes, contactsRes] = await Promise.all([
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      (supabase.from('wk_sms_messages' as any) as any)
-        .select('id, contact_id, direction, body, created_at, channel')
-        .order('created_at', { ascending: false })
-        .limit(500),
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      (supabase.from('wk_contacts' as any) as any)
-        .select('id, name, phone'),
-    ]);
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    let msgsQuery = (supabase.from('wk_sms_messages' as any) as any)
+      .select('id, contact_id, direction, body, created_at, channel')
+      .order('created_at', { ascending: false })
+      .limit(500);
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    let contactsQuery = (supabase.from('wk_contacts' as any) as any)
+      .select('id, name, phone');
+    if (allowedContactIds !== null) {
+      msgsQuery = msgsQuery.in('contact_id', allowedContactIds);
+      contactsQuery = contactsQuery.in('id', allowedContactIds);
+    }
+    const [msgsRes, contactsRes] = await Promise.all([msgsQuery, contactsQuery]);
 
     const msgs = (msgsRes.data ?? []) as MessageRow[];
     const contacts = (contactsRes.data ?? []) as ContactRow[];
