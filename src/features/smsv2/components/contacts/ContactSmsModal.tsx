@@ -97,6 +97,18 @@ interface Props {
    *  "WhatsApp" icon on the contacts list opens the modal already
    *  pinned to WhatsApp instead of forcing a re-pick. */
   defaultChannel?: Channel | null;
+  /** PR 122 (Hugo 2026-04-28): fires after every successful send.
+   *  Parent uses this to (a) close THIS modal and (b) open the
+   *  FollowupPromptModal at the parent layer — sequential instead
+   *  of stacked. Without it the follow-up prompt was rendering at
+   *  z-230 while this modal sat at z-300, so the prompt flashed
+   *  behind the still-mounted send box. If absent, the modal falls
+   *  back to the legacy in-place follow-up render. */
+  onSent?: (info: {
+    contactId: string;
+    contactName: string;
+    columnId: string;
+  }) => void;
 }
 
 const CHANNEL_LABEL: Record<Channel, string> = {
@@ -110,6 +122,7 @@ export default function ContactSmsModal({
   onClose,
   agentFirstName,
   defaultChannel = null,
+  onSent,
 }: Props) {
   const { pushToast, columns, patchContact } = useSmsV2();
   const persist = useContactPersistence();
@@ -337,13 +350,25 @@ export default function ContactSmsModal({
       setTimeout(() => setShowSentBanner(false), 4000);
       // PR 107: prompt for a follow-up time. Stage-coupled templates may
       // have just moved the contact — prefer the new column if so.
+      // PR 122 (Hugo 2026-04-28): when a parent provides `onSent`, hand
+      // control off so the parent can sequentially close THIS modal and
+      // mount the follow-up prompt cleanly. Otherwise (legacy callers)
+      // fall back to the in-place render below.
       const followupColumnId = selectedTemplate?.move_to_stage_id ?? contact.pipelineColumnId;
       if (followupColumnId) {
-        setFollowupTarget({
-          contactId: contact.id,
-          contactName: contact.name,
-          columnId: followupColumnId,
-        });
+        if (onSent) {
+          onSent({
+            contactId: contact.id,
+            contactName: contact.name,
+            columnId: followupColumnId,
+          });
+        } else {
+          setFollowupTarget({
+            contactId: contact.id,
+            contactName: contact.name,
+            columnId: followupColumnId,
+          });
+        }
       }
     } catch (e) {
       pushToast(
