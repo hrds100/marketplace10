@@ -100,10 +100,29 @@ serve(async (req: Request) => {
         msg.toLowerCase().includes('exists');
       if (!alreadyExists) return json(500, { error: msg });
 
-      // Reuse existing — look it up and rotate the password to what admin typed
-      const { data: list, error: listErr } = await admin.auth.admin.listUsers();
-      if (listErr) return json(500, { error: listErr.message });
-      const existing = list?.users?.find((u) => (u.email ?? '').toLowerCase() === email);
+      // Reuse existing — look it up and rotate the password to what admin
+      // typed. PR (Hugo 2026-04-28): listUsers defaults to page=1 perPage=50.
+      // Once auth.users grows past 50 rows, older accounts (e.g. an agent
+      // soft-deleted earlier and now being recreated) drop off page 1 and
+      // the lookup falsely 500'd with "Email exists but lookup failed".
+      // Page through until we find the email or run out of pages.
+      let existing: { id: string; email?: string | null } | null = null;
+      const PER_PAGE = 200;
+      for (let page = 1; page <= 100; page++) {
+        const { data: list, error: listErr } = await admin.auth.admin.listUsers({
+          page,
+          perPage: PER_PAGE,
+        });
+        if (listErr) return json(500, { error: listErr.message });
+        const found = list?.users?.find(
+          (u) => (u.email ?? '').toLowerCase() === email
+        );
+        if (found) {
+          existing = { id: found.id, email: found.email };
+          break;
+        }
+        if (!list?.users || list.users.length < PER_PAGE) break;
+      }
       if (!existing) return json(500, { error: 'Email exists but lookup failed' });
       userId = existing.id;
       const { error: pwErr } = await admin.auth.admin.updateUserById(userId, { password });
@@ -133,7 +152,9 @@ serve(async (req: Request) => {
       );
     if (profileErr) return json(500, { error: `Profile upsert: ${profileErr.message}` });
 
-    // 3) Spend limit row (one per agent)
+    // 3) Spend limit row (one per agent). show_on_leaderboard is reset to
+    //    true here because wk-delete-agent flips it to false on soft-delete;
+    //    a recreated agent should be visible on the leaderboard again.
     const { error: limitErr } = await admin
       .from('wk_voice_agent_limits')
       .upsert(
@@ -142,6 +163,7 @@ serve(async (req: Request) => {
           daily_limit_pence: limitPence,
           daily_spend_pence: 0,
           is_admin: role === 'admin',
+          show_on_leaderboard: true,
         },
         { onConflict: 'agent_id' }
       );
