@@ -2326,7 +2326,17 @@ function CampaignNumbersPanel({ campaignId }: { campaignId: string }) {
 
 // ─── Agents — invite + delete + spend ──────────────────────────────
 function AgentsTab() {
-  const { agents, upsertAgent, removeAgent, pushToast } = useSmsV2();
+  // PR 121 (Hugo 2026-04-28): the Agents tab was reading `agents` off
+  // the SmsV2Store, but nothing in the codebase ever hydrated that
+  // field from the DB — it stayed at []. Result: only agents created
+  // in the *current* browser session were visible; Tajul (created in
+  // a previous session / by another admin) was completely missing.
+  // Switch to useAgentsToday() — same hook every other agent list on
+  // the app uses (dashboard, calls, contacts, post-call, pipelines
+  // sub-tab) — and call refresh() after invite so the new row shows
+  // immediately without waiting for the 30s poll.
+  const { agents, refresh: refreshAgents } = useAgentsToday();
+  const { pushToast } = useSmsV2();
   const [inviting, setInviting] = useState(false);
   const [showPw, setShowPw] = useState(false);
   const [submitting, setSubmitting] = useState(false);
@@ -2340,11 +2350,24 @@ function AgentsTab() {
     limit: 10,
   });
 
-  const remove = (id: string) => removeAgent(id);
+  // PR 121 (Hugo 2026-04-28): delete was never wired to a real DB
+  // action — it only mutated the local store. With the list now coming
+  // from useAgentsToday(), a fake local removal would do nothing
+  // visible. Until a wk-delete-agent edge fn lands, surface an honest
+  // toast instead of silently no-op'ing.
+  const remove = (_id: string) => {
+    pushToast(
+      'Agent deletion not yet wired — ask Hugo to ship wk-delete-agent first',
+      'info'
+    );
+  };
 
   // PR 90 (Hugo 2026-04-27): the limit input was defaultValue-only with
   // no onBlur \u2014 admin could type a new cap, refresh, lose it. Now writes
   // wk_voice_agent_limits.daily_limit_pence on blur (only if changed).
+  // PR 121: list comes from useAgentsToday() now — refresh() after the
+  // write so the displayed limit reflects the persisted value without
+  // a manual reload.
   const updateAgentLimit = async (agentId: string, raw: string) => {
     const pounds = Number(raw);
     if (!Number.isFinite(pounds) || pounds < 0) {
@@ -2355,7 +2378,6 @@ function AgentsTab() {
     if (!target) return;
     const newPence = Math.round(pounds * 100);
     if (newPence === target.limitPence) return;
-    upsertAgent({ ...target, limitPence: newPence });
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const { error } = await (supabase.from('wk_voice_agent_limits' as any) as any)
       .upsert(
@@ -2364,19 +2386,18 @@ function AgentsTab() {
       );
     if (error) {
       pushToast(`Save failed: ${error.message}`, 'error');
-      // Roll back optimistic update.
-      upsertAgent(target);
     } else {
       pushToast(`Limit updated to \u00a3${pounds}`, 'success');
+      void refreshAgents();
     }
   };
 
   // PR 109 (Hugo 2026-04-28): per-agent leaderboard visibility toggle.
-  // Optimistic store update + write-through to wk_voice_agent_limits.
+  // PR 121: write-through then refresh() to pick up the new state from
+  // the source of truth (useAgentsToday).
   const updateAgentLeaderboard = async (agentId: string, show: boolean) => {
     const target = agents.find((a) => a.id === agentId);
     if (!target) return;
-    upsertAgent({ ...target, showOnLeaderboard: show });
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const { error } = await (supabase.from('wk_voice_agent_limits' as any) as any)
       .upsert(
@@ -2385,13 +2406,13 @@ function AgentsTab() {
       );
     if (error) {
       pushToast(`Save failed: ${error.message}`, 'error');
-      upsertAgent(target);
       return;
     }
     pushToast(
       show ? `${target.name} shown on leaderboard` : `${target.name} hidden from leaderboard`,
       'success'
     );
+    void refreshAgents();
   };
 
   const randomPassword = () => {
@@ -2437,21 +2458,10 @@ function AgentsTab() {
         setSubmitting(false);
         return;
       }
-      // Reflect locally so the table updates without a reload
-      upsertAgent({
-        id: data?.user_id ?? `a-new-${Date.now()}`,
-        name: invite.name,
-        email: invite.email,
-        extension: data?.extension ?? invite.extension ?? '',
-        role: invite.role,
-        status: 'offline',
-        callsToday: 0,
-        answeredToday: 0,
-        avgDurationSec: 0,
-        spendPence: 0,
-        limitPence: data?.daily_limit_pence ?? invite.limit * 100,
-        isAdmin: invite.role === 'admin',
-      });
+      // PR 121: refresh from the source of truth instead of patching
+      // the local store optimistically — the new row appears as soon
+      // as the join (profiles + wk_voice_agent_limits) returns it.
+      void refreshAgents();
       pushToast(`Agent created — share login with ${invite.email}`, 'success');
       setInvite({ email: '', password: '', name: '', extension: '', role: 'agent', limit: 10 });
       setInviting(false);

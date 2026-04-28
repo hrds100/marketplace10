@@ -39,7 +39,14 @@ function startOfTodayIso(): string {
   return d.toISOString();
 }
 
-export function useAgentsToday(): { agents: Agent[]; loading: boolean } {
+export function useAgentsToday(): {
+  agents: Agent[];
+  loading: boolean;
+  /** PR 121 (Hugo 2026-04-28): expose a manual refresh so the
+   *  Settings → Agents tab can re-pull immediately after invite /
+   *  remove without waiting for the 30s poll. */
+  refresh: () => Promise<void>;
+} {
   const [agents, setAgents] = useState<Agent[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -127,5 +134,5 @@ export function useAgentsToday(): { agents: Agent[]; loading: boolean } {
     return () => clearInterval(t);
   }, [refresh]);
 
-  return { agents, loading };
+  return { agents, loading, refresh };
 }
