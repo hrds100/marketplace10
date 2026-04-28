@@ -129,16 +129,14 @@ serve(async (req: Request) => {
     }
 
     const to = (params.To ?? '').trim();
-    const fromClient = (params.From ?? '').trim();    // expected: "client:<uuid>" or "client:<uuid>:<session>"
+    const fromClient = (params.From ?? '').trim();    // expected: "client:<uuid>"
     const callSid = params.CallSid ?? '';
-    // PR 143 (Hugo 2026-04-28): identity is now `${user.id}:${sessionId}`
-    // (multi-tab collision fix). Strip the `client:` prefix, then split on
-    // the FIRST `:` to recover the bare agent_id for DB lookups. Older
-    // tokens minted before the migration land have no suffix — we handle
-    // that gracefully by falling back to the whole string as agent_id.
-    const fullIdentity = fromClient.startsWith('client:') ? fromClient.slice(7) : null;
-    const colonIdx = fullIdentity?.indexOf(':') ?? -1;
-    const identity = colonIdx > 0 ? fullIdentity!.slice(0, colonIdx) : fullIdentity;
+    // PR 145 (Hugo 2026-04-28): REVERT PR 143's colon-suffix parsing.
+    // Identity is once again the bare profile UUID. The colon was a SIP
+    // URI delimiter that Twilio mis-parsed at bridge time, causing
+    // 13224 invalid-phone-number rejections on EVERY outbound call from
+    // the browser. See wk-voice-token PR 145 comment for the full audit.
+    const identity = fromClient.startsWith('client:') ? fromClient.slice(7) : null;
     // Optional: our pre-minted wk_calls.id baked in by wk-calls-create. When
     // present we UPDATE the existing row instead of inserting a duplicate.
     const preMintedCallId = (params.CallId ?? '').trim();
@@ -197,28 +195,15 @@ serve(async (req: Request) => {
               '</Start>',
             ].join('\n')
           : '';
-        // PR 143 (Hugo 2026-04-28): identity is now suffixed per-tab.
-        // Look up the agent's most recent session and dial THAT specific
-        // <Client>. Fall back to the bare agent_id for sessions minted
-        // before the wk_voice_sessions table existed (graceful migration).
-        let clientIdentity = dialerCall.agent_id;
-        try {
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          const { data: sess } = await (supabase.from('wk_voice_sessions' as any) as any)
-            .select('session_id')
-            .eq('user_id', dialerCall.agent_id)
-            .maybeSingle();
-          if (sess?.session_id) {
-            clientIdentity = `${dialerCall.agent_id}:${sess.session_id}`;
-          }
-        } catch (e) {
-          console.warn('[wk-voice-twiml-outgoing] session lookup failed:', e);
-        }
+        // PR 145 (Hugo 2026-04-28): REVERT PR 143's wk_voice_sessions
+        // lookup. Dial the bare agent_id Client identity (matches what
+        // wk-voice-token grants in the JWT). The colon-suffixed form
+        // produced 13224 errors at every bridge.
         const dialBlock = [
           '<Dial answerOnBridge="true" timeout="60"',
           `      action="${escapeXml(`${PUBLIC_FN_BASE}/wk-voice-status`)}"`,
           '      method="POST">',
-          `  <Client>${escapeXml(clientIdentity)}</Client>`,
+          `  <Client>${escapeXml(dialerCall.agent_id)}</Client>`,
           '</Dial>',
         ].join('\n');
         const body = [transcriptionBlock, dialBlock].filter((s) => s.length > 0).join('\n');
