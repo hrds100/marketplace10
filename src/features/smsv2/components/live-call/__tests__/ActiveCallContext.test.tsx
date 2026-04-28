@@ -279,3 +279,154 @@ describe('ActiveCallProvider.startCall — failure paths', () => {
     expect(snapshot!.call).toBeNull();
   });
 });
+
+// ────────────────────────────────────────────────────────────────────────────
+// PR 138 — new reducer-driven assertions
+// ────────────────────────────────────────────────────────────────────────────
+
+describe('ActiveCallProvider — PR 138 reducer state', () => {
+  it('exposes new fields callPhase / roomView / error / dispositionSignal', async () => {
+    renderProvider();
+    await waitFor(() => snapshot && expect(snapshot).not.toBeNull());
+    expect(snapshot!.callPhase).toBe('idle');
+    expect(snapshot!.roomView).toBe('closed');
+    expect(snapshot!.error).toBeNull();
+    expect(snapshot!.dispositionSignal).toBeNull();
+  });
+
+  it('Rule 5/6: hang-up via Twilio disconnect keeps `call` AND keeps roomView open', async () => {
+    const fakeCall = makeFakeCall();
+    invokeMock.mockResolvedValue({
+      data: { call_id: CALL_UUID, allowed: true },
+      error: null,
+    });
+    dialMock.mockResolvedValue(fakeCall);
+
+    renderProvider();
+    await waitFor(() => snapshot && expect(snapshot).not.toBeNull());
+
+    await act(async () => {
+      await snapshot!.startCall(CONTACT.id);
+    });
+    await act(async () => {
+      fakeCall.fire('accept');
+    });
+    expect(snapshot!.callPhase).toBe('in_call');
+    expect(snapshot!.roomView).toBe('open_full');
+
+    await act(async () => {
+      fakeCall.fire('disconnect');
+    });
+    // Rule 5: still on the same contact
+    expect(snapshot!.call?.contactId).toBe(CONTACT.id);
+    expect(snapshot!.callPhase).toBe('stopped_waiting_outcome');
+    // Legacy mapping
+    expect(snapshot!.phase).toBe('post_call');
+    // Rule 6: roomView did not collapse
+    expect(snapshot!.roomView).toBe('open_full');
+  });
+
+  it('Rule 3/4: applyOutcome("skipped") flips to outcome_done WITHOUT auto-dialing', async () => {
+    const fakeCall = makeFakeCall();
+    invokeMock.mockResolvedValue({
+      data: { call_id: CALL_UUID, allowed: true },
+      error: null,
+    });
+    dialMock.mockResolvedValue(fakeCall);
+
+    renderProvider();
+    await waitFor(() => snapshot && expect(snapshot).not.toBeNull());
+
+    await act(async () => {
+      await snapshot!.startCall(CONTACT.id);
+    });
+    await act(async () => {
+      fakeCall.fire('accept');
+    });
+    await act(async () => {
+      fakeCall.fire('disconnect');
+    });
+    expect(snapshot!.callPhase).toBe('stopped_waiting_outcome');
+
+    const dialCallsBefore = dialMock.mock.calls.length;
+    await act(async () => {
+      snapshot!.applyOutcome('skipped');
+    });
+    // Phase advances to outcome_done — agent owns the next step.
+    expect(snapshot!.callPhase).toBe('outcome_done');
+    // Critically: NO auto-dial fired (Rule 3).
+    expect(dialMock.mock.calls.length).toBe(dialCallsBefore);
+  });
+
+  it('Rule 7: minimiseRoom + maximiseRoom toggle roomView without ending the call', async () => {
+    const fakeCall = makeFakeCall();
+    invokeMock.mockResolvedValue({
+      data: { call_id: CALL_UUID, allowed: true },
+      error: null,
+    });
+    dialMock.mockResolvedValue(fakeCall);
+
+    renderProvider();
+    await waitFor(() => snapshot && expect(snapshot).not.toBeNull());
+
+    await act(async () => {
+      await snapshot!.startCall(CONTACT.id);
+    });
+    await act(async () => {
+      fakeCall.fire('accept');
+    });
+    expect(snapshot!.callPhase).toBe('in_call');
+
+    await act(async () => {
+      snapshot!.minimiseRoom();
+    });
+    expect(snapshot!.roomView).toBe('open_min');
+    expect(snapshot!.callPhase).toBe('in_call'); // call survives
+
+    await act(async () => {
+      snapshot!.maximiseRoom();
+    });
+    expect(snapshot!.roomView).toBe('open_full');
+    expect(snapshot!.callPhase).toBe('in_call');
+  });
+
+  it('Rule 6: closeCallRoom is a no-op while a call is live', async () => {
+    const fakeCall = makeFakeCall();
+    invokeMock.mockResolvedValue({
+      data: { call_id: CALL_UUID, allowed: true },
+      error: null,
+    });
+    dialMock.mockResolvedValue(fakeCall);
+
+    renderProvider();
+    await waitFor(() => snapshot && expect(snapshot).not.toBeNull());
+
+    await act(async () => {
+      await snapshot!.startCall(CONTACT.id);
+    });
+    await act(async () => {
+      fakeCall.fire('accept');
+    });
+    expect(snapshot!.callPhase).toBe('in_call');
+    expect(snapshot!.roomView).toBe('open_full');
+
+    await act(async () => {
+      snapshot!.closeCallRoom();
+    });
+    // Reducer ignores CLOSE_ROOM during in_call (Rule 6).
+    expect(snapshot!.roomView).toBe('open_full');
+    expect(snapshot!.callPhase).toBe('in_call');
+  });
+
+  it('Rule 8: openCallRoom from idle sets previewContactId and opens the room', async () => {
+    renderProvider();
+    await waitFor(() => snapshot && expect(snapshot).not.toBeNull());
+
+    await act(async () => {
+      snapshot!.openCallRoom('contact-x');
+    });
+    expect(snapshot!.previewContactId).toBe('contact-x');
+    expect(snapshot!.roomView).toBe('open_full');
+    expect(snapshot!.callPhase).toBe('idle');
+  });
+});

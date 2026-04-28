@@ -700,10 +700,3 @@ export function useActiveCallCtx() {
   if (!v) throw new Error('useActiveCallCtx must be used inside ActiveCallProvider');
   return v;
 }
-
-// Re-export the unused Phase 2 references so eslint doesn't complain
-// about unused imports while the consumers are still on legacy phase.
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
-const _phase2Marker: unknown = [
-  'TelephonySignal' as const,
-];
