@@ -23,6 +23,8 @@ interface LimitRow {
   daily_limit_pence: number | null;
   daily_spend_pence: number;
   is_admin: boolean;
+  /** PR 109: per-agent leaderboard visibility. Defaults to true. */
+  show_on_leaderboard?: boolean | null;
 }
 
 interface CallStatRow {
@@ -51,7 +53,7 @@ export function useAgentsToday(): { agents: Agent[]; loading: boolean } {
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const limitsRes = await (supabase.from('wk_voice_agent_limits' as any) as any)
-      .select('agent_id, daily_limit_pence, daily_spend_pence, is_admin');
+      .select('agent_id, daily_limit_pence, daily_spend_pence, is_admin, show_on_leaderboard');
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const callsRes = await (supabase.from('wk_calls' as any) as any)
@@ -107,6 +109,9 @@ export function useAgentsToday(): { agents: Agent[]; loading: boolean } {
         spendPence: limit?.daily_spend_pence ?? 0,
         limitPence: limit?.daily_limit_pence ?? 0,
         isAdmin: limit?.is_admin ?? p.workspace_role === 'admin',
+        // PR 109: leaderboard visibility surfaced on the Agent record so
+        // SettingsPage can read/write it without re-querying.
+        showOnLeaderboard: limit?.show_on_leaderboard !== false,
         answerRatePct,
         smsSentToday: smsCountByAgent.get(p.id) ?? 0,
       };

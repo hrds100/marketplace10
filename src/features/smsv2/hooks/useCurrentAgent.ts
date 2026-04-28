@@ -29,6 +29,8 @@ interface LimitRow {
   daily_limit_pence: number | null;
   daily_spend_pence: number;
   is_admin: boolean;
+  /** PR 109: per-agent leaderboard visibility. Defaults to true. */
+  show_on_leaderboard?: boolean | null;
 }
 
 interface CallStatusRow {
@@ -91,7 +93,7 @@ export function useCurrentAgent(): UseCurrentAgentResult {
         .maybeSingle(),
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       (supabase.from('wk_voice_agent_limits' as any) as any)
-        .select('agent_id, daily_limit_pence, daily_spend_pence, is_admin')
+        .select('agent_id, daily_limit_pence, daily_spend_pence, is_admin, show_on_leaderboard')
         .eq('agent_id', uid)
         .maybeSingle(),
       // eslint-disable-next-line @typescript-eslint/no-explicit-any

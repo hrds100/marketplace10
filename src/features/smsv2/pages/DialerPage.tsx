@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { Play, Pause, Square, Bot, ArrowRight, Pencil } from 'lucide-react';
+import { Play, Pause, Square, ArrowRight, Pencil } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import CampaignList from '../components/dialer/CampaignList';
 import ParallelDialerBoard from '../components/dialer/ParallelDialerBoard';
@@ -408,28 +408,11 @@ export default function DialerPage() {
               </Field>
             </div>
 
-            {/* PR 105 (Hugo 2026-04-28): the standalone "System prompt"
-                dropdown was removed — every campaign already attaches
-                its coach prompt via wk_dialer_campaigns.coach_prompt_id,
-                so picking it again here was redundant + risked the
-                dialer firing with a different prompt than the campaign. */}
-            <div className="grid grid-cols-2 gap-3">
-              <Field label="AI coach">
-                <button
-                  className={cn(
-                    'flex items-center gap-2 px-3 py-1.5 rounded-[10px] text-[13px] w-full justify-between border',
-                    camp.aiCoachEnabled
-                      ? 'bg-[#ECFDF5] border-[#1E9A80]/30 text-[#1E9A80] font-semibold'
-                      : 'bg-[#F3F3EE] border-[#E5E7EB] text-[#6B7280]'
-                  )}
-                >
-                  <span className="flex items-center gap-1.5">
-                    <Bot className="w-3.5 h-3.5" /> {camp.aiCoachEnabled ? 'ON' : 'OFF'}
-                  </span>
-                  <span className="text-[10px] opacity-60">click to toggle</span>
-                </button>
-              </Field>
-            </div>
+            {/* PR 105: the standalone "System prompt" dropdown was removed.
+                PR 109 (Hugo 2026-04-28): the AI Coach ON/OFF toggle that
+                lived next to Start has been removed too — the same
+                control is already on the top-nav StatusBar (kill switch),
+                so duplicating it here invited drift. */}
 
             <div className="grid grid-cols-4 gap-3 pt-2 border-t border-[#E5E7EB]">
               <Mini label="Queue" value={camp.totalLeads - camp.doneLeads} />

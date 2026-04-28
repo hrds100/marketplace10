@@ -161,13 +161,18 @@ export default function LiveCallScreen() {
               Calls{' '}
               <span className="font-semibold tabular-nums">{me?.callsToday ?? 0}</span>
             </span>
-            <span className="opacity-50">·</span>
-            <span>
-              Spend{' '}
-              <span className="font-semibold tabular-nums">
-                {formatPence(me?.spendPence ?? 0)}
-              </span>
-            </span>
+            {/* PR 109 (Hugo 2026-04-28): spend is admin-only across the CRM. */}
+            {me?.isAdmin && (
+              <>
+                <span className="opacity-50">·</span>
+                <span>
+                  Spend{' '}
+                  <span className="font-semibold tabular-nums">
+                    {formatPence(me?.spendPence ?? 0)}
+                  </span>
+                </span>
+              </>
+            )}
           </div>
 
           {phase === 'in_call' && (

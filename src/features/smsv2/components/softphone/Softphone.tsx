@@ -210,21 +210,28 @@ export default function Softphone() {
         </div>
       </div>
 
-      <div className="px-3 py-2 text-[11px] text-[#6B7280] flex items-center justify-between">
-        <span>Spend today</span>
-        <span className="tabular-nums font-medium text-[#1A1A1A]">
-          {formatPence(spend.spendPence)}
-          <span className="text-[#9CA3AF]">
-            {' / '}
-            {spend.isAdmin ? '∞' : formatPence(spend.limitPence)}
-          </span>
-        </span>
-      </div>
+      {/* PR 109 (Hugo 2026-04-28): hide spend numbers + the limit-reached
+          banner from non-admins. The internal spend.isLimitReached gate
+          on Start (line 54) still blocks the call — only the display
+          changes per role. */}
+      {spend.isAdmin && (
+        <>
+          <div className="px-3 py-2 text-[11px] text-[#6B7280] flex items-center justify-between">
+            <span>Spend today</span>
+            <span className="tabular-nums font-medium text-[#1A1A1A]">
+              {formatPence(spend.spendPence)}
+              <span className="text-[#9CA3AF]">
+                {' / '}∞
+              </span>
+            </span>
+          </div>
 
-      {spend.isLimitReached && (
-        <div className="mx-3 mb-2 p-2 bg-[#FEF2F2] border border-[#FCA5A5] rounded-lg text-[11px] text-[#B91C1C]">
-          Daily limit reached. Ask admin to raise.
-        </div>
+          {spend.isLimitReached && (
+            <div className="mx-3 mb-2 p-2 bg-[#FEF2F2] border border-[#FCA5A5] rounded-lg text-[11px] text-[#B91C1C]">
+              Daily limit reached. Ask admin to raise.
+            </div>
+          )}
+        </>
       )}
 
       <div className="px-3 pb-3">
