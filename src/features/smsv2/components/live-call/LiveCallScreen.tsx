@@ -301,46 +301,37 @@ export default function LiveCallScreen() {
             </button>
           )}
 
-          <button
-            onClick={() => (isPreview ? closeCallRoom() : setFullScreen(false))}
-            className={cn(
-              'p-1.5 rounded-lg',
-              phase === 'in_call' ? 'hover:bg-white/15' : 'hover:bg-black/[0.04]'
-            )}
-            title={isPreview ? 'Close call room' : 'Minimise (call continues)'}
-          >
-            <Minimize2 className="w-4 h-4" />
-          </button>
-          {/* PR 114 (Hugo 2026-04-28): explicit Close button. Hugo:
-              "I should be able to close the call room altogether — I
-              can minimize but I want a way to fully close." Behaviour:
-                preview → closeCallRoom (exit preview)
-                in_call / post_call → setFullScreen(false) AND
-                  closeCallRoom (collapses to softphone bar; active
-                  call NOT ended — the End button is for that)
-              X icon makes the close intent visually obvious vs the
-              minimize icon next to it. */}
-          <button
-            onClick={() => {
-              if (isPreview) closeCallRoom();
-              else {
-                setFullScreen(false);
-                closeCallRoom();
-              }
-            }}
-            className={cn(
-              'p-1.5 rounded-lg',
-              phase === 'in_call' ? 'hover:bg-white/15' : 'hover:bg-black/[0.04]'
-            )}
-            title={
-              phase === 'in_call'
-                ? 'Close (call continues in background — use End to hang up)'
-                : 'Close call room'
-            }
-            data-testid="livecall-close"
-          >
-            <X className="w-4 h-4" />
-          </button>
+          {/* PR 131 (Hugo 2026-04-28): single button now.
+              - active call (placing / in_call / post_call) → minimise
+                only. Hugo's call: "the call room should not close.
+                Should not minimize if I don't minimize it. And if I
+                minimize it, there should always be a button to
+                maximize again." Removed the X (close) button that
+                PR 114 added — Hugo flipped that decision.
+              - preview mode → X (close preview entirely). Preview
+                isn't a live call, so closing exits cleanly. */}
+          {isPreview ? (
+            <button
+              onClick={() => closeCallRoom()}
+              className="p-1.5 rounded-lg hover:bg-black/[0.04]"
+              title="Close call room"
+              data-testid="livecall-close-preview"
+            >
+              <X className="w-4 h-4" />
+            </button>
+          ) : (
+            <button
+              onClick={() => setFullScreen(false)}
+              className={cn(
+                'p-1.5 rounded-lg',
+                phase === 'in_call' ? 'hover:bg-white/15' : 'hover:bg-black/[0.04]'
+              )}
+              title="Minimise (call continues — maximise from the floating bar)"
+              data-testid="livecall-minimise"
+            >
+              <Minimize2 className="w-4 h-4" />
+            </button>
+          )}
         </div>
       </header>
 
