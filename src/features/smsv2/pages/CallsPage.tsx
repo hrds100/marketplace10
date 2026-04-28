@@ -1,4 +1,5 @@
 import { useState, useMemo, useEffect } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import {
   PhoneIncoming,
   PhoneOutgoing,
@@ -37,10 +38,22 @@ type DurationBucket = 'all' | 'short' | 'medium' | 'long';
 type DateBucket = 'all' | 'today' | '7d' | '30d';
 
 export default function CallsPage() {
-  const [search, setSearch] = useState('');
-  const [duration, setDuration] = useState<DurationBucket>('all');
-  const [dateRange, setDateRange] = useState<DateBucket>('all');
-  const [agentFilter, setAgentFilter] = useState('');
+  // PR 110: filters in URL so browser tab switch + back/forward preserve.
+  const [searchParams, setSearchParams] = useSearchParams();
+  const search = searchParams.get('q') ?? '';
+  const duration = (searchParams.get('duration') ?? 'all') as DurationBucket;
+  const dateRange = (searchParams.get('range') ?? 'all') as DateBucket;
+  const agentFilter = searchParams.get('agent') ?? '';
+  const setSp = (key: string, value: string, fallback: string = '') => {
+    const sp = new URLSearchParams(searchParams);
+    if (value && value !== fallback) sp.set(key, value);
+    else sp.delete(key);
+    setSearchParams(sp, { replace: true });
+  };
+  const setSearch = (v: string) => setSp('q', v);
+  const setDuration = (v: DurationBucket) => setSp('duration', v, 'all');
+  const setDateRange = (v: DateBucket) => setSp('range', v, 'all');
+  const setAgentFilter = (v: string) => setSp('agent', v);
   const [expandedContactId, setExpandedContactId] = useState<string | null>(null);
   const [playing, setPlaying] = useState<string | null>(null);
   const [signedUrl, setSignedUrl] = useState<string | null>(null);

@@ -1,4 +1,5 @@
 import { useState, useMemo } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { Search, Phone, MessageSquare, Mail, Flame, Pencil, Upload } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { formatPence, formatRelativeTime } from '../data/helpers';
@@ -22,9 +23,20 @@ export default function ContactsPage() {
   // owner_agent_id is a real UUID, not a mock id like "a-hugo".
   const { agents: realAgents } = useAgentsToday();
   const agents = realAgents.length > 0 ? realAgents : storeAgents;
-  const [search, setSearch] = useState('');
-  const [stageFilter, setStageFilter] = useState<string>('all');
-  const [ownerFilter, setOwnerFilter] = useState<string>('all');
+  // PR 110: search + filters in URL so browser tab switch keeps state.
+  const [searchParams, setSearchParams] = useSearchParams();
+  const search = searchParams.get('q') ?? '';
+  const stageFilter = searchParams.get('stage') ?? 'all';
+  const ownerFilter = searchParams.get('owner') ?? 'all';
+  const setSpParam = (key: string, value: string, fallback: string = '') => {
+    const sp = new URLSearchParams(searchParams);
+    if (value && value !== fallback) sp.set(key, value);
+    else sp.delete(key);
+    setSearchParams(sp, { replace: true });
+  };
+  const setSearch = (v: string) => setSpParam('q', v);
+  const setStageFilter = (v: string) => setSpParam('stage', v, 'all');
+  const setOwnerFilter = (v: string) => setSpParam('owner', v, 'all');
   const [editing, setEditing] = useState<Contact | null>(null);
   const [bulkOpen, setBulkOpen] = useState(false);
   const [creatingDraft, setCreatingDraft] = useState<Contact | null>(null);

@@ -17,12 +17,17 @@ import {
   Download,
   MessageSquare,
   FileEdit,
+  Pencil,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { supabase } from '@/integrations/supabase/client';
 import { useCalls, signCallRecording } from '../hooks/useCalls';
 import { useCallTimeline } from '../hooks/useCallTimeline';
 import { useSmsV2 } from '../store/SmsV2Store';
+import { useAgentsToday } from '../hooks/useAgentsToday';
+import { useContactPersistence } from '../hooks/useContactPersistence';
+import EditContactModal from '../components/contacts/EditContactModal';
+import type { Contact } from '../types';
 import { formatDuration, formatRelativeTime, formatTimeOnly } from '../data/helpers';
 
 interface TranscriptRow {
@@ -63,7 +68,11 @@ export default function PastCallScreen() {
   const { callId } = useParams<{ callId: string }>();
   const navigate = useNavigate();
   const { calls } = useCalls();
-  const { contacts } = useSmsV2();
+  const { contacts, upsertContact, pushToast } = useSmsV2();
+  const { agents } = useAgentsToday();
+  const persist = useContactPersistence();
+  // PR 110 (Hugo 2026-04-28): Edit Contact button on past-call screen.
+  const [editing, setEditing] = useState<Contact | null>(null);
 
   const call = useMemo(() => calls.find((c) => c.id === callId), [calls, callId]);
   const contact = useMemo(
@@ -169,6 +178,15 @@ export default function PastCallScreen() {
             {call && ` · ${call.direction} ${call.status}`}
           </div>
         </div>
+        {contact && (
+          <button
+            onClick={() => setEditing(contact)}
+            className="inline-flex items-center gap-1 text-[12px] text-[#6B7280] hover:text-[#1A1A1A] px-2 py-1 rounded hover:bg-[#F3F3EE]"
+            title="Edit contact"
+          >
+            <Pencil className="w-3 h-3" /> Edit
+          </button>
+        )}
         <Link
           to={
             contact
@@ -358,6 +376,32 @@ export default function PastCallScreen() {
           </section>
         )}
       </div>
+      {/* PR 110: Edit Contact modal — same component used elsewhere; mirrors
+          the persist+rollback pattern from ContactsPage / InboxPage. */}
+      <EditContactModal
+        contact={editing}
+        agents={agents}
+        onClose={() => setEditing(null)}
+        onSave={async (updated) => {
+          const previous = contacts.find((c) => c.id === updated.id);
+          upsertContact(updated);
+          setEditing(null);
+          try {
+            await persist.patchContact(updated.id, {
+              name: updated.name,
+              email: updated.email,
+              pipeline_column_id: updated.pipelineColumnId,
+            });
+            pushToast('Contact saved', 'success');
+          } catch (e) {
+            if (previous) upsertContact(previous);
+            pushToast(
+              `Save failed: ${e instanceof Error ? e.message : 'unknown'}`,
+              'error',
+            );
+          }
+        }}
+      />
     </div>
   );
 }

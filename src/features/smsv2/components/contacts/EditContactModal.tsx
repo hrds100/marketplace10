@@ -1,9 +1,10 @@
 import { useMemo, useState, useEffect } from 'react';
-import { X, Plus, Trash2 } from 'lucide-react';
+import { X, Plus, Trash2, Bell } from 'lucide-react';
 import type { Agent, Contact } from '../../types';
 import { MOCK_AGENTS } from '../../data/mockAgents';
 import { ACTIVE_PIPELINE } from '../../data/mockPipelines';
 import { useSmsV2 } from '../../store/SmsV2Store';
+import { useFollowups } from '../../hooks/useFollowups';
 
 interface Props {
   contact: Contact | null;
@@ -32,12 +33,37 @@ export default function EditContactModal({ contact, onClose, onSave, agents }: P
   const [newField, setNewField] = useState({ key: '', value: '' });
   const [newTag, setNewTag] = useState('');
 
+  // PR 110 (Hugo 2026-04-28): edit follow-up time inline. Shows the next
+  // PENDING follow-up for this contact; saving the modal also reschedules
+  // the follow-up if the agent changed it.
+  const { items: allFollowups, reschedule } = useFollowups();
+  const nextFollowup = useMemo(
+    () =>
+      contact
+        ? allFollowups
+            .filter((f) => f.contact_id === contact.id && f.status === 'pending')
+            .sort((a, b) => +new Date(a.due_at) - +new Date(b.due_at))[0] ?? null
+        : null,
+    [allFollowups, contact]
+  );
+  const [followupDueLocal, setFollowupDueLocal] = useState('');
+  const [savingFollowup, setSavingFollowup] = useState(false);
+
   // Sync draft whenever the modal opens for a new contact (or closes)
   useEffect(() => {
     setDraft(contact);
     setNewField({ key: '', value: '' });
     setNewTag('');
-  }, [contact]);
+    if (nextFollowup) {
+      // Convert ISO → "yyyy-MM-ddTHH:mm" for datetime-local input.
+      const d = new Date(nextFollowup.due_at);
+      const pad = (n: number) => String(n).padStart(2, '0');
+      const local = `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+      setFollowupDueLocal(local);
+    } else {
+      setFollowupDueLocal('');
+    }
+  }, [contact, nextFollowup]);
 
   if (!contact || !draft) return null;
 
@@ -119,6 +145,50 @@ export default function EditContactModal({ contact, onClose, onSave, agents }: P
               </select>
             </Field>
           </div>
+
+          {/* PR 110: edit follow-up time when one is scheduled. */}
+          {nextFollowup && (
+            <div className="bg-[#FFFBEB] border border-[#F59E0B]/40 rounded-[10px] p-3">
+              <div className="flex items-center gap-1.5 mb-2 text-[11px] uppercase tracking-wide text-[#B45309] font-bold">
+                <Bell className="w-3 h-3" />
+                Next follow-up
+              </div>
+              <div className="flex items-end gap-2">
+                <div className="flex-1">
+                  <Label>Due (local time)</Label>
+                  <input
+                    type="datetime-local"
+                    value={followupDueLocal}
+                    onChange={(e) => setFollowupDueLocal(e.target.value)}
+                    className="w-full px-3 py-2 text-[13px] border border-[#E5E7EB] rounded-[10px] bg-white tabular-nums"
+                  />
+                </div>
+                <button
+                  type="button"
+                  onClick={async () => {
+                    if (!nextFollowup || !followupDueLocal) return;
+                    setSavingFollowup(true);
+                    const iso = new Date(followupDueLocal).toISOString();
+                    await reschedule(nextFollowup.id, iso);
+                    setSavingFollowup(false);
+                  }}
+                  disabled={
+                    savingFollowup ||
+                    !followupDueLocal ||
+                    new Date(followupDueLocal).toISOString() === nextFollowup.due_at
+                  }
+                  className="px-3 py-2 bg-[#B45309] text-white text-[12px] font-semibold rounded-[10px] hover:bg-[#92400E] disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {savingFollowup ? 'Saving…' : 'Update'}
+                </button>
+              </div>
+              {nextFollowup.note && (
+                <div className="text-[11px] text-[#6B7280] mt-1 italic">
+                  Note: {nextFollowup.note}
+                </div>
+              )}
+            </div>
+          )}
 
           {/* Tags */}
           <div>
