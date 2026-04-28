@@ -13,6 +13,7 @@ import { useKillSwitch } from '../hooks/useKillSwitch';
 import { useSmsV2 } from '../store/SmsV2Store';
 import { useContactPersistence } from '../hooks/useContactPersistence';
 import { useDialerCampaigns } from '../hooks/useDialerCampaigns';
+import { useMyDialerQueue } from '../hooks/useMyDialerQueue';
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
 import type { Campaign, Contact } from '../types';
@@ -108,10 +109,19 @@ export default function DialerPage() {
     setAutoAdvance(camp.autoAdvanceSeconds);
   }, [camp.id, camp.mode, camp.parallelLines, camp.autoAdvanceSeconds]);
 
-  const upcoming = contacts.slice(0, 5);
-
   const isUuid = (s: string) =>
     /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(s);
+
+  // PR (Hugo 2026-04-28): MY QUEUE used to be `contacts.slice(0, 5)` —
+  // a misleading random slice of the hydrated contacts array that had
+  // nothing to do with wk_dialer_queue. Now it reads the actual queue
+  // (status='pending', scheduled_for in the past) for the active
+  // campaign, scoped to the agent unless they're admin. Realtime so
+  // it ticks down as the dialer drains the queue.
+  const { items: queueLeads, loading: queueLoading } = useMyDialerQueue(
+    isUuid(activeId) ? activeId : null,
+    isEffectiveAdmin || !user ? null : user.id
+  );
 
   const handleStart = async () => {
     setRunning(true);
@@ -284,47 +294,75 @@ export default function DialerPage() {
               <span className="text-[11px] text-[#6B7280]">Next 5</span>
             </div>
             <div className="divide-y divide-[#E5E7EB]">
-              {upcoming.map((c) => (
-                <div
-                  key={c.id}
-                  className="px-4 py-2.5 hover:bg-[#F3F3EE]/50 flex items-center gap-2"
-                >
-                  <button
-                    onClick={() => startCall(c.id)}
-                    className="flex-1 min-w-0 text-left"
+              {queueLeads.map((lead) => {
+                // The hydrated `contacts` array carries the full Contact
+                // shape (including custom fields, tags, etc) that
+                // EditContactModal needs. Look it up; if absent, the
+                // edit button silently disables (rare — only when the
+                // queue row points to a contact RLS hides from this user).
+                const fullContact = contacts.find((co) => co.id === lead.id);
+                return (
+                  <div
+                    key={lead.queueId}
+                    className="px-4 py-2.5 hover:bg-[#F3F3EE]/50 flex items-center gap-2"
                   >
-                    <div className="text-[13px] font-medium text-[#1A1A1A] truncate">
-                      {c.name}
-                    </div>
-                    <div className="text-[11px] text-[#6B7280] tabular-nums">{c.phone}</div>
-                  </button>
-                  <StageSelector
-                    value={c.pipelineColumnId}
-                    onChange={(col) => {
-                      // PR 105 (Hugo 2026-04-28): was UI-only — stage
-                      // changes from the dialer queue never reached
-                      // wk_contacts. Mirror the ContactsPage pattern.
-                      patchContact(c.id, { pipelineColumnId: col });
-                      void persist.moveToColumn(c.id, col);
-                    }}
-                    size="sm"
-                  />
-                  <button
-                    onClick={() => setEditing(c)}
-                    className="p-1.5 rounded hover:bg-white text-[#6B7280] hover:text-[#1A1A1A]"
-                    title="Edit lead"
-                  >
-                    <Pencil className="w-3.5 h-3.5" />
-                  </button>
-                  <button
-                    onClick={() => startCall(c.id)}
-                    className="p-1.5 rounded hover:bg-white text-[#9CA3AF]"
-                    title="Call"
-                  >
-                    <ArrowRight className="w-3.5 h-3.5" />
-                  </button>
+                    <button
+                      onClick={() => startCall(lead.id)}
+                      className="flex-1 min-w-0 text-left"
+                    >
+                      <div className="text-[13px] font-medium text-[#1A1A1A] truncate">
+                        {lead.name}
+                        {lead.priority > 0 && (
+                          <span
+                            className="ml-1 text-[9px] font-semibold uppercase text-[#EF4444]"
+                            title="Priority lead"
+                          >
+                            🔥
+                          </span>
+                        )}
+                      </div>
+                      <div className="text-[11px] text-[#6B7280] tabular-nums">{lead.phone}</div>
+                    </button>
+                    <StageSelector
+                      value={lead.pipelineColumnId}
+                      onChange={(col) => {
+                        // PR 105 (Hugo 2026-04-28): was UI-only — stage
+                        // changes from the dialer queue never reached
+                        // wk_contacts. Mirror the ContactsPage pattern.
+                        patchContact(lead.id, { pipelineColumnId: col });
+                        void persist.moveToColumn(lead.id, col);
+                      }}
+                      size="sm"
+                    />
+                    {fullContact && (
+                      <button
+                        onClick={() => setEditing(fullContact)}
+                        className="p-1.5 rounded hover:bg-white text-[#6B7280] hover:text-[#1A1A1A]"
+                        title="Edit lead"
+                      >
+                        <Pencil className="w-3.5 h-3.5" />
+                      </button>
+                    )}
+                    <button
+                      onClick={() => startCall(lead.id)}
+                      className="p-1.5 rounded hover:bg-white text-[#9CA3AF]"
+                      title="Call"
+                    >
+                      <ArrowRight className="w-3.5 h-3.5" />
+                    </button>
+                  </div>
+                );
+              })}
+              {!queueLoading && queueLeads.length === 0 && (
+                <div className="px-4 py-6 text-center text-[12px] text-[#9CA3AF] italic">
+                  Queue is empty. Upload leads or press ▶ Start to begin.
                 </div>
-              ))}
+              )}
+              {queueLoading && queueLeads.length === 0 && (
+                <div className="px-4 py-6 text-center text-[12px] text-[#9CA3AF] italic">
+                  Loading queue…
+                </div>
+              )}
             </div>
           </div>
         </div>

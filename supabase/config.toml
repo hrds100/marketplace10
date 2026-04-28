@@ -286,6 +286,9 @@ verify_jwt = false
 [functions.wk-create-agent]
 verify_jwt = false
 
+[functions.wk-delete-agent]
+verify_jwt = false
+
 [functions.wk-twilio-connect]
 verify_jwt = false
 

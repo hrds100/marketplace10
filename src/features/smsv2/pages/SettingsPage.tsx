@@ -73,6 +73,25 @@ interface CreateAgentInvoke {
   }>;
 }
 
+// PR (Hugo 2026-04-28): typed invoke for wk-delete-agent — admin
+// soft-deletes an agent (clears workspace_role, hides from leaderboard,
+// re-pools their queue rows + assignments, drops campaign_agents links).
+interface DeleteAgentInvoke {
+  invoke: (
+    name: string,
+    options: { body: Record<string, unknown> }
+  ) => Promise<{
+    data: {
+      agent_id?: string;
+      email?: string;
+      mode?: string;
+      ok?: boolean;
+      error?: string;
+    } | null;
+    error: { message: string } | null;
+  }>;
+}
+
 // PR 60 (Hugo 2026-04-27): Campaigns lives at the TOP — admin picks a
 // campaign first, then drills into pipelines / SMS / AI / KB / Glossary
 // for that campaign. Workspace-level config (Agents, Numbers, Pacing,
@@ -2350,16 +2369,51 @@ function AgentsTab() {
     limit: 10,
   });
 
-  // PR 121 (Hugo 2026-04-28): delete was never wired to a real DB
-  // action — it only mutated the local store. With the list now coming
-  // from useAgentsToday(), a fake local removal would do nothing
-  // visible. Until a wk-delete-agent edge fn lands, surface an honest
-  // toast instead of silently no-op'ing.
-  const remove = (_id: string) => {
-    pushToast(
-      'Agent deletion not yet wired — ask Hugo to ship wk-delete-agent first',
-      'info'
+  // PR (Hugo 2026-04-28): wired to wk-delete-agent edge fn. Soft-delete:
+  // clears workspace_role/extension on profile, hides from leaderboard,
+  // re-pools their wk_dialer_queue + lead assignments, removes
+  // wk_campaign_agents links, signs out any open sessions, audit-logs.
+  // We confirm with window.confirm() — no extra modal needed for the
+  // MVP and it keeps the flow honest (admin sees the email being
+  // deleted, can cancel).
+  const [deletingId, setDeletingId] = useState<string | null>(null);
+  const remove = async (id: string) => {
+    const target = agents.find((a) => a.id === id);
+    if (!target) return;
+    if (target.role === 'admin' || target.isAdmin) {
+      pushToast('Admins must be deleted via the database — refused.', 'error');
+      return;
+    }
+    const ok = window.confirm(
+      `Remove ${target.name || target.email} from the workspace?\n\n` +
+        `Their queue rows go back to the pool, their leaderboard row hides, ` +
+        `and they can no longer sign in. Historical calls/SMS stay attached.\n\n` +
+        `This is reversible — re-create the agent with the same email to restore.`
     );
+    if (!ok) return;
+    setDeletingId(id);
+    try {
+      const { data, error } = await (
+        supabase.functions as unknown as DeleteAgentInvoke
+      ).invoke('wk-delete-agent', { body: { agent_id: id } });
+      if (error) {
+        pushToast(`Delete failed: ${error.message}`, 'error');
+        return;
+      }
+      if (data?.error) {
+        pushToast(`Delete failed: ${data.error}`, 'error');
+        return;
+      }
+      pushToast(`${target.name || target.email} removed from workspace`, 'success');
+      void refreshAgents();
+    } catch (e) {
+      pushToast(
+        `Delete failed: ${e instanceof Error ? e.message : 'unknown error'}`,
+        'error'
+      );
+    } finally {
+      setDeletingId(null);
+    }
   };
 
   // PR 90 (Hugo 2026-04-27): the limit input was defaultValue-only with
@@ -2523,8 +2577,9 @@ function AgentsTab() {
                     <span className="text-[10px] text-[#9CA3AF]">protected</span>
                   ) : (
                     <button
-                      onClick={() => remove(a.id)}
-                      className="text-[#9CA3AF] hover:text-[#EF4444] p-1.5 rounded"
+                      onClick={() => void remove(a.id)}
+                      disabled={deletingId === a.id}
+                      className="text-[#9CA3AF] hover:text-[#EF4444] p-1.5 rounded disabled:opacity-40 disabled:cursor-wait"
                       title="Remove agent"
                     >
                       <Trash2 className="w-3.5 h-3.5" />
