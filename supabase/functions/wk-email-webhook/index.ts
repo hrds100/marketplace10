@@ -73,7 +73,15 @@ async function loadWebhookSecret(supa: ReturnType<typeof createClient>): Promise
     .limit(1)
     .maybeSingle();
   const dbKey = (data as { secret?: string } | null)?.secret ?? '';
-  return dbKey || RESEND_WEBHOOK_SECRET_ENV;
+  // PR 101 (Hugo 2026-04-28): the seed migration stored the literal
+  // sentinel '__USE_ENV__' in wk_channel_credentials.secret to mean
+  // "fall back to RESEND_WEBHOOK_SECRET env var". The previous loader
+  // returned that sentinel as the actual HMAC key, so EVERY signature
+  // verification failed and silently dropped inbound mail. Treat the
+  // sentinel (or any obviously-non-secret placeholder) as empty.
+  const SENTINELS = new Set(['__USE_ENV__', '', 'TODO', 'PLACEHOLDER']);
+  const usable = SENTINELS.has(dbKey.trim()) ? '' : dbKey;
+  return usable || RESEND_WEBHOOK_SECRET_ENV;
 }
 
 function timingSafeEqual(a: Uint8Array, b: Uint8Array): boolean {
