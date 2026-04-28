@@ -35,32 +35,143 @@ export interface VoiceTokenError {
   hint?: string;
 }
 
+/** PR 139 (Hugo 2026-04-28): typed errors so callers can distinguish a
+ *  Supabase-session failure (re-auth needed) from a wk-voice-token
+ *  failure (service down) from a transport-only blip (recoverable). */
+export class SupabaseSessionMissingError extends Error {
+  constructor() {
+    super('Not authenticated — sign in to use the softphone.');
+    this.name = 'SupabaseSessionMissingError';
+  }
+}
+
+export class SupabaseSessionRefreshError extends Error {
+  constructor(message: string) {
+    super(`Supabase session refresh failed: ${message}`);
+    this.name = 'SupabaseSessionRefreshError';
+  }
+}
+
+export class VoiceTokenUnauthorizedError extends Error {
+  constructor() {
+    super('wk-voice-token rejected the Supabase JWT (401) twice.');
+    this.name = 'VoiceTokenUnauthorizedError';
+  }
+}
+
+/**
+ * PR 139 (Hugo 2026-04-28): fetchVoiceToken now refreshes the Supabase
+ * session BEFORE asking wk-voice-token for a Twilio access token. The
+ * old order (cached JWT → wk-voice-token → 401 → toast) treated transport
+ * recovery as if the agent had hung up.
+ *
+ * New order:
+ *   1. supabase.auth.getSession() — must exist or we throw.
+ *   2. If the session JWT expires in <60s (or already expired), call
+ *      supabase.auth.refreshSession() FIRST.
+ *   3. POST wk-voice-token with the (possibly refreshed) JWT.
+ *   4. If wk-voice-token returns 401, defensively refresh once more and
+ *      retry. Two 401s in a row is a real auth failure.
+ *
+ * Logs at every step so the console tells the full story when something
+ * breaks: refresh start → session ok / refreshed → wk-voice-token result.
+ */
 export async function fetchVoiceToken(): Promise<VoiceTokenResponse> {
+  console.info('[voice-token] refresh start');
+
   const { data: { session } } = await supabase.auth.getSession();
   if (!session?.access_token) {
-    throw new Error('Not authenticated — sign in to use the softphone.');
+    console.error('[voice-token] no Supabase session — agent must sign in');
+    throw new SupabaseSessionMissingError();
   }
 
-  const resp = await fetch(`${FN_BASE}/wk-voice-token`, {
+  let accessToken = session.access_token;
+  // session.expires_at is unix seconds. Convert to ms for arithmetic.
+  const expiresAtMs =
+    typeof session.expires_at === 'number' ? session.expires_at * 1000 : 0;
+  const msLeft = expiresAtMs ? expiresAtMs - Date.now() : Number.POSITIVE_INFINITY;
+
+  if (expiresAtMs && msLeft < 60_000) {
+    console.info(
+      '[voice-token] supabase session near expiry, refreshing first',
+      { msLeft }
+    );
+    const { data: refreshed, error: refreshError } =
+      await supabase.auth.refreshSession();
+    if (refreshError || !refreshed?.session?.access_token) {
+      const msg = refreshError?.message ?? 'no session returned';
+      console.error('[voice-token] supabase refresh failed:', msg);
+      throw new SupabaseSessionRefreshError(msg);
+    }
+    accessToken = refreshed.session.access_token;
+    const newExp =
+      typeof refreshed.session.expires_at === 'number'
+        ? refreshed.session.expires_at * 1000
+        : 0;
+    console.info(
+      '[voice-token] supabase session refreshed, new exp in',
+      newExp ? Math.floor((newExp - Date.now()) / 1000) : 'unknown',
+      's'
+    );
+  } else {
+    console.info(
+      '[voice-token] supabase session ok, exp in',
+      msLeft === Number.POSITIVE_INFINITY ? 'unknown' : Math.floor(msLeft / 1000),
+      's'
+    );
+  }
+
+  // First wk-voice-token attempt.
+  let resp = await fetch(`${FN_BASE}/wk-voice-token`, {
     method: 'POST',
     headers: {
-      'Authorization': `Bearer ${session.access_token}`,
+      'Authorization': `Bearer ${accessToken}`,
       'Content-Type': 'application/json',
     },
   });
+
+  // 401 — defensive Supabase refresh + retry once. If still 401 it's a
+  // genuine auth failure (re-auth required).
+  if (resp.status === 401) {
+    console.warn('[voice-token] 401 from wk-voice-token, attempting Supabase refresh');
+    const { data: refreshed, error: refreshError } =
+      await supabase.auth.refreshSession();
+    if (refreshError || !refreshed?.session?.access_token) {
+      const msg = refreshError?.message ?? '401 + no refresh session';
+      console.error('[voice-token] post-401 supabase refresh failed:', msg);
+      throw new SupabaseSessionRefreshError(msg);
+    }
+    accessToken = refreshed.session.access_token;
+    resp = await fetch(`${FN_BASE}/wk-voice-token`, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${accessToken}`,
+        'Content-Type': 'application/json',
+      },
+    });
+    if (resp.status === 401) {
+      console.error('[voice-token] still 401 after refresh — re-auth required');
+      throw new VoiceTokenUnauthorizedError();
+    }
+  }
 
   if (!resp.ok) {
     let body: VoiceTokenError | null = null;
     try { body = await resp.json(); } catch { /* ignore */ }
     if (resp.status === 503 && body?.missing_env) {
+      console.error('[voice-token] failed: missing env', body.missing_env);
       throw new Error(
         `Voice SDK not configured. Missing env vars: ${body.missing_env.join(', ')}.`
       );
     }
-    throw new Error(body?.error ?? `Voice token fetch failed (${resp.status})`);
+    const msg = body?.error ?? `Voice token fetch failed (${resp.status})`;
+    console.error('[voice-token] failed:', msg);
+    throw new Error(msg);
   }
 
-  return resp.json() as Promise<VoiceTokenResponse>;
+  const tokenResp = (await resp.json()) as VoiceTokenResponse;
+  console.info('[voice-token] wk-voice-token success, ttl=', tokenResp.ttl_seconds);
+  return tokenResp;
 }
 
 // ----------------------------------------------------------------------------
@@ -154,13 +265,13 @@ export async function createDevice(): Promise<DeviceHandle> {
     const code = err?.code as number | undefined;
     if (code === 31005 || code === 31204 || code === 20104) {
       console.warn('[twilio-voice] device error → auto-refresh token', code, err?.message);
-      void refreshDeviceToken();
+      void refreshDeviceToken('error_31005');
     }
   });
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   (d as any).on?.('tokenWillExpire', () => {
     console.info('[twilio-voice] tokenWillExpire — refreshing');
-    void refreshDeviceToken();
+    void refreshDeviceToken('tokenWillExpire');
   });
 
   // Inbound calls — wk-voice-twiml-incoming routes a PSTN ring to a Client
@@ -227,8 +338,9 @@ function decodeJwtExp(token: string): number | null {
  * retry. The retry function passed to listeners restarts the refresh
  * loop on demand (manual button click).
  */
-async function refreshDeviceToken(): Promise<void> {
+async function refreshDeviceToken(reason: string = 'scheduled'): Promise<void> {
   if (!device) return;
+  console.info('[twilio-voice] token refresh →', reason);
   try {
     const fresh = await fetchVoiceToken();
     await device.updateToken(fresh.token);
@@ -239,7 +351,7 @@ async function refreshDeviceToken(): Promise<void> {
     consecutiveTokenRefreshFailures++;
     console.error(
       '[twilio-voice] token refresh failed',
-      consecutiveTokenRefreshFailures,
+      { reason, attempts: consecutiveTokenRefreshFailures },
       e
     );
     if (consecutiveTokenRefreshFailures >= 3) {
@@ -249,7 +361,7 @@ async function refreshDeviceToken(): Promise<void> {
         try {
           fn(async () => {
             consecutiveTokenRefreshFailures = 0;
-            await refreshDeviceToken();
+            await refreshDeviceToken('manual_retry');
           });
         } catch (err) {
           console.warn('[twilio-voice] token-fail listener threw', err);
@@ -279,7 +391,7 @@ function scheduleTokenRenewal(ttlSeconds: number, token?: string): void {
     renewInMs = Math.max(30_000, (ttlSeconds - 300) * 1000);
   }
   renewalTimer = window.setTimeout(() => {
-    void refreshDeviceToken();
+    void refreshDeviceToken('scheduled');
   }, renewInMs);
 }
 

@@ -14,7 +14,11 @@ import { useActiveCallCtx } from '../live-call/ActiveCallContext';
 import { useTwilioDevice } from '../../hooks/useTwilioDevice';
 import { useSpendLimit } from '../../hooks/useSpendLimit';
 import { formatDuration, formatPence } from '../../data/helpers';
-import LiveCallScreen from '../live-call/LiveCallScreen';
+// PR 140 (Hugo 2026-04-28): the in-call full-screen overlay is now
+// InCallRoom (state-badge-driven shell). LiveCallScreen is retained
+// in the codebase only for the existing reducer/context tests; new
+// product surfaces render InCallRoom.
+import InCallRoom from '../dialer/v2/InCallRoom';
 import { useCurrentAgent } from '../../hooks/useCurrentAgent';
 
 export default function Softphone() {
@@ -59,7 +63,7 @@ export default function Softphone() {
   // it independently from callPhase, so hang-up no longer closes the
   // room (Rule 6) and minimise/maximise don't end the call (Rule 7).
   if (roomView === 'open_full') {
-    return <LiveCallScreen />;
+    return <InCallRoom />;
   }
 
   // Placing collapsed bar (calling but not yet answered) — black + ringing
