@@ -496,18 +496,52 @@ export function ActiveCallProvider({ children }: { children: ReactNode }) {
         // the most common — Chrome has the mic blocked for hub.nfstay.com.
         // Generic codes get a one-line summary so the agent isn't staring
         // at "Call error 31005" with no idea what to do.
+        // PR 135 (Hugo 2026-04-28): error 31000 ("UnknownError / General
+        // Error") used to surface as the raw SDK string and leave the
+        // call in a half-dead state — phase flipped to post_call (via the
+        // 'disconnect' listener that fires alongside) and the orange
+        // "Pick outcome for …" pill hung on the dialer page forever
+        // because the agent had no real outcome to pick. Now we treat
+        // 31000 as a dropped leg: friendly toast, sweep WebRTC state via
+        // endCall, then collapse straight to idle so the CTA never shows.
         const code = err?.code as number | undefined;
         let toast: string;
+        let fatal = false;
         if (code === 31401) {
           toast = 'Mic blocked. Click the 🔒 next to the URL → Microphone → Allow → reload.';
         } else if (code === 31403 || code === 31486) {
           toast = `Call refused by Twilio (${code}). Check phone number / caller ID.`;
         } else if (code === 31005 || code === 31009) {
           toast = `Connection lost (${code}). Refresh the page if it doesn't recover.`;
+        } else if (code === 31000) {
+          toast = 'Call dropped — please try again.';
+          fatal = true;
         } else {
           toast = `Call error ${code ?? ''}: ${err?.message ?? 'unknown'}`;
         }
         store.pushToast(toast, 'error');
+        if (fatal) {
+          // Sweep client-side WebRTC + server-side legs, then collapse
+          // to idle (NOT post_call) so the orange "Pick outcome" pill on
+          // the dialer page does not appear for an errored call. Also
+          // clear lastEndedContactId so PostCallPanel's "Previous call"
+          // button doesn't point at a call that never had a real
+          // outcome. Fire-and-forget — disconnectAllCallsAndWait inside
+          // endCall has its own per-call timeout.
+          void (async () => {
+            try {
+              await disconnectAllCallsAndWait(1500);
+            } catch (e) {
+              console.warn('[twilio-call] error-path disconnect threw', e);
+              try { disconnectAllCalls(); } catch { /* ignore */ }
+            }
+            activeTwilioCallRef.current = null;
+            setMuted(false);
+            setPhase('idle');
+            setCall(null);
+            setLastEndedContactId(null);
+          })();
+        }
       });
       // SDK is the source of truth for mute state. Without this, calling
       // .mute() externally (or any internal track-replacement re-application)
@@ -676,6 +710,15 @@ export function ActiveCallProvider({ children }: { children: ReactNode }) {
           setPhase('idle');
           return;
         }
+
+        // PR 135 (Hugo 2026-04-28): once an outcome has been picked, the
+        // orange "Pick outcome for …" CTA must not linger. Phase flips
+        // away from post_call below (via startCall → 'placing', or
+        // setPhase('idle') in the empty-queue branches), but
+        // lastEndedContactId is independent state used by PostCallPanel
+        // for the "Previous call" button. Clear it now so a stale ghost
+        // doesn't follow the agent into the next call.
+        setLastEndedContactId(null);
 
         // Sentinels — Skip / Next-now: no stage move, just advance.
         // PR 46: pass call.contactId as excludeContactId so we never
