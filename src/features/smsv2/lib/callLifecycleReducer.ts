@@ -126,17 +126,31 @@ export function callLifecycleReducer(
         state.callPhase === 'in_call';
       if (!wasLive) return state;
 
+      // PR 141 (Hugo 2026-04-28, Bug 1): when Twilio's Call.on('error')
+      // fired BEFORE the disconnect, the error was stashed in
+      // state.error but the disconnect dispatcher passes no telephony
+      // info — so dispositionSignal computed null → label "Call ended".
+      // Carry the stashed error.code into the signal computation so
+      // 31005 / 31000 / 13224 / etc. correctly resolve to
+      // unreachable / invalid_number, and route to error_waiting_outcome
+      // so the badge says "Unreachable" / "Call failed" not "Call ended".
+      const stashedErrorCode = state.error?.code ?? null;
       const dispositionSignal = computeDispositionSignal({
         ...(event.telephony ?? {}),
+        errorCode: event.telephony?.errorCode ?? stashedErrorCode,
         userCanceled:
           event.telephony?.userCanceled ??
           (event.reason === 'twilio_cancel' ||
             (event.reason === 'user_hangup' && state.callPhase !== 'in_call')),
       });
 
+      const targetPhase: CallLifecycleState['callPhase'] = state.error
+        ? 'error_waiting_outcome'
+        : 'stopped_waiting_outcome';
+
       return {
         ...state,
-        callPhase: 'stopped_waiting_outcome',
+        callPhase: targetPhase,
         lastEndedContactId: state.call?.contactId ?? state.lastEndedContactId,
         dispositionSignal,
       };
@@ -223,13 +237,30 @@ export function callLifecycleReducer(
 
     // ─── Room ─────────────────────────────────────────────────────────
     case 'OPEN_ROOM': {
-      // Preview mode only valid when nothing is live. If a call is
-      // active, this is a no-op — the live call's room is already up.
-      if (state.callPhase !== 'idle') return state;
+      // PR 141 (Hugo 2026-04-28, Bug 2): historically OPEN_ROOM was
+      // gated on callPhase === 'idle'. From ANY wrap-up state
+      // (stopped_waiting_outcome, error_waiting_outcome,
+      // outcome_submitting, outcome_done) clicking "Open" on a Recent
+      // Calls row was a silent no-op — the room never reopened.
+      //
+      // New rule: while a call is LIVE (dialing/ringing/in_call), the
+      // live room is already up — OPEN_ROOM is a no-op for those.
+      // From every other phase, switching to preview means dropping the
+      // prior call's residual state (call, error, dispositionSignal)
+      // and showing the new contact's preview.
+      const isLive =
+        state.callPhase === 'dialing' ||
+        state.callPhase === 'ringing' ||
+        state.callPhase === 'in_call';
+      if (isLive) return state;
       return {
         ...state,
+        callPhase: 'idle',
         roomView: 'open_full',
         previewContactId: event.contactId,
+        call: null,
+        error: null,
+        dispositionSignal: null,
       };
     }
 
@@ -242,17 +273,31 @@ export function callLifecycleReducer(
       ) {
         return state;
       }
-      // Closing fully resets — preview clears, room hidden.
-      // If the user closes after outcome_done, drop the call too.
-      if (state.callPhase === 'outcome_done') {
+      // PR 141 (Hugo 2026-04-28, Bug 3): close from ANY post-call phase
+      // does a full reset. Previously only `outcome_done` cleared the
+      // call; closing from `error_waiting_outcome` or
+      // `stopped_waiting_outcome` left stale `call` + `error` +
+      // `dispositionSignal` behind, so re-opening the room showed the
+      // same wrap-up the agent thought they'd dismissed. "Close" should
+      // mean "I'm done with this contact" regardless of the wrap-up
+      // sub-phase.
+      const isPostCall =
+        state.callPhase === 'stopped_waiting_outcome' ||
+        state.callPhase === 'error_waiting_outcome' ||
+        state.callPhase === 'outcome_submitting' ||
+        state.callPhase === 'outcome_done';
+      if (isPostCall) {
         return {
           ...state,
           roomView: 'closed',
+          callPhase: 'idle',
           call: null,
           previewContactId: null,
-          callPhase: 'idle',
+          error: null,
+          dispositionSignal: null,
         };
       }
+      // Idle / preview close — just hide the room.
       return {
         ...state,
         roomView: 'closed',

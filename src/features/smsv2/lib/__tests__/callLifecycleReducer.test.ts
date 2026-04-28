@@ -307,6 +307,172 @@ describe('mapToLegacyPhase', () => {
   });
 });
 
+// PR 141 (Hugo 2026-04-28): regression tests for the three bugs Hugo
+// reported after PR 140 deploy:
+//   Bug 1: 31005 HANGUP shows "Call ended" badge instead of "Unreachable"
+//   Bug 2: Open from Recent Calls is silently ignored from any wrap-up
+//   Bug 3: Close from error/stopped wrap-up leaves stale state behind
+describe('PR 141 — error-then-disconnect (Bug 1)', () => {
+  it('CALL_ERROR(31005, fatal=false) then CALL_ENDED → error_waiting_outcome with unreachable signal', () => {
+    let s = dial();
+    s = callLifecycleReducer(s, { type: 'CALL_ACCEPTED', startedAt: 1 });
+    // Twilio fires error first (31005 is non-fatal in mapTwilioError)
+    s = callLifecycleReducer(s, {
+      type: 'CALL_ERROR',
+      error: { code: 31005, friendlyMessage: 'Connection lost (31005).' },
+      fatal: false,
+    });
+    // Phase still in_call (error stashed only)
+    expect(s.callPhase).toBe('in_call');
+    expect(s.error?.code).toBe(31005);
+    // Twilio then fires disconnect — historically lost the error code,
+    // resulting in signal=null → label "Call ended". After the fix,
+    // the reducer notices the stashed error and routes to error wrap-up.
+    s = callLifecycleReducer(s, { type: 'CALL_ENDED', reason: 'twilio_disconnect' });
+    expect(s.callPhase).toBe('error_waiting_outcome');
+    expect(s.dispositionSignal).toBe('unreachable');
+  });
+
+  it('CALL_ERROR(13224, non-fatal) then CALL_ENDED → invalid_number signal', () => {
+    let s = dial();
+    s = callLifecycleReducer(s, {
+      type: 'CALL_ERROR',
+      error: { code: 13224, friendlyMessage: 'Number unreachable' },
+      fatal: false,
+    });
+    s = callLifecycleReducer(s, { type: 'CALL_ENDED', reason: 'twilio_disconnect' });
+    expect(s.callPhase).toBe('error_waiting_outcome');
+    expect(s.dispositionSignal).toBe('invalid_number');
+  });
+
+  it('CALL_ENDED with no prior error still goes to stopped_waiting_outcome', () => {
+    let s = dial();
+    s = callLifecycleReducer(s, { type: 'CALL_ACCEPTED', startedAt: 1 });
+    s = callLifecycleReducer(s, { type: 'CALL_ENDED', reason: 'user_hangup' });
+    expect(s.callPhase).toBe('stopped_waiting_outcome');
+    expect(s.dispositionSignal).not.toBe('unreachable');
+  });
+});
+
+describe('PR 141 — Open from any wrap-up (Bug 2)', () => {
+  it('OPEN_ROOM from stopped_waiting_outcome switches to preview of new contact', () => {
+    let s = dial();
+    s = callLifecycleReducer(s, { type: 'CALL_ENDED', reason: 'user_hangup' });
+    expect(s.callPhase).toBe('stopped_waiting_outcome');
+    s = callLifecycleReducer(s, {
+      type: 'OPEN_ROOM',
+      contactId: 'different-contact',
+    });
+    expect(s.previewContactId).toBe('different-contact');
+    expect(s.roomView).toBe('open_full');
+    expect(s.callPhase).toBe('idle');
+    expect(s.call).toBeNull();
+    expect(s.error).toBeNull();
+    expect(s.dispositionSignal).toBeNull();
+  });
+
+  it('OPEN_ROOM from error_waiting_outcome clears error and switches to preview', () => {
+    let s = dial();
+    s = callLifecycleReducer(s, {
+      type: 'CALL_ERROR',
+      error: { code: 31000, friendlyMessage: 'Dropped' },
+      fatal: true,
+    });
+    expect(s.callPhase).toBe('error_waiting_outcome');
+    s = callLifecycleReducer(s, {
+      type: 'OPEN_ROOM',
+      contactId: 'recovery-contact',
+    });
+    expect(s.previewContactId).toBe('recovery-contact');
+    expect(s.callPhase).toBe('idle');
+    expect(s.error).toBeNull();
+  });
+
+  it('OPEN_ROOM from outcome_done switches to preview cleanly', () => {
+    let s = dial();
+    s = callLifecycleReducer(s, { type: 'CALL_ENDED', reason: 'user_hangup' });
+    s = callLifecycleReducer(s, { type: 'OUTCOME_PICKED', columnId: 'col-1' });
+    s = callLifecycleReducer(s, { type: 'OUTCOME_RESOLVED' });
+    expect(s.callPhase).toBe('outcome_done');
+    s = callLifecycleReducer(s, {
+      type: 'OPEN_ROOM',
+      contactId: 'next-preview',
+    });
+    expect(s.previewContactId).toBe('next-preview');
+    expect(s.callPhase).toBe('idle');
+    expect(s.call).toBeNull();
+  });
+
+  it('OPEN_ROOM is still a no-op while a call is live', () => {
+    let s = dial();
+    s = callLifecycleReducer(s, {
+      type: 'OPEN_ROOM',
+      contactId: 'should-not-replace',
+    });
+    expect(s.call?.contactId).toBe(SAMPLE_CALL.contactId);
+    expect(s.previewContactId).toBeNull();
+  });
+});
+
+describe('PR 141 — Close from any wrap-up fully resets (Bug 3)', () => {
+  it('CLOSE_ROOM from error_waiting_outcome clears call + error + disposition', () => {
+    let s = dial();
+    s = callLifecycleReducer(s, {
+      type: 'CALL_ERROR',
+      error: { code: 31000, friendlyMessage: 'Dropped' },
+      fatal: true,
+    });
+    expect(s.callPhase).toBe('error_waiting_outcome');
+    s = callLifecycleReducer(s, { type: 'CLOSE_ROOM' });
+    expect(s.callPhase).toBe('idle');
+    expect(s.roomView).toBe('closed');
+    expect(s.call).toBeNull();
+    expect(s.error).toBeNull();
+    expect(s.dispositionSignal).toBeNull();
+    expect(s.previewContactId).toBeNull();
+  });
+
+  it('CLOSE_ROOM from stopped_waiting_outcome clears call', () => {
+    let s = dial();
+    s = callLifecycleReducer(s, { type: 'CALL_ENDED', reason: 'user_hangup' });
+    expect(s.callPhase).toBe('stopped_waiting_outcome');
+    s = callLifecycleReducer(s, { type: 'CLOSE_ROOM' });
+    expect(s.callPhase).toBe('idle');
+    expect(s.roomView).toBe('closed');
+    expect(s.call).toBeNull();
+  });
+
+  it('CLOSE_ROOM from outcome_done still works as before (Hugo Rule preserved)', () => {
+    let s = dial();
+    s = callLifecycleReducer(s, { type: 'CALL_ACCEPTED', startedAt: 1 });
+    s = callLifecycleReducer(s, { type: 'CALL_ENDED', reason: 'user_hangup' });
+    s = callLifecycleReducer(s, { type: 'OUTCOME_PICKED', columnId: 'col-1' });
+    s = callLifecycleReducer(s, { type: 'OUTCOME_RESOLVED' });
+    s = callLifecycleReducer(s, { type: 'CLOSE_ROOM' });
+    expect(s.callPhase).toBe('idle');
+    expect(s.roomView).toBe('closed');
+    expect(s.call).toBeNull();
+  });
+
+  it('CLOSE_ROOM is still gated while a call is live (Rule 6 preserved)', () => {
+    let s = dial();
+    s = callLifecycleReducer(s, { type: 'CLOSE_ROOM' });
+    expect(s.callPhase).toBe('dialing');
+    expect(s.roomView).toBe('open_full');
+  });
+
+  it('CLOSE_ROOM from preview clears the preview', () => {
+    let s = callLifecycleReducer(INITIAL_STATE, {
+      type: 'OPEN_ROOM',
+      contactId: 'preview-contact',
+    });
+    expect(s.previewContactId).toBe('preview-contact');
+    s = callLifecycleReducer(s, { type: 'CLOSE_ROOM' });
+    expect(s.previewContactId).toBeNull();
+    expect(s.roomView).toBe('closed');
+  });
+});
+
 describe('computeDispositionSignal', () => {
   it('returns agent_canceled when userCanceled is true', () => {
     expect(computeDispositionSignal({ userCanceled: true })).toBe(
