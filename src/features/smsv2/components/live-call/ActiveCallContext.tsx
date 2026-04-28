@@ -688,7 +688,15 @@ export function ActiveCallProvider({ children }: { children: ReactNode }) {
         if (columnId === 'skipped' || columnId === 'next-now') {
           const nextId = store.popNextFromQueue(call.contactId);
           if (nextId) {
-            void startCall(nextId);
+            // PR 133: previously fire-and-forget (`void startCall(...)`)
+            // which swallowed the dial's pre-flight teardown errors and
+            // contributed to "A Call is already active". applyOutcome's
+            // signature is sync (returns void), so we can't await here —
+            // instead surface failures via .catch so they reach the
+            // console + toast pipeline inside startCall.
+            startCall(nextId).catch((e) =>
+              console.warn('auto-dial failed', e)
+            );
           } else {
             store.pushToast('Queue is empty — no more leads', 'info');
             setPhase('idle');
@@ -784,7 +792,14 @@ export function ActiveCallProvider({ children }: { children: ReactNode }) {
 
         if (nextContactId) {
           // small delay for the agent to read the toast
-          setTimeout(() => void startCall(nextContactId), 600);
+          // PR 133: keep the 600ms delay (intentional buffer between
+          // outcome and next dial) but stop swallowing rejections —
+          // attach .catch so dial errors reach the console.
+          setTimeout(() => {
+            startCall(nextContactId).catch((e) =>
+              console.warn('auto-dial failed', e)
+            );
+          }, 600);
         } else if (call?.campaignId) {
           // PR (Hugo 2026-04-28, Bug 2): local store said empty, but the
           // real queue lives in wk_dialer_queue (DB). Hugo's complaint:
