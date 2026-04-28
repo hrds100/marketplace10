@@ -7,9 +7,13 @@
 // Earlier plan (PR 60) was to use inbox.nfstay.com — superseded by
 // mail.nfstay.com once Hugo confirmed EU-region verification.
 //
-// IMPORTANT: Resend webhook payloads contain METADATA only — no body.
-// We must follow up with GET /emails/{id} to fetch html + text.
-// Adds ~200ms per inbound email; acceptable.
+// PR 102 (Hugo 2026-04-28): Resend's INBOUND email.received webhooks
+// DO include the full body (html + text + headers) in the payload.
+// The `GET /emails/{id}` endpoint is OUTBOUND-only — for inbound IDs it
+// returns 404. Earlier code always fetched, got 404, dropped the
+// message. Now we use payload fields directly. Outbound delivery
+// events still land here (email.bounced, email.delivered) but we
+// only persist email.received.
 //
 // Signature verification — Svix HMAC-SHA256 over the raw request body:
 //   svix-id          → event id
@@ -46,11 +50,20 @@ const ok = (payload: Record<string, unknown> = {}) =>
 interface ResendInboundEvent {
   type?: string;
   created_at?: string;
+  // PR 102: Resend's email.received payload carries the full email
+  // inline. Fields below cover both the documented shape and minor
+  // variations seen in production (string vs object addresses,
+  // headers as array vs map).
   data?: {
     email_id?: string;
-    from?: { address?: string; name?: string };
-    to?: Array<{ address?: string }>;
+    id?: string;
+    from?: string | { address?: string; name?: string };
+    to?: Array<string | { address?: string; name?: string }>;
     subject?: string;
+    html?: string;
+    text?: string;
+    headers?: Array<{ name?: string; value?: string }> | Record<string, string>;
+    created_at?: string;
   };
 }
 
@@ -222,51 +235,41 @@ serve(async (req: Request) => {
     return ok({ note: 'ignored event type' });
   }
 
-  const emailId = event.data?.email_id;
+  const d = event.data ?? {};
+  // Resend has used both `email_id` and `id` for the inbound email
+  // identifier. Either is fine — we just need it for idempotency.
+  const emailId = d.email_id || d.id || '';
   if (!emailId) {
     console.warn('[wk-email-webhook] missing email_id in event payload');
     return ok({ note: 'no email_id' });
   }
 
-  // Fetch full email body.
-  if (!RESEND_API_KEY) {
-    console.error('[wk-email-webhook] RESEND_API_KEY missing — cannot fetch body');
-    return ok({ note: 'api key missing' });
-  }
-  const fetchResp = await fetch(`https://api.resend.com/emails/${emailId}`, {
-    headers: { Authorization: `Bearer ${RESEND_API_KEY}` },
-  });
-  if (!fetchResp.ok) {
-    const txt = await fetchResp.text();
-    console.error('[wk-email-webhook] resend fetch failed', fetchResp.status, txt);
-    return ok({ note: 'fetch failed', status: fetchResp.status });
-  }
-  const full = (await fetchResp.json()) as ResendFullEmail;
-
-  // Normalise from / to fields (Resend has returned both shapes in our testing).
+  // PR 102: extract from/to/subject/body from the payload directly.
+  // Earlier code did a GET /emails/{id} which is outbound-only —
+  // returned 404 for inbound IDs and dropped every inbound message.
+  const fromRaw = d.from;
   const fromAddr =
-    typeof full.from === 'string'
-      ? full.from
-      : full.from?.address ?? event.data?.from?.address ?? '';
+    typeof fromRaw === 'string'
+      ? fromRaw
+      : (fromRaw?.address ?? '');
   const fromName =
-    typeof full.from === 'string'
-      ? ''
-      : full.from?.name ?? event.data?.from?.name ?? '';
-  const toAddr = Array.isArray(full.to)
-    ? typeof full.to[0] === 'string'
-      ? (full.to[0] as string)
-      : (full.to[0] as { address?: string })?.address ?? ''
-    : event.data?.to?.[0]?.address ?? '';
+    typeof fromRaw === 'string' ? '' : (fromRaw?.name ?? '');
+
+  let toAddr = '';
+  if (Array.isArray(d.to) && d.to.length > 0) {
+    const first = d.to[0];
+    toAddr = typeof first === 'string' ? first : (first?.address ?? '');
+  }
 
   const fromEmail = fromAddr.toLowerCase().trim();
   if (!fromEmail) {
-    console.warn('[wk-email-webhook] missing from address');
+    console.warn('[wk-email-webhook] missing from address in payload', JSON.stringify(d).slice(0, 300));
     return ok({ note: 'no from' });
   }
 
-  const subject = full.subject ?? event.data?.subject ?? '';
-  const html = full.html ?? '';
-  const text = full.text ?? '';
+  const subject = d.subject ?? '';
+  const html = d.html ?? '';
+  const text = d.text ?? '';
   const bodyText = text || html.replace(/<[^>]+>/g, '');
 
   const contactId = await findOrCreateContact(supa, fromEmail, fromName, emailId);
