@@ -498,12 +498,18 @@ export function ActiveCallProvider({ children }: { children: ReactNode }) {
         // at "Call error 31005" with no idea what to do.
         // PR 135 (Hugo 2026-04-28): error 31000 ("UnknownError / General
         // Error") used to surface as the raw SDK string and leave the
-        // call in a half-dead state — phase flipped to post_call (via the
-        // 'disconnect' listener that fires alongside) and the orange
-        // "Pick outcome for …" pill hung on the dialer page forever
-        // because the agent had no real outcome to pick. Now we treat
-        // 31000 as a dropped leg: friendly toast, sweep WebRTC state via
-        // endCall, then collapse straight to idle so the CTA never shows.
+        // call in a half-dead state. Friendly toast STAYS — that's
+        // good UX.
+        //
+        // PR 137 (Hugo 2026-04-28): partial revert of PR 135's fix B.
+        // Hugo's new rule: "ANY call end (hang up, ring-out, voicemail,
+        // error, busy) should STAY ON THE CONTACT, show the post-call
+        // outcome picker, and wait for the agent to click an outcome."
+        // So after a Twilio fatal error, we still sweep WebRTC state
+        // (so the next dial doesn't trip "A Call is already active"),
+        // but we let the SDK's 'disconnect' listener (which fires
+        // alongside 'error') drive the phase transition to post_call
+        // naturally. The agent then picks an outcome.
         const code = err?.code as number | undefined;
         let toast: string;
         let fatal = false;
@@ -521,13 +527,10 @@ export function ActiveCallProvider({ children }: { children: ReactNode }) {
         }
         store.pushToast(toast, 'error');
         if (fatal) {
-          // Sweep client-side WebRTC + server-side legs, then collapse
-          // to idle (NOT post_call) so the orange "Pick outcome" pill on
-          // the dialer page does not appear for an errored call. Also
-          // clear lastEndedContactId so PostCallPanel's "Previous call"
-          // button doesn't point at a call that never had a real
-          // outcome. Fire-and-forget — disconnectAllCallsAndWait inside
-          // endCall has its own per-call timeout.
+          // PR 137: WebRTC cleanup ONLY. Do NOT setPhase('idle') or
+          // setCall(null) — let the 'disconnect' listener flip phase
+          // to post_call so the agent sees the outcome picker. Do
+          // NOT clear lastEndedContactId for the same reason.
           void (async () => {
             try {
               await disconnectAllCallsAndWait(1500);
@@ -537,9 +540,6 @@ export function ActiveCallProvider({ children }: { children: ReactNode }) {
             }
             activeTwilioCallRef.current = null;
             setMuted(false);
-            setPhase('idle');
-            setCall(null);
-            setLastEndedContactId(null);
           })();
         }
       });

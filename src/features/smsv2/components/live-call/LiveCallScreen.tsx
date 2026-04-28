@@ -44,7 +44,6 @@ export default function LiveCallScreen() {
     previewContactId,
     closeCallRoom,
     startCall,
-    applyOutcome,
   } = useActiveCallCtx();
   const store = useSmsV2();
   const { agent: me, firstName: myFirstName, talkRatioPercent } = useCurrentAgent();
@@ -95,18 +94,16 @@ export default function LiveCallScreen() {
   // 35s ≈ 9-12 rings, matching Hugo's "10 rings" descriptive ask).
   // We trigger only when the leg is still 'queued' or 'ringing' —
   // never on 'in_progress' (real conversation in progress).
-  // PR 132 (Hugo 2026-04-28, Bug 1): AWAIT endCall so the next leg
-  // can't race the prior Call's WebRTC teardown ("A Call is already
-  // active"). The applyOutcome that fires after calls startCall,
-  // which requires every prior Call to be torn down.
-  // PR 134 (Hugo 2026-04-28): instead of firing the 'next-now'
-  // sentinel (pure advance, no outcome logged), resolve the
-  // pipeline column for "No pickup" and call applyOutcome with
-  // its real ID. That logs the outcome on wk_calls + kanban, moves
-  // the card to the "No Pick Up" column, and applyOutcome's normal
-  // path auto-advances to the next dial. Resolution: prefer name
-  // match (most reliable across mock + real DB), fall back to the
-  // column flagged is_default_on_timeout, fall back to 'next-now'.
+  //
+  // PR 137 (Hugo 2026-04-28): REMOVED auto-outcome + auto-advance.
+  // Hugo's new rule: "When you click hang up, or didn't pick up the
+  // call, OR ANYTHING — let the agent pick the outcome. DON'T move
+  // to the next call until the agent chooses the outcome." So the
+  // 35s timer now only ENDS the call. endCall() flips phase to
+  // post_call (via Twilio's 'disconnect' listener), the orange
+  // outcome picker appears, and the agent picks the column manually.
+  // No more applyOutcome('No Pickup') fired by the timer. No more
+  // auto-advance to the next dial.
   const NO_ANSWER_AUTO_HANGUP_SEC = 35;
   const autoHangupFiredRef = useRef(false);
   useEffect(() => {
@@ -122,32 +119,13 @@ export default function LiveCallScreen() {
       placingLegStatus == null; // null = no leg row yet — also stuck
     if (!stillRinging) return;
     autoHangupFiredRef.current = true;
-    // Resolve the No-Pickup column ID at fire time so admin renames
-    // / hydration delays are picked up. Names from mock + real schema:
-    // "No pickup", "No Pick Up", "No Answer", "Didn't pick up".
-    const noPickupCol =
-      store.columns.find((c) => {
-        const n = c.name.trim().toLowerCase();
-        return (
-          n === 'no pickup' ||
-          n === 'no pick up' ||
-          n === 'no answer' ||
-          n === "didn't pick up" ||
-          n === 'didnt pick up'
-        );
-      }) ??
-      store.columns.find((c) => c.isDefaultOnTimeout);
-    const outcomeId = noPickupCol?.id ?? 'next-now';
     void (async () => {
       await endCall();
-      // PR 133: 1500ms matches the disconnectAllCallsAndWait budget
-      // inside dial(); shorter would race Twilio's 'disconnect'
-      // latency (300–1000ms typical) and trip "A Call is already
-      // active" on the next leg.
-      await new Promise((r) => setTimeout(r, 1500));
-      applyOutcome(outcomeId);
+      // PR 137 (Hugo 2026-04-28): no auto-outcome, no auto-advance.
+      // Agent must pick the outcome column manually from the post-call
+      // panel that appears once endCall flips phase to post_call.
     })();
-  }, [phase, placingElapsedSec, placingLegStatus, endCall, applyOutcome, store.columns]);
+  }, [phase, placingElapsedSec, placingLegStatus, endCall]);
 
   // Preview mode (PR 10): no active call, but agent opened the room for
   // a specific contact from the inbox. Use that contact instead of the
