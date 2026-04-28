@@ -138,20 +138,27 @@ export default function Softphone() {
   }
 
   // Post-call collapsed (rare — usually full-screen).
-  // Guard: only render the orange "Pick outcome" button when there's a real
-  // wk_calls.id (UUID) to apply the outcome to. Without it, wk-outcome-apply
-  // can't fire and the click would be a no-op + leak fake state.
+  // PR 131 (Hugo 2026-04-28): the previous gate
+  // (`hasRealCallId`) silently dropped the maximize bar when the
+  // wk_calls row hadn't been written yet, leaving the agent with
+  // no way back to the call room. Now we ALWAYS render the bar
+  // when phase==='post_call' — the label changes based on whether
+  // there's a real outcome to apply. Hugo: "if I minimize it,
+  // there should always be a button to maximize again."
   const UUID_RE =
     /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
   const hasRealCallId = !!call?.callId && UUID_RE.test(call.callId);
-  if (phase === 'post_call' && !fullScreen && hasRealCallId) {
+  if (phase === 'post_call' && !fullScreen) {
     return (
       <button
         onClick={() => setFullScreen(true)}
         className="fixed bottom-5 right-5 z-[120] bg-[#F59E0B] text-white px-4 py-3 rounded-2xl shadow-lg flex items-center gap-2 text-[13px] font-semibold"
+        data-testid="softphone-postcall-maximize"
       >
         <Maximize2 className="w-4 h-4" />
-        Pick outcome for {call?.contactName}
+        {hasRealCallId
+          ? `Pick outcome for ${call?.contactName ?? 'caller'}`
+          : 'Open call room'}
       </button>
     );
   }
