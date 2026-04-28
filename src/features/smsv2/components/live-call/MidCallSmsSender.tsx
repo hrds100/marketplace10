@@ -388,8 +388,15 @@ export default function MidCallSmsSender({
         <input
           value={subject}
           onChange={(e) => setSubject(e.target.value)}
-          placeholder="Email subject"
-          className="w-full mb-2 px-2 py-1.5 text-[12px] border border-[#E5E5E5] rounded-[8px] focus:outline-none focus:ring-1 focus:ring-[#1E9A80]/30 focus:border-[#1E9A80]"
+          placeholder="Email subject (required) — type freely or pick a template above"
+          className={cn(
+            'w-full mb-2 px-2 py-1.5 text-[12px] border rounded-[8px] focus:outline-none focus:ring-1 focus:ring-[#1E9A80]/30 focus:border-[#1E9A80]',
+            // PR 114: highlight subject input when blocking the send so
+            // the agent sees what's missing without clicking the button.
+            !subject.trim() && body.trim().length > 0
+              ? 'border-[#F59E0B] bg-[#FFFBEB]'
+              : 'border-[#E5E5E5]'
+          )}
         />
       )}
 
@@ -398,8 +405,8 @@ export default function MidCallSmsSender({
         onChange={(e) => setBody(e.target.value)}
         placeholder={
           channel === 'email'
-            ? 'Type the email body…'
-            : 'Type a message, or pick a template above.'
+            ? 'Type your email here, or pick a template above. Templates are optional.'
+            : 'Type a message, or pick a template above. Templates are optional.'
         }
         rows={channel === 'email' ? 7 : 5}
         className="w-full px-2 py-1.5 text-[12px] border border-[#E5E5E5] rounded-[8px] focus:outline-none focus:ring-1 focus:ring-[#1E9A80]/30 focus:border-[#1E9A80] resize-y min-h-[80px]"

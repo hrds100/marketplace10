@@ -158,19 +158,27 @@ export default function PostCallPanel() {
                 className={cn(
                   'relative group p-3 rounded-2xl border-2 text-left bg-white transition-all',
                   isPicked
-                    ? 'border-[#1E9A80] bg-[#ECFDF5] shadow-[0_4px_16px_rgba(30,154,128,0.25)] cursor-default'
+                    ? 'border-[#1E9A80] border-[3px] bg-[#ECFDF5] shadow-[0_8px_28px_rgba(30,154,128,0.45)] cursor-default ring-2 ring-[#1E9A80]/20'
                     : isDimmed
-                      ? 'border-[#E5E7EB] opacity-30 cursor-not-allowed'
+                      ? 'border-[#E5E7EB] opacity-25 grayscale cursor-not-allowed'
                       : 'border-[#E5E7EB] hover:border-[#1E9A80]/50 hover:shadow-[0_8px_24px_rgba(0,0,0,0.08)]'
                 )}
               >
+                {/* PR 114 (Hugo 2026-04-28): louder DONE badge + bigger
+                    tick. Hugo: "very clear orange DONE, very obvious
+                    which one is selected." */}
                 {isPicked && (
-                  <span
-                    className="absolute top-1.5 right-1.5 inline-flex items-center justify-center w-5 h-5 rounded-full bg-[#1E9A80] text-white text-[11px] font-bold shadow-sm"
-                    aria-label="Picked"
-                  >
-                    ✓
-                  </span>
+                  <>
+                    <span
+                      className="absolute -top-2 -right-2 inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-[#F59E0B] text-white text-[10px] font-bold uppercase tracking-wide shadow-md"
+                      aria-label="Picked"
+                    >
+                      ✓ DONE
+                    </span>
+                    <span className="absolute bottom-2 right-2 inline-flex items-center justify-center w-7 h-7 rounded-full bg-[#1E9A80] text-white text-[16px] font-bold shadow-md">
+                      ✓
+                    </span>
+                  </>
                 )}
                 <div className="flex items-center gap-2.5">
                   <div
