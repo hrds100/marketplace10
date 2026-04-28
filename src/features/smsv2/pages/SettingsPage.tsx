@@ -2380,15 +2380,21 @@ function AgentsTab() {
   const remove = async (id: string) => {
     const target = agents.find((a) => a.id === id);
     if (!target) return;
-    if (target.role === 'admin' || target.isAdmin) {
-      pushToast('Admins must be deleted via the database — refused.', 'error');
-      return;
-    }
+    // PR (Hugo 2026-04-28): the client-side admin block is gone.
+    // Server (wk-delete-agent) is now authoritative — it allows
+    // admin@hub.nfstay.com to delete other admins, refuses every other
+    // caller from doing the same, and always refuses self-delete. If
+    // the server refuses, the toast surfaces its message verbatim.
+    const adminWarning =
+      target.role === 'admin' || target.isAdmin
+        ? `\n\n⚠ ${target.name || target.email} is an ADMIN. Only the main admin (admin@hub.nfstay.com) can delete admins from the UI.`
+        : '';
     const ok = window.confirm(
       `Remove ${target.name || target.email} from the workspace?\n\n` +
         `Their queue rows go back to the pool, their leaderboard row hides, ` +
         `and they can no longer sign in. Historical calls/SMS stay attached.\n\n` +
-        `This is reversible — re-create the agent with the same email to restore.`
+        `This is reversible — re-create the agent with the same email to restore.` +
+        adminWarning
     );
     if (!ok) return;
     setDeletingId(id);

@@ -51,6 +51,39 @@ interface CreateCallInvoke {
   }>;
 }
 
+// PR (Hugo 2026-04-28, Bug 1): typed invoke for wk-dialer-hangup-leg.
+// Fires from endCall so pressing "End" actually kills the PSTN leg
+// instead of just dropping the agent's WebRTC client (which left the
+// callee on a still-billed Twilio leg until they hung up themselves).
+interface HangupInvoke {
+  invoke: (
+    name: string,
+    options: { body: Record<string, unknown> }
+  ) => Promise<{
+    data: { ok?: boolean } | null;
+    error: { message: string } | null;
+  }>;
+}
+
+// PR (Hugo 2026-04-28, Bug 2): typed invoke for wk-leads-next. The
+// local Zustand store doesn't mirror wk_dialer_queue, so after an
+// outcome the "next contact" used to be popped from the local queue
+// and was almost always empty for campaign-driven dialer sessions.
+// We now fall back to wk-leads-next, which atomically picks the
+// next row from wk_dialer_queue (priority + scheduled_for + attempts,
+// SKIP LOCKED) and marks it 'dialing' for this agent.
+interface NextLeadInvoke {
+  invoke: (
+    name: string,
+    options: { body: Record<string, unknown> }
+  ) => Promise<{
+    data:
+      | { empty?: boolean; contact_id?: string; queue_id?: string; campaign_id?: string }
+      | null;
+    error: { message: string } | null;
+  }>;
+}
+
 interface ActiveCallCtx {
   phase: CallPhase;
   call: ActiveCall | null;
@@ -90,6 +123,22 @@ interface ActiveCallCtx {
     contactName?: string;
     phone?: string;
     callId?: string | null;
+  }) => void;
+  /**
+   * PR (Hugo 2026-04-28, Bug 3): mount the live-call screen in 'placing'
+   * state with placeholder contact info. Used by DialerPage right after
+   * wk-dialer-start succeeds, so the agent sees the dialing screen
+   * IMMEDIATELY instead of staring at the dialer panel until the
+   * winner-orchestration broadcast lands ~2-8s later. Does NOT invoke
+   * Twilio (server-side legs are already firing). When the broadcast
+   * arrives, resumeFromBroadcast overwrites with real contact + callId
+   * and flips phase to 'in_call'.
+   */
+  enterDialingPlaceholder: (input: {
+    contactId: string;
+    contactName?: string;
+    phone?: string;
+    campaignId?: string | null;
   }) => void;
   endCall: () => void;
   clearCall: () => void;
@@ -450,6 +499,27 @@ export function ActiveCallProvider({ children }: { children: ReactNode }) {
     []
   );
 
+  // PR (Hugo 2026-04-28, Bug 3): mount the live-call screen in 'placing'
+  // state with placeholder info so the agent doesn't stare at the dialer
+  // panel between Start click and winner broadcast. Pure UI — does NOT
+  // trigger Twilio.connect (the legs are already firing server-side via
+  // wk-dialer-start). When the dialer:{agent_id} winner broadcast lands,
+  // resumeFromBroadcast overrides this with real contactId + callId.
+  const enterDialingPlaceholder = useCallback<
+    ActiveCallCtx['enterDialingPlaceholder']
+  >((input) => {
+    setCall({
+      contactId: input.contactId,
+      contactName: input.contactName ?? 'Dialing…',
+      phone: input.phone ?? '',
+      startedAt: Date.now(),
+      callId: null,
+      campaignId: input.campaignId ?? null,
+    });
+    setPhase('placing');
+    setFullScreen(true);
+  }, []);
+
   const value = useMemo<ActiveCallCtx>(() => {
     const durationSec = call ? Math.floor((Date.now() - call.startedAt) / 1000) : 0;
 
@@ -485,7 +555,33 @@ export function ActiveCallProvider({ children }: { children: ReactNode }) {
       toggleMute,
       startCall,
       resumeFromBroadcast,
+      enterDialingPlaceholder,
       endCall: () => {
+        // PR (Hugo 2026-04-28, Bug 1): the End button used to ONLY do a
+        // WebRTC client-side disconnect. The agent's mic stopped, but the
+        // PSTN leg stayed up on Twilio's side — Hugo's complaint:
+        // "Tajul pressed End but call kept going until guest hung up".
+        // Fire wk-dialer-hangup-leg first (fire-and-forget — we don't want
+        // the agent's UI waiting on a round-trip) so Twilio gets a REST
+        // POST Calls/{sid}.json with Status=canceled|completed and the
+        // callee's leg actually drops.
+        const callIdToHangup = call?.callId ?? null;
+        if (callIdToHangup) {
+          void (async () => {
+            try {
+              const { error } = await (
+                supabase.functions as unknown as HangupInvoke
+              ).invoke('wk-dialer-hangup-leg', {
+                body: { call_id: callIdToHangup },
+              });
+              if (error) {
+                console.warn('[endCall] hangup-leg failed:', error.message);
+              }
+            } catch (e) {
+              console.warn('[endCall] hangup-leg threw:', e);
+            }
+          })();
+        }
         // Disconnect EVERY Call on the Device — not just the active ref.
         // The "callee still hears me" zombie Calls (see toggleMute comment)
         // also need to be evicted so they stop streaming the mic.
@@ -614,14 +710,49 @@ export function ActiveCallProvider({ children }: { children: ReactNode }) {
         if (nextContactId) {
           // small delay for the agent to read the toast
           setTimeout(() => void startCall(nextContactId), 600);
+        } else if (call?.campaignId) {
+          // PR (Hugo 2026-04-28, Bug 2): local store said empty, but the
+          // real queue lives in wk_dialer_queue (DB). Hugo's complaint:
+          // "after marking no pickup or anything then it doesn't go next
+          // call." Ask wk-leads-next for the next DB lead before we lie
+          // to the agent that the queue is empty.
+          const campaignId = call.campaignId;
+          void (async () => {
+            try {
+              const { data, error } = await (
+                supabase.functions as unknown as NextLeadInvoke
+              ).invoke('wk-leads-next', {
+                body: { campaign_id: campaignId },
+              });
+              if (error) {
+                console.warn('[applyOutcome] wk-leads-next failed:', error.message);
+              }
+              if (!error && data && !data.empty && data.contact_id) {
+                // Same 600ms delay so the success toast finishes reading
+                // before the next call screen takes over.
+                setTimeout(() => void startCall(data.contact_id!), 600);
+                return;
+              }
+              // Genuinely empty (or RPC error) — fall through to idle.
+              store.pushToast('Queue is empty — no more leads', 'info');
+              setPhase('idle');
+              setCall(null);
+            } catch (e) {
+              console.warn('[applyOutcome] wk-leads-next threw:', e);
+              store.pushToast('Queue is empty — no more leads', 'info');
+              setPhase('idle');
+              setCall(null);
+            }
+          })();
         } else {
+          // No campaign on this call (manual dial) — original behavior.
           store.pushToast('Queue is empty — no more leads', 'info');
           setPhase('idle');
           setCall(null);
         }
       },
     };
-  }, [phase, call, fullScreen, muted, toggleMute, store, startCall, resumeFromBroadcast, previewContactId, lastEndedContactId]);
+  }, [phase, call, fullScreen, muted, toggleMute, store, startCall, resumeFromBroadcast, enterDialingPlaceholder, previewContactId, lastEndedContactId]);
 
   return <Ctx.Provider value={value}>{children}</Ctx.Provider>;
 }

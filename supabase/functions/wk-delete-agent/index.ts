@@ -8,9 +8,11 @@
 // What this does (in order, all under the service-role client):
 //   1. Verify caller is admin via wk_is_admin RPC.
 //   2. Refuse self-delete (admin can't accidentally lock themselves out).
-//   3. Refuse if target's workspace_role is 'admin' (admins delete admins
-//      via the database, not the UI — guards against one admin nuking
-//      another mid-shift by mistake).
+//   3. Refuse if target's workspace_role is 'admin' UNLESS the caller is
+//      the super-admin (admin@hub.nfstay.com). PR (Hugo 2026-04-28):
+//      original rule blocked all admin→admin deletes from the UI as a
+//      safety rail; new rule keeps that rail for every admin EXCEPT
+//      Hugo's main admin account, which is allowed to delete anyone.
 //   4. profiles row: set workspace_role=NULL, agent_status='offline',
 //      agent_extension=NULL. Keep id/email/name so historical refs work.
 //   5. wk_voice_agent_limits: hide from leaderboard (show_on_leaderboard
@@ -73,6 +75,11 @@ serve(async (req: Request) => {
     const { data: userResp, error: userErr } = await caller.auth.getUser(jwt);
     if (userErr || !userResp?.user) return json(401, { error: 'Invalid token' });
     const callerId = userResp.user.id;
+    // PR (Hugo 2026-04-28): super-admin override. admin@hub.nfstay.com
+    // is the hardcoded main admin (see src/hooks/useAuth.ts). Only this
+    // account can delete other admin accounts via the UI.
+    const callerEmail = (userResp.user.email ?? '').toLowerCase();
+    const isSuperAdmin = callerEmail === 'admin@hub.nfstay.com';
 
     const { data: isAdmin, error: adminErr } = await caller.rpc('wk_is_admin');
     if (adminErr) return json(500, { error: adminErr.message });
@@ -106,8 +113,11 @@ serve(async (req: Request) => {
       .maybeSingle();
     if (targetErr) return json(500, { error: `Lookup: ${targetErr.message}` });
     if (!target) return json(404, { error: 'Agent not found' });
-    if (target.workspace_role === 'admin') {
-      return json(403, { error: 'Refuse to delete an admin from UI — use the database' });
+    if (target.workspace_role === 'admin' && !isSuperAdmin) {
+      return json(403, {
+        error:
+          'Only the main admin (admin@hub.nfstay.com) can delete other admins from the UI',
+      });
     }
 
     // 1. Soft-delete the profile (clear workspace fields, keep PII for
