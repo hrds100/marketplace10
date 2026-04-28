@@ -560,6 +560,53 @@ export const flowNodes: Node<FlowNodeData>[] = [
     confidence: 'confirmed',
   }, GX.crm, 360),
 
+  n('crm-leaderboard', 'CRM Leaderboard', {
+    description: 'Agent performance dashboard at /crm/leaderboard. Shows top agents by metrics. Filter via wk_voice_agent_limits.show_on_leaderboard toggle in Settings → Agents. Trophy popover in top nav (top 5).',
+    actor: 'tenant',
+    route: '/crm/leaderboard',
+    files: ['src/features/smsv2/pages/LeaderboardPage.tsx'],
+    tables: ['wk_voice_agent_limits'],
+    integrations: ['Supabase Realtime'],
+    confidence: 'confirmed',
+  }, GX.crm - 160, 520),
+
+  n('crm-inbound-bell', 'CRM Inbound Notifications (Bell)', {
+    description: 'Smsv2StatusBar bell icon. useInboxNotifications subscribes to wk_sms_messages INSERT inbound. Unread badge + drawer showing recent SMS/WhatsApp/Email. 30s poll fallback.',
+    actor: 'system',
+    tables: ['wk_sms_messages'],
+    integrations: ['Supabase Realtime'],
+    edgeFunctions: ['wk-sms-incoming', 'unipile-webhook', 'wk-email-webhook'],
+    confidence: 'confirmed',
+  }, GX.crm + 160, 520),
+
+  n('followup-prompt-modal', 'Follow-up Auto-Prompt', {
+    description: 'After every SMS/WhatsApp/Email send (InboxPage, ContactSmsModal, MidCallSmsSender), FollowupPromptModal opens. Agent optionally sets due_at + note. Saved to wk_contact_followups. EditContactModal edits next pending follow-up. Working-hours warning (10 AM–7 PM browser local time).',
+    actor: 'tenant',
+    files: ['src/features/smsv2/FollowupPromptModal.tsx', 'src/features/smsv2/EditContactModal.tsx'],
+    tables: ['wk_contact_followups'],
+    confidence: 'confirmed',
+    debugTrigger: 'Sent message via InboxPage, ContactSmsModal, or MidCallSmsSender',
+  }, GX.crm, 680),
+
+  n('channel-management', 'Channel Selection + Reset', {
+    description: 'Agent picks channel (SMS, WhatsApp, Email) before send. Post-send, channel resets to null. Forces re-pick before next send to prevent wrong-channel mistakes. Mid-call only: stage gate via pickedStageId with pulse hint if missing.',
+    actor: 'tenant',
+    files: ['src/features/smsv2/InboxPage.tsx', 'src/features/smsv2/ContactSmsModal.tsx', 'src/features/smsv2/MidCallSmsSender.tsx'],
+    tables: ['wk_numbers'],
+    confidence: 'confirmed',
+  }, GX.crm - 160, 680),
+
+  n('email-inbound-mail-nfstay', 'Email Inbound (mail.nfstay.com)', {
+    description: 'CRM inbound email via Resend EU (eu-west-1). MX → AWS SES inbound-smtp. Webhook validates Svix HMAC. Body fetched via GET /emails/inbound/{id}. Reply quotes stripped (Gmail, Outlook markers + > lines). Stored in wk_sms_messages channel=email.',
+    actor: 'system',
+    edgeFunctions: ['wk-email-webhook'],
+    integrations: ['Resend', 'AWS SES'],
+    tables: ['wk_sms_messages'],
+    webhooks: ['Resend webhook'],
+    confidence: 'confirmed',
+    debugTrigger: 'Email received at mail.nfstay.com',
+  }, GX.crm + 160, 840),
+
   n('send-email', 'send-email (27 types)', {
     description: '27 email types via Resend. Templates: hardcoded defaults + email_templates table overrides. User pref checks (notif_email_daily). Admin toggles per event (notification_settings).',
     actor: 'system',

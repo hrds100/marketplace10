@@ -116,6 +116,10 @@ export const flowEdges: Edge[] = [
   system('wh-se', 'ghl-payment-webhook', 'send-email', 'Tier upgraded email'),
   system('da-se', 'deal-approved', 'send-email', 'Deal approved email'),
   animated('in-nb', 'inquiry-notification', 'notifications-bell'),
+  E('pd-crml', 'paid-dashboard', 'crm-leaderboard', 'View agents'),
+  E('pd-cib', 'paid-dashboard', 'crm-inbound-bell', 'See inbound'),
+  animated('chm-fpm', 'channel-management', 'followup-prompt-modal', 'After send'),
+  system('eim-cib', 'email-inbound-mail-nfstay', 'crm-inbound-bell', 'New email'),
 
   // ═══════════════ BOOKING FLOW ═══════════════
 
