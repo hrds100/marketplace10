@@ -16,10 +16,21 @@ describe('mapTwilioError', () => {
     expect(mapTwilioError(31486, '').friendlyMessage).toMatch(/refused/i);
   });
 
-  it('31005 / 31009 → connection lost, non-fatal', () => {
+  it('31005 / 31009 → connection lost, fatal (PR 142)', () => {
+    // PR 142: was non-fatal — gateway HANGUP doesn't recover, so the
+    // reducer must flip out of the live phase immediately. Treating it
+    // as fatal is what stops the repeated-31005 loop and the
+    // stuck-in-RINGING room.
     const r = mapTwilioError(31005, '');
     expect(r.friendlyMessage).toMatch(/Connection lost/i);
-    expect(r.fatal).toBe(false);
+    expect(r.fatal).toBe(true);
+    const r2 = mapTwilioError(31009, '');
+    expect(r2.fatal).toBe(true);
+  });
+
+  it('31403 / 31486 → call refused, fatal (PR 142)', () => {
+    expect(mapTwilioError(31403, '').fatal).toBe(true);
+    expect(mapTwilioError(31486, '').fatal).toBe(true);
   });
 
   it('31000 → call dropped, fatal', () => {
