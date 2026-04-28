@@ -99,6 +99,21 @@ export default function FollowupPromptModal({
 
   const submit = async () => {
     if (!dueLocal || submitting) return;
+    // PR 109 (Hugo 2026-04-28): warn if the picked time falls outside
+    // working hours (10 AM – 7 PM local). Confirm-only — agent can still
+    // proceed if intentional. Skip path is unaffected; this only fires
+    // on the explicit Save path.
+    const due = new Date(localInputToIso(dueLocal));
+    const hour = due.getHours();
+    const outsideHours = hour < 10 || hour >= 19;
+    if (outsideHours) {
+      const ok = window.confirm(
+        `This is outside working hours (10 AM – 7 PM).\n\n` +
+          `You picked ${due.toLocaleString()}.\n\n` +
+          `Are you sure you want to schedule this follow-up?`
+      );
+      if (!ok) return;
+    }
     setSubmitting(true);
     try {
       const result = await create({

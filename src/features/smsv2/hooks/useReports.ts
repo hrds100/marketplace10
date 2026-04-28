@@ -19,6 +19,8 @@ export interface AgentLeaderRow {
   answered: number;
   avgDurationSec: number;
   spendPence: number;
+  /** PR 109: outbound wk_sms_messages count for this agent in range. */
+  messagesSent: number;
 }
 
 export interface ReportData {
@@ -148,8 +150,32 @@ export function useReports(range: ReportRange): ReportData {
       byAgent.set(aid, bucket);
     }
 
+    // PR 109: messagesSent per agent (outbound wk_sms_messages in range).
+    // Single query; bucketed client-side. Cheap for typical CRM volume.
+    const messagesByAgent = new Map<string, number>();
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const msgsRes = await (supabase.from('wk_sms_messages' as any) as any)
+      .select('created_by')
+      .eq('direction', 'outbound')
+      .gte('created_at', startIso);
+    for (const m of (msgsRes.data ?? []) as Array<{ created_by: string | null }>) {
+      const aid = m.created_by ?? 'unknown';
+      messagesByAgent.set(aid, (messagesByAgent.get(aid) ?? 0) + 1);
+    }
+
+    // PR 109: include any agent who SENT messages but didn't make calls
+    // — they still belong on the leaderboard.
+    for (const aid of messagesByAgent.keys()) {
+      if (aid === 'unknown') continue;
+      if (!byAgent.has(aid)) byAgent.set(aid, { calls: [], spend: 0 });
+    }
+
     const agentIds = Array.from(byAgent.keys()).filter((id) => id !== 'unknown');
     const profilesById = new Map<string, string>();
+    // PR 109 (Item O): wk_voice_agent_limits.show_on_leaderboard filter.
+    // Default to true when the column / row is missing so existing
+    // agents stay visible until an admin opts them out.
+    const showOnBoardById = new Map<string, boolean>();
     if (agentIds.length > 0) {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const profRes = await (supabase.from('profiles' as any) as any)
@@ -162,22 +188,36 @@ export function useReports(range: ReportRange): ReportData {
       }>) {
         profilesById.set(p.id, p.name ?? p.email ?? 'Agent');
       }
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const limitsRes = await (supabase.from('wk_voice_agent_limits' as any) as any)
+        .select('agent_id, show_on_leaderboard')
+        .in('agent_id', agentIds);
+      for (const l of (limitsRes.data ?? []) as Array<{
+        agent_id: string;
+        show_on_leaderboard: boolean | null;
+      }>) {
+        showOnBoardById.set(l.agent_id, l.show_on_leaderboard !== false);
+      }
     }
 
-    const leaderboard: AgentLeaderRow[] = Array.from(byAgent.entries()).map(([id, b]) => {
-      const ans = b.calls.filter((c) =>
-        ['completed', 'in_progress', 'voicemail'].includes(c.status)
-      );
-      const totalDur = ans.reduce((s, c) => s + (c.duration_sec ?? 0), 0);
-      return {
-        agentId: id,
-        agentName: profilesById.get(id) ?? 'Agent',
-        calls: b.calls.length,
-        answered: ans.length,
-        avgDurationSec: ans.length > 0 ? Math.round(totalDur / ans.length) : 0,
-        spendPence: b.spend,
-      };
-    });
+    const leaderboard: AgentLeaderRow[] = Array.from(byAgent.entries())
+      .filter(([id]) => id !== 'unknown')
+      .filter(([id]) => showOnBoardById.get(id) !== false)
+      .map(([id, b]) => {
+        const ans = b.calls.filter((c) =>
+          ['completed', 'in_progress', 'voicemail'].includes(c.status)
+        );
+        const totalDur = ans.reduce((s, c) => s + (c.duration_sec ?? 0), 0);
+        return {
+          agentId: id,
+          agentName: profilesById.get(id) ?? 'Agent',
+          calls: b.calls.length,
+          answered: ans.length,
+          avgDurationSec: ans.length > 0 ? Math.round(totalDur / ans.length) : 0,
+          spendPence: b.spend,
+          messagesSent: messagesByAgent.get(id) ?? 0,
+        };
+      });
     leaderboard.sort((a, b) => b.calls - a.calls);
 
     setData({

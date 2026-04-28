@@ -2186,6 +2186,29 @@ function AgentsTab() {
     }
   };
 
+  // PR 109 (Hugo 2026-04-28): per-agent leaderboard visibility toggle.
+  // Optimistic store update + write-through to wk_voice_agent_limits.
+  const updateAgentLeaderboard = async (agentId: string, show: boolean) => {
+    const target = agents.find((a) => a.id === agentId);
+    if (!target) return;
+    upsertAgent({ ...target, showOnLeaderboard: show });
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { error } = await (supabase.from('wk_voice_agent_limits' as any) as any)
+      .upsert(
+        { agent_id: agentId, show_on_leaderboard: show },
+        { onConflict: 'agent_id' }
+      );
+    if (error) {
+      pushToast(`Save failed: ${error.message}`, 'error');
+      upsertAgent(target);
+      return;
+    }
+    pushToast(
+      show ? `${target.name} shown on leaderboard` : `${target.name} hidden from leaderboard`,
+      'success'
+    );
+  };
+
   const randomPassword = () => {
     const charset = 'abcdefghjkmnpqrstuvwxyzABCDEFGHJKMNPQRSTUVWXYZ23456789';
     let out = '';
@@ -2265,6 +2288,7 @@ function AgentsTab() {
               <th className="text-left py-2">Ext.</th>
               <th className="text-right py-2">Spend</th>
               <th className="text-right py-2">Limit (£)</th>
+              <th className="text-center py-2">Leaderboard</th>
               <th className="py-2"></th>
             </tr>
           </thead>
@@ -2288,6 +2312,16 @@ function AgentsTab() {
                       className="w-16 px-2 py-1 text-right tabular-nums border border-[#E5E7EB] rounded-[8px]"
                     />
                   )}
+                </td>
+                <td className="py-2 text-center">
+                  <input
+                    type="checkbox"
+                    checked={a.showOnLeaderboard !== false}
+                    onChange={(e) => void updateAgentLeaderboard(a.id, e.target.checked)}
+                    data-testid={`agent-leaderboard-${a.id}`}
+                    title="Show this agent on the leaderboard"
+                    className="w-4 h-4 accent-[#1E9A80] cursor-pointer"
+                  />
                 </td>
                 <td className="py-2 text-right">
                   {a.isAdmin ? (

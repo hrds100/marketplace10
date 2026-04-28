@@ -31,6 +31,9 @@ export interface Agent {
   answerRatePct?: number;
   /** PR 54: outbound wk_sms_messages count for this agent today. */
   smsSentToday?: number;
+  /** PR 109: when false, agent is hidden from the leaderboard surfaces.
+   *  Defaults to true for back-compat with rows that pre-date the column. */
+  showOnLeaderboard?: boolean;
 }
 
 export interface Contact {

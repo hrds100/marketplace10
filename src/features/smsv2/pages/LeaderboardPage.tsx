@@ -1,77 +1,27 @@
 // LeaderboardPage — daily agent leaderboard.
 //
 // Hugo 2026-04-28 (PR 107): "I want to see who's pulling their weight
-// today." Source data:
-//   - useReports('today').leaderboard → calls + answered + spend per agent.
-//   - inline wk_sms_messages count (outbound, today, grouped by created_by)
-//     for messagesSent — kept inline to avoid breaking the AgentLeaderRow
-//     contract that other surfaces rely on.
+// today." Hugo 2026-04-28 (PR 109): messagesSent + show_on_leaderboard
+// filter live in useReports now — no inline DB fetches here.
 //
 // Sort: calls picked up (answered) DESC by default. The signed-in agent's
 // own row is highlighted in green so they can see where they stand.
 
-import { useEffect, useMemo, useState } from 'react';
+import { useMemo } from 'react';
 import { Trophy } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { supabase } from '@/integrations/supabase/client';
 import { useReports } from '../hooks/useReports';
 import { useCurrentAgent } from '../hooks/useCurrentAgent';
 import { formatDuration, formatPence } from '../data/helpers';
 
-interface MessageRow {
-  created_by: string | null;
-}
-
-function startOfTodayIso(): string {
-  const d = new Date();
-  d.setUTCHours(0, 0, 0, 0);
-  return d.toISOString();
-}
-
 export default function LeaderboardPage() {
   const reports = useReports('today');
   const { agent: me } = useCurrentAgent();
-  const [messagesByAgent, setMessagesByAgent] = useState<Map<string, number>>(
-    new Map()
+
+  const rows = useMemo(
+    () => [...reports.leaderboard].sort((a, b) => b.answered - a.answered),
+    [reports.leaderboard]
   );
-
-  // Inline message count — refreshes with the same 60s cadence as useReports.
-  useEffect(() => {
-    let cancelled = false;
-    const load = async () => {
-      try {
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const { data } = await (supabase.from('wk_sms_messages' as any) as any)
-          .select('created_by')
-          .eq('direction', 'outbound')
-          .gte('created_at', startOfTodayIso());
-        if (cancelled) return;
-        const map = new Map<string, number>();
-        for (const r of (data ?? []) as MessageRow[]) {
-          if (!r.created_by) continue;
-          map.set(r.created_by, (map.get(r.created_by) ?? 0) + 1);
-        }
-        setMessagesByAgent(map);
-      } catch {
-        /* RLS — leaderboard renders with 0 messages, not a crash. */
-      }
-    };
-    void load();
-    const t = setInterval(load, 60_000);
-    return () => {
-      cancelled = true;
-      clearInterval(t);
-    };
-  }, []);
-
-  const rows = useMemo(() => {
-    return [...reports.leaderboard]
-      .map((r) => ({
-        ...r,
-        messagesSent: messagesByAgent.get(r.agentId) ?? 0,
-      }))
-      .sort((a, b) => b.answered - a.answered);
-  }, [reports.leaderboard, messagesByAgent]);
 
   return (
     <div className="p-6 max-w-[1200px] mx-auto space-y-5">
