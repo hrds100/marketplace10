@@ -146,13 +146,17 @@ serve(async (req: Request) => {
       answered_at: new Date().toISOString(),
     }).eq('id', thisCall.id);
 
-    // Hang up every other 'dialing' leg for the same agent in this campaign
+    // Hang up every other in-flight leg for the same agent in this
+    // campaign. PR 123 (Hugo 2026-04-28): widened from `eq('queued')`
+    // to `in (queued, ringing, voicemail)` — previously a sibling that
+    // had advanced to ringing or hit voicemail kept ringing the contact
+    // for up to 60s after the winner connected.
     if (thisCall.agent_id && thisCall.campaign_id) {
       const { data: losers } = await supa.from('wk_calls')
         .select('twilio_call_sid')
         .eq('agent_id', thisCall.agent_id)
         .eq('campaign_id', thisCall.campaign_id)
-        .eq('status', 'queued')
+        .in('status', ['queued', 'ringing', 'voicemail'])
         .neq('id', thisCall.id);
 
       for (const l of losers ?? []) {

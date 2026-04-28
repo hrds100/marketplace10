@@ -65,14 +65,35 @@ serve(async (req: Request) => {
     // Look up the call row.
     const { data: call, error: callErr } = await supa
       .from('wk_calls')
-      .select('id, agent_id, twilio_call_sid, status')
+      .select('id, agent_id, contact_id, campaign_id, twilio_call_sid, status')
       .eq('id', callId)
       .maybeSingle();
     if (callErr) return json(500, { error: callErr.message });
     if (!call) return json(404, { error: 'Call not found' });
 
-    const row = call as { id: string; agent_id: string | null; twilio_call_sid: string | null; status: string };
-    if (row.agent_id && row.agent_id !== agentId) {
+    const row = call as {
+      id: string;
+      agent_id: string | null;
+      contact_id: string | null;
+      campaign_id: string | null;
+      twilio_call_sid: string | null;
+      status: string;
+    };
+    // PR 123 (Hugo 2026-04-28): admins can hang up ANY leg for support
+    // / debugging. Agents can only hang up their own. Without the
+    // admin escape hatch, a stuck call belonging to another agent was
+    // unkillable from the UI.
+    let isAdmin = false;
+    {
+      const { data: roleRow } = await supa
+        .from('profiles')
+        .select('workspace_role')
+        .eq('id', agentId)
+        .maybeSingle();
+      const role = (roleRow as { workspace_role?: string | null } | null)?.workspace_role;
+      isAdmin = role === 'admin';
+    }
+    if (row.agent_id && row.agent_id !== agentId && !isAdmin) {
       return json(403, { error: 'Not your call' });
     }
 
@@ -85,29 +106,33 @@ serve(async (req: Request) => {
       return json(200, { status: row.status, already_terminal: true });
     }
 
-    // POST to Twilio to cancel/complete the call.
+    // PR 123 (Hugo 2026-04-28): cancel the Twilio leg with retry logic.
+    // Twilio's status verbs:
+    //   - `canceled` works on queued/ringing legs (no billing).
+    //   - `completed` works on in-progress legs (already connected).
+    // The local `status` value can be stale (AMD may have flipped a
+    // ringing leg to in_progress on Twilio's side without our webhook
+    // landing yet), so try `canceled` first, fall back to `completed`
+    // when Twilio rejects with "Call is not in-progress" or similar.
     if (row.twilio_call_sid && TWILIO_ACCOUNT_SID && TWILIO_AUTH_TOKEN) {
-      // For a still-ringing leg, "canceled" is the right Twilio verb.
-      // For an already-connected leg, you'd want "completed". Twilio
-      // accepts both for an in-flight call; pick canceled-first since
-      // that's what cancels a ringing leg without billing it.
-      const tw = await fetch(
-        `https://api.twilio.com/2010-04-01/Accounts/${TWILIO_ACCOUNT_SID}/Calls/${row.twilio_call_sid}.json`,
-        {
-          method: 'POST',
-          headers: {
-            Authorization: 'Basic ' + btoa(`${TWILIO_ACCOUNT_SID}:${TWILIO_AUTH_TOKEN}`),
-            'Content-Type': 'application/x-www-form-urlencoded',
-          },
-          body: new URLSearchParams({
-            Status: row.status === 'in_progress' ? 'completed' : 'canceled',
-          }).toString(),
-        }
-      );
-      if (!tw.ok) {
+      const verbs = row.status === 'in_progress' ? ['completed', 'canceled'] : ['canceled', 'completed'];
+      for (const verb of verbs) {
+        const tw = await fetch(
+          `https://api.twilio.com/2010-04-01/Accounts/${TWILIO_ACCOUNT_SID}/Calls/${row.twilio_call_sid}.json`,
+          {
+            method: 'POST',
+            headers: {
+              Authorization: 'Basic ' + btoa(`${TWILIO_ACCOUNT_SID}:${TWILIO_AUTH_TOKEN}`),
+              'Content-Type': 'application/x-www-form-urlencoded',
+            },
+            body: new URLSearchParams({ Status: verb }).toString(),
+          }
+        );
+        if (tw.ok) break;
         const errText = await tw.text().catch(() => '');
-        console.warn('[wk-dialer-hangup-leg] twilio said', tw.status, errText);
-        // Continue anyway — best-effort. Update local row so UI updates.
+        console.warn('[wk-dialer-hangup-leg] twilio rejected', verb, tw.status, errText);
+        // If Twilio says the call is already terminal, stop retrying.
+        if (tw.status === 404 || /not.*found/i.test(errText)) break;
       }
     }
 
@@ -119,6 +144,19 @@ serve(async (req: Request) => {
       })
       .eq('id', callId);
     if (updErr) return json(500, { error: updErr.message });
+
+    // PR 123: also revert the matching wk_dialer_queue row from
+    // 'dialing' back to 'pending' so the contact can be re-picked
+    // on the next Start. Without this, a hung-up leg leaves its queue
+    // row stuck in 'dialing' forever.
+    if (row.contact_id && row.campaign_id) {
+      await supa
+        .from('wk_dialer_queue')
+        .update({ status: 'pending', agent_id: null })
+        .eq('contact_id', row.contact_id)
+        .eq('campaign_id', row.campaign_id)
+        .eq('status', 'dialing');
+    }
 
     return json(200, { status: 'canceled' });
   } catch (e) {
