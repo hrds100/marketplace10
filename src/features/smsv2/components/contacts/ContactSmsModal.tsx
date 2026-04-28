@@ -128,6 +128,9 @@ export default function ContactSmsModal({
   const [loadingTpls, setLoadingTpls] = useState(true);
   const [recentSendCount, setRecentSendCount] = useState(0);
   const [showSentBanner, setShowSentBanner] = useState(false);
+  // PR 105: capture the channel label at send-time so the post-send banner
+  // still reads correctly after we reset `channel` to null (forces re-pick).
+  const [bannerLabel, setBannerLabel] = useState<string>('');
 
   useEffect(() => {
     let cancelled = false;
@@ -320,7 +323,10 @@ export default function ContactSmsModal({
       if (channel === 'email') setSubject('');
       setSelectedTemplateId('');
       setRecentSendCount((n) => n + 1);
+      setBannerLabel(`${CHANNEL_LABEL[channel]} sent`);
       setShowSentBanner(true);
+      // PR 105: force re-pick of channel after every successful send.
+      setChannel(null);
       setTimeout(() => setShowSentBanner(false), 4000);
     } catch (e) {
       pushToast(
@@ -431,7 +437,7 @@ export default function ContactSmsModal({
             >
               <Check className="w-4 h-4" />
               <span>
-                {CHANNEL_LABEL[channel]} sent
+                {bannerLabel}
                 {recentSendCount > 1 ? ` · ${recentSendCount} this session` : ''}
               </span>
             </div>

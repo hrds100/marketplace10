@@ -30,7 +30,7 @@ import type { Contact } from '../types';
 
 export default function ContactDetailPage() {
   const { id } = useParams<{ id: string }>();
-  const { getContact, agents, patchContact, upsertContact } = useSmsV2();
+  const { getContact, agents, patchContact, upsertContact, pushToast } = useSmsV2();
   const contact = getContact(id ?? '');
   const [editing, setEditing] = useState<Contact | null>(null);
   const [smsTo, setSmsTo] = useState<Contact | null>(null);
@@ -349,7 +349,26 @@ export default function ContactDetailPage() {
       <EditContactModal
         contact={editing}
         onClose={() => setEditing(null)}
-        onSave={(updated) => upsertContact(updated)}
+        onSave={(updated) => {
+          // PR 105: optimistic local + write-through to wk_contacts so
+          // edits to name / email / stage survive a reload.
+          const prev = getContact(updated.id);
+          upsertContact(updated);
+          void persist
+            .patchContact(updated.id, {
+              name: updated.name,
+              email: updated.email ?? null,
+              pipeline_column_id: updated.pipelineColumnId ?? null,
+            })
+            .then((ok) => {
+              if (ok) {
+                pushToast('Saved ✓', 'success');
+              } else {
+                if (prev) upsertContact(prev);
+                pushToast('Save failed — reverted', 'error');
+              }
+            });
+        }}
       />
       <ContactSmsModal
         contact={smsTo}

@@ -6,11 +6,12 @@ import ParallelDialerBoard from '../components/dialer/ParallelDialerBoard';
 import SpendBanner from '../components/dialer/SpendBanner';
 import StageSelector from '../components/shared/StageSelector';
 import EditContactModal from '../components/contacts/EditContactModal';
-import { MOCK_CAMPAIGNS, COACH_PROMPTS } from '../data/mockCampaigns';
+import { MOCK_CAMPAIGNS } from '../data/mockCampaigns';
 import { useActiveCallCtx } from '../components/live-call/ActiveCallContext';
 import { useSpendLimit } from '../hooks/useSpendLimit';
 import { useKillSwitch } from '../hooks/useKillSwitch';
 import { useSmsV2 } from '../store/SmsV2Store';
+import { useContactPersistence } from '../hooks/useContactPersistence';
 import { useDialerCampaigns } from '../hooks/useDialerCampaigns';
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
@@ -83,6 +84,7 @@ export default function DialerPage() {
       ? 'Daily spend limit reached.'
       : null;
   const { contacts, patchContact, upsertContact, pushToast } = useSmsV2();
+  const persist = useContactPersistence();
 
   // Keep activeId valid when the real list arrives or changes
   useEffect(() => {
@@ -298,7 +300,13 @@ export default function DialerPage() {
                   </button>
                   <StageSelector
                     value={c.pipelineColumnId}
-                    onChange={(col) => patchContact(c.id, { pipelineColumnId: col })}
+                    onChange={(col) => {
+                      // PR 105 (Hugo 2026-04-28): was UI-only — stage
+                      // changes from the dialer queue never reached
+                      // wk_contacts. Mirror the ContactsPage pattern.
+                      patchContact(c.id, { pipelineColumnId: col });
+                      void persist.moveToColumn(c.id, col);
+                    }}
                     size="sm"
                   />
                   <button
@@ -400,6 +408,11 @@ export default function DialerPage() {
               </Field>
             </div>
 
+            {/* PR 105 (Hugo 2026-04-28): the standalone "System prompt"
+                dropdown was removed — every campaign already attaches
+                its coach prompt via wk_dialer_campaigns.coach_prompt_id,
+                so picking it again here was redundant + risked the
+                dialer firing with a different prompt than the campaign. */}
             <div className="grid grid-cols-2 gap-3">
               <Field label="AI coach">
                 <button
@@ -415,13 +428,6 @@ export default function DialerPage() {
                   </span>
                   <span className="text-[10px] opacity-60">click to toggle</span>
                 </button>
-              </Field>
-              <Field label="System prompt">
-                <select className="w-full px-2 py-1.5 text-[13px] bg-[#F3F3EE] border border-[#E5E7EB] rounded-[10px]">
-                  {COACH_PROMPTS.map((p) => (
-                    <option key={p.id}>{p.name}</option>
-                  ))}
-                </select>
               </Field>
             </div>
 

@@ -250,6 +250,8 @@ export default function MidCallSmsSender({
       if (channel === 'email') setSubject('');
       setSelectedTemplateId('');
       setPickedStageId(null);
+      // PR 105: force re-pick of channel after every successful send.
+      setChannel(null);
     } catch (e) {
       pushToast(
         `${CHANNEL_LABEL[channel]} send crashed: ${e instanceof Error ? e.message : 'unknown'}`,
