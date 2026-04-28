@@ -142,6 +142,52 @@ async function verifySvixSignature(
   return false;
 }
 
+// PR 104 (Hugo 2026-04-28): strip quoted reply history so an inbound
+// email body only contains the NEW content, not the entire thread.
+//
+// Gmail / Outlook / Apple Mail all prefix quoted text with `>` and
+// introduce it with patterns like:
+//   "On <date> <person> wrote:"           (Gmail, single or wrapped line)
+//   "-----Original Message-----"           (Outlook)
+//   "From: <person>\nSent: <date>..."     (Outlook variant)
+//
+// We cut at the first such marker and drop any leading or trailing
+// quote-prefixed lines. Conservative — if no marker is recognised,
+// we return the text as-is so we never accidentally truncate a real
+// reply that happens to contain the word "wrote:".
+function stripReplyQuotes(input: string): string {
+  if (!input) return '';
+  let text = input;
+
+  // 1. Cut at "On ... wrote:" — match across up to ~3 lines because
+  //    Gmail often wraps the attribution line.
+  const gmailMatch = text.match(/\n[> ]*On [^\n]{0,200}(?:\n[^\n]{0,200}){0,2}wrote:?[ \t]*\n?/);
+  if (gmailMatch && gmailMatch.index !== undefined) {
+    text = text.slice(0, gmailMatch.index);
+  }
+
+  // 2. Cut at "-----Original Message-----" (Outlook).
+  text = text.split(/\n-----+\s*Original Message\s*-----+/i)[0];
+
+  // 3. Cut at a "From: ...\nSent: ..." Outlook header pair.
+  const outlookHeader = text.match(/\n[> ]*From:[ \t]+.+\n[> ]*(Sent|Date):[ \t]+/);
+  if (outlookHeader && outlookHeader.index !== undefined) {
+    text = text.slice(0, outlookHeader.index);
+  }
+
+  // 4. Drop lines that are pure quote (start with '>' after optional
+  //    whitespace). Leaves real reply content intact.
+  text = text
+    .split('\n')
+    .filter((line) => !/^\s*>/.test(line))
+    .join('\n');
+
+  // 5. Collapse 3+ blank lines and trim ends.
+  text = text.replace(/\n{3,}/g, '\n\n').trim();
+
+  return text;
+}
+
 async function findOrCreateContact(
   supa: ReturnType<typeof createClient>,
   email: string,
@@ -294,7 +340,9 @@ serve(async (req: Request) => {
   } else {
     console.warn('[wk-email-webhook] RESEND_API_KEY missing — body will be empty');
   }
-  const bodyText = text || html.replace(/<[^>]+>/g, '');
+  const rawBodyText = text || html.replace(/<[^>]+>/g, '');
+  // PR 104: strip quoted history so the inbox shows only the new reply.
+  const bodyText = stripReplyQuotes(rawBodyText);
 
   const contactId = await findOrCreateContact(supa, fromEmail, fromName, emailId);
   if (!contactId) return ok({ note: 'contact resolution failed' });
