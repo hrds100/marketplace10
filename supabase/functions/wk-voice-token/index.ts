@@ -120,41 +120,33 @@ serve(async (req: Request) => {
       });
     }
 
-    // PR 143 (Hugo 2026-04-28): suffix the identity with a per-tab session
-    // UUID so multiple tabs of the same user don't collide at the gateway.
+    // PR 145 (Hugo 2026-04-28): REVERT PR 143's identity suffix.
     //
-    // Twilio's documented behaviour: a new client registering with an
-    // existing identity evicts the older one (`error 31005 HANGUP`).
-    // Hugo had ~30 tabs open including several hub.nfstay.com ones — every
-    // tab's voice-token refresh re-asserted `identity = user.id`, evicting
-    // the previously-active tab. Calls dropped mid-ring with repeated
-    // 31005 errors.
+    // Phase-1 audit evidence (Twilio Debugger + REST-API isolation):
+    //   - The bare REST API can dial these destinations from this caller-
+    //     ID just fine (test calls completed with status busy/completed).
+    //   - The TwiML our function returns is byte-for-byte valid (verified
+    //     via signed webhook simulation).
+    //   - The same destination via the SDK → Application SID path fails
+    //     with `error_code: 13224 "invalid phone number"` and the SDK
+    //     surfaces it as `31404 NotFound` / `31486 BusyHere` (SIP
+    //     semantics for "the bridged Client identity isn't found / is
+    //     busy").
+    //   - Timeline: ~50% of calls completed BEFORE PR 143 (no suffix);
+    //     ~0% completed AFTER PR 143 (with `:` suffix).
     //
-    // New scheme: identity = `${user.id}:${sessionId}` where sessionId is
-    // a fresh UUID per token mint. Each tab is its own gateway client, no
-    // collisions. We UPSERT (user_id, session_id) into wk_voice_sessions
-    // so wk-voice-twiml-incoming and wk-voice-twiml-outgoing can dial the
-    // most recent session.
-    const sessionId = crypto.randomUUID();
-    const identity = `${user.id}:${sessionId}`;
-
-    try {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const { error: upErr } = await (supabase.from('wk_voice_sessions' as any) as any)
-        .upsert(
-          {
-            user_id: user.id,
-            session_id: sessionId,
-            last_seen_at: new Date().toISOString(),
-          },
-          { onConflict: 'user_id' }
-        );
-      if (upErr) {
-        console.warn('[wk-voice-token] wk_voice_sessions upsert failed:', upErr.message);
-      }
-    } catch (e) {
-      console.warn('[wk-voice-token] wk_voice_sessions upsert threw:', e);
-    }
+    // Diagnosis: `:` is a reserved SIP URI delimiter (RFC 3261). Twilio's
+    // signaling layer mis-parses `client:user.id:session.id` as a SIP
+    // URI prefix and the bridge-target lookup at `<Dial>` time can't
+    // resolve back to the calling Client → the dial leg fails with
+    // 13224. The wk_voice_sessions table created in PR 143 stays in
+    // place but is now unused (no readers, no writers).
+    //
+    // Multi-tab collisions are a separate, secondary concern that the
+    // 50% pre-PR-143 success rate shows is not the dominant failure
+    // mode. If we want multi-tab protection later we'll use a non-SIP
+    // -reserved separator (`_`, `.`, `-`) — not `:`.
+    const identity = user.id;
 
     const now = Math.floor(Date.now() / 1000);
 

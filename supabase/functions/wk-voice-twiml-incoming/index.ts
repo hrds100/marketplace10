@@ -90,11 +90,10 @@ serve(async (req: Request) => {
     let agentId: string | null = num?.assigned_agent_id ?? null;
     let agentClientIdentity: string | null = null;
 
-    // PR 143 (Hugo 2026-04-28): identity is suffixed per-tab to avoid
-    // multi-tab gateway eviction. Inbound routing must dial the agent's
-    // MOST RECENT session — wk_voice_sessions records that. If no session
-    // row exists yet (token never minted, or pre-migration), fall back to
-    // the bare agent_id so existing inbound flows keep working.
+    // PR 145 (Hugo 2026-04-28): REVERT PR 143's wk_voice_sessions lookup.
+    // Identity = profile UUID (matches what wk-voice-token grants).
+    // The colon-suffixed form broke outbound calls with 13224 — same
+    // pattern would break inbound routing too.
     if (agentId) {
       const { data: profile } = await supabase
         .from('profiles')
@@ -102,20 +101,7 @@ serve(async (req: Request) => {
         .eq('id', agentId)
         .maybeSingle();
       if (profile && profile.agent_status !== 'offline') {
-        let resolved = profile.id;
-        try {
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          const { data: sess } = await (supabase.from('wk_voice_sessions' as any) as any)
-            .select('session_id')
-            .eq('user_id', profile.id)
-            .maybeSingle();
-          if (sess?.session_id) {
-            resolved = `${profile.id}:${sess.session_id}`;
-          }
-        } catch (e) {
-          console.warn('[wk-voice-twiml-incoming] session lookup failed:', e);
-        }
-        agentClientIdentity = resolved;
+        agentClientIdentity = profile.id;
       }
     }
 
