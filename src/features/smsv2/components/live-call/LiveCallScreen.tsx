@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useState } from 'react';
 import {
   MicOff,
   PhoneOff,
@@ -15,6 +15,7 @@ import {
 } from '@/components/ui/resizable';
 import { useActiveCallCtx } from './ActiveCallContext';
 import { useActiveDialerLegs } from '../../hooks/useActiveDialerLegs';
+import { useNoAnswerHangup } from '../../hooks/useNoAnswerHangup';
 import LiveTranscriptPane from './LiveTranscriptPane';
 import CallScriptPane from './CallScriptPane';
 import TerminologyPane from './TerminologyPane';
@@ -87,45 +88,17 @@ export default function LiveCallScreen() {
         ? 'Connecting…'
         : 'Dialing';
 
-  // PR 129 (Hugo 2026-04-28): no-answer auto-hangup. Hugo: "if it
-  // takes 30 seconds, 40 seconds, and it doesn't start ringing because
-  // the phone is off, you have to know — has to go to hang up and go
-  // to the next call." Threshold: 35s (Twilio rings every 3-4s →
-  // 35s ≈ 9-12 rings, matching Hugo's "10 rings" descriptive ask).
-  // We trigger only when the leg is still 'queued' or 'ringing' —
-  // never on 'in_progress' (real conversation in progress).
-  //
-  // PR 137 (Hugo 2026-04-28): REMOVED auto-outcome + auto-advance.
-  // Hugo's new rule: "When you click hang up, or didn't pick up the
-  // call, OR ANYTHING — let the agent pick the outcome. DON'T move
-  // to the next call until the agent chooses the outcome." So the
-  // 35s timer now only ENDS the call. endCall() flips phase to
-  // post_call (via Twilio's 'disconnect' listener), the orange
-  // outcome picker appears, and the agent picks the column manually.
-  // No more applyOutcome('No Pickup') fired by the timer. No more
-  // auto-advance to the next dial.
-  const NO_ANSWER_AUTO_HANGUP_SEC = 35;
-  const autoHangupFiredRef = useRef(false);
-  useEffect(() => {
-    if (phase !== 'placing') {
-      autoHangupFiredRef.current = false;
-      return;
-    }
-    if (autoHangupFiredRef.current) return;
-    if (placingElapsedSec < NO_ANSWER_AUTO_HANGUP_SEC) return;
-    const stillRinging =
-      placingLegStatus === 'queued' ||
-      placingLegStatus === 'ringing' ||
-      placingLegStatus == null; // null = no leg row yet — also stuck
-    if (!stillRinging) return;
-    autoHangupFiredRef.current = true;
-    void (async () => {
-      await endCall();
-      // PR 137 (Hugo 2026-04-28): no auto-outcome, no auto-advance.
-      // Agent must pick the outcome column manually from the post-call
-      // panel that appears once endCall flips phase to post_call.
-    })();
-  }, [phase, placingElapsedSec, placingLegStatus, endCall]);
+  // PR 138 (Hugo 2026-04-28): extracted to useNoAnswerHangup hook.
+  // Same behaviour as before — when the leg's been in 'placing' for
+  // ≥35s and is still queued/ringing (or no leg row at all), end the
+  // call. The reducer flips to stopped_waiting_outcome; the agent
+  // picks the outcome (Rules 3, 4, 5).
+  useNoAnswerHangup({
+    phase,
+    legStatus: placingLegStatus,
+    elapsedSec: placingElapsedSec,
+    endCall,
+  });
 
   // Preview mode (PR 10): no active call, but agent opened the room for
   // a specific contact from the inbox. Use that contact instead of the
