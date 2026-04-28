@@ -303,3 +303,41 @@ verify_jwt = false
 # verification but config-level verify_jwt=true rejects unauthenticated
 # requests at the platform edge before they hit our handler.
 verify_jwt = true
+
+# PR 111 (Hugo 2026-04-28): close config drift. These fns existed on
+# disk + deployed but had no config.toml entry, so verify_jwt was
+# implicit (Supabase default = true). Explicit settings below match
+# each fn's actual auth model.
+
+[functions.ab-track]
+# Public A/B tracking endpoint — no auth check inside.
+verify_jwt = false
+
+[functions.create-admin]
+# Admin-only — uses service role inside, called from authenticated client.
+verify_jwt = true
+
+[functions.generate-description]
+# AI description generator — no auth check inside; public proxy to OpenAI.
+verify_jwt = false
+
+[functions.get-thread-phone]
+# Internal helper — called from authenticated CRM code only.
+verify_jwt = true
+
+[functions.nfs-provision-nfstay-subdomain]
+# Reads user JWT to look up nfs_operators row; needs auth.
+verify_jwt = true
+
+[functions.reset-landlord-test-data]
+# Admin tool — checks JWT + hardcoded admin email list inside.
+verify_jwt = true
+
+[functions.run-migrations]
+# Service-role only — checks auth header against SUPABASE_SERVICE_ROLE_KEY
+# directly. verify_jwt would interfere; keep false.
+verify_jwt = false
+
+[functions.uptimerobot-health]
+# Public health proxy — no auth.
+verify_jwt = false
