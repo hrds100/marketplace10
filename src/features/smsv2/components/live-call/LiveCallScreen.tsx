@@ -118,7 +118,13 @@ export default function LiveCallScreen() {
     void (async () => {
       await endCall();
       // Skip post-call review for an auto-canceled no-answer; advance.
-      setTimeout(() => applyOutcome('next-now'), 200);
+      // PR 133: bumped from 200ms to 1500ms — the prior value was shorter
+      // than Twilio's 'disconnect' event latency (300–1000ms typical), so
+      // the next dial would race the prior teardown and trip "A Call is
+      // already active". 1500ms matches the disconnectAllCallsAndWait
+      // budget inside dial().
+      await new Promise((r) => setTimeout(r, 1500));
+      applyOutcome('next-now');
     })();
   }, [phase, placingElapsedSec, placingLegStatus, endCall, applyOutcome]);
 
@@ -284,7 +290,9 @@ export default function LiveCallScreen() {
               changes for clarity but the handler is the same. */}
           {phase !== 'idle' && phase !== 'post_call' && !isPreview && (
             <button
-              onClick={() => void endCall()}
+              onClick={async () => {
+                await endCall();
+              }}
               className="flex items-center gap-1.5 bg-[#EF4444] hover:bg-[#DC2626] text-white px-3 py-1.5 rounded-[10px] text-[12px] font-semibold"
               data-testid={
                 phase === 'placing'
