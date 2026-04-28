@@ -385,6 +385,18 @@ export function ActiveCallProvider({ children }: { children: ReactNode }) {
 
       const isThisCall = () => activeTwilioCallRef.current === result.twilioCall;
 
+      // PR 140 (Hugo 2026-04-28): Twilio Call.on('ringing') fires when
+      // the carrier reports the remote leg is alerting. This is the
+      // unambiguous "Ringing" boundary the new dialer UX hinges on —
+      // before this commit the reducer's `ringing` phase was only
+      // reachable from server-side leg-status mirroring, which lagged
+      // the SDK by 1-3s. Twilio docs:
+      // https://www.twilio.com/docs/voice/sdks/javascript/twiliocall
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      (result.twilioCall as any).on?.('ringing', () => {
+        if (!isThisCall()) return;
+        dispatch({ type: 'LEG_RINGING' });
+      });
       result.twilioCall.on('accept', () => {
         if (!isThisCall()) return;
         dispatch({ type: 'CALL_ACCEPTED', startedAt: Date.now() });
