@@ -14,6 +14,7 @@ import {
   ResizableHandle,
 } from '@/components/ui/resizable';
 import { useActiveCallCtx } from './ActiveCallContext';
+import ParallelDialerBanner from '../dialer/ParallelDialerBanner';
 import LiveTranscriptPane from './LiveTranscriptPane';
 import CallScriptPane from './CallScriptPane';
 import TerminologyPane from './TerminologyPane';
@@ -252,6 +253,17 @@ export default function LiveCallScreen() {
           </button>
         </div>
       </header>
+
+      {/* PR 121 (Hugo 2026-04-28): the dark "Calling N lines" banner now
+          lives in the call room (here) instead of /crm/dialer. Hugo's
+          rule: "My dialer is just to press Start. Once you press Start
+          it goes to the other place" — so the live ringing legs surface
+          where the agent's eyes already are. Hidden when there are no
+          active legs (e.g. during a connected call after the others
+          have been auto-hung). */}
+      <div className="px-5 pt-3 flex-shrink-0">
+        <ParallelDialerBanner />
+      </div>
 
       {/* Resizable 4-column body (Hugo 2026-04-26):
             COL 1 — contact context (name, stage, KV, sticky notes)
