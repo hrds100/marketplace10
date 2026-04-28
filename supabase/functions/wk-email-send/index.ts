@@ -31,10 +31,12 @@ import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.39.3';
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!;
 const SUPABASE_SERVICE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
 const RESEND_API_KEY = Deno.env.get('RESEND_API_KEY') ?? '';
-// Defaults to the inbox.nfstay.com subdomain (PR 60 plan: keep
-// outbound on the existing nfstay.com domain untouched, and run all
-// CRM email — both directions — on a new subdomain).
-const DEFAULT_FROM_EMAIL = Deno.env.get('CRM_EMAIL_FROM') ?? 'inbox@inbox.nfstay.com';
+// Defaults to mail.nfstay.com (Resend EU region, confirmed verified
+// by Hugo 2026-04-28). Earlier plan was inbox.nfstay.com but
+// mail.nfstay.com is the working address. The CRM_EMAIL_FROM Supabase
+// secret overrides this and is the actual production from-line; this
+// constant is the fallback when the secret is unset.
+const DEFAULT_FROM_EMAIL = Deno.env.get('CRM_EMAIL_FROM') ?? 'crm@mail.nfstay.com';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',

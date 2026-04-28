@@ -1,8 +1,11 @@
 // wk-email-webhook — inbound email webhook from Resend.
 // PR 62 (multi-channel PR 3), Hugo 2026-04-27.
 //
-// Public endpoint (verify_jwt = false). Resend posts here on email.received
-// after MX records for inbox.nfstay.com are pointed at Resend.
+// Public endpoint (verify_jwt = false). Resend posts here on email.received.
+// MX records for mail.nfstay.com (Resend EU region, verified 2026-04-27)
+// point at Resend so inbound CRM email lands in this handler.
+// Earlier plan (PR 60) was to use inbox.nfstay.com — superseded by
+// mail.nfstay.com once Hugo confirmed EU-region verification.
 //
 // IMPORTANT: Resend webhook payloads contain METADATA only — no body.
 // We must follow up with GET /emails/{id} to fetch html + text.
