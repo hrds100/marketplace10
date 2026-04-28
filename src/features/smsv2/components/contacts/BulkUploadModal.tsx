@@ -227,6 +227,20 @@ export default function BulkUploadModal({
     // campaign was picked. Re-fetch ids by phone so that already-
     // existing contacts (skipped in the upsert) are also enqueued —
     // Hugo's expectation: "uploaded list = ready to dial".
+    //
+    // PR 119 (Hugo 2026-04-28): we used to .upsert with
+    //   onConflict: 'campaign_id,contact_id'
+    // but PR 33 (migration 20260430000010) deliberately DROPPED that
+    // unique constraint so the same contact can be queued multiple
+    // times (retry policies, multi-attempt campaigns, test fixtures).
+    // Postgres now rejects the upsert with:
+    //   "there is no unique or exclusion constraint matching the
+    //    ON CONFLICT specification"
+    // Fix: dedupe in code instead. Pull existing PENDING queue rows
+    // for this campaign + these contacts, skip those, plain INSERT
+    // the rest. Re-uploading the same CSV is idempotent for already-
+    // pending leads, but a contact whose previous queue row is
+    // already done/failed can be re-queued (matches design intent).
     if (campaignId && allPhones.length > 0) {
       try {
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -238,13 +252,39 @@ export default function BulkUploadModal({
         if (idErr) {
           errors.push(`queue lookup: ${idErr.message}`);
         } else {
-          const queueInserts = ((idRows ?? []) as Array<{ id: string; phone: string }>)
-            .map((r) => ({
+          const contactIds = ((idRows ?? []) as Array<{ id: string; phone: string }>)
+            .map((r) => r.id);
+
+          // Find which of these are already pending in this campaign so
+          // we don't double-enqueue on a re-upload of the same CSV.
+          const alreadyPending = new Set<string>();
+          if (contactIds.length > 0) {
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            const { data: existing, error: existErr } = await (
+              supabase.from('wk_dialer_queue' as any) as any
+            )
+              .select('contact_id')
+              .eq('campaign_id', campaignId)
+              .eq('status', 'pending')
+              .in('contact_id', contactIds);
+            if (existErr) {
+              errors.push(`queue dedupe: ${existErr.message}`);
+            } else {
+              for (const r of (existing ?? []) as Array<{ contact_id: string }>) {
+                alreadyPending.add(r.contact_id);
+              }
+            }
+          }
+
+          const queueInserts = contactIds
+            .filter((id) => !alreadyPending.has(id))
+            .map((id) => ({
               campaign_id: campaignId,
-              contact_id: r.id,
+              contact_id: id,
               status: 'pending',
               priority: 0,
             }));
+
           // Chunk to avoid payload limits.
           for (let i = 0; i < queueInserts.length; i += CHUNK) {
             const slice = queueInserts.slice(i, i + CHUNK);
@@ -252,10 +292,7 @@ export default function BulkUploadModal({
             const { data: qData, error: qErr } = await (
               supabase.from('wk_dialer_queue' as any) as any
             )
-              .upsert(slice, {
-                onConflict: 'campaign_id,contact_id',
-                ignoreDuplicates: true,
-              })
+              .insert(slice)
               .select('id');
             if (qErr) {
               errors.push(`queue: ${qErr.message}`);
