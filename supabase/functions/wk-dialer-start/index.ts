@@ -207,14 +207,13 @@ serve(async (req: Request) => {
       });
     }
 
-    // PR 46 (Hugo 2026-04-27): accept both `lines` (canonical) and
-    // `parallel_lines` (legacy alias from DialerPage). Frontend now
-    // sends both names but DB column is also kept in sync ahead of
-    // this call, so all three sources should agree. The Math.min(5,…)
-    // hard cap remains the orchestration-level guard rail.
-    const requestedLines =
-      body.lines ?? body.parallel_lines ?? campaign.parallel_lines ?? 1;
-    const lines = Math.max(1, Math.min(5, requestedLines));
+    // PR 126 (Hugo 2026-04-28): power dialer only. Hugo's call:
+    // "let's launch this with just a normal one number after the other.
+    // No parallel — too complex." We hard-cap lines to 1 server-side
+    // regardless of what the body / campaign says. The parallel_lines
+    // column stays in the schema but is effectively ignored. Frontend
+    // dropdown was also removed in this PR. Simpler, more reliable.
+    const lines = 1;
     const twimlUrl = `${PUBLIC_FN_BASE}/wk-voice-twiml-outgoing`;
     const statusUrl = `${PUBLIC_FN_BASE}/wk-voice-status`;
 

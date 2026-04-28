@@ -102,17 +102,16 @@ export default function DialerPage() {
 
   const camp = allCampaigns.find((c) => c.id === activeId) ?? allCampaigns[0] ?? MOCK_CAMPAIGNS[0];
 
-  // Controlled form state — hydrates from the active campaign, persists user edits.
-  const [mode, setMode] = useState<Campaign['mode']>(camp.mode);
-  const [lines, setLines] = useState<number>(camp.parallelLines);
+  // PR 126: power-dialer-only. mode + lines are constants now —
+  // kept for back-compat with wk-dialer-start (which also caps to 1
+  // server-side). autoAdvance still configurable.
+  const mode: Campaign['mode'] = 'power';
+  const lines = 1;
   const [autoAdvance, setAutoAdvance] = useState<number>(camp.autoAdvanceSeconds);
 
-  // When the user switches campaign, snap form to that campaign's defaults.
   useEffect(() => {
-    setMode(camp.mode);
-    setLines(camp.parallelLines);
     setAutoAdvance(camp.autoAdvanceSeconds);
-  }, [camp.id, camp.mode, camp.parallelLines, camp.autoAdvanceSeconds]);
+  }, [camp.id, camp.autoAdvanceSeconds]);
 
   const isUuid = (s: string) =>
     /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(s);
@@ -483,40 +482,12 @@ export default function DialerPage() {
               </div>
             </div>
 
-            {/* PR 121 (Hugo 2026-04-28): Mode / Lines / Auto-advance are
-                ADMIN-ONLY. Agents see the values their admin configured
-                but can't change them. The dropdowns become read-only
-                pills for non-admin agents. */}
-            <div className="grid grid-cols-3 gap-3">
-              <Field label="Mode">
-                <select
-                  value={mode}
-                  onChange={(e) => setMode(e.target.value as Campaign['mode'])}
-                  disabled={!isEffectiveAdmin}
-                  className="w-full px-2 py-1.5 text-[13px] bg-[#F3F3EE] border border-[#E5E7EB] rounded-[10px] disabled:opacity-70 disabled:cursor-not-allowed"
-                  title={isEffectiveAdmin ? undefined : 'Admin-only setting'}
-                >
-                  <option value="parallel">Parallel</option>
-                  <option value="power">Power</option>
-                  <option value="manual">Manual</option>
-                </select>
-              </Field>
-              <Field label="Lines">
-                <select
-                  value={lines}
-                  onChange={(e) => setLines(Number(e.target.value))}
-                  disabled={!isEffectiveAdmin}
-                  className="w-full px-2 py-1.5 text-[13px] bg-[#F3F3EE] border border-[#E5E7EB] rounded-[10px] disabled:opacity-70 disabled:cursor-not-allowed"
-                  title={isEffectiveAdmin ? undefined : 'Admin-only setting'}
-                >
-                  {[1, 2, 3, 4, 5].map((n) => (
-                    <option key={n} value={n}>
-                      {n}
-                    </option>
-                  ))}
-                </select>
-              </Field>
-              <Field label="Auto-advance">
+            {/* PR 126 (Hugo 2026-04-28): power-dialer-only. Mode + Lines
+                dropdowns removed — Hugo's call to drop parallel until
+                the simpler flow is rock-solid. Auto-advance stays so
+                admins can tune the gap between calls. Admin-only. */}
+            <div className="grid grid-cols-1 gap-3">
+              <Field label="Auto-advance (seconds between calls)">
                 <select
                   value={autoAdvance}
                   onChange={(e) => setAutoAdvance(Number(e.target.value))}
