@@ -69,7 +69,10 @@ export interface ContactPersistAPI {
    * for the contact, then inserts the new list. Skipped for mock IDs.
    */
   replaceTags: (contactId: string, tags: string[]) => Promise<boolean>;
-  /** Insert a new contact. Returns the new row's id on success, null on fail. */
+  /** Insert a new contact. Returns { id, existed } on success, null on
+   *  fail. `existed=true` means a contact with this phone already
+   *  existed and we're returning that row's id (idempotent — caller
+   *  should toast "Contact already exists" rather than "Created"). */
   createContact: (input: {
     name: string;
     phone: string;
@@ -77,7 +80,7 @@ export interface ContactPersistAPI {
     pipelineColumnId?: string | null;
     ownerAgentId?: string | null;
     customFields?: Record<string, string>;
-  }) => Promise<string | null>;
+  }) => Promise<{ id: string; existed: boolean } | null>;
 }
 
 export function useContactPersistence(): ContactPersistAPI {
@@ -149,6 +152,24 @@ export function useContactPersistence(): ContactPersistAPI {
     // Mock id "col-interested" from MOCK_PIPELINES → null.
     const pipelineColumnId = uuidOrNull(input.pipelineColumnId ?? null);
 
+    // PR 119 (Hugo 2026-04-28): wk_contacts.phone is UNIQUE (PR 118
+    // promoted the partial index to full). A plain INSERT throws a 409
+    // "duplicate key value violates unique constraint" the moment the
+    // agent types a phone that already exists — even when the existing
+    // row is filtered out of view by stage/owner/search filters. Make
+    // creation idempotent: look up first; if a contact already exists
+    // for this phone, return its id (agent goes straight to the
+    // existing record); otherwise insert.
+    if (input.phone) {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const { data: existing } = await (supabase.from('wk_contacts' as any) as any)
+        .select('id')
+        .eq('phone', input.phone)
+        .maybeSingle();
+      const existingId = (existing as { id: string } | null)?.id ?? null;
+      if (existingId) return { id: existingId, existed: true };
+    }
+
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const { data, error } = await (supabase.from('wk_contacts' as any) as any)
       .insert({
@@ -163,10 +184,23 @@ export function useContactPersistence(): ContactPersistAPI {
       .select('id')
       .single();
     if (error) {
+      // Race: another tab/agent inserted the same phone between our
+      // SELECT and INSERT. Re-query and return that row's id so the
+      // agent doesn't see a confusing "Could not create contact".
+      if (error.code === '23505' && input.phone) {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const { data: raced } = await (supabase.from('wk_contacts' as any) as any)
+          .select('id')
+          .eq('phone', input.phone)
+          .maybeSingle();
+        const racedId = (raced as { id: string } | null)?.id ?? null;
+        if (racedId) return { id: racedId, existed: true };
+      }
       console.warn('[contact-persist] createContact failed:', error.message);
       return null;
     }
-    return (data as { id: string } | null)?.id ?? null;
+    const newId = (data as { id: string } | null)?.id ?? null;
+    return newId ? { id: newId, existed: false } : null;
   }, []);
 
   return { moveToColumn, patchContact, replaceTags, createContact };

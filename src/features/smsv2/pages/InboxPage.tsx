@@ -117,9 +117,13 @@ export default function InboxPage() {
   // by hydration order, not message recency.
   const { threads: inboxThreads } = useInboxThreads();
 
-  // Build the sidebar list — threads first (newest message at top),
-  // then contacts that have NO messages yet (so the agent can still
-  // start a new conversation from the sidebar).
+  // PR 119 (Hugo 2026-04-28): inbox now ONLY shows contacts with at
+  // least one message. Bulk-imported contacts no longer pollute the
+  // sidebar — they live on /crm/contacts. The previous "empty
+  // contacts" fallback was a leftover from PR 52's "start new
+  // conversation from the sidebar" idea, which never carried weight
+  // once import volume grew. New conversations now begin from
+  // /crm/contacts → Call/Send.
   const sidebarRows = useMemo(() => {
     const contactById = new Map(contacts.map((c) => [c.id, c] as const));
     type Row = {
@@ -136,9 +140,8 @@ export default function InboxPage() {
       tags: string[];
     };
     const out: Row[] = [];
-    const seen = new Set<string>();
 
-    // Threads (already ordered newest first by useInboxThreads).
+    // Threads only (already ordered newest first by useInboxThreads).
     for (const t of inboxThreads) {
       const c = contactById.get(t.contactId);
       out.push({
@@ -153,25 +156,6 @@ export default function InboxPage() {
         channelCounts: t.channelCounts,
         isHot: !!c?.isHot,
         tags: c?.tags ?? [],
-      });
-      seen.add(t.contactId);
-    }
-
-    // Contacts with NO messages yet.
-    for (const c of contacts) {
-      if (seen.has(c.id)) continue;
-      out.push({
-        id: c.id,
-        name: c.name,
-        phone: c.phone,
-        pipelineColumnId: c.pipelineColumnId,
-        lastMessageBody: null,
-        lastMessageAt: c.lastContactAt ?? null,
-        lastDirection: null,
-        lastChannel: null,
-        channelCounts: { sms: 0, whatsapp: 0, email: 0 },
-        isHot: c.isHot,
-        tags: c.tags,
       });
     }
 

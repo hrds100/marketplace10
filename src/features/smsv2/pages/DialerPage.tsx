@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { Play, Pause, Square, ArrowRight, Pencil } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import CampaignList from '../components/dialer/CampaignList';
-import ParallelDialerBoard from '../components/dialer/ParallelDialerBoard';
+import ParallelDialerBanner from '../components/dialer/ParallelDialerBanner';
 import SpendBanner from '../components/dialer/SpendBanner';
 import StageSelector from '../components/shared/StageSelector';
 import EditContactModal from '../components/contacts/EditContactModal';
@@ -118,9 +118,13 @@ export default function DialerPage() {
   // (status='pending', scheduled_for in the past) for the active
   // campaign, scoped to the agent unless they're admin. Realtime so
   // it ticks down as the dialer drains the queue.
+  // PR 119: cap to 3 to match the parallel-line count Hugo runs. The
+  // top banner already shows the 3 numbers ringing right now, so the
+  // "Next" panel mirrors what'll fire on the next dial burst.
   const { items: queueLeads, loading: queueLoading } = useMyDialerQueue(
     isUuid(activeId) ? activeId : null,
-    isEffectiveAdmin || !user ? null : user.id
+    isEffectiveAdmin || !user ? null : user.id,
+    3
   );
 
   const handleStart = async () => {
@@ -297,6 +301,12 @@ export default function DialerPage() {
 
       <SpendBanner />
 
+      {/* PR 119 (Hugo 2026-04-28): top dark banner with every active leg
+          (L1, L2, L3, …) showing phone + status dot + ticking timer +
+          per-leg hang-up. Replaces the old ParallelDialerBoard which
+          sat in the right column. Hidden when idle. */}
+      <ParallelDialerBanner />
+
       <div className="grid grid-cols-12 gap-5">
         {/* Left — campaigns + queue */}
         <div className="col-span-12 lg:col-span-4 space-y-3">
@@ -311,7 +321,7 @@ export default function DialerPage() {
               <h3 className="text-[12px] font-semibold text-[#1A1A1A] uppercase tracking-wide">
                 My queue
               </h3>
-              <span className="text-[11px] text-[#6B7280]">Next 5</span>
+              <span className="text-[11px] text-[#6B7280]">Next 3</span>
             </div>
             <div className="divide-y divide-[#E5E7EB]">
               {queueLeads.map((lead) => {
@@ -486,7 +496,6 @@ export default function DialerPage() {
             </div>
           </div>
 
-          <ParallelDialerBoard active={running} />
         </div>
       </div>
 

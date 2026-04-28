@@ -77,21 +77,22 @@ test.describe('SMSV2 — dialer + CSV flow', () => {
   });
 
   // ============================================================
-  // PR 24 — live ParallelDialerBoard renders empty state when idle
+  // PR 119 — dark ParallelDialerBanner is hidden when idle
   // ============================================================
-  test('ParallelDialerBoard renders empty-state when no legs are active (PR 24)', async ({
+  test('ParallelDialerBanner is hidden when no legs are active (PR 119)', async ({
     page,
   }) => {
     await adminSignIn(page);
     await page.goto(`${BASE}/smsv2/dialer`, { waitUntil: 'networkidle' });
     await page.waitForTimeout(3000);
 
-    // The board's idle copy from useActiveDialerLegs when no live legs
-    // exist on this agent's wk_calls.
-    const idleCopy = page.locator(
-      'text=/Press Start to fire the campaign|Loading|No active legs/'
-    );
-    await expect(idleCopy.first()).toBeVisible({ timeout: 10_000 });
+    // PR 119 (Hugo 2026-04-28): replaced the always-visible
+    // ParallelDialerBoard with ParallelDialerBanner that only renders
+    // when there are live legs. Idle state = no banner. This assertion
+    // proves the dialer page still loads cleanly without legs and that
+    // the "Calling N lines" headline is NOT shown.
+    await expect(page.locator('main')).toBeVisible();
+    await expect(page.getByText(/^Calling \d+ lines?$/)).toHaveCount(0);
   });
 
   // ============================================================

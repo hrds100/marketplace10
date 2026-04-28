@@ -36,13 +36,20 @@ beforeEach(() => {
 });
 
 function makeQueryBuilder() {
-  // PostgREST chain: .insert().select().single() / .update().eq()
+  // PostgREST chain: .insert().select().single() / .update().eq() /
+  // .select().eq().maybeSingle() (PR 119: createContact pre-flight
+  // lookup for the duplicate-phone case)
   const single = vi.fn().mockResolvedValue({ data: { id: 'inserted-uuid' }, error: null });
-  const select = vi.fn(() => ({ single }));
+  const maybeSingle = vi.fn().mockResolvedValue({ data: null, error: null });
+  // .select() returns BOTH .single (for insert chain) and .eq (for
+  // pre-flight phone lookup). Calling .eq().maybeSingle() returns
+  // null = no existing contact.
+  const selectEq = vi.fn(() => ({ maybeSingle }));
+  const select = vi.fn(() => ({ single, eq: selectEq }));
   const eq = vi.fn().mockResolvedValue({ data: null, error: null });
   const insert = vi.fn(() => ({ select }));
   const update = vi.fn(() => ({ eq }));
-  return { insert, update, select, eq, single };
+  return { insert, update, select, eq, single, maybeSingle, selectEq };
 }
 
 describe('createContact — UUID guards on Supabase INSERT', () => {
