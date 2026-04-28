@@ -234,9 +234,29 @@ export default function RecentCallsPanel() {
         .select('id, contact_id, to_e164, status, started_at, ended_at, duration_sec')
         .eq('agent_id', agentId)
         .order('started_at', { ascending: false })
-        .limit(10);
+        // PR 137 (Hugo 2026-04-28): pull more raw rows so the React-side
+        // dedupe below has enough material to surface 10 unique contacts
+        // even when the same contact has been dialed multiple times in
+        // a session. 30 is plenty — even a heavy power dialer hammering
+        // the same 10 contacts won't exceed this.
+        .limit(30);
       if (cancelled) return;
-      setRows((data ?? []) as CallRow[]);
+      // PR 137 (Hugo 2026-04-28): "the recent calls show duplicated
+      // numbers." Dedupe by contact_id, keeping only the FIRST occurrence
+      // (= latest because rows are ordered by started_at DESC). Rows
+      // with no contact_id are kept as-is — they're rare (incoming calls
+      // pre-resolution) but should still be visible. Slice to 10 unique.
+      const callRows = ((data ?? []) as CallRow[]);
+      const seen = new Set<string>();
+      const deduped: CallRow[] = [];
+      for (const r of callRows) {
+        const key = r.contact_id ?? `__null_${r.id}`;
+        if (seen.has(key)) continue;
+        seen.add(key);
+        deduped.push(r);
+        if (deduped.length >= 10) break;
+      }
+      setRows(deduped);
       setLoading(false);
     };
     void reload();
