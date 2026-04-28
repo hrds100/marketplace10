@@ -11,8 +11,11 @@ import { useAgentMessageCounts } from '../hooks/useAgentMessageCounts';
 import SpendBanner from '../components/dialer/SpendBanner';
 import StageSelector from '../components/shared/StageSelector';
 import EditContactModal from '../components/contacts/EditContactModal';
-import { MOCK_CAMPAIGNS } from '../data/mockCampaigns';
-import { useDemoMode } from '../lib/useDemoMode';
+// PR 130 (Hugo 2026-04-28): MOCK_CAMPAIGNS import removed entirely.
+// Hugo: "if I press Stop, it shows April / May / Re-engage. This is
+// dummy data. We don't need it." There is no production code path
+// where mock campaigns are correct — they only ever caused confusion.
+// `?demo=1` is no longer wired here either.
 import { useActiveCallCtx } from '../components/live-call/ActiveCallContext';
 import { useSpendLimit } from '../hooks/useSpendLimit';
 import { useKillSwitch } from '../hooks/useKillSwitch';
@@ -66,25 +69,18 @@ export default function DialerPage() {
   }, [user]);
   const isEffectiveAdmin =
     workspaceRole === 'admin' || (workspaceRole === null && isAdmin);
+  // PR 130 (Hugo 2026-04-28): include paused (is_active=false) campaigns
+  // so pressing Stop doesn't make the campaign vanish from the sidebar.
+  // The agent sees their campaign with a "Paused" badge instead of
+  // empty-state copy + a panicky "no campaigns yet".
   const { campaigns: realCampaigns, loading: campaignsLoading } = useDialerCampaigns({
     scopedToAgentId: !isEffectiveAdmin && user ? user.id : null,
+    includeInactive: true,
   });
-  // PR 129 (Hugo 2026-04-28): "When I hard refresh it shows the dummy
-  // data" — was showing MOCK_CAMPAIGNS while the real fetch was in
-  // flight, so an admin saw "April landlord outreach 127 left · 18
-  // done" for ~300ms before reality replaced it. Now: only fall back
-  // to MOCK_CAMPAIGNS in `?demo=1` mode. Real users see an empty
-  // skeleton until the fetch resolves.
-  const demoMode = useDemoMode();
-  const allCampaigns = useMemo<Campaign[]>(
-    () =>
-      realCampaigns.length > 0
-        ? realCampaigns
-        : demoMode
-          ? MOCK_CAMPAIGNS
-          : [],
-    [realCampaigns, demoMode]
-  );
+  // PR 130: real campaigns ONLY. No mock fallback in production OR demo.
+  // Empty list renders a skeleton until the fetch resolves, then the
+  // empty-state copy if there are genuinely no campaigns.
+  const allCampaigns = realCampaigns;
 
   const [activeId, setActiveId] = useState<string>(allCampaigns[0]?.id ?? '');
   const [running, setRunning] = useState(true);
@@ -375,11 +371,7 @@ export default function DialerPage() {
           <CampaignList
             activeId={activeId}
             onSelect={setActiveId}
-            // PR 129: in production always pass real campaigns (even
-            // when empty) so the sidebar shows "No campaigns yet"
-            // instead of mock placeholders. Demo mode keeps the
-            // mock fallback intact.
-            campaigns={demoMode ? undefined : realCampaigns}
+            campaigns={realCampaigns}
           />
 
           <div className="bg-white border border-[#E5E7EB] rounded-2xl overflow-hidden">
