@@ -312,6 +312,64 @@ describe('mapToLegacyPhase', () => {
 //   Bug 1: 31005 HANGUP shows "Call ended" badge instead of "Unreachable"
 //   Bug 2: Open from Recent Calls is silently ignored from any wrap-up
 //   Bug 3: Close from error/stopped wrap-up leaves stale state behind
+describe('PR 142 — repeated error events do not loop the reducer', () => {
+  it('CALL_ERROR while already in error_waiting_outcome is a no-op (no state churn)', () => {
+    let s = dial();
+    s = callLifecycleReducer(s, {
+      type: 'CALL_ERROR',
+      error: { code: 31005, friendlyMessage: 'Connection lost' },
+      fatal: true,
+    });
+    expect(s.callPhase).toBe('error_waiting_outcome');
+    const before = s;
+    // Twilio fires another 31005 — repeats happen when the SDK loses
+    // its WebSocket and keeps reconnecting. Reducer should NOT churn
+    // state again — same reference back means React won't re-render.
+    s = callLifecycleReducer(s, {
+      type: 'CALL_ERROR',
+      error: { code: 31005, friendlyMessage: 'Connection lost' },
+      fatal: false,
+    });
+    expect(s).toBe(before);
+  });
+
+  it('CALL_ERROR while in stopped_waiting_outcome is a no-op', () => {
+    let s = dial();
+    s = callLifecycleReducer(s, { type: 'CALL_ENDED', reason: 'user_hangup' });
+    expect(s.callPhase).toBe('stopped_waiting_outcome');
+    const before = s;
+    s = callLifecycleReducer(s, {
+      type: 'CALL_ERROR',
+      error: { code: 31005, friendlyMessage: 'Connection lost' },
+      fatal: false,
+    });
+    expect(s).toBe(before);
+  });
+
+  it('CALL_ERROR while idle (no live call) is a no-op', () => {
+    const before = INITIAL_STATE;
+    const s = callLifecycleReducer(INITIAL_STATE, {
+      type: 'CALL_ERROR',
+      error: { code: 31005, friendlyMessage: 'Connection lost' },
+      fatal: false,
+    });
+    expect(s).toBe(before);
+  });
+
+  it('CALL_ERROR (fatal=true) from ringing immediately flips to error_waiting_outcome — does not stay stuck in RINGING', () => {
+    let s = dial();
+    s = callLifecycleReducer(s, { type: 'LEG_RINGING' });
+    expect(s.callPhase).toBe('ringing');
+    s = callLifecycleReducer(s, {
+      type: 'CALL_ERROR',
+      error: { code: 31005, friendlyMessage: 'HANGUP from gateway' },
+      fatal: true,
+    });
+    expect(s.callPhase).toBe('error_waiting_outcome');
+    expect(s.dispositionSignal).toBe('unreachable');
+  });
+});
+
 describe('PR 141 — error-then-disconnect (Bug 1)', () => {
   it('CALL_ERROR(31005, fatal=false) then CALL_ENDED → error_waiting_outcome with unreachable signal', () => {
     let s = dial();

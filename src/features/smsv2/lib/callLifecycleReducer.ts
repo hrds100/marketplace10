@@ -157,16 +157,22 @@ export function callLifecycleReducer(
     }
 
     case 'CALL_ERROR': {
-      // Fatal Twilio error — flip to error_waiting_outcome. Non-fatal
-      // errors only stash the error (UI may show a banner).
-      if (!event.fatal) {
-        return { ...state, error: event.error };
-      }
-      const wasLive =
+      // PR 142 (Hugo 2026-04-28): the SDK can fire `error` repeatedly
+      // for the same dead call (gateway HANGUP → WebSocket retry →
+      // another error → repeat). If we're already past the live phase
+      // there's nothing useful to do — return the SAME state object so
+      // React skips the re-render and we don't accumulate noise.
+      const isLive =
         state.callPhase === 'dialing' ||
         state.callPhase === 'ringing' ||
         state.callPhase === 'in_call';
-      if (!wasLive) {
+      if (!isLive) {
+        return state;
+      }
+      // Live phase: non-fatal errors stash the error so a follow-up
+      // disconnect can read state.error.code (PR 141). Fatal errors
+      // flip immediately to error_waiting_outcome.
+      if (!event.fatal) {
         return { ...state, error: event.error };
       }
       const dispositionSignal = computeDispositionSignal(

@@ -418,6 +418,13 @@ export function ActiveCallProvider({ children }: { children: ReactNode }) {
       });
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       result.twilioCall.on('error', (err: any) => {
+        // PR 142 (Hugo 2026-04-28): 31005 was firing repeatedly because
+        // we left activeTwilioCallRef pointing at the dead Call. The
+        // isThisCall() guard on subsequent events couldn't filter the
+        // dupes. We now ALWAYS null the ref on the first error event
+        // so any further error/disconnect events for THIS Call instance
+        // are no-ops at the reducer layer.
+        if (!isThisCall()) return;
         console.error('[twilio-call] error', {
           code: err?.code,
           message: err?.message,
@@ -428,6 +435,9 @@ export function ActiveCallProvider({ children }: { children: ReactNode }) {
         const code = (err?.code as number | undefined) ?? 0;
         const mapped = mapTwilioError(code, err?.message ?? '');
         store.pushToast(mapped.friendlyMessage, 'error');
+        // Drop the ref — if the call object somehow recovers, the next
+        // dial is going through startCall again anyway.
+        activeTwilioCallRef.current = null;
         dispatch({
           type: 'CALL_ERROR',
           error: { code, friendlyMessage: mapped.friendlyMessage },
@@ -435,9 +445,8 @@ export function ActiveCallProvider({ children }: { children: ReactNode }) {
           telephony: { errorCode: code },
         });
         if (mapped.fatal) {
-          // WebRTC cleanup so the next dial doesn't trip
-          // "A Call is already active". State handling is the
-          // reducer's job — we don't touch state here.
+          // WebRTC cleanup so the next dial doesn't trip "A Call is
+          // already active". Fire-and-forget — UI has already moved on.
           void (async () => {
             try {
               await disconnectAllCallsAndWait(1500);
@@ -445,7 +454,6 @@ export function ActiveCallProvider({ children }: { children: ReactNode }) {
               console.warn('[twilio-call] error-path disconnect threw', e);
               try { disconnectAllCalls(); } catch { /* ignore */ }
             }
-            activeTwilioCallRef.current = null;
             dispatch({ type: 'MUTE_CHANGED', muted: false });
           })();
         }
@@ -494,12 +502,26 @@ export function ActiveCallProvider({ children }: { children: ReactNode }) {
 
   // ─── End call ───────────────────────────────────────────────────
   const endCall = useCallback(async (): Promise<void> => {
-    // PR 132 (Hugo 2026-04-28): client-side WebRTC teardown is the
-    // gate that stops the next dial from racing into "A Call is
-    // already active". Server-side wk-dialer-hangup-leg sweep is
-    // fired in parallel — Twilio tears the PSTN leg down regardless.
+    // PR 142 (Hugo 2026-04-28): the room used to look "stuck in
+    // RINGING" for ~1.5s after Hang up because we awaited
+    // disconnectAllCallsAndWait BEFORE dispatching CALL_ENDED. If the
+    // Twilio SDK was in a bad state (e.g. after a 31005 HANGUP) those
+    // disconnect events never fired and the timeout had to elapse.
+    //
+    // New order:
+    //   1. Drop the active-call ref so any racing 'error'/'disconnect'
+    //      events from the dead Call are filtered by isThisCall().
+    //   2. Dispatch CALL_ENDED IMMEDIATELY — UI moves to wrap-up.
+    //   3. Run server-side hangup-leg + client-side WebRTC teardown
+    //      asynchronously. The reducer doesn't care if those succeed.
+    activeTwilioCallRef.current = null;
+    dispatch({ type: 'CALL_ENDED', reason: 'user_hangup' });
+    dispatch({ type: 'MUTE_CHANGED', muted: false });
+
     const currentCallId = call?.callId ?? null;
-    const serverSideSweep = (async () => {
+
+    // Server-side sweep — Twilio tears PSTN leg down regardless.
+    void (async () => {
       try {
         const { data: userData } = await supabase.auth.getUser();
         const uid = userData.user?.id ?? null;
@@ -533,19 +555,17 @@ export function ActiveCallProvider({ children }: { children: ReactNode }) {
         console.warn('[endCall] sweep failed', e);
       }
     })();
-    void serverSideSweep;
 
-    try {
-      await disconnectAllCallsAndWait(1500);
-    } catch (e) {
-      console.warn('[endCall] disconnectAllCallsAndWait threw', e);
-      try { disconnectAllCalls(); } catch { /* ignore */ }
-    }
-    activeTwilioCallRef.current = null;
-    // Reducer-driven state. CALL_ENDED leaves call/contact intact and
-    // flips callPhase to stopped_waiting_outcome (Rule 5).
-    dispatch({ type: 'CALL_ENDED', reason: 'user_hangup' });
-    dispatch({ type: 'MUTE_CHANGED', muted: false });
+    // Client-side WebRTC teardown — best-effort. If the SDK is dead,
+    // this throws or hangs; either way the UI has already moved on.
+    void (async () => {
+      try {
+        await disconnectAllCallsAndWait(1500);
+      } catch (e) {
+        console.warn('[endCall] disconnectAllCallsAndWait threw', e);
+        try { disconnectAllCalls(); } catch { /* ignore */ }
+      }
+    })();
   }, [call?.callId]);
 
   // ─── Apply outcome ──────────────────────────────────────────────

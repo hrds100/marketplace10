@@ -12,6 +12,11 @@ export interface MappedTwilioError {
 }
 
 export function mapTwilioError(code: number, message: string): MappedTwilioError {
+  // 31401 (mic blocked) is the ONE recoverable Call-level error: the
+  // call could continue once the user grants mic permission. Everything
+  // else that lands here means "this call is over". Treating gateway
+  // errors as fatal is what stops the room getting stuck in RINGING
+  // and the repeated-31005 loop (PR 142, Hugo 2026-04-28).
   if (code === 31401) {
     return {
       friendlyMessage:
@@ -22,13 +27,18 @@ export function mapTwilioError(code: number, message: string): MappedTwilioError
   if (code === 31403 || code === 31486) {
     return {
       friendlyMessage: `Call refused by Twilio (${code}). Check phone number / caller ID.`,
-      fatal: false,
+      fatal: true,
     };
   }
   if (code === 31005 || code === 31009) {
+    // PR 142: was fatal=false. The SDK fires 31005 with "Error sent
+    // from gateway in HANGUP" when the carrier definitively ends the
+    // call — there's no recovery from that, retrying just produces
+    // more 31005 events. Mark fatal so the reducer flips out of the
+    // live phase immediately.
     return {
       friendlyMessage: `Connection lost (${code}). Refresh the page if it doesn't recover.`,
-      fatal: false,
+      fatal: true,
     };
   }
   if (code === 31000) {
