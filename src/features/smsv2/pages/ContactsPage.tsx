@@ -78,7 +78,7 @@ export default function ContactsPage() {
       draft.ownerAgentId && isRealContactId(draft.ownerAgentId)
         ? draft.ownerAgentId
         : null;
-    const newId = await persist.createContact({
+    const result = await persist.createContact({
       name: draft.name.trim(),
       phone: e164,
       email: draft.email,
@@ -86,13 +86,18 @@ export default function ContactsPage() {
       ownerAgentId,
       customFields: draft.customFields,
     });
-    if (!newId) {
+    if (!result) {
       pushToast('Could not create contact', 'error');
       return;
     }
-    upsertContact({ ...draft, id: newId, phone: e164 });
+    upsertContact({ ...draft, id: result.id, phone: e164 });
     setCreatingDraft(null);
-    pushToast('Contact created', 'success');
+    pushToast(
+      result.existed
+        ? 'Contact with this phone already exists — opened the existing record'
+        : 'Contact created',
+      result.existed ? 'info' : 'success'
+    );
   };
 
   const filtered = useMemo(() => {
