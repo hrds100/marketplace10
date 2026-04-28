@@ -425,12 +425,19 @@ export function ActiveCallProvider({ children }: { children: ReactNode }) {
         // so any further error/disconnect events for THIS Call instance
         // are no-ops at the reducer layer.
         if (!isThisCall()) return;
+        // PR 144 (Hugo 2026-04-28, Phase 1): the Twilio SDK exposes
+        // `err.originalError` which carries the raw `payload.error` from
+        // the gateway's HANGUP message — including the underlying error
+        // code Twilio's REST API reports (e.g. 13224 invalid number).
+        // Without logging this we threw away the gateway's actual
+        // reason every time a call failed.
         console.error('[twilio-call] error', {
           code: err?.code,
           message: err?.message,
           name: err?.name,
           causes: err?.causes,
           description: err?.description,
+          originalError: err?.originalError,
         });
         const code = (err?.code as number | undefined) ?? 0;
         const mapped = mapTwilioError(code, err?.message ?? '');

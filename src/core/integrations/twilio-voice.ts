@@ -182,6 +182,16 @@ let device: TwilioDevice | null = null;
 let currentToken: VoiceTokenResponse | null = null;
 let renewalTimer: number | null = null;
 
+// PR 144 (Hugo 2026-04-28, Phase 1.4): TOCTOU singleton lock for
+// createDevice. Two consumers (Softphone + DialerPage, or Strict-Mode
+// double-mount) could previously race past the
+// `if (device && currentToken) return ...` check, both fetch a token,
+// both `new Device(...)`, both register. The gateway evicts one with
+// `error 31005 HANGUP` (same family of bug as PR 143's multi-tab fix
+// but in a single tab). Sharing the in-flight Promise serialises
+// concurrent callers onto a single Device.
+let inFlightCreate: Promise<DeviceHandle> | null = null;
+
 // PR 132 (Hugo 2026-04-28, Bug 2): track consecutive failed re-registrations
 // so we surface a single persistent toast after 3 failures instead of
 // stacking dismissable toasts on every retry. Reset to 0 on a successful
@@ -232,16 +242,27 @@ export async function createDevice(): Promise<DeviceHandle> {
   if (device && currentToken) {
     return { device, identity: currentToken.identity, extension: currentToken.extension };
   }
+  // PR 144: serialise concurrent callers onto a single Device.
+  if (inFlightCreate) {
+    return inFlightCreate;
+  }
+  inFlightCreate = (async (): Promise<DeviceHandle> => {
+    const tokenResp = await fetchVoiceToken();
+    const { Device } = await loadVoiceSdk();
 
-  const tokenResp = await fetchVoiceToken();
-  const { Device } = await loadVoiceSdk();
-
-  const d = new Device(tokenResp.token, {
-    // Background audio constraints — keep mic open during the call lifecycle.
-    closeProtection: true,
-    logLevel: 'warn',
-    edge: 'roaming',         // pick best Twilio edge automatically
-  });
+    const d = new Device(tokenResp.token, {
+      // Background audio constraints — keep mic open during the call lifecycle.
+      closeProtection: true,
+      logLevel: 'warn',
+      edge: 'roaming',         // pick best Twilio edge automatically
+      // PR 144 (Hugo 2026-04-28, Phase 1.1): turn ON the precision flag
+      // so gateway HANGUP errors surface as their precise sub-codes
+      // (31002 ConnectionDeclined / 31204 InvalidJWT / 31205 Expired)
+      // instead of getting collapsed into generic 31005. Twilio docs:
+      // https://www.twilio.com/docs/voice/sdks/javascript/twiliodevice
+      // (`enableImprovedSignalingErrorPrecision` table at the bottom).
+      enableImprovedSignalingErrorPrecision: true,
+    });
 
   // (Earlier: tried setAudioConstraints({ echoCancellation, noiseSuppression,
   // autoGainControl }) here for self-call echo. Reverted on 2026-04-26 because
@@ -293,13 +314,21 @@ export async function createDevice(): Promise<DeviceHandle> {
     });
   });
 
-  await d.register();
+    await d.register();
 
-  device = d;
-  currentToken = tokenResp;
-  scheduleTokenRenewal(tokenResp.ttl_seconds, tokenResp.token);
+    device = d;
+    currentToken = tokenResp;
+    scheduleTokenRenewal(tokenResp.ttl_seconds, tokenResp.token);
 
-  return { device: d, identity: tokenResp.identity, extension: tokenResp.extension };
+    return { device: d, identity: tokenResp.identity, extension: tokenResp.extension };
+  })();
+  try {
+    return await inFlightCreate;
+  } finally {
+    // Whether resolved or rejected, clear the in-flight handle so a
+    // future caller after destroyDevice() can create a fresh one.
+    inFlightCreate = null;
+  }
 }
 
 /**

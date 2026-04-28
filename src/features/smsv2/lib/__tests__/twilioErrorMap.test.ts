@@ -46,6 +46,29 @@ describe('mapTwilioError', () => {
     expect(r.fatal).toBe(true);
   });
 
+  // PR 144 (Hugo 2026-04-28): the Voice JS SDK collapses
+  // ConnectionDeclined / InvalidJWTToken / JWTTokenExpired into 31005
+  // when `enableImprovedSignalingErrorPrecision: false`. PR 144 enables
+  // that flag — the precise codes now surface and need their own
+  // friendly messages.
+  it('31002 (ConnectionDeclined) → call declined message, fatal (PR 144)', () => {
+    const r = mapTwilioError(31002, 'Call declined');
+    expect(r.friendlyMessage).toMatch(/declined|unreachable/i);
+    expect(r.fatal).toBe(true);
+  });
+
+  it('31204 (InvalidJWTToken) → auth error, fatal (PR 144)', () => {
+    const r = mapTwilioError(31204, 'JWT validation error');
+    expect(r.friendlyMessage).toMatch(/auth|token/i);
+    expect(r.fatal).toBe(true);
+  });
+
+  it('31205 (JWTTokenExpired) → token expired, fatal (PR 144)', () => {
+    const r = mapTwilioError(31205, 'JWT expired');
+    expect(r.friendlyMessage).toMatch(/expired/i);
+    expect(r.fatal).toBe(true);
+  });
+
   it('unknown code → generic fallback, non-fatal', () => {
     const r = mapTwilioError(99999, 'whatever');
     expect(r.friendlyMessage).toMatch(/Call error/);
