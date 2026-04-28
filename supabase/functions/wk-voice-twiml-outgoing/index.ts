@@ -129,9 +129,16 @@ serve(async (req: Request) => {
     }
 
     const to = (params.To ?? '').trim();
-    const fromClient = (params.From ?? '').trim();    // expected: "client:<uuid>"
+    const fromClient = (params.From ?? '').trim();    // expected: "client:<uuid>" or "client:<uuid>:<session>"
     const callSid = params.CallSid ?? '';
-    const identity = fromClient.startsWith('client:') ? fromClient.slice(7) : null;
+    // PR 143 (Hugo 2026-04-28): identity is now `${user.id}:${sessionId}`
+    // (multi-tab collision fix). Strip the `client:` prefix, then split on
+    // the FIRST `:` to recover the bare agent_id for DB lookups. Older
+    // tokens minted before the migration land have no suffix — we handle
+    // that gracefully by falling back to the whole string as agent_id.
+    const fullIdentity = fromClient.startsWith('client:') ? fromClient.slice(7) : null;
+    const colonIdx = fullIdentity?.indexOf(':') ?? -1;
+    const identity = colonIdx > 0 ? fullIdentity!.slice(0, colonIdx) : fullIdentity;
     // Optional: our pre-minted wk_calls.id baked in by wk-calls-create. When
     // present we UPDATE the existing row instead of inserting a duplicate.
     const preMintedCallId = (params.CallId ?? '').trim();
@@ -190,11 +197,28 @@ serve(async (req: Request) => {
               '</Start>',
             ].join('\n')
           : '';
+        // PR 143 (Hugo 2026-04-28): identity is now suffixed per-tab.
+        // Look up the agent's most recent session and dial THAT specific
+        // <Client>. Fall back to the bare agent_id for sessions minted
+        // before the wk_voice_sessions table existed (graceful migration).
+        let clientIdentity = dialerCall.agent_id;
+        try {
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          const { data: sess } = await (supabase.from('wk_voice_sessions' as any) as any)
+            .select('session_id')
+            .eq('user_id', dialerCall.agent_id)
+            .maybeSingle();
+          if (sess?.session_id) {
+            clientIdentity = `${dialerCall.agent_id}:${sess.session_id}`;
+          }
+        } catch (e) {
+          console.warn('[wk-voice-twiml-outgoing] session lookup failed:', e);
+        }
         const dialBlock = [
           '<Dial answerOnBridge="true" timeout="60"',
           `      action="${escapeXml(`${PUBLIC_FN_BASE}/wk-voice-status`)}"`,
           '      method="POST">',
-          `  <Client>${escapeXml(dialerCall.agent_id)}</Client>`,
+          `  <Client>${escapeXml(clientIdentity)}</Client>`,
           '</Dial>',
         ].join('\n');
         const body = [transcriptionBlock, dialBlock].filter((s) => s.length > 0).join('\n');
