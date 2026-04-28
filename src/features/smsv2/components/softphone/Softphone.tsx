@@ -23,15 +23,15 @@ export default function Softphone() {
   const device = useTwilioDevice();
   const {
     phase,
+    callPhase,
     call,
     durationSec,
-    fullScreen,
+    roomView,
     setFullScreen,
     startCall,
     endCall,
     muted,
     toggleMute,
-    previewContactId,
   } = useActiveCallCtx();
   const spend = useSpendLimit();
   const { agent: me } = useCurrentAgent();
@@ -54,17 +54,18 @@ export default function Softphone() {
     setOpen(false);
   };
 
-  // Render the live call full-screen overlay if the call is active and
-  // full-screen mode is on. PR 10: also render in idle-preview mode so
-  // the agent can open the call room layout for a contact from the
-  // inbox without dialling.
-  if ((phase !== 'idle' || previewContactId !== null) && fullScreen) {
+  // PR 138 (Hugo 2026-04-28): roomView is now the single source of
+  // truth for "is the live-call overlay visible?". The reducer flips
+  // it independently from callPhase, so hang-up no longer closes the
+  // room (Rule 6) and minimise/maximise don't end the call (Rule 7).
+  if (roomView === 'open_full') {
     return <LiveCallScreen />;
   }
 
   // Placing collapsed bar (calling but not yet answered) — black + ringing
   // dot. Hugo's call (2026-04-26): orange "felt off" for a connecting state.
-  if (phase === 'placing' && !fullScreen) {
+  // PR 138: roomView gates visibility, not the legacy fullScreen boolean.
+  if (phase === 'placing' && roomView === 'open_min') {
     return (
       <div className="fixed bottom-5 right-5 z-[120] bg-white border border-[#E5E7EB] rounded-2xl shadow-[0_8px_32px_rgba(0,0,0,0.12)] w-[320px] overflow-hidden">
         <div className="px-4 py-2.5 bg-[#1A1A1A] text-white flex items-center gap-2">
@@ -98,7 +99,8 @@ export default function Softphone() {
   }
 
   // Mid-call collapsed bar
-  if (phase === 'in_call' && !fullScreen) {
+  // PR 138: roomView gates visibility, not the legacy fullScreen boolean.
+  if (phase === 'in_call' && roomView === 'open_min') {
     return (
       <div className="fixed bottom-5 right-5 z-[120] bg-white border border-[#E5E7EB] rounded-2xl shadow-[0_8px_32px_rgba(0,0,0,0.12)] w-[320px] overflow-hidden">
         <div className="px-4 py-2.5 bg-[#1E9A80] text-white flex items-center gap-2">
@@ -137,18 +139,17 @@ export default function Softphone() {
     );
   }
 
-  // Post-call collapsed (rare — usually full-screen).
-  // PR 131 (Hugo 2026-04-28): the previous gate
-  // (`hasRealCallId`) silently dropped the maximize bar when the
-  // wk_calls row hadn't been written yet, leaving the agent with
-  // no way back to the call room. Now we ALWAYS render the bar
-  // when phase==='post_call' — the label changes based on whether
-  // there's a real outcome to apply. Hugo: "if I minimize it,
-  // there should always be a button to maximize again."
-  const UUID_RE =
-    /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-  const hasRealCallId = !!call?.callId && UUID_RE.test(call.callId);
-  if (phase === 'post_call' && !fullScreen) {
+  // PR 138 (Hugo 2026-04-28): post-call minimised pill. Shows when
+  // roomView='open_min' AND we're in any of the post-call sub-phases
+  // (stopped_waiting_outcome, error_waiting_outcome, outcome_done).
+  // Replaces the old hasRealCallId UUID regex — pill text rules are
+  // explicit now: any of those phases means the agent still owes a
+  // pick, so the label calls that out by contact name.
+  const isPostCallSubPhase =
+    callPhase === 'stopped_waiting_outcome' ||
+    callPhase === 'error_waiting_outcome' ||
+    callPhase === 'outcome_done';
+  if (isPostCallSubPhase && roomView === 'open_min') {
     return (
       <button
         onClick={() => setFullScreen(true)}
@@ -156,9 +157,9 @@ export default function Softphone() {
         data-testid="softphone-postcall-maximize"
       >
         <Maximize2 className="w-4 h-4" />
-        {hasRealCallId
-          ? `Pick outcome for ${call?.contactName ?? 'caller'}`
-          : 'Open call room'}
+        {callPhase === 'outcome_done'
+          ? `Outcome saved · ${call?.contactName ?? 'caller'}`
+          : `Pick outcome for ${call?.contactName ?? 'caller'}`}
       </button>
     );
   }

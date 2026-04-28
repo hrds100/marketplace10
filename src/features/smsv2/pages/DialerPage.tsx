@@ -374,9 +374,10 @@ export default function DialerPage() {
       <header className="flex items-center justify-between">
         <div>
           <h1 className="text-[26px] font-bold text-[#1A1A1A] tracking-tight">My dialer</h1>
-          <p className="text-[13px] text-[#6B7280]">
-            Run campaigns · parallel + power · winner takes the screen
-          </p>
+          {/* PR 138 (Hugo 2026-04-28, Rule 1): the legacy subtitle
+              "Run campaigns · parallel + power · winner takes the screen"
+              described a parallel-dial flow that no longer matches the
+              power-dialer UX. Removed. */}
         </div>
       </header>
 

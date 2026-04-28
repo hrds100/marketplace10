@@ -185,7 +185,7 @@ function smsWindowEnd(startedAtIso: string | null, endedAtIso: string | null): s
 }
 
 export default function RecentCallsPanel() {
-  const { openCallRoom, phase } = useActiveCallCtx();
+  const { openCallRoom } = useActiveCallCtx();
   const {
     pushToast,
     columns,
@@ -497,10 +497,11 @@ export default function RecentCallsPanel() {
         {items.map((item) => {
           const badge = statusBadge(item.status);
           const isHanging = hangingUp.has(item.id);
-          // openCallRoom is a no-op while a call is live; pre-disable
-          // the button so the agent gets a tooltip instead of a silent
-          // click. Preview is allowed in idle / post_call / inbound modes.
-          const previewBlocked = phase !== 'idle' && phase !== 'post_call';
+          // PR 138 (Hugo 2026-04-28, Rule 8): Open from Recent Calls
+          // must reliably open the room for that contact. Reducer
+          // decides if OPEN_ROOM is valid (no-op while live, since the
+          // live call's room is already up). The button stays
+          // clickable — no client-side gate.
           const isPlaying = playingCallId === item.id;
           const isTranscriptOpen = expandedTranscriptCallId === item.id;
           return (
@@ -620,18 +621,8 @@ export default function RecentCallsPanel() {
                 {item.contactId && (
                   <button
                     onClick={() => openCallRoom(item.contactId!)}
-                    disabled={previewBlocked}
-                    className={cn(
-                      'px-2 py-1 rounded text-[11px] font-medium border transition-colors',
-                      previewBlocked
-                        ? 'border-[#E5E7EB] text-[#9CA3AF] cursor-not-allowed'
-                        : 'border-[#E5E7EB] text-[#1A1A1A] hover:bg-[#F3F3EE]'
-                    )}
-                    title={
-                      previewBlocked
-                        ? 'A call is live — close it before opening another room'
-                        : 'Open call room (preview mode)'
-                    }
+                    className="px-2 py-1 rounded text-[11px] font-medium border border-[#E5E7EB] text-[#1A1A1A] hover:bg-[#F3F3EE] transition-colors"
+                    title="Open call room (preview mode)"
                     data-testid={`recent-call-open-${item.id}`}
                   >
                     <span className="flex items-center gap-1">

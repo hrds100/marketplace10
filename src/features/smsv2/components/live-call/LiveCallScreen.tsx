@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useState } from 'react';
 import {
   MicOff,
   PhoneOff,
@@ -15,6 +15,7 @@ import {
 } from '@/components/ui/resizable';
 import { useActiveCallCtx } from './ActiveCallContext';
 import { useActiveDialerLegs } from '../../hooks/useActiveDialerLegs';
+import { useNoAnswerHangup } from '../../hooks/useNoAnswerHangup';
 import LiveTranscriptPane from './LiveTranscriptPane';
 import CallScriptPane from './CallScriptPane';
 import TerminologyPane from './TerminologyPane';
@@ -35,6 +36,7 @@ import {
 export default function LiveCallScreen() {
   const {
     phase,
+    callPhase,
     call,
     durationSec,
     endCall,
@@ -44,6 +46,7 @@ export default function LiveCallScreen() {
     previewContactId,
     closeCallRoom,
     startCall,
+    error,
   } = useActiveCallCtx();
   const store = useSmsV2();
   const { agent: me, firstName: myFirstName, talkRatioPercent } = useCurrentAgent();
@@ -87,45 +90,17 @@ export default function LiveCallScreen() {
         ? 'Connecting…'
         : 'Dialing';
 
-  // PR 129 (Hugo 2026-04-28): no-answer auto-hangup. Hugo: "if it
-  // takes 30 seconds, 40 seconds, and it doesn't start ringing because
-  // the phone is off, you have to know — has to go to hang up and go
-  // to the next call." Threshold: 35s (Twilio rings every 3-4s →
-  // 35s ≈ 9-12 rings, matching Hugo's "10 rings" descriptive ask).
-  // We trigger only when the leg is still 'queued' or 'ringing' —
-  // never on 'in_progress' (real conversation in progress).
-  //
-  // PR 137 (Hugo 2026-04-28): REMOVED auto-outcome + auto-advance.
-  // Hugo's new rule: "When you click hang up, or didn't pick up the
-  // call, OR ANYTHING — let the agent pick the outcome. DON'T move
-  // to the next call until the agent chooses the outcome." So the
-  // 35s timer now only ENDS the call. endCall() flips phase to
-  // post_call (via Twilio's 'disconnect' listener), the orange
-  // outcome picker appears, and the agent picks the column manually.
-  // No more applyOutcome('No Pickup') fired by the timer. No more
-  // auto-advance to the next dial.
-  const NO_ANSWER_AUTO_HANGUP_SEC = 35;
-  const autoHangupFiredRef = useRef(false);
-  useEffect(() => {
-    if (phase !== 'placing') {
-      autoHangupFiredRef.current = false;
-      return;
-    }
-    if (autoHangupFiredRef.current) return;
-    if (placingElapsedSec < NO_ANSWER_AUTO_HANGUP_SEC) return;
-    const stillRinging =
-      placingLegStatus === 'queued' ||
-      placingLegStatus === 'ringing' ||
-      placingLegStatus == null; // null = no leg row yet — also stuck
-    if (!stillRinging) return;
-    autoHangupFiredRef.current = true;
-    void (async () => {
-      await endCall();
-      // PR 137 (Hugo 2026-04-28): no auto-outcome, no auto-advance.
-      // Agent must pick the outcome column manually from the post-call
-      // panel that appears once endCall flips phase to post_call.
-    })();
-  }, [phase, placingElapsedSec, placingLegStatus, endCall]);
+  // PR 138 (Hugo 2026-04-28): extracted to useNoAnswerHangup hook.
+  // Same behaviour as before — when the leg's been in 'placing' for
+  // ≥35s and is still queued/ringing (or no leg row at all), end the
+  // call. The reducer flips to stopped_waiting_outcome; the agent
+  // picks the outcome (Rules 3, 4, 5).
+  useNoAnswerHangup({
+    phase,
+    legStatus: placingLegStatus,
+    elapsedSec: placingElapsedSec,
+    endCall,
+  });
 
   // Preview mode (PR 10): no active call, but agent opened the room for
   // a specific contact from the inbox. Use that contact instead of the
@@ -316,37 +291,46 @@ export default function LiveCallScreen() {
             </button>
           )}
 
-          {/* PR 131 (Hugo 2026-04-28): single button now.
-              - active call (placing / in_call / post_call) → minimise
-                only. Hugo's call: "the call room should not close.
-                Should not minimize if I don't minimize it. And if I
-                minimize it, there should always be a button to
-                maximize again." Removed the X (close) button that
-                PR 114 added — Hugo flipped that decision.
-              - preview mode → X (close preview entirely). Preview
-                isn't a live call, so closing exits cleanly. */}
-          {isPreview ? (
-            <button
-              onClick={() => closeCallRoom()}
-              className="p-1.5 rounded-lg hover:bg-black/[0.04]"
-              title="Close call room"
-              data-testid="livecall-close-preview"
-            >
-              <X className="w-4 h-4" />
-            </button>
-          ) : (
-            <button
-              onClick={() => setFullScreen(false)}
-              className={cn(
-                'p-1.5 rounded-lg',
-                phase === 'in_call' ? 'hover:bg-white/15' : 'hover:bg-black/[0.04]'
-              )}
-              title="Minimise (call continues — maximise from the floating bar)"
-              data-testid="livecall-minimise"
-            >
-              <Minimize2 className="w-4 h-4" />
-            </button>
-          )}
+          {/* PR 138 (Hugo 2026-04-28, Rules 6, 7): the room ALWAYS has
+              a Minimise button. The Close button is visible only when
+              the call isn't live (idle / preview / *_waiting_outcome /
+              outcome_done) — you can't close a live call's room
+              without hanging up first. */}
+          <button
+            onClick={() => setFullScreen(false)}
+            className={cn(
+              'p-1.5 rounded-lg',
+              phase === 'in_call' ? 'hover:bg-white/15' : 'hover:bg-black/[0.04]'
+            )}
+            title="Minimise (call continues — maximise from the floating bar)"
+            data-testid="livecall-minimise"
+          >
+            <Minimize2 className="w-4 h-4" />
+          </button>
+          {/* Close: hidden during dialing / ringing / in_call. Once
+              the call has ended (any *_waiting_outcome) or we're in
+              preview, the agent can close out cleanly. */}
+          {callPhase !== 'dialing' &&
+            callPhase !== 'ringing' &&
+            callPhase !== 'in_call' && (
+              <button
+                onClick={() => closeCallRoom()}
+                className={cn(
+                  'p-1.5 rounded-lg',
+                  phase === 'in_call' ? 'hover:bg-white/15' : 'hover:bg-black/[0.04]'
+                )}
+                title={
+                  isPreview
+                    ? 'Close call room'
+                    : 'Close call room (outcome saved)'
+                }
+                data-testid={
+                  isPreview ? 'livecall-close-preview' : 'livecall-close'
+                }
+              >
+                <X className="w-4 h-4" />
+              </button>
+            )}
         </div>
       </header>
 
@@ -355,6 +339,26 @@ export default function LiveCallScreen() {
           only ever one leg, and the top header above already shows
           "Calling +447…" with a Cancel button + ringing timer. The
           dark banner was pure duplication that confused agents. */}
+
+      {/* PR 138 (Hugo 2026-04-28): Twilio fatal-error banner. Shows
+          above the outcome picker when the call ended via an error
+          (13224 invalid number, 31000 dropped, etc.). Friendly text
+          comes from lib/twilioErrorMap.ts. The agent still picks an
+          outcome — the banner just explains WHY the call ended. */}
+      {callPhase === 'error_waiting_outcome' && error && (
+        <div
+          className="px-5 py-2 bg-[#FEF2F2] border-b border-[#FCA5A5] text-[12px] text-[#B91C1C] flex items-center gap-2"
+          data-testid="livecall-error-banner"
+        >
+          <span className="font-semibold">Call error:</span>
+          <span>{error.friendlyMessage}</span>
+          {error.code ? (
+            <span className="ml-auto text-[10px] text-[#B91C1C]/70 tabular-nums">
+              code {error.code}
+            </span>
+          ) : null}
+        </div>
+      )}
 
       {/* Resizable 4-column body (Hugo 2026-04-26):
             COL 1 — contact context (name, stage, KV, sticky notes)
