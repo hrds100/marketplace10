@@ -213,7 +213,11 @@ const WORKSPACE_ONLY_TABS = [
   { id: 'agents' as const, label: 'Agents & spend', icon: Users },
   { id: 'numbers' as const, label: 'Numbers (workspace pool)', icon: Phone },
   { id: 'channels' as const, label: 'Channels (WhatsApp / Email)', icon: Radio },
-  { id: 'pacing' as const, label: 'Pacing & safety', icon: Shield },
+  // PR 111 (Hugo 2026-04-28): "Pacing & safety" tab hidden from sidebar.
+  // The PacingTab component is a stub (disabled inputs, nothing saves).
+  // Component kept for future implementation; entry removed so agents
+  // don't click into a dead-end. Re-add this line when pacing is real.
+  // { id: 'pacing' as const, label: 'Pacing & safety', icon: Shield },
   { id: 'kill' as const, label: 'Kill switches & audit', icon: Activity },
 ];
 

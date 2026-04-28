@@ -18,7 +18,9 @@
 //
 // Returns: { url: string, expires_at: ISO8601 }
 //
-// Auth: admin only (JWT email gate, same pattern as wazzup-sync-channels).
+// Auth: admin only (JWT email gate). PR 69 superseded the earlier
+// wazzup-sync-channels approach — Unipile does the channel pairing via
+// hosted-auth instead of polling.
 
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.39.3';
