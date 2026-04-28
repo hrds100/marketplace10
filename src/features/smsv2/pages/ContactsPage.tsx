@@ -102,10 +102,29 @@ export default function ContactsPage() {
 
   const setStage = (id: string, col: string) => {
     patchContact(id, { pipelineColumnId: col });
+    void persist.moveToColumn(id, col);
   };
 
   const save = (updated: Contact) => {
+    // PR 105 (Hugo 2026-04-28): optimistic local + write-through to
+    // wk_contacts (name / email / pipeline_column_id). Was UI-only —
+    // saved name / email never persisted across reload.
+    const prev = contacts.find((c) => c.id === updated.id);
     upsertContact(updated);
+    void persist
+      .patchContact(updated.id, {
+        name: updated.name,
+        email: updated.email ?? null,
+        pipeline_column_id: updated.pipelineColumnId ?? null,
+      })
+      .then((ok) => {
+        if (ok) {
+          pushToast('Saved ✓', 'success');
+        } else {
+          if (prev) upsertContact(prev);
+          pushToast('Save failed — reverted', 'error');
+        }
+      });
   };
 
   return (

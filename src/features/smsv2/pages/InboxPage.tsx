@@ -235,23 +235,13 @@ export default function InboxPage() {
     subject: m.subject,
   })), [crmMessages]);
 
-  // PR 79: auto-default the reply channel to whatever the contact's
-  // LAST message used. If they last messaged on WhatsApp, our default
-  // reply channel is WhatsApp. PR 80 update: when contact has NO
-  // messages OR has changed, reset to null so the agent must pick
-  // explicitly (anti-mistake guard).
+  // PR 105 (Hugo 2026-04-28): channel must be re-picked every time —
+  // no auto-default to last-used channel, no carry-over between contacts.
+  // Forces the agent to consciously confirm SMS / WhatsApp / Email so
+  // we never accidentally send on the wrong channel.
   useEffect(() => {
-    if (!activeContactId) {
-      setReplyChannel(null);
-      return;
-    }
-    if (crmMessages.length === 0) {
-      setReplyChannel(null);
-      return;
-    }
-    const last = crmMessages[crmMessages.length - 1];
-    if (last?.channel) setReplyChannel(last.channel);
-  }, [activeContactId, crmMessages]);
+    setReplyChannel(null);
+  }, [activeContactId]);
 
   // Real data only in production. Mock fallback restricted to ?demo=1.
   // CRM messages are the primary source; legacy timeline SMS shown
@@ -400,6 +390,8 @@ export default function InboxPage() {
         pushToast(`${channelLabel} sent`, 'success');
         setReply('');
         if (replyChannel === 'email') setReplySubject('');
+        // PR 105: force re-pick of channel after every successful send.
+        setReplyChannel(null);
       }
     } catch (e) {
       pushToast(`Send crashed: ${e instanceof Error ? e.message : 'unknown'}`, 'error');
@@ -779,7 +771,26 @@ export default function InboxPage() {
     <EditContactModal
       contact={editing}
       onClose={() => setEditing(null)}
-      onSave={(updated) => upsertContact(updated)}
+      onSave={(updated) => {
+        // PR 105: optimistic local + write-through to wk_contacts so
+        // the saved name / email / stage survives a reload.
+        const prev = contacts.find((c) => c.id === updated.id);
+        upsertContact(updated);
+        void persist
+          .patchContact(updated.id, {
+            name: updated.name,
+            email: updated.email ?? null,
+            pipeline_column_id: updated.pipelineColumnId ?? null,
+          })
+          .then((ok) => {
+            if (ok) {
+              pushToast('Saved ✓', 'success');
+            } else {
+              if (prev) upsertContact(prev);
+              pushToast('Save failed — reverted', 'error');
+            }
+          });
+      }}
     />
     </>
   );

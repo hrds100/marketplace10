@@ -34,6 +34,11 @@ export default function PostCallPanel() {
   const [secondsLeft, setSecondsLeft] = useState(autoAdvanceSeconds);
   const [paused, setPaused] = useState(false);
   const [submitted, setSubmitted] = useState(false);
+  // PR 105 (Hugo 2026-04-28): the chosen outcome card stays highlighted
+  // as "this is the one you picked", while the rest dim out so it's
+  // obvious WHICH card the agent clicked. Skipped / Next-now leave
+  // pickedColumnId null and every card just dims.
+  const [pickedColumnId, setPickedColumnId] = useState<string | null>(null);
   // PR 19: when the picked stage carries requires_followup=true, open
   // the prompt modal BEFORE committing applyOutcome. Pausing the auto-
   // advance timer while the modal is open keeps the agent from being
@@ -66,6 +71,9 @@ export default function PostCallPanel() {
   const handleClick = (columnId: string) => {
     if (submitted) return;
     const col = columns.find((c) => c.id === columnId);
+    // PR 105: mark the visually-picked card as soon as the agent clicks
+    // (before the follow-up modal opens) so they can see WHAT they chose.
+    setPickedColumnId(columnId);
     // PR 19: if the picked stage requires a follow-up, open the modal
     // FIRST and let the agent pick a time + note. The actual outcome
     // submission happens in commitOutcome after the modal saves or is
@@ -78,6 +86,7 @@ export default function PostCallPanel() {
   };
 
   const commitOutcome = (columnId: string) => {
+    setPickedColumnId(columnId);
     setSubmitted(true);
     const note = quickNote.trim() || undefined;
     // Defer slightly so the button's optimistic disabled state paints first
@@ -133,17 +142,36 @@ export default function PostCallPanel() {
         <div className="grid grid-cols-2 gap-3">
           {columns.map((col) => {
             const Icon = ICON_MAP[col.icon] ?? Sparkles;
+            // PR 105: three visual states for outcome cards.
+            //   picked   → the card the agent chose, green border + ✓ badge.
+            //   dimmed   → submitted but NOT picked → faded out so contrast is clear.
+            //   default  → pre-submit, hover-able.
+            const isPicked = submitted && pickedColumnId === col.id;
+            const isDimmed = submitted && pickedColumnId !== col.id;
             return (
               <button
                 key={col.id}
                 onClick={() => handleClick(col.id)}
                 disabled={submitted}
+                data-testid={`postcall-outcome-${col.id}`}
+                data-picked={isPicked ? 'true' : undefined}
                 className={cn(
-                  'group p-3 rounded-2xl border-2 text-left bg-white hover:shadow-[0_8px_24px_rgba(0,0,0,0.08)] transition-all',
-                  'border-[#E5E7EB] hover:border-[#1E9A80]/50',
-                  'disabled:opacity-50 disabled:cursor-not-allowed'
+                  'relative group p-3 rounded-2xl border-2 text-left bg-white transition-all',
+                  isPicked
+                    ? 'border-[#1E9A80] bg-[#ECFDF5] shadow-[0_4px_16px_rgba(30,154,128,0.25)] cursor-default'
+                    : isDimmed
+                      ? 'border-[#E5E7EB] opacity-30 cursor-not-allowed'
+                      : 'border-[#E5E7EB] hover:border-[#1E9A80]/50 hover:shadow-[0_8px_24px_rgba(0,0,0,0.08)]'
                 )}
               >
+                {isPicked && (
+                  <span
+                    className="absolute top-1.5 right-1.5 inline-flex items-center justify-center w-5 h-5 rounded-full bg-[#1E9A80] text-white text-[11px] font-bold shadow-sm"
+                    aria-label="Picked"
+                  >
+                    ✓
+                  </span>
+                )}
                 <div className="flex items-center gap-2.5">
                   <div
                     className="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0"
@@ -155,7 +183,12 @@ export default function PostCallPanel() {
                     <span className="text-[10px] font-bold text-[#9CA3AF] tabular-nums">
                       {col.position}.
                     </span>
-                    <span className="text-[14px] font-semibold text-[#1A1A1A] truncate">
+                    <span
+                      className={cn(
+                        'text-[14px] font-semibold truncate',
+                        isPicked ? 'text-[#1E9A80]' : 'text-[#1A1A1A]'
+                      )}
+                    >
                       {col.name}
                     </span>
                   </div>
