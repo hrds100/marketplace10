@@ -71,13 +71,11 @@ const ACTIVE_STATUSES = new Set<string>([
   'voicemail',
 ]);
 
-/** PR 54 (Hugo 2026-04-27): max age for an in-flight leg before we
- *  hide it from the board even if Twilio's terminal status callback
- *  hasn't landed yet. Twilio's outbound-dial timeout is 60s, so any
- *  leg older than 90s is almost certainly dead. The admin Live
- *  Activity feed uses a 60-min cutoff because it's a history view;
- *  the dialer board is a real-time snapshot, so we're stricter. */
-const STALE_LEG_MAX_AGE_MS = 90_000;
+/** PR 127 (Hugo 2026-04-28): tightened from 90s → 50s so dead legs
+ *  drop off the banner faster. Twilio's default outbound-dial timeout
+ *  is 60s; if status callbacks are delayed/lost, a 50s cutoff keeps
+ *  the banner trustworthy without surfacing zombie rings. */
+const STALE_LEG_MAX_AGE_MS = 50_000;
 
 interface SupaTable<T> {
   from: (t: string) => {

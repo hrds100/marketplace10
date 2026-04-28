@@ -91,15 +91,15 @@ export default function ParallelDialerBanner() {
 
   return (
     <div className="bg-[#0A0A0A] text-white rounded-2xl px-4 py-3 shadow-[0_8px_24px_rgba(0,0,0,0.18)]">
+      {/* PR 127 (Hugo 2026-04-28): power-dialer-only — single line, no
+          "first answer wins" subtitle. The header is just the active
+          contact + a pulsing dot. */}
       <div className="flex items-center gap-2 mb-2.5">
         <PhoneCall className="w-4 h-4 text-[#1E9A80]" />
         <span className="text-[12px] font-semibold tracking-wide">
-          Calling {legs.length} {legs.length === 1 ? 'line' : 'lines'}
+          Calling now
         </span>
         <span className="w-1.5 h-1.5 rounded-full bg-[#1E9A80] animate-pulse" />
-        <span className="text-[11px] text-[#9CA3AF] ml-auto">
-          first answer wins · others auto-hang
-        </span>
       </div>
 
       <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2">
