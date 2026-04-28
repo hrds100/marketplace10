@@ -24,6 +24,35 @@ export function mapTwilioError(code: number, message: string): MappedTwilioError
       fatal: false,
     };
   }
+  // PR 144 (Hugo 2026-04-28): with `enableImprovedSignalingErrorPrecision`
+  // turned on, gateway HANGUP errors that previously surfaced as a
+  // generic 31005 now arrive as the precise sub-codes Twilio's docs
+  // promised (call.ts:1231 in the SDK). Map each so the agent gets a
+  // useful toast instead of "Connection lost".
+  if (code === 31002) {
+    // ConnectionDeclinedError — the Twilio gateway declined the call,
+    // typically because the destination number couldn't be reached
+    // (carrier rejection, geo-blocked, do-not-call list, etc.). Per
+    // our 24-hour Twilio API audit, this is the actual cause behind
+    // most "31005" reports.
+    return {
+      friendlyMessage:
+        'Call declined — the destination number is unreachable. Try a different number.',
+      fatal: true,
+    };
+  }
+  if (code === 31204) {
+    return {
+      friendlyMessage: 'Auth token rejected by Twilio. Refreshing — try again.',
+      fatal: true,
+    };
+  }
+  if (code === 31205) {
+    return {
+      friendlyMessage: 'Auth token expired. Refreshing — try again.',
+      fatal: true,
+    };
+  }
   if (code === 31403 || code === 31486) {
     return {
       friendlyMessage: `Call refused by Twilio (${code}). Check phone number / caller ID.`,
