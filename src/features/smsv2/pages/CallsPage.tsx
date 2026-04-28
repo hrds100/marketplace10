@@ -79,7 +79,13 @@ export default function CallsPage() {
   const calls = demoMode && realCalls.length === 0 ? MOCK_CALLS : realCalls;
   const contacts =
     demoMode && realContacts.length === 0 ? MOCK_CONTACTS : realContacts;
-  const agents = demoMode ? MOCK_AGENTS : [];
+  // PR 122 (Hugo 2026-04-28): the Agent column and the "All agents"
+  // filter dropdown were both bound to a hardcoded `demoMode ? MOCK : []`,
+  // so in production the column always rendered "—" and the dropdown
+  // only had "All agents" with no options. realAgentsToday is already
+  // loaded above (used by EditContactModal) — point at it instead.
+  const agents =
+    demoMode && realAgentsToday.length === 0 ? MOCK_AGENTS : realAgentsToday;
 
   // When the user clicks Play on a row with a real recording_path, swap
   // it for a short-lived signed URL.
