@@ -16,6 +16,7 @@ import { useEffect, useState } from 'react';
 import { Phone, PhoneCall } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useActiveDialerLegs, type DialerLegStatus } from '../../hooks/useActiveDialerLegs';
+import { useRingbackTone } from '../../hooks/useRingbackTone';
 import { supabase } from '@/integrations/supabase/client';
 import { useSmsV2 } from '../../store/SmsV2Store';
 
@@ -57,6 +58,16 @@ export default function ParallelDialerBanner() {
     const id = window.setInterval(() => setTick((t) => t + 1), 1000);
     return () => window.clearInterval(id);
   }, [legs.length]);
+
+  // PR 120 (Hugo 2026-04-28): synthetic UK ringback tone while at least
+  // one leg is still ringing. Stops the moment any leg connects (real
+  // call audio takes over) or all legs end. Browser autoplay policy is
+  // satisfied because the agent clicked Start moments earlier — that
+  // gesture lets the AudioContext run.
+  const isRinging =
+    legs.length > 0 &&
+    legs.every((l) => l.status === 'queued' || l.status === 'ringing');
+  useRingbackTone(isRinging);
 
   if (legs.length === 0) return null;
 
