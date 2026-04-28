@@ -12,7 +12,7 @@
 // LiveCallScreen.tsx; the displayed title changes per channel.
 
 import { useEffect, useMemo, useState } from 'react';
-import { Send, MessageSquare, ArrowRight, Phone, Mail } from 'lucide-react';
+import { Send, MessageSquare, ArrowRight, ArrowUp, Phone, Mail } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { supabase } from '@/integrations/supabase/client';
 import { useSmsV2 } from '../../store/SmsV2Store';
@@ -250,6 +250,8 @@ export default function MidCallSmsSender({
       if (channel === 'email') setSubject('');
       setSelectedTemplateId('');
       setPickedStageId(null);
+      // PR 105: force re-pick of channel after every successful send.
+      setChannel(null);
     } catch (e) {
       pushToast(
         `${CHANNEL_LABEL[channel]} send crashed: ${e instanceof Error ? e.message : 'unknown'}`,
@@ -377,6 +379,16 @@ export default function MidCallSmsSender({
         rows={channel === 'email' ? 7 : 5}
         className="w-full px-2 py-1.5 text-[12px] border border-[#E5E5E5] rounded-[8px] focus:outline-none focus:ring-1 focus:ring-[#1E9A80]/30 focus:border-[#1E9A80] resize-y min-h-[80px]"
       />
+      {/* PR 106 (Hugo 2026-04-28): when a body has been typed but no
+          stage is picked, pulse a soft warning right above the Send
+          row so the agent sees it at the moment they reach for Send.
+          The orange "Pick stage" badge above the textarea was getting
+          missed. Stage gate (PR 16) still enforces — this is just UX. */}
+      {body.trim().length > 0 && pickedStageId === null && channel !== null && !sending && (
+        <div className="text-[11px] text-[#B45309] inline-flex items-center gap-1.5 animate-pulse mt-1.5 mb-0.5">
+          <ArrowUp className="w-3 h-3" /> Pick a stage to send
+        </div>
+      )}
       <div className="flex items-center justify-between mt-1.5">
         <span
           className={cn(
