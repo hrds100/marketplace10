@@ -23,6 +23,8 @@ import { useSmsV2 } from '../store/SmsV2Store';
 import { useContactPersistence } from '../hooks/useContactPersistence';
 import { useDialerCampaigns } from '../hooks/useDialerCampaigns';
 import { useMyDialerQueue } from '../hooks/useMyDialerQueue';
+import { useTwilioDevice } from '../hooks/useTwilioDevice';
+import RecentCallsPanel from '../components/dialer/RecentCallsPanel';
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
 import type { Campaign, Contact } from '../types';
@@ -86,6 +88,11 @@ export default function DialerPage() {
   const [running, setRunning] = useState(true);
   const [editing, setEditing] = useState<Contact | null>(null);
   const { startCall, enterDialingPlaceholder } = useActiveCallCtx();
+  // PR 132 (Hugo 2026-04-28, Bug 4): wait for the Twilio Device to be
+  // 'ready' before pressing wk-dialer-start. Without this, the agent's
+  // first call fires before the SDK has registered → the WebRTC leg
+  // can't bridge → "first number that rings is always staying silent".
+  const twilioDevice = useTwilioDevice();
   const spend = useSpendLimit();
   // PR 90 (Hugo 2026-04-27): the Start button only checked spend limit \u2014
   // an admin could press Start while the global "all dialers off" kill
@@ -161,6 +168,19 @@ export default function DialerPage() {
     // toggle the visual `running` state and rely on the local store.
     if (!isUuid(activeId)) {
       pushToast('Mock campaign — wire a real campaign UUID to dial', 'info');
+      return;
+    }
+    // PR 132 (Hugo 2026-04-28, Bug 4): "the first number that rings is
+    // always staying silent. It doesn't ring or anything the first time."
+    // Block wk-dialer-start until the Twilio Device reports 'ready' so
+    // the agent's WebRTC leg can bridge as soon as the contact picks up.
+    // 3-second cap; if still not ready, surface a single toast and bail —
+    // never dial silently. The agent presses Start again once the
+    // softphone status pill goes green.
+    const ready = await twilioDevice.waitUntilReady(3000);
+    if (!ready) {
+      pushToast('Phone connecting — try again in a moment', 'info');
+      setRunning(false);
       return;
     }
     // PR 23: ensure the campaign is active before firing the dialer.
@@ -553,6 +573,15 @@ export default function DialerPage() {
             </div>
           </div>
           )}
+
+          {/* PR 132 (Hugo 2026-04-28, Bug 5): Recent calls panel under
+              the campaign counters. Replaces the unused white space
+              below the seven Mini stats. Hugo: "below that, you should
+              show the history there as well with the option to open
+              calling room — at least I can always go back, click it,
+              then go back." Also surfaces a red "Hang up" button on
+              any still-ringing leg as the always-on escape hatch. */}
+          <RecentCallsPanel />
 
         </div>
       </div>

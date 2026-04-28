@@ -71,6 +71,27 @@ let device: TwilioDevice | null = null;
 let currentToken: VoiceTokenResponse | null = null;
 let renewalTimer: number | null = null;
 
+// PR 132 (Hugo 2026-04-28, Bug 2): track consecutive failed re-registrations
+// so we surface a single persistent toast after 3 failures instead of
+// stacking dismissable toasts on every retry. Reset to 0 on a successful
+// updateToken / registered event.
+let consecutiveTokenRefreshFailures = 0;
+
+/** PR 132: external listener invoked when re-registration has failed 3
+ *  times in a row. Lets ActiveCallProvider surface a single "Phone offline"
+ *  toast with a manual retry button instead of every error stacking. */
+type TokenRefreshFailListener = (retryFn: () => Promise<void>) => void;
+const tokenRefreshFailListeners = new Set<TokenRefreshFailListener>();
+
+export function addTokenRefreshFailListener(
+  listener: TokenRefreshFailListener
+): () => void {
+  tokenRefreshFailListeners.add(listener);
+  return () => {
+    tokenRefreshFailListeners.delete(listener);
+  };
+}
+
 // Module-level listener registry for inbound calls. Subscribers are notified
 // after the device has auto-accepted the call so the UI can transition into
 // the live-call screen. Returning the unsubscribe handle keeps callers
@@ -117,6 +138,31 @@ export async function createDevice(): Promise<DeviceHandle> {
   // already applies sensible defaults; rely on those. If self-call echo
   // returns, fix the room (headphones), not the SDK config.)
 
+  // PR 132 (Hugo 2026-04-28, Bug 2): "Connection lost (31005). Refresh the
+  // page if it doesn't recover." used to be the agent's only escape after
+  // the 1-hour token expired and the SDK dropped its WebSocket transport.
+  // Now we auto-refetch a fresh access token from wk-voice-token and call
+  // device.updateToken — the SDK reconnects without a page refresh.
+  // Codes we react to:
+  //   31005 — Connection lost (signaling transport closed)
+  //   31204 — JWT validation error (almost always token-expired)
+  //   20104 — InvalidAccessToken
+  // The Voice SDK also fires 'tokenWillExpire' ~30s before exp; we use that
+  // as a proactive trigger too (belt-and-braces with the 5-min timer).
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  d.on('error', (err: any) => {
+    const code = err?.code as number | undefined;
+    if (code === 31005 || code === 31204 || code === 20104) {
+      console.warn('[twilio-voice] device error → auto-refresh token', code, err?.message);
+      void refreshDeviceToken();
+    }
+  });
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  (d as any).on?.('tokenWillExpire', () => {
+    console.info('[twilio-voice] tokenWillExpire — refreshing');
+    void refreshDeviceToken();
+  });
+
   // Inbound calls — wk-voice-twiml-incoming routes a PSTN ring to a Client
   // identity. The agent's browser receives an 'incoming' Call here. We
   // auto-accept (matches the dialer-winner flow) and notify subscribers so
@@ -140,28 +186,100 @@ export async function createDevice(): Promise<DeviceHandle> {
 
   device = d;
   currentToken = tokenResp;
-  scheduleTokenRenewal(tokenResp.ttl_seconds);
+  scheduleTokenRenewal(tokenResp.ttl_seconds, tokenResp.token);
 
   return { device: d, identity: tokenResp.identity, extension: tokenResp.extension };
 }
 
-function scheduleTokenRenewal(ttlSeconds: number): void {
+/**
+ * PR 132 (Hugo 2026-04-28, Bug 2): Decode the JWT exp claim so we schedule
+ * the refresh against the TOKEN'S OWN expiry, not just the server-reported
+ * ttl_seconds. The two should match, but if a clock or the server's TTL
+ * is off, exp is the source of truth Twilio uses to validate the token.
+ * Returns null if the token can't be parsed.
+ */
+function decodeJwtExp(token: string): number | null {
+  try {
+    const parts = token.split('.');
+    if (parts.length < 2) return null;
+    const payload = parts[1];
+    // base64url → base64
+    const b64 = payload.replace(/-/g, '+').replace(/_/g, '/');
+    const padded = b64 + '='.repeat((4 - (b64.length % 4)) % 4);
+    const json = atob(padded);
+    const claims = JSON.parse(json) as { exp?: number };
+    return typeof claims.exp === 'number' ? claims.exp : null;
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * PR 132 (Hugo 2026-04-28, Bug 2): refresh the Twilio Device's access
+ * token in-place. Used by:
+ *   1. The proactive 5-min-before-expiry timer (scheduleTokenRenewal).
+ *   2. The device 'error' listener (codes 31005 / 31204 / 20104) — the
+ *      SDK can recover without a page refresh once it has a fresh token.
+ *   3. The 'tokenWillExpire' SDK event (fires ~30s before exp).
+ *
+ * Tracks consecutive failures and broadcasts a single "Phone offline"
+ * toast after 3 in a row, so we don't stack dismissable toasts on every
+ * retry. The retry function passed to listeners restarts the refresh
+ * loop on demand (manual button click).
+ */
+async function refreshDeviceToken(): Promise<void> {
+  if (!device) return;
+  try {
+    const fresh = await fetchVoiceToken();
+    await device.updateToken(fresh.token);
+    currentToken = fresh;
+    consecutiveTokenRefreshFailures = 0;
+    scheduleTokenRenewal(fresh.ttl_seconds, fresh.token);
+  } catch (e) {
+    consecutiveTokenRefreshFailures++;
+    console.error(
+      '[twilio-voice] token refresh failed',
+      consecutiveTokenRefreshFailures,
+      e
+    );
+    if (consecutiveTokenRefreshFailures >= 3) {
+      // Single persistent banner — listener resets the counter when the
+      // user clicks "Retry" so subsequent failures still escalate.
+      tokenRefreshFailListeners.forEach((fn) => {
+        try {
+          fn(async () => {
+            consecutiveTokenRefreshFailures = 0;
+            await refreshDeviceToken();
+          });
+        } catch (err) {
+          console.warn('[twilio-voice] token-fail listener threw', err);
+        }
+      });
+    }
+  }
+}
+
+function scheduleTokenRenewal(ttlSeconds: number, token?: string): void {
   if (renewalTimer !== null) {
     window.clearTimeout(renewalTimer);
     renewalTimer = null;
   }
-  // Renew 5 minutes before expiry.
-  const renewInMs = Math.max(30_000, (ttlSeconds - 300) * 1000);
-  renewalTimer = window.setTimeout(async () => {
-    try {
-      if (!device) return;
-      const fresh = await fetchVoiceToken();
-      await device.updateToken(fresh.token);
-      currentToken = fresh;
-      scheduleTokenRenewal(fresh.ttl_seconds);
-    } catch (e) {
-      console.error('[twilio-voice] token renewal failed:', e);
-    }
+  // PR 132: prefer the JWT's own exp claim (token-truth) over server-
+  // reported ttl_seconds. Fall back to ttl_seconds if exp can't be parsed.
+  let renewInMs: number;
+  const tokenForExp = token ?? currentToken?.token ?? null;
+  const exp = tokenForExp ? decodeJwtExp(tokenForExp) : null;
+  if (exp) {
+    const nowSec = Math.floor(Date.now() / 1000);
+    const remaining = exp - nowSec;
+    // 5-minute buffer per Hugo's brief. Floor at 30s so a near-expired
+    // token still gets a refresh attempt.
+    renewInMs = Math.max(30_000, (remaining - 300) * 1000);
+  } else {
+    renewInMs = Math.max(30_000, (ttlSeconds - 300) * 1000);
+  }
+  renewalTimer = window.setTimeout(() => {
+    void refreshDeviceToken();
   }, renewInMs);
 }
 
@@ -377,4 +495,86 @@ export function disconnectAllCalls(): void {
   } catch (e) {
     console.warn('[twilio-voice] disconnectAll threw', e);
   }
+}
+
+/**
+ * PR 132 (Hugo 2026-04-28, Bug 1): "Dial failed: A Call is already active".
+ * Twilio's Device.connect() throws this when a previous Call object is still
+ * in `device.calls`. The fix: BEFORE every fresh dial, disconnect every
+ * existing Call AND wait until the SDK fires 'disconnect' on each one (or a
+ * 1500ms timeout per call elapses). Only then is it safe to call
+ * device.connect() again.
+ *
+ * Returns once every prior Call has fired its 'disconnect' event or the
+ * timeout elapsed. Resilient to .on() throws and Calls that never fire the
+ * event (rare but documented in the SDK changelog).
+ */
+export async function disconnectAllCallsAndWait(timeoutMs = 1500): Promise<void> {
+  if (!device) return;
+  // Snapshot the Calls before we start disconnecting — the SDK may mutate
+  // device.calls as each one resolves.
+  const calls = getDeviceCalls();
+  if (calls.length === 0) return;
+
+  await Promise.all(
+    calls.map(
+      (call) =>
+        new Promise<void>((resolve) => {
+          let settled = false;
+          const finish = () => {
+            if (settled) return;
+            settled = true;
+            resolve();
+          };
+          try {
+            // 'disconnect' fires once the leg is fully torn down. If the
+            // Call already disconnected before we attached, .on may never
+            // fire — the timeout below covers that.
+            call.on('disconnect', finish);
+            call.on('cancel', finish);
+            call.on('reject', finish);
+          } catch (e) {
+            console.warn('[twilio-voice] disconnectAllCallsAndWait .on threw', e);
+          }
+          try {
+            call.disconnect();
+          } catch (e) {
+            console.warn('[twilio-voice] disconnectAllCallsAndWait .disconnect threw', e);
+            // If .disconnect throws, the Call may already be dead — resolve
+            // immediately rather than wait for an event that won't fire.
+            finish();
+            return;
+          }
+          window.setTimeout(finish, timeoutMs);
+        })
+    )
+  );
+}
+
+/**
+ * PR 132 (Hugo 2026-04-28, Bug 4): expose the SDK Device's current status
+ * ('registered' / 'registering' / 'unregistered' / 'destroyed') so the
+ * dialer can wait for 'registered' before pressing connect(). Returns null
+ * if no device exists.
+ */
+export function getDeviceStatus(): string | null {
+  if (!device) return null;
+  try {
+    // The Voice SDK Device exposes .state in v2.x. The shape isn't typed
+    // in the version pinned here, so we read defensively.
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    return ((device as any).state as string) ?? null;
+  } catch {
+    return null;
+  }
+}
+
+/** PR 132: exposed for unit tests of the 31005 auto-refresh path. */
+export const __test_refreshDeviceToken = refreshDeviceToken;
+export function __test_setDevice(d: TwilioDevice | null, token?: VoiceTokenResponse | null): void {
+  device = d;
+  if (token !== undefined) currentToken = token;
+}
+export function __test_resetTokenFailureCount(): void {
+  consecutiveTokenRefreshFailures = 0;
 }

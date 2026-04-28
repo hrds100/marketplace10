@@ -6,7 +6,9 @@ import { supabase } from '@/integrations/supabase/client';
 import { useTwilioDevice } from '../../hooks/useTwilioDevice';
 import {
   addIncomingCallListener,
+  addTokenRefreshFailListener,
   disconnectAllCalls,
+  disconnectAllCallsAndWait,
   getDeviceCalls,
   muteAllCalls,
 } from '@/core/integrations/twilio-voice';
@@ -140,7 +142,15 @@ interface ActiveCallCtx {
     phone?: string;
     campaignId?: string | null;
   }) => void;
-  endCall: () => void;
+  /**
+   * PR 132 (Hugo 2026-04-28, Bug 1): endCall is now async. Returns once
+   * every Twilio Call on this Device has fired 'disconnect' (or a 1500ms
+   * per-call timeout has elapsed). The auto-hangup at 35s and the manual
+   * End button MUST `await` this before the next dial fires — otherwise
+   * device.connect() races the prior Call's teardown and we hit
+   * "A Call is already active".
+   */
+  endCall: () => Promise<void>;
   clearCall: () => void;
   /** Whether the active TwilioCall's mic is currently muted. */
   muted: boolean;
@@ -286,6 +296,34 @@ export function ActiveCallProvider({ children }: { children: ReactNode }) {
       cancelled = true;
       if (unsubscribe) unsubscribe();
     };
+  }, [store]);
+
+  // PR 132 (Hugo 2026-04-28, Bug 2): once the Twilio Device's access
+  // token has failed to refresh 3 times in a row (network blip, edge
+  // function down, JWT corruption…), surface a SINGLE persistent toast
+  // with a manual "Retry" path. Without this the agent only saw a
+  // generic "Connection lost (31005). Refresh the page" — and the
+  // SDK kept firing it on every reconnect attempt, stacking toasts.
+  useEffect(() => {
+    const unsubscribe = addTokenRefreshFailListener((retryFn) => {
+      // We push a single 'error' toast with the retry instructions. The
+      // store's pushToast dedupes by message, so even if the listener
+      // somehow fires again the agent only sees one banner. The retry
+      // is best-effort — the agent can also full-refresh as a fallback.
+      store.pushToast(
+        'Phone offline — click to retry',
+        'error'
+      );
+      // Fire the retry on the next animation frame so the toast renders
+      // before we attempt re-registration. The agent doesn't have to
+      // hit a button — this is automatic; the toast is informational.
+      window.requestAnimationFrame(() => {
+        void retryFn().catch((e) =>
+          console.warn('[twilio-voice] auto-retry threw', e)
+        );
+      });
+    });
+    return unsubscribe;
   }, [store]);
 
   // Inbound PSTN calls — Twilio routes to the agent's browser <Client>.
@@ -556,7 +594,7 @@ export function ActiveCallProvider({ children }: { children: ReactNode }) {
       startCall,
       resumeFromBroadcast,
       enterDialingPlaceholder,
-      endCall: () => {
+      endCall: async () => {
         // PR (Hugo 2026-04-28, Bug 1): the End button used to ONLY do a
         // WebRTC client-side disconnect. The agent's mic stopped, but the
         // PSTN leg stayed up on Twilio's side — Hugo's complaint:
@@ -569,7 +607,14 @@ export function ActiveCallProvider({ children }: { children: ReactNode }) {
         // ringing / in_progress wk_calls row for THIS agent and hang
         // each one up — guaranteed no zombies even when callId is
         // unknown.
-        void (async () => {
+        // PR 132 (Hugo 2026-04-28, Bug 1): endCall is now async. We
+        // AWAIT every Twilio Call's 'disconnect' before resolving so
+        // the auto-hangup at 35s and the manual End can chain
+        // straight into the next dial without "A Call is already
+        // active". The server-side hangup-leg sweep continues in
+        // parallel (its result doesn't gate the next dial — Twilio
+        // tears down the PSTN leg server-side regardless).
+        const serverSideSweep = (async () => {
           try {
             const { data: userData } = await supabase.auth.getUser();
             const uid = userData.user?.id ?? null;
@@ -603,10 +648,19 @@ export function ActiveCallProvider({ children }: { children: ReactNode }) {
             console.warn('[endCall] sweep failed', e);
           }
         })();
-        // Disconnect EVERY Call on the Device — not just the active ref.
-        // The "callee still hears me" zombie Calls (see toggleMute comment)
-        // also need to be evicted so they stop streaming the mic.
-        try { disconnectAllCalls(); } catch { /* ignore */ }
+        // Don't block on the server-side sweep — fire it but await the
+        // CLIENT-side WebRTC teardown synchronously.
+        void serverSideSweep;
+        // Disconnect EVERY Call on the Device AND wait for each to
+        // confirm 'disconnect'. This is the gate that stops the next
+        // dial from racing into "A Call is already active".
+        try {
+          await disconnectAllCallsAndWait(1500);
+        } catch (e) {
+          console.warn('[endCall] disconnectAllCallsAndWait threw', e);
+          // Fallback: best-effort sync disconnect so we never get stuck.
+          try { disconnectAllCalls(); } catch { /* ignore */ }
+        }
         activeTwilioCallRef.current = null;
         setPhase('post_call');
         setMuted(false);
