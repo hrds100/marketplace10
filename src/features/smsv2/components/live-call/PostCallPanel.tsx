@@ -27,7 +27,7 @@ const ICON_MAP: Record<string, LucideIcon> = {
 };
 
 export default function PostCallPanel() {
-  const { applyOutcome, call, lastEndedContactId, openPreviousCall } = useActiveCallCtx();
+  const { applyOutcome, call, lastEndedContactId, openPreviousCall, endCall } = useActiveCallCtx();
   const store = useSmsV2();
   const columns = store.columns;
   const autoAdvanceSeconds = store.activeCampaign?.autoAdvanceSeconds ?? 10;
@@ -297,9 +297,19 @@ export default function PostCallPanel() {
           <SkipForward className="w-3.5 h-3.5" /> Skip
         </button>
         <button
-          onClick={() => {
+          onClick={async () => {
             if (submitted) return;
             setSubmitted(true);
+            // PR 134 (Hugo 2026-04-28): Hugo's report: "We press next call
+            // when it goes to the voicemail, and then we press next call,
+            // you should hang up. If you press next call, always hang up
+            // to go to the next call." endCall is idempotent in
+            // post_call (no-op on already-disconnected Twilio Calls) but
+            // crucially it SWEEPS any zombie wk_calls + WebRTC legs that
+            // would otherwise trip "A Call is already active" on the
+            // next dial. Await it before applyOutcome so the sweep
+            // completes before the next startCall fires.
+            await endCall();
             setTimeout(() => applyOutcome('next-now', quickNote.trim() || undefined), 200);
           }}
           className="flex items-center gap-1.5 px-3 py-1.5 rounded-[10px] bg-[#1E9A80] text-white text-[12px] font-semibold hover:bg-[#1E9A80]/90 shadow-[0_4px_12px_rgba(30,154,128,0.35)]"
