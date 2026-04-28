@@ -46,6 +46,7 @@ export default function LiveCallScreen() {
     previewContactId,
     closeCallRoom,
     startCall,
+    error,
   } = useActiveCallCtx();
   const store = useSmsV2();
   const { agent: me, firstName: myFirstName, talkRatioPercent } = useCurrentAgent();
@@ -338,6 +339,26 @@ export default function LiveCallScreen() {
           only ever one leg, and the top header above already shows
           "Calling +447…" with a Cancel button + ringing timer. The
           dark banner was pure duplication that confused agents. */}
+
+      {/* PR 138 (Hugo 2026-04-28): Twilio fatal-error banner. Shows
+          above the outcome picker when the call ended via an error
+          (13224 invalid number, 31000 dropped, etc.). Friendly text
+          comes from lib/twilioErrorMap.ts. The agent still picks an
+          outcome — the banner just explains WHY the call ended. */}
+      {callPhase === 'error_waiting_outcome' && error && (
+        <div
+          className="px-5 py-2 bg-[#FEF2F2] border-b border-[#FCA5A5] text-[12px] text-[#B91C1C] flex items-center gap-2"
+          data-testid="livecall-error-banner"
+        >
+          <span className="font-semibold">Call error:</span>
+          <span>{error.friendlyMessage}</span>
+          {error.code ? (
+            <span className="ml-auto text-[10px] text-[#B91C1C]/70 tabular-nums">
+              code {error.code}
+            </span>
+          ) : null}
+        </div>
+      )}
 
       {/* Resizable 4-column body (Hugo 2026-04-26):
             COL 1 — contact context (name, stage, KV, sticky notes)
