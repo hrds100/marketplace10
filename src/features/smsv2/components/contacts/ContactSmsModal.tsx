@@ -29,6 +29,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useSmsV2 } from '../../store/SmsV2Store';
 import { useContactPersistence } from '../../hooks/useContactPersistence';
 import { interpolateTemplate } from '../../lib/interpolateTemplate';
+import FollowupPromptModal from '../followups/FollowupPromptModal';
 import type { Contact } from '../../types';
 
 type Channel = 'sms' | 'whatsapp' | 'email';
@@ -131,6 +132,12 @@ export default function ContactSmsModal({
   // PR 105: capture the channel label at send-time so the post-send banner
   // still reads correctly after we reset `channel` to null (forces re-pick).
   const [bannerLabel, setBannerLabel] = useState<string>('');
+  // PR 107 (Hugo 2026-04-28): prompt for a follow-up after every send.
+  const [followupTarget, setFollowupTarget] = useState<{
+    contactId: string;
+    contactName: string;
+    columnId: string;
+  } | null>(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -328,6 +335,16 @@ export default function ContactSmsModal({
       // PR 105: force re-pick of channel after every successful send.
       setChannel(null);
       setTimeout(() => setShowSentBanner(false), 4000);
+      // PR 107: prompt for a follow-up time. Stage-coupled templates may
+      // have just moved the contact — prefer the new column if so.
+      const followupColumnId = selectedTemplate?.move_to_stage_id ?? contact.pipelineColumnId;
+      if (followupColumnId) {
+        setFollowupTarget({
+          contactId: contact.id,
+          contactName: contact.name,
+          columnId: followupColumnId,
+        });
+      }
     } catch (e) {
       pushToast(
         `${CHANNEL_LABEL[channel]} send crashed: ${e instanceof Error ? e.message : 'unknown'}`,
@@ -350,7 +367,19 @@ export default function ContactSmsModal({
   const recipientLabel =
     channel === 'email' ? contact.email ?? '(no email)' : contact.phone;
 
+  // PR 107: lookup column for follow-up modal (read from store columns).
+  const followupColumn = followupTarget
+    ? columns.find((c) => c.id === followupTarget.columnId)
+    : null;
+  const followupSuggestedHours = (() => {
+    const lc = followupColumn?.name.toLowerCase();
+    if (lc === 'callback') return 2;
+    if (lc === 'interested') return 24;
+    return 24 * 3;
+  })();
+
   return (
+    <>
     <div
       className="fixed inset-0 z-[300] bg-black/40 flex items-center justify-center p-6"
       onClick={onClose}
@@ -546,5 +575,19 @@ export default function ContactSmsModal({
         </div>
       </div>
     </div>
+    {followupTarget && (
+      <FollowupPromptModal
+        open
+        onOpenChange={(o) => { if (!o) setFollowupTarget(null); }}
+        contactId={followupTarget.contactId}
+        contactName={followupTarget.contactName}
+        columnId={followupTarget.columnId}
+        columnName={followupColumn?.name ?? 'Stage'}
+        suggestedHoursAhead={followupSuggestedHours}
+        callId={null}
+        onSaved={() => setFollowupTarget(null)}
+      />
+    )}
+    </>
   );
 }

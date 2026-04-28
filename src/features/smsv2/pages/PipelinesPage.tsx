@@ -1,12 +1,13 @@
-import { useMemo, useState } from 'react';
-import { Flame, GripVertical, Pencil, MessageSquare } from 'lucide-react';
+import { useEffect, useMemo, useState } from 'react';
+import { Bell, Flame, GripVertical, Pencil, MessageSquare, Mail, Phone } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { ACTIVE_PIPELINE } from '../data/mockPipelines';
 import { formatPence, formatRelativeTime } from '../data/helpers';
 import EditContactModal from '../components/contacts/EditContactModal';
 import { useSmsV2 } from '../store/SmsV2Store';
 import { useContactPersistence } from '../hooks/useContactPersistence';
-import { useContactSmsStatus } from '../hooks/useContactSmsStatus';
+import { useContactChannelStatus } from '../hooks/useContactSmsStatus';
+import { useFollowups } from '../hooks/useFollowups';
 import type { Contact } from '../types';
 
 export default function PipelinesPage() {
@@ -16,14 +17,34 @@ export default function PipelinesPage() {
   const [draggingId, setDraggingId] = useState<string | null>(null);
   const [dragOverColId, setDragOverColId] = useState<string | null>(null);
 
-  // PR 20: SMS-sent badge per pipeline card. Hook returns a Map<phone,
-  // { lastSentAt, bodyPreview }> populated from sms_messages outbound
-  // rows that target any of the visible contacts' phone numbers.
-  const phones = useMemo(
-    () => contacts.map((c) => c.phone).filter(Boolean),
+  // PR 20 + PR 107: per-channel "last sent" badge for each pipeline
+  // card. Hook returns Map<contactId, { sms, whatsapp, email }> from
+  // wk_sms_messages outbound rows.
+  const contactIds = useMemo(
+    () => contacts.map((c) => c.id).filter(Boolean),
     [contacts]
   );
-  const smsStatus = useContactSmsStatus(phones);
+  const channelStatus = useContactChannelStatus(contactIds);
+
+  // PR 107: per-card follow-up countdown. Single page-level setNow
+  // interval so we don't run a timer per card.
+  const { items: followups } = useFollowups();
+  const [now, setNow] = useState(Date.now());
+  useEffect(() => {
+    const id = window.setInterval(() => setNow(Date.now()), 30_000);
+    return () => window.clearInterval(id);
+  }, []);
+  // Map contactId → soonest pending/snoozed follow-up.
+  const followupByContact = useMemo(() => {
+    const map = new Map<string, (typeof followups)[number]>();
+    const sorted = [...followups].sort(
+      (a, b) => +new Date(a.due_at) - +new Date(b.due_at)
+    );
+    for (const f of sorted) {
+      if (!map.has(f.contact_id)) map.set(f.contact_id, f);
+    }
+    return map;
+  }, [followups]);
 
   const save = (updated: Contact) => {
     upsertContact(updated);
@@ -173,15 +194,74 @@ export default function PipelinesPage() {
                           </div>
                         )}
                         {(() => {
-                          const sms = smsStatus.get(c.phone);
-                          if (!sms) return null;
+                          const cs = channelStatus.get(c.id);
+                          if (!cs) return null;
+                          if (!cs.sms && !cs.whatsapp && !cs.email) return null;
+                          return (
+                            <div className="mt-1.5 flex flex-wrap gap-1">
+                              {cs.sms && (
+                                <span
+                                  className="inline-flex items-center gap-1 text-[9px] font-medium bg-[#1E9A80]/10 text-[#1E9A80] px-1.5 py-0.5 rounded"
+                                  title={cs.sms.bodyPreview}
+                                >
+                                  <Phone className="w-2.5 h-2.5" />
+                                  SMS · {formatRelativeTime(cs.sms.lastSentAt)}
+                                </span>
+                              )}
+                              {cs.whatsapp && (
+                                <span
+                                  className="inline-flex items-center gap-1 text-[9px] font-medium bg-[#25D366]/10 text-[#1E8C4F] px-1.5 py-0.5 rounded"
+                                  title={cs.whatsapp.bodyPreview}
+                                >
+                                  <MessageSquare className="w-2.5 h-2.5" />
+                                  WA · {formatRelativeTime(cs.whatsapp.lastSentAt)}
+                                </span>
+                              )}
+                              {cs.email && (
+                                <span
+                                  className="inline-flex items-center gap-1 text-[9px] font-medium bg-[#3B82F6]/10 text-[#1D4ED8] px-1.5 py-0.5 rounded"
+                                  title={cs.email.bodyPreview}
+                                >
+                                  <Mail className="w-2.5 h-2.5" />
+                                  Email · {formatRelativeTime(cs.email.lastSentAt)}
+                                </span>
+                              )}
+                            </div>
+                          );
+                        })()}
+                        {(() => {
+                          // PR 107: follow-up countdown badge.
+                          const f = followupByContact.get(c.id);
+                          if (!f) return null;
+                          const due = new Date(f.due_at).getTime();
+                          const ms = due - now;
+                          const tone =
+                            ms <= 0
+                              ? 'overdue'
+                              : ms <= 60 * 60 * 1000
+                                ? 'soon'
+                                : 'future';
+                          const cls =
+                            tone === 'overdue'
+                              ? 'bg-[#FEF2F2] text-[#DC2626]'
+                              : tone === 'soon'
+                                ? 'bg-[#FFF7ED] text-[#C2410C] animate-pulse'
+                                : 'bg-[#F3F3EE] text-[#6B7280]';
+                          const label =
+                            tone === 'overdue'
+                              ? `OVERDUE ${humanizeAgo(-ms)}`
+                              : tone === 'soon'
+                                ? `Due in ${humanizeIn(ms)}`
+                                : `Follow-up in ${humanizeIn(ms)}`;
                           return (
                             <div
-                              className="mt-1.5 inline-flex items-center gap-1 text-[9px] font-medium bg-[#1E9A80]/10 text-[#1E9A80] px-1.5 py-0.5 rounded"
-                              title={sms.bodyPreview}
+                              className={cn(
+                                'mt-1.5 inline-flex items-center gap-1 text-[9px] font-semibold px-1.5 py-0.5 rounded',
+                                cls
+                              )}
+                              title={f.note ?? undefined}
                             >
-                              <MessageSquare className="w-2.5 h-2.5" />
-                              SMS · {formatRelativeTime(sms.lastSentAt)}
+                              <Bell className="w-2.5 h-2.5" /> {label}
                             </div>
                           );
                         })()}
@@ -215,4 +295,24 @@ export default function PipelinesPage() {
       />
     </div>
   );
+}
+
+// PR 107: humanise positive (in N) / negative (N ago) deltas in ms.
+function humanizeIn(ms: number): string {
+  const mins = Math.max(0, Math.round(ms / 60_000));
+  if (mins < 60) return `${mins}m`;
+  const hours = Math.floor(mins / 60);
+  const remMin = mins % 60;
+  if (hours < 24) return remMin > 0 ? `${hours}h ${remMin}m` : `${hours}h`;
+  const days = Math.round(hours / 24);
+  return `${days}d`;
+}
+
+function humanizeAgo(ms: number): string {
+  const mins = Math.max(0, Math.round(ms / 60_000));
+  if (mins < 60) return `${mins}m ago`;
+  const hours = Math.floor(mins / 60);
+  if (hours < 24) return `${hours}h ago`;
+  const days = Math.round(hours / 24);
+  return `${days}d ago`;
 }

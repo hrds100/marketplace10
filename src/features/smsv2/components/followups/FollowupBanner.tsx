@@ -44,10 +44,14 @@ export default function FollowupBanner() {
     return () => window.clearInterval(id);
   }, []);
 
+  // PR 107 (Hugo 2026-04-28): 1h lookahead so the agent sees follow-ups
+  // BEFORE they're overdue. Anything due ≤ now + 60min surfaces here;
+  // anything later stays in the pipeline countdown only.
   const due = useMemo(() => {
     const now = Date.now();
+    const cutoff = now + 60 * 60 * 1000;
     return items
-      .filter((i) => new Date(i.due_at).getTime() <= now)
+      .filter((i) => new Date(i.due_at).getTime() <= cutoff)
       .sort((a, b) => +new Date(a.due_at) - +new Date(b.due_at));
   }, [items]);
 
@@ -104,7 +108,7 @@ export default function FollowupBanner() {
             const stage = f.column_id
               ? columns.find((c) => c.id === f.column_id)
               : undefined;
-            const dueAgo = relativeTime(f.due_at);
+            const { label: dueLabel, tone: dueTone } = countdownLabel(f.due_at);
             return (
               <div
                 key={f.id}
@@ -127,8 +131,15 @@ export default function FollowupBanner() {
                     {stage.name}
                   </span>
                 )}
-                <span className="text-[10px] text-[#B45309] tabular-nums whitespace-nowrap">
-                  {dueAgo}
+                <span
+                  className={cn(
+                    'text-[10px] font-semibold tabular-nums whitespace-nowrap px-1.5 py-0.5 rounded',
+                    dueTone === 'overdue' && 'bg-[#FEF2F2] text-[#DC2626]',
+                    dueTone === 'now' && 'bg-[#FFF7ED] text-[#C2410C] animate-pulse',
+                    dueTone === 'soon' && 'bg-[#FFF7ED] text-[#C2410C]'
+                  )}
+                >
+                  {dueLabel}
                 </span>
                 {f.note && (
                   <span className="text-[11px] text-[#6B7280] truncate flex-1">
@@ -174,18 +185,31 @@ export default function FollowupBanner() {
   );
 }
 
-function relativeTime(iso: string): string {
+// PR 107: countdown label scoped to the 1h-lookahead range.
+//   past due → "OVERDUE — was Xm ago" (red)
+//   ≤15m out → "Due now" (orange pulse)
+//   16–60m  → "Due in Xm" (orange)
+function countdownLabel(iso: string): {
+  label: string;
+  tone: 'overdue' | 'now' | 'soon';
+} {
   const ms = new Date(iso).getTime() - Date.now();
-  const past = ms < 0;
-  const abs = Math.abs(ms);
-  const mins = Math.round(abs / 60_000);
-  if (mins < 60) {
-    return past ? `${mins}m ago` : `in ${mins}m`;
+  if (ms < 0) {
+    const ago = humanizeAgo(-ms);
+    return { label: `OVERDUE — was ${ago}`, tone: 'overdue' };
   }
-  const hours = Math.round(mins / 60);
-  if (hours < 24) {
-    return past ? `${hours}h ago` : `in ${hours}h`;
+  const mins = Math.round(ms / 60_000);
+  if (mins <= 15) {
+    return { label: 'Due now', tone: 'now' };
   }
+  return { label: `Due in ${mins}m`, tone: 'soon' };
+}
+
+function humanizeAgo(ms: number): string {
+  const mins = Math.max(0, Math.round(ms / 60_000));
+  if (mins < 60) return `${mins}m ago`;
+  const hours = Math.floor(mins / 60);
+  if (hours < 24) return `${hours}h ago`;
   const days = Math.round(hours / 24);
-  return past ? `${days}d ago` : `in ${days}d`;
+  return `${days}d ago`;
 }

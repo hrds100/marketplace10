@@ -128,6 +128,7 @@ import Smsv2ContactsPage from '@/features/smsv2/pages/ContactsPage';
 import Smsv2ContactDetailPage from '@/features/smsv2/pages/ContactDetailPage';
 import Smsv2PipelinesPage from '@/features/smsv2/pages/PipelinesPage';
 import Smsv2ReportsPage from '@/features/smsv2/pages/ReportsPage';
+import Smsv2LeaderboardPage from '@/features/smsv2/pages/LeaderboardPage';
 import Smsv2SettingsPage from '@/features/smsv2/pages/SettingsPage';
 import Smsv2TestPage from '@/features/smsv2/pages/TestPage';
 // PR 45 (Hugo 2026-04-27): the SMSV2 module is rebranded to "CRM"
@@ -332,6 +333,7 @@ const App = () => (
             <Route path="contacts/:id" element={<Smsv2ContactDetailPage />} />
             <Route path="pipelines" element={<Smsv2PipelinesPage />} />
             <Route path="reports" element={<Smsv2ReportsPage />} />
+            <Route path="leaderboard" element={<Smsv2LeaderboardPage />} />
             <Route path="settings" element={<AdminOnlyRoute><Smsv2SettingsPage /></AdminOnlyRoute>} />
             <Route path="test" element={<Smsv2TestPage />} />
           </Route>
