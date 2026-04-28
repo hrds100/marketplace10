@@ -193,9 +193,18 @@ serve(async (req: Request) => {
       console.error(
         `[wk-email-webhook] INVALID Svix signature — dropping event. svix-id=${svixId} ts=${svixTs}`,
       );
-      // Reply 200 so Resend stops retrying — it's a security drop, not
-      // a transient failure.
-      return ok({ note: 'invalid signature — dropped' });
+      // PR 100 (Hugo 2026-04-28): was returning 200 here so Resend wouldn't
+      // retry. That meant any inbound email that arrived during a secret-
+      // mismatch window was silently lost forever (Hugo's reply on
+      // 2026-04-28 was lost this way). Now returns 401 so Resend retries
+      // with backoff while we fix the secret. Resend caps retries at a few
+      // attempts over hours; if the secret stays broken past that, it'll
+      // dead-letter — which is still correct behaviour for a sustained
+      // misconfiguration.
+      return new Response(
+        JSON.stringify({ error: 'invalid signature' }),
+        { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } },
+      );
     }
   } else {
     console.warn('[wk-email-webhook] no webhook secret configured — accepting unverified');
