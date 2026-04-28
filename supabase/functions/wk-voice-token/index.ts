@@ -120,8 +120,42 @@ serve(async (req: Request) => {
       });
     }
 
-    // Identity is the profile UUID — keeps Voice Client mapping stable across renames
-    const identity = user.id;
+    // PR 143 (Hugo 2026-04-28): suffix the identity with a per-tab session
+    // UUID so multiple tabs of the same user don't collide at the gateway.
+    //
+    // Twilio's documented behaviour: a new client registering with an
+    // existing identity evicts the older one (`error 31005 HANGUP`).
+    // Hugo had ~30 tabs open including several hub.nfstay.com ones — every
+    // tab's voice-token refresh re-asserted `identity = user.id`, evicting
+    // the previously-active tab. Calls dropped mid-ring with repeated
+    // 31005 errors.
+    //
+    // New scheme: identity = `${user.id}:${sessionId}` where sessionId is
+    // a fresh UUID per token mint. Each tab is its own gateway client, no
+    // collisions. We UPSERT (user_id, session_id) into wk_voice_sessions
+    // so wk-voice-twiml-incoming and wk-voice-twiml-outgoing can dial the
+    // most recent session.
+    const sessionId = crypto.randomUUID();
+    const identity = `${user.id}:${sessionId}`;
+
+    try {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const { error: upErr } = await (supabase.from('wk_voice_sessions' as any) as any)
+        .upsert(
+          {
+            user_id: user.id,
+            session_id: sessionId,
+            last_seen_at: new Date().toISOString(),
+          },
+          { onConflict: 'user_id' }
+        );
+      if (upErr) {
+        console.warn('[wk-voice-token] wk_voice_sessions upsert failed:', upErr.message);
+      }
+    } catch (e) {
+      console.warn('[wk-voice-token] wk_voice_sessions upsert threw:', e);
+    }
+
     const now = Math.floor(Date.now() / 1000);
 
     // Twilio Access Token JWT format (per Twilio docs)
