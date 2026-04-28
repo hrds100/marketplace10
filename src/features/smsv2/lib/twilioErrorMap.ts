@@ -53,9 +53,24 @@ export function mapTwilioError(code: number, message: string): MappedTwilioError
       fatal: true,
     };
   }
-  if (code === 31403 || code === 31486) {
+  if (code === 31486) {
+    // PR 146 (Hugo 2026-04-28): 31486 (SIP BusyHere) is fired by the
+    // Twilio gateway when the DESTINATION phone returned a busy signal
+    // — not when our app refused the call. The previous "Call refused
+    // by Twilio" toast was misleading. Verified against Twilio Events
+    // for CAa0bf687d8be56e87fd62a25af65c3b1e: dial_call_status was
+    // "busy" for a real UK Vodafone destination.
     return {
-      friendlyMessage: `Call refused by Twilio (${code}). Check phone number / caller ID.`,
+      friendlyMessage: 'Destination is busy — try again later.',
+      fatal: true,
+    };
+  }
+  if (code === 31403) {
+    // ClientForbidden — caller/destination Client lacks permission.
+    // Different cause from 31486; keep the "refused" wording for this
+    // one so the agent knows it's a permission/account-level issue.
+    return {
+      friendlyMessage: 'Call refused by Twilio (31403). Check phone number / caller ID.',
       fatal: true,
     };
   }
