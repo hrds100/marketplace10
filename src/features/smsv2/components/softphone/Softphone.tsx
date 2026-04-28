@@ -180,6 +180,12 @@ export default function Softphone() {
     return (
       <button
         onClick={() => setOpen(true)}
+        // PR 132 (Hugo 2026-04-28, Bug 4): expose the Twilio Device status
+        // so Playwright can assert readiness ('ready' / 'registering' /
+        // 'error' / 'idle') before pressing Start. Used by the dialer
+        // page e2e test that verifies the first call rings.
+        data-device-status={device.status}
+        data-testid="softphone-launcher"
         className="fixed bottom-5 right-5 z-[120] bg-white border border-[#E5E7EB] rounded-full shadow-[0_4px_16px_rgba(0,0,0,0.1)] pl-2 pr-4 py-2 flex items-center gap-2 hover:shadow-[0_6px_24px_rgba(0,0,0,0.12)] transition-all"
       >
         <span className="w-8 h-8 rounded-full bg-[#1E9A80] text-white flex items-center justify-center">

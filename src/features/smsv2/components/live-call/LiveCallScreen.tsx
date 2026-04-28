@@ -96,6 +96,10 @@ export default function LiveCallScreen() {
   // conversation in progress). After hangup, fire applyOutcome
   // 'next-now' sentinel so we skip the post-call review and dial the
   // next contact straight away.
+  // PR 132 (Hugo 2026-04-28, Bug 1): AWAIT endCall so the next leg
+  // can't race the prior Call's WebRTC teardown ("A Call is already
+  // active"). The applyOutcome that fires inside the next-now sentinel
+  // calls startCall, which requires every prior Call to be torn down.
   const NO_ANSWER_AUTO_HANGUP_SEC = 35;
   const autoHangupFiredRef = useRef(false);
   useEffect(() => {
@@ -111,9 +115,11 @@ export default function LiveCallScreen() {
       placingLegStatus == null; // null = no leg row yet — also stuck
     if (!stillRinging) return;
     autoHangupFiredRef.current = true;
-    endCall();
-    // Skip post-call review for an auto-canceled no-answer; advance.
-    setTimeout(() => applyOutcome('next-now'), 200);
+    void (async () => {
+      await endCall();
+      // Skip post-call review for an auto-canceled no-answer; advance.
+      setTimeout(() => applyOutcome('next-now'), 200);
+    })();
   }, [phase, placingElapsedSec, placingLegStatus, endCall, applyOutcome]);
 
   // Preview mode (PR 10): no active call, but agent opened the room for
@@ -267,25 +273,27 @@ export default function LiveCallScreen() {
             )}
           </div>
 
-          {phase === 'in_call' && (
+          {/* PR 132 (Hugo 2026-04-28, Bug 3): single Hang up button for
+              ANY non-idle, non-post_call, non-preview phase. Hugo:
+              "on the voicemail there is no option to hang up". When AMD
+              flips wk_calls.status to 'voicemail' the FRONTEND phase may
+              stay in 'placing' (no winner-broadcast fires for a non-
+              in_progress mapped status) — neither the old End nor Cancel
+              button rendered, so the agent was stuck. This consolidates
+              the two and renders for every transitional state. The label
+              changes for clarity but the handler is the same. */}
+          {phase !== 'idle' && phase !== 'post_call' && !isPreview && (
             <button
-              onClick={endCall}
+              onClick={() => void endCall()}
               className="flex items-center gap-1.5 bg-[#EF4444] hover:bg-[#DC2626] text-white px-3 py-1.5 rounded-[10px] text-[12px] font-semibold"
+              data-testid={
+                phase === 'placing'
+                  ? 'livecall-cancel-placing'
+                  : 'livecall-end-call'
+              }
             >
-              <PhoneOff className="w-3.5 h-3.5" /> End call
-            </button>
-          )}
-
-          {/* PR 107 (Hugo 2026-04-28): cancel a call mid-ring. Without
-              this the only way out of the placing phase was waiting for
-              Twilio to time out. Same endCall handler as in_call. */}
-          {phase === 'placing' && (
-            <button
-              onClick={endCall}
-              className="flex items-center gap-1.5 bg-[#EF4444] hover:bg-[#DC2626] text-white px-3 py-1.5 rounded-[10px] text-[12px] font-semibold"
-              data-testid="livecall-cancel-placing"
-            >
-              <PhoneOff className="w-3.5 h-3.5" /> Cancel
+              <PhoneOff className="w-3.5 h-3.5" />
+              {phase === 'placing' ? ' Cancel' : ' Hang up'}
             </button>
           )}
 
