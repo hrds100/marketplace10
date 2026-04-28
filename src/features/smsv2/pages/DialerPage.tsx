@@ -71,7 +71,7 @@ export default function DialerPage() {
   const [activeId, setActiveId] = useState<string>(allCampaigns[0]?.id ?? MOCK_CAMPAIGNS[0].id);
   const [running, setRunning] = useState(true);
   const [editing, setEditing] = useState<Contact | null>(null);
-  const { startCall } = useActiveCallCtx();
+  const { startCall, enterDialingPlaceholder } = useActiveCallCtx();
   const spend = useSpendLimit();
   // PR 90 (Hugo 2026-04-27): the Start button only checked spend limit \u2014
   // an admin could press Start while the global "all dialers off" kill
@@ -196,6 +196,26 @@ export default function DialerPage() {
         return;
       }
       pushToast(`Dialing ${data?.fired?.length ?? 0} line(s)`, 'success');
+
+      // PR (Hugo 2026-04-28, Bug 3): mount the live-call screen
+      // immediately with placeholder info from the next-up queue lead.
+      // Hugo's complaint: "dialer vanish until call receive or voicemail
+      // appear or call ended, it should appear immediate after click
+      // start." Without this the agent stares at the dialer panel for
+      // 2-8s while wk-dialer-start fires legs, until the winner-
+      // orchestration broadcast lands and resumeFromBroadcast mounts the
+      // screen. Now we mount it in 'placing' state right away. If no
+      // pre-fetched queue lead is available (race / empty), we skip and
+      // the broadcast still works as before.
+      const upcoming = queueLeads[0];
+      if (upcoming) {
+        enterDialingPlaceholder({
+          contactId: upcoming.id,
+          contactName: upcoming.name,
+          phone: upcoming.phone,
+          campaignId: activeId,
+        });
+      }
     } catch (e) {
       pushToast(
         `Dialer crashed: ${e instanceof Error ? e.message : 'unknown'}`,
