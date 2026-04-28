@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import {
   MicOff,
   PhoneOff,
@@ -14,7 +14,6 @@ import {
   ResizableHandle,
 } from '@/components/ui/resizable';
 import { useActiveCallCtx } from './ActiveCallContext';
-import ParallelDialerBanner from '../dialer/ParallelDialerBanner';
 import { useActiveDialerLegs } from '../../hooks/useActiveDialerLegs';
 import LiveTranscriptPane from './LiveTranscriptPane';
 import CallScriptPane from './CallScriptPane';
@@ -62,6 +61,21 @@ export default function LiveCallScreen() {
     phase === 'placing'
       ? activeLegs[0]?.contactName ?? activeLegs[0]?.phone ?? call?.contactName ?? '…'
       : call?.contactName ?? '';
+
+  // PR 128 (Hugo 2026-04-28): we removed the dark second-banner that used
+  // to show the ringing timer. Now the top header shows "Ringing · M:SS"
+  // during placing so the agent can still see how long Twilio's been
+  // trying. 1Hz tick — only runs while in the placing phase.
+  const [, setRingingTick] = useState(0);
+  useEffect(() => {
+    if (phase !== 'placing') return;
+    const id = window.setInterval(() => setRingingTick((t) => t + 1), 1000);
+    return () => window.clearInterval(id);
+  }, [phase]);
+  const placingElapsedSec =
+    phase === 'placing' && activeLegs[0]?.startedAt
+      ? Math.max(0, Math.floor((Date.now() - activeLegs[0].startedAt) / 1000))
+      : 0;
 
   // Preview mode (PR 10): no active call, but agent opened the room for
   // a specific contact from the inbox. Use that contact instead of the
@@ -113,6 +127,12 @@ export default function LiveCallScreen() {
                 <span className="w-1 h-1 rounded-full bg-white animate-bounce" style={{ animationDelay: '150ms' }} />
                 <span className="w-1 h-1 rounded-full bg-white animate-bounce" style={{ animationDelay: '300ms' }} />
               </span>
+              {placingElapsedSec > 0 && (
+                <span className="ml-2 tabular-nums opacity-80 text-[12px] font-normal">
+                  {Math.floor(placingElapsedSec / 60)}:
+                  {(placingElapsedSec % 60).toString().padStart(2, '0')}
+                </span>
+              )}
             </>
           )}
           {phase === 'in_call' && (
@@ -268,16 +288,11 @@ export default function LiveCallScreen() {
         </div>
       </header>
 
-      {/* PR 121 (Hugo 2026-04-28): the dark "Calling N lines" banner now
-          lives in the call room (here) instead of /crm/dialer. Hugo's
-          rule: "My dialer is just to press Start. Once you press Start
-          it goes to the other place" — so the live ringing legs surface
-          where the agent's eyes already are. Hidden when there are no
-          active legs (e.g. during a connected call after the others
-          have been auto-hung). */}
-      <div className="px-5 pt-3 flex-shrink-0">
-        <ParallelDialerBanner />
-      </div>
+      {/* PR 128 (Hugo 2026-04-28): removed the second "Calling now"
+          banner entirely. Power-dialer-only since PR 126 means there's
+          only ever one leg, and the top header above already shows
+          "Calling +447…" with a Cancel button + ringing timer. The
+          dark banner was pure duplication that confused agents. */}
 
       {/* Resizable 4-column body (Hugo 2026-04-26):
             COL 1 — contact context (name, stage, KV, sticky notes)
