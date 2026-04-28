@@ -7,13 +7,12 @@
 // Earlier plan (PR 60) was to use inbox.nfstay.com — superseded by
 // mail.nfstay.com once Hugo confirmed EU-region verification.
 //
-// PR 102 (Hugo 2026-04-28): Resend's INBOUND email.received webhooks
-// DO include the full body (html + text + headers) in the payload.
-// The `GET /emails/{id}` endpoint is OUTBOUND-only — for inbound IDs it
-// returns 404. Earlier code always fetched, got 404, dropped the
-// message. Now we use payload fields directly. Outbound delivery
-// events still land here (email.bounced, email.delivered) but we
-// only persist email.received.
+// PR 103 (Hugo 2026-04-28): Resend's email.received WEBHOOK payload is
+// metadata-only (from, to, subject, email_id) — no html/text. To get
+// the body we must call GET /emails/inbound/{email_id}. The earlier
+// /emails/{email_id} (outbound store) returns 404 for inbound IDs;
+// /emails/inbound/{email_id} is the dedicated inbound endpoint and
+// returns html + text + headers + a pre-signed raw MIME download URL.
 //
 // Signature verification — Svix HMAC-SHA256 over the raw request body:
 //   svix-id          → event id
@@ -268,8 +267,33 @@ serve(async (req: Request) => {
   }
 
   const subject = d.subject ?? '';
-  const html = d.html ?? '';
-  const text = d.text ?? '';
+
+  // PR 103: fetch html + text from the dedicated inbound endpoint.
+  // Resend's email.received webhook payload is metadata-only.
+  let html = '';
+  let text = '';
+  if (RESEND_API_KEY) {
+    try {
+      const r = await fetch(
+        `https://api.resend.com/emails/inbound/${emailId}`,
+        { headers: { Authorization: `Bearer ${RESEND_API_KEY}` } },
+      );
+      if (r.ok) {
+        const full = (await r.json()) as { html?: string; text?: string };
+        html = full.html ?? '';
+        text = full.text ?? '';
+      } else {
+        const errText = await r.text();
+        console.warn(
+          `[wk-email-webhook] inbound body fetch ${r.status}: ${errText.slice(0, 200)}`,
+        );
+      }
+    } catch (e) {
+      console.error('[wk-email-webhook] inbound body fetch threw', e);
+    }
+  } else {
+    console.warn('[wk-email-webhook] RESEND_API_KEY missing — body will be empty');
+  }
   const bodyText = text || html.replace(/<[^>]+>/g, '');
 
   const contactId = await findOrCreateContact(supa, fromEmail, fromName, emailId);
