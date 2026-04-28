@@ -307,18 +307,21 @@ export default function LiveTranscriptPane({ durationSec, contactId, callId, age
     : allowMock
       ? MOCK_TRANSCRIPT.filter((l) => l.ts <= Math.max(durationSec, 140))
       : [];
-  // PR 35 (Hugo 2026-04-27): hide stuck streaming placeholders. The
-  // pre-INSERT placeholder body is "…" (status='streaming'); when
-  // postProcessCoachText returns null (e.g. STAY_ON_SCRIPT) the
-  // worker is supposed to DELETE the row. If the DELETE fails / lags,
-  // the agent sees empty SUGGESTION cards cluttering the older-cards
-  // stack. Filter rows whose body is just a placeholder marker —
-  // doesn't break the streaming-morph UX because a card with real
-  // partial text passes through.
+  // PR 35 + PR 117 (Hugo 2026-04-28): the worker INSERTs a placeholder
+  // row with body='…', status='streaming' before the first OpenAI
+  // token arrives, then UPDATEs body as tokens stream. Previously we
+  // filtered out the placeholder (so the agent saw NOTHING for ~500ms
+  // after the caller spoke + the buy-time chip until the first token
+  // landed). Now: render the placeholder as a "Coach thinking…"
+  // skeleton card so the agent sees something happening immediately.
+  // STILL filter out the placeholder when status is NOT 'streaming'
+  // (i.e. orphaned post-superseded rows that should have been DELETEd).
   const PLACEHOLDER_BODIES = new Set(['…', '...', '']);
-  const isRenderable = (e: { body: string }) => {
+  const isRenderable = (e: { body: string; status?: string | null }) => {
     const trimmed = (e.body ?? '').trim();
-    return !PLACEHOLDER_BODIES.has(trimmed);
+    if (!PLACEHOLDER_BODIES.has(trimmed)) return true;
+    // Show placeholder rows ONLY while actively streaming (skeleton state).
+    return e.status === 'streaming';
   };
   const events = useLive
     ? liveEvents
@@ -330,6 +333,9 @@ export default function LiveTranscriptPane({ durationSec, contactId, callId, age
           title: '',
           body: e.body,
           script_section: e.script_section ?? null,
+          isSkeleton:
+            e.status === 'streaming' &&
+            PLACEHOLDER_BODIES.has((e.body ?? '').trim()),
         }))
     : allowMock
       ? MOCK_COACH_EVENTS.filter((e) => e.ts <= Math.max(durationSec, 140)).map(
@@ -495,9 +501,26 @@ export default function LiveTranscriptPane({ durationSec, contactId, callId, age
                         </span>
                       )}
                     </div>
-                    <div className={cn('text-[#1A1A1A]', isLatest ? LATEST_BODY_CLASS : OLDER_BODY_CLASS)}>
-                      {event.body}
-                    </div>
+                    {/* PR 117 (Hugo 2026-04-28): perceived-speed win.
+                        Show a thinking-skeleton while the placeholder
+                        row is in 'streaming' state but body hasn't
+                        landed yet. Card is visible the moment the
+                        worker INSERTs the placeholder, instead of
+                        waiting for the first real token. */}
+                    {event.isSkeleton ? (
+                      <div className={cn('text-[#9CA3AF] italic flex items-center gap-2', isLatest ? LATEST_BODY_CLASS : OLDER_BODY_CLASS)}>
+                        <span className="inline-flex gap-1">
+                          <span className="w-1.5 h-1.5 rounded-full bg-[#1E9A80] animate-bounce" style={{ animationDelay: '0ms' }} />
+                          <span className="w-1.5 h-1.5 rounded-full bg-[#1E9A80] animate-bounce" style={{ animationDelay: '150ms' }} />
+                          <span className="w-1.5 h-1.5 rounded-full bg-[#1E9A80] animate-bounce" style={{ animationDelay: '300ms' }} />
+                        </span>
+                        Coach is thinking…
+                      </div>
+                    ) : (
+                      <div className={cn('text-[#1A1A1A]', isLatest ? LATEST_BODY_CLASS : OLDER_BODY_CLASS)}>
+                        {event.body}
+                      </div>
+                    )}
                   </div>
                 );
               })
