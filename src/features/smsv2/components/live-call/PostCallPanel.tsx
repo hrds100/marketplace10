@@ -63,7 +63,19 @@ export default function PostCallPanel() {
   useEffect(() => {
     if (secondsLeft === 0 && !paused && !submitted) {
       const def = columns.find((c) => c.isDefaultOnTimeout);
-      if (def) handleClick(def.id);
+      if (def) {
+        handleClick(def.id);
+      } else {
+        // PR 127 (Hugo 2026-04-28): "next call has not auto-started."
+        // Cause: no pipeline column had isDefaultOnTimeout=true, so
+        // the timer hit 0 and we did nothing. Fallback: advance to
+        // the next call WITHOUT applying any outcome (sentinel
+        // 'next-now' is already handled by applyOutcome → just pops
+        // the queue and startCalls). The current contact stays where
+        // it is — the agent can come back to mark them later.
+        setSubmitted(true);
+        setTimeout(() => applyOutcome('next-now'), 200);
+      }
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [secondsLeft, paused, submitted]);

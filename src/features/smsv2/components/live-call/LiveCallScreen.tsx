@@ -15,6 +15,7 @@ import {
 } from '@/components/ui/resizable';
 import { useActiveCallCtx } from './ActiveCallContext';
 import ParallelDialerBanner from '../dialer/ParallelDialerBanner';
+import { useActiveDialerLegs } from '../../hooks/useActiveDialerLegs';
 import LiveTranscriptPane from './LiveTranscriptPane';
 import CallScriptPane from './CallScriptPane';
 import TerminologyPane from './TerminologyPane';
@@ -48,6 +49,19 @@ export default function LiveCallScreen() {
   const store = useSmsV2();
   const { agent: me, firstName: myFirstName, talkRatioPercent } = useCurrentAgent();
   const [editing, setEditing] = useState<Contact | null>(null);
+
+  // PR 127 (Hugo 2026-04-28): the header used to read from the
+  // placeholder contact set by enterDialingPlaceholder, but the
+  // PICKER may pick a DIFFERENT contact than the local store's
+  // queueLeads[0] (queue ordering can shift between dispatch and
+  // RPC). That caused the header to show one number and the banner
+  // to show another. Source the placing-phase contact name from the
+  // live leg instead so they always agree.
+  const { legs: activeLegs } = useActiveDialerLegs();
+  const placingDisplayName =
+    phase === 'placing'
+      ? activeLegs[0]?.contactName ?? activeLegs[0]?.phone ?? call?.contactName ?? '…'
+      : call?.contactName ?? '';
 
   // Preview mode (PR 10): no active call, but agent opened the room for
   // a specific contact from the inbox. Use that contact instead of the
@@ -93,7 +107,7 @@ export default function LiveCallScreen() {
         <span className="text-[14px] font-semibold flex items-center gap-2">
           {phase === 'placing' && (
             <>
-              <span>Calling {call?.contactName}</span>
+              <span>Calling {placingDisplayName}</span>
               <span className="inline-flex gap-0.5">
                 <span className="w-1 h-1 rounded-full bg-white animate-bounce" style={{ animationDelay: '0ms' }} />
                 <span className="w-1 h-1 rounded-full bg-white animate-bounce" style={{ animationDelay: '150ms' }} />
