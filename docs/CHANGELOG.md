@@ -2,6 +2,38 @@
 
 ## [Unreleased]
 
+## [2026-04-27d] - CRM Email + Follow-ups + Leaderboard + URL State + Config Fixes
+
+### Added
+- **Email inbound via mail.nfstay.com:** Resend EU region (eu-west-1). MX records point to AWS SES. Webhook validates Svix signatures (PR #99, #100, #103, #104).
+- **Auto follow-ups after send:** FollowupPromptModal opens after every SMS/WhatsApp/Email send. Agents optionally set due_at + note. EditContactModal edits next pending follow-up. API: useFollowups.reschedule(id, isoString) (PR #107, #110).
+- **Leaderboard:** New /crm/leaderboard page + Trophy popover in top nav (top 5 agents). Filter via wk_voice_agent_limits.show_on_leaderboard boolean toggle in Settings → Agents (PR #109, #110).
+- **URL state persistence:** SettingsPage, ContactsPage, CallsPage use useSearchParams. ?scope=, ?tab=, ?campaignId=, ?section=, ?q=, ?stage=, ?owner=, ?duration=, ?range=, ?agent= all survive browser refresh + back/forward + tab switch (PR #110).
+- **Bell + mini notifications:** Bell + drawer in Smsv2StatusBar. Unread count badge. useInboxNotifications hook subscribes to wk_sms_messages INSERT inbound (PR #109).
+- **Channel reset after send:** InboxPage, ContactSmsModal, MidCallSmsSender all reset channel=null after every successful send. Forces re-pick before next send to prevent wrong-channel mistakes (PR #105).
+- **Stage gate (mid-call only):** MidCallSmsSender requires pickedStageId before send. Inline stage-missing pulse hint above char-count (PR #105, #106).
+- **CSV template download:** Settings → Campaign → Upload Leads has "Download CSV template" button. Browser blob download, no server hit (PR #110).
+
+### Fixed
+- **Email FROM:** wk-email-send now defaults to crm@mail.nfstay.com (was inbox.nfstay.com). CRM_EMAIL_FROM env secret overrides (PR #99).
+- **Webhook signature validation:** wk-email-webhook returns 401 on signature fail (was 200). Resend retries with backoff instead of marking delivered → silent drop (PR #100).
+- **Inbound email body fetch:** Switched from GET /emails/{id} (outbound-only, 404s) to GET /emails/inbound/{id}. Payload carries metadata only. Body via dedicated inbound endpoint (PR #102, #103).
+- **Reply quote stripping:** stripReplyQuotes() in wk-email-webhook removes Gmail "On … wrote:", Outlook "-----Original Message-----", Outlook "From:/Sent:" pairs, and '>' prefixed lines (PR #104).
+- **EditContact persistence:** name, email, stage now save to DB via persist.patchContact + propagate via realtime subscription (PR #105).
+- **Dialer queue:** Stage change on queue rows now persists to DB (was UI-only) (PR #105).
+- **Test mock coverage:** ContactSmsModal.test.tsx supabase stub now includes auth.getUser + channel + removeChannel. Eliminated 3 unhandled vitest errors (PR #110).
+- **Migration timestamp collision:** Orphan migration 20260428000000_smsv2_coach_prompt_v5.sql renamed to 20260428100000_* (resolved duplicate-timestamp block) (PR #110).
+
+### Changed
+- **Channel safety:** All channel selection now resets to null after send. No auto-default to last-message channel (PR #105).
+- **PostCallPanel display:** Picked outcome stays bright, others dim (PR #105).
+- **Dialer UI cleanup:** "System prompt" dropdown removed. "AI coach" toggle moved to StatusBar (already there). Hold + Xfer dead buttons removed from collapsed Softphone bar (PR #105, #110).
+- **Realtime publication:** wk_voice_agent_limits added (leaderboard toggle now seconds-fast, was 60s polling) (PR #110).
+- **Edge function config:** 8 non-CRM functions added to supabase/config.toml with explicit verify_jwt settings (PR #111).
+
+### Pending
+- Pacing & safety tab hidden from Settings sidebar (stub component kept for future) (PR #111).
+
 ## [2026-04-09a] - WhatsApp Cloud API + Template Management + Documentation
 
 ### Added

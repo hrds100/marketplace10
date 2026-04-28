@@ -1,18 +1,39 @@
 # NFsTay Messaging & Communication Architecture
-_Last updated: 3 April 2026_
+_Last updated: 27 April 2026_
 
 > **MANDATORY: Any agent that adds, removes, or changes ANY email, WhatsApp, or in-app notification MUST update this document in the same commit. No exceptions.**
 
 ---
 
+## EMAIL INFRASTRUCTURE (Inbound & Outbound)
+
+**Outbound (marketplace + CRM):**
+- Domain: mail.nfstay.com (Resend EU region eu-west-1, verified)
+- From: notifications@hub.nfstay.com (marketplace) or crm@mail.nfstay.com (CRM)
+- CRM_EMAIL_FROM env secret overrides default
+- Seeded addresses: elijah@mail.nfstay.com, georgia@mail.nfstay.com
+- Edge function: send-email
+
+**Inbound (CRM only):**
+- Domain: mail.nfstay.com
+- MX records: inbound-smtp.eu-west-1.amazonaws.com (Resend uses AWS SES)
+- Webhook: https://asazddtvjvmckouxcmmo.supabase.co/functions/v1/wk-email-webhook
+- Secret validation: wk_channel_credentials.secret column (provider='resend'). Returns 401 if signature fails (Resend retries with backoff).
+- Body fetch: GET /emails/inbound/{email_id} (NOT /emails/{id} which is outbound-only)
+- Quoted reply stripping: stripReplyQuotes() removes Gmail "On … wrote:", Outlook "-----Original Message-----", Outlook "From:/Sent:" pairs, '>' prefixed lines
+
+---
+
 ## ADMIN EMAIL RECIPIENTS
 
-Default recipients for all admin notification emails (set in `send-email` edge function):
+Default recipients for all marketplace admin notification emails (set in `send-email` edge function):
 - hugo@nfstay.com
 - chris@nfstay.com
 - hello@nfstay.com
 
 Override via `ADMIN_EMAIL` env var in Supabase (comma-separated).
+
+**CRM emails:** Sent to agent's email on file (wk_numbers or wk_campaign_numbers contact email).
 
 ## NOTIFICATION SETTINGS TABLE
 
@@ -669,13 +690,69 @@ USER ACTION
 
 ---
 
+---
+
+## PART 4 - CRM MODULE (/crm/* — SMSv2 Live Coach)
+
+### Agent Sends SMS / WhatsApp / Email (InboxPage, ContactSmsModal, MidCallSmsSender)
+
+| What happens | Channel | Who receives | Message |
+|---|---|---|---|
+| Agent sends SMS | SMS | Contact | Body text (Twilio) |
+| Agent sends WhatsApp | WhatsApp | Contact | Body text (Unipile) |
+| Agent sends Email | Email | Contact | Body text (Resend) |
+
+**How it flows:**
+1. Agent picks channel (reset to null after each send, forces re-pick)
+2. Agent types message body
+3. Mid-call only: stage gate — requires pickedStageId (pulse hint if missing)
+4. Agent hits Send
+5. wk-sms-send | unipile-send | wk-email-send fires
+6. Edge function calls Twilio (SMS), Unipile (WhatsApp), or Resend (Email)
+7. FollowupPromptModal auto-opens — agent optionally sets due_at + note
+8. If columnId resolvable, due_at saved to wk_contact_followups
+9. Bell notifies receiving agents of new inbound messages (leaderboard agents only)
+
+### Follow-up Auto-Prompt (FollowupPromptModal)
+
+| What happens | Channel | Who receives | Message |
+|---|---|---|---|
+| Follow-up due | In-App | Agent (on next page load) | FollowupBanner shows countdown (1h lookahead window) |
+| Follow-up edited | DB | System | wk_contact_followups.due_at updated via EditContactModal |
+| Working-hours warning | UI | Agent | Warning on save if local hour < 10 OR ≥ 19 (browser time, not timezone-converted) |
+
+### Leaderboard & Spend Visibility
+
+| What happens | Channel | Who receives | Visibility |
+|---|---|---|---|
+| Agent performance | In-App | All agents | /crm/leaderboard + Trophy popover (top 5). Filtered by wk_voice_agent_limits.show_on_leaderboard toggle. |
+| Spend tracking | In-App | Admins only | StatusBar, Softphone, LiveCallScreen — hidden from non-admins. Behavioural spend gate still applies for non-admins. |
+
+### Inbound Routing & Notifications
+
+| What happens | Channel | Who receives | Detection |
+|---|---|---|---|
+| Inbound SMS | SMS | Agent (bell in nav) | wk-sms-incoming webhook (Twilio HMAC) |
+| Inbound WhatsApp | WhatsApp | Agent (bell in nav) | unipile-webhook (Unipile-Auth header) |
+| Inbound Email | Email | Agent (bell in nav) | wk-email-webhook (Svix HMAC, Resend EU) |
+
+**Bell notification logic:**
+- useInboxNotifications hook subscribes to wk_sms_messages INSERT inbound (realtime)
+- 30s poll fallback (belt-and-braces)
+- Unread badge updates in-memory, cutoff at page-open time
+- Clicking bell opens drawer showing recent inbound summary
+
+---
+
 ## Infrastructure
 
-| Service | Role |
-|---|---|
-| Supabase (asazddtvjvmckouxcmmo) | Database, Auth, Edge Functions |
-| n8n (n8n.srv886554.hstgr.cloud) | Workflow automation |
-| GHL (GoHighLevel) | WhatsApp delivery, CRM |
-| Vercel (hub.nfstay.com) | Frontend hosting |
-| Particle Network | Crypto wallet layer |
-| Resend | Email delivery |
+| Service | Role | CRM Use |
+|---|---|---|
+| Supabase (asazddtvjvmckouxcmmo) | Database, Auth, Edge Functions | Realtime subscriptions on wk_sms_messages, wk_contact_followups, etc. |
+| n8n (n8n.srv886554.hstgr.cloud) | Workflow automation | Marketplace inquiries, investment, payouts (not CRM) |
+| GHL (GoHighLevel) | WhatsApp delivery, CRM | Marketplace flows only (not CRM email/SMS/WhatsApp) |
+| Vercel (hub.nfstay.com) | Frontend hosting | CRM UI at /crm/* |
+| Particle Network | Crypto wallet layer | Investment only |
+| Resend | Email delivery | CRM inbound (mail.nfstay.com EU) + marketplace outbound (notifications@hub.nfstay.com) |
+| Twilio | SMS / WhatsApp | CRM SMS + WhatsApp via wk-sms-send |
+| Unipile | WhatsApp gateway | CRM WhatsApp via unipile-send (replaces Wazzup24) |

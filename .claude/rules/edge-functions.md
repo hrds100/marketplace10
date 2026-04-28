@@ -28,11 +28,16 @@ If you change what a function accepts or returns, update the contract.
 - admin: hard-delete-user, hard-delete-property, ghl-enroll, reset-for-testing
 - ai: ai-chat, ai-description, airbnb-pricing, ai-parse-listing
 - smsv2 / live coach: wk-voice-transcription (streaming live coach — three-layer prompt system, see docs/runbooks/COACH_PROMPT_LAYERS.md)
+- crm / messaging: wk-sms-send, wk-sms-incoming, unipile-send, unipile-webhook, unipile-poll-messages, unipile-create-link, wk-email-send, wk-email-webhook
+- crm / dialing: wk-dialer-start, wk-dialer-answer, wk-dialer-hangup-leg
+- crm / voice: wk-ai-postcall, wk-ai-live-coach, wk-jobs-worker
 - email: send-email, deal-expiry
 - referral: track-referral
 - wallet: particle-generate-jwt, particle-jwks
 - banking: save-bank-details
 - monitoring: health
+- tracking: ab-track
+- utilities: create-admin, generate-description, get-thread-phone, nfs-provision-nfstay-subdomain, reset-landlord-test-data, run-migrations, uptimerobot-health
 
 ## FROZEN edge functions (NEVER touch)
 - inv-process-order, inv-approve-order, inv-crypto-confirm, inv-samcart-webhook
@@ -40,3 +45,18 @@ If you change what a function accepts or returns, update the contract.
 - submit-payout-claim
 - nfs-stripe-checkout, nfs-stripe-webhook, nfs-stripe-connect-oauth
 - nfs-domain-verify, nfs-hospitable-oauth, nfs-ical-feed, nfs-email-send
+
+## verify_jwt Configuration (supabase/config.toml)
+
+**Requires JWT (verify_jwt = true):**
+- Authentication gated: send-otp, verify-otp, process-inquiry, landlord-magic-login, claim-landlord-account, lead-magic-login, hard-delete-user, hard-delete-property, ghl-enroll, reset-for-testing
+- CRM authenticated: wk-sms-send, unipile-send, wk-email-send, wk-dialer-start, wk-dialer-hangup-leg, unipile-create-link (admin), reset-landlord-test-data (admin)
+- AI callers: ai-chat, ai-description, airbnb-pricing, ai-parse-listing
+- Internal: particle-generate-jwt, particle-jwks, track-referral, save-bank-details, create-admin, get-thread-phone, nfs-provision-nfstay-subdomain, run-migrations, generate-description
+- Finance: send-email (calls to send user/admin emails)
+
+**Public / Custom Auth (verify_jwt = false):**
+- CRM webhooks (custom signature validation): wk-sms-incoming (Twilio HMAC), unipile-webhook (Unipile-Auth header), unipile-poll-messages (x-cron-secret), wk-email-webhook (Svix HMAC)
+- CRM voice: wk-dialer-answer (Twilio HMAC), wk-ai-postcall, wk-ai-live-coach, wk-jobs-worker (service-role check inside)
+- Public: ab-track (no auth), uptimerobot-health (no auth), health (monitoring)
+- Template: wk-ai-template (no JWT)
