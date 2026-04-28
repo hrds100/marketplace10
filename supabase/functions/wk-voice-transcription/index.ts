@@ -1154,7 +1154,7 @@ serve(async (req: Request) => {
               log('first update');
               firstUpdate = false;
             }
-          }, 200);
+          }, 100); // PR 117: tightened from 200ms — smoother token stream to UI.
 
           // 7. Resolve the three layers (style + script + KB facts).
           //    Hugo 2026-04-29: each layer is independently editable
