@@ -197,7 +197,7 @@ export function CallerPad() {
 
   // Campaigns + pacing.
   const { campaigns, loading: campaignsLoading } = useDialerCampaigns({
-    scopedToAgentId: !isEffectiveAdmin && user ? user.id : null,
+    scopedToAgentId: user ? user.id : null,
     includeInactive: true,
   });
   const [activeCampaignId, setActiveCampaignId] = useState<string>('');

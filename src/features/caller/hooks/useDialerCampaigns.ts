@@ -25,6 +25,7 @@ interface WkCampaignRow {
 
 interface QueueRollup {
   campaign_id: string;
+  totalRows: number;
   pending: number;
   dialing: number;
   connected: number;
@@ -53,7 +54,7 @@ export function rowToCampaign(row: WkCampaignRow, queue: QueueRollup | undefined
     // doneLeads aggregated connected+voicemail+missed+skipped+done
     // which double-counted live calls into Done. 'lost' (added by the
     // three-strikes migration) was silently dropped from totalLeads.
-    totalLeads: pending + dialing + connected + voicemail + missed + done + skipped + lost,
+    totalLeads: queue?.totalRows ?? 0,
     doneLeads: done,
     connectedLeads: connected,
     voicemailLeads: voicemail,
@@ -134,7 +135,7 @@ export function useDialerCampaigns(
         campaignsQuery = campaignsQuery.in('id', allowedCampaignIds);
       }
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      let queueQuery = (supabase.from('wk_dialer_queue' as any) as any).select('campaign_id, status');
+      let queueQuery = (supabase.from('wk_dialer_queue' as any) as any).select('campaign_id, status, scheduled_for');
       if (allowedCampaignIds) {
         queueQuery = queueQuery.in('campaign_id', allowedCampaignIds);
       }
@@ -155,10 +156,12 @@ export function useDialerCampaigns(
         return;
       }
 
+      const now = Date.now();
       const rollups = new Map<string, QueueRollup>();
-      for (const row of (queueRes.data ?? []) as Array<{ campaign_id: string; status: string }>) {
+      for (const row of (queueRes.data ?? []) as Array<{ campaign_id: string; status: string; scheduled_for: string | null }>) {
         const r = rollups.get(row.campaign_id) ?? {
           campaign_id: row.campaign_id,
+          totalRows: 0,
           pending: 0,
           dialing: 0,
           connected: 0,
@@ -168,7 +171,11 @@ export function useDialerCampaigns(
           skipped: 0,
           lost: 0,
         };
-        if (row.status === 'pending') r.pending += 1;
+        r.totalRows += 1;
+        if (row.status === 'pending') {
+          const ready = !row.scheduled_for || new Date(row.scheduled_for).getTime() <= now;
+          if (ready) r.pending += 1;
+        }
         else if (row.status === 'dialing') r.dialing += 1;
         else if (row.status === 'connected') r.connected += 1;
         else if (row.status === 'voicemail') r.voicemail += 1;
