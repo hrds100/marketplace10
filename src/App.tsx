@@ -139,6 +139,10 @@ import Smsv2TestPage from '@/features/smsv2/pages/TestPage';
 // see docs/runbooks/CRM_RENAME.md.
 import CrmLoginPage from '@/features/smsv2/pages/CrmLoginPage';
 import AdminOnlyRoute from '@/features/smsv2/components/AdminOnlyRoute';
+// crm-v2 parallel rebuild (Hugo 2026-04-29). New code lives in
+// src/features/crm-v2/. Mounted at /crm/dialer-v2 only — /crm/dialer
+// keeps the old smsv2 dialer until PR D flips the cutover.
+import CrmV2DialerPage from '@/features/crm-v2/pages/DialerV2Page';
 
 // One-time wipe of stale CRM localStorage keys (from before DB-backed CRM)
 if (!localStorage.getItem('crm_localStorage_v2_cleared')) {
@@ -330,6 +334,11 @@ const App = () => (
             <Route path="calls" element={<Smsv2CallsPage />} />
             <Route path="calls/:callId" element={<Smsv2PastCallScreen />} />
             <Route path="dialer" element={<Smsv2DialerPage />} />
+            {/* crm-v2 parallel rebuild — testing route. PR B mounts
+                the new pre-call overview page; PR C adds the in-call
+                room. PR D flips /crm/dialer to this and deletes the
+                old smsv2 dialer folder. */}
+            <Route path="dialer-v2" element={<CrmV2DialerPage />} />
             <Route path="contacts" element={<Smsv2ContactsPage />} />
             <Route path="contacts/:id" element={<Smsv2ContactDetailPage />} />
             <Route path="pipelines" element={<Smsv2PipelinesPage />} />
