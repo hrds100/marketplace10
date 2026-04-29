@@ -25,7 +25,7 @@ import { useCallback, useEffect, useMemo, useReducer, useRef, useState } from 'r
 import { Link } from 'react-router-dom';
 import {
   Phone, PhoneOff, Mic, MicOff, Pause, Play, Square, SkipForward, Zap,
-  CheckCircle2, Loader2, Clock, Radio, Pencil, X,
+  CheckCircle2, Loader2, Clock, Radio, Pencil, X, Minus, GripVertical,
 } from 'lucide-react';
 import type { Call as TwilioCall } from '@twilio/voice-sdk';
 import { useAuth } from '@/hooks/useAuth';
@@ -619,6 +619,81 @@ export default function DialerPage() {
 
   const { columns: outcomeColumns } = usePipelineColumns(camp?.pipelineId ?? null);
 
+  // ─── Floating-pad UI state ────────────────────────────────────────
+  // Hugo's brief (2026-04-29): convert the dialer page to a phone-sized
+  // floating pad anchored top-right just under the nav, draggable, with
+  // accordion queue/history. Persist position + minimize state +
+  // accordion section in localStorage so the pad feels like a desktop
+  // tool, not a page.
+  const PAD_W = 380;
+  const HEADER_OFFSET = 72;     // top nav height
+  const RIGHT_GUTTER = 24;
+  const defaultPos = (): { x: number; y: number } => {
+    if (typeof window === 'undefined') return { x: 800, y: HEADER_OFFSET };
+    return {
+      x: Math.max(0, window.innerWidth - PAD_W - RIGHT_GUTTER),
+      y: HEADER_OFFSET,
+    };
+  };
+  const [pos, setPos] = useState<{ x: number; y: number }>(() => {
+    try {
+      const raw = localStorage.getItem('caller_pad_pos_v1');
+      if (raw) {
+        const p = JSON.parse(raw);
+        if (typeof p?.x === 'number' && typeof p?.y === 'number') return p;
+      }
+    } catch { /* ignore */ }
+    return defaultPos();
+  });
+  useEffect(() => {
+    try { localStorage.setItem('caller_pad_pos_v1', JSON.stringify(pos)); } catch { /* ignore */ }
+  }, [pos]);
+
+  const [minimized, setMinimized] = useState<boolean>(() => {
+    try { return localStorage.getItem('caller_pad_minimized_v1') === '1'; } catch { return false; }
+  });
+  useEffect(() => {
+    try { localStorage.setItem('caller_pad_minimized_v1', minimized ? '1' : '0'); } catch { /* ignore */ }
+  }, [minimized]);
+
+  // 'peek' = both panels show 3 each. 'queue' = queue expanded,
+  // history collapsed to header. 'history' = vice versa. Click on a
+  // section header toggles between expanded and peek.
+  const [accordion, setAccordion] = useState<'peek' | 'queue' | 'history'>(() => {
+    try {
+      const v = localStorage.getItem('caller_pad_accordion_v1');
+      if (v === 'queue' || v === 'history' || v === 'peek') return v;
+    } catch { /* ignore */ }
+    return 'peek';
+  });
+  useEffect(() => {
+    try { localStorage.setItem('caller_pad_accordion_v1', accordion); } catch { /* ignore */ }
+  }, [accordion]);
+
+  // Drag handlers. Pointer events so it works with mouse + touch.
+  const dragRef = useRef<{ offX: number; offY: number } | null>(null);
+  const onDragStart = (e: React.PointerEvent) => {
+    (e.currentTarget as Element).setPointerCapture(e.pointerId);
+    dragRef.current = { offX: e.clientX - pos.x, offY: e.clientY - pos.y };
+  };
+  const onDragMove = (e: React.PointerEvent) => {
+    if (!dragRef.current) return;
+    const newX = e.clientX - dragRef.current.offX;
+    const newY = e.clientY - dragRef.current.offY;
+    const maxX = Math.max(0, window.innerWidth - PAD_W);
+    const maxY = Math.max(0, window.innerHeight - 80);
+    setPos({
+      x: Math.min(Math.max(newX, 0), maxX),
+      y: Math.min(Math.max(newY, 56), maxY),
+    });
+  };
+  const onDragEnd = (e: React.PointerEvent) => {
+    if (dragRef.current) {
+      try { (e.currentTarget as Element).releasePointerCapture(e.pointerId); } catch { /* ignore */ }
+      dragRef.current = null;
+    }
+  };
+
   // ─── Render ────────────────────────────────────────────────────────
   const blocked = spend.isLimitReached || ks.allDialers || !deviceReady;
   const blockReason = ks.allDialers
@@ -629,125 +704,282 @@ export default function DialerPage() {
         ? 'Phone is starting up…'
         : null;
 
-  return (
-    <div className="p-6 max-w-[1280px] mx-auto space-y-4">
-      <div>
-        <h1 className="text-[26px] font-bold text-[#1A1A1A] tracking-tight">Power dialer</h1>
-        <p className="text-[12px] text-[#6B7280] mt-0.5">
-          One lead at a time · agent-controlled pacing · anti-loop guard
-        </p>
+  const isLive =
+    state.phase === 'dialing' ||
+    state.phase === 'ringing' ||
+    state.phase === 'connected';
+
+  // When minimized, just a floating chip. Click to restore.
+  if (minimized) {
+    return (
+      <div
+        className="fixed z-[90] select-none"
+        style={{ left: pos.x, top: pos.y }}
+      >
+        <button
+          type="button"
+          onPointerDown={onDragStart}
+          onPointerMove={onDragMove}
+          onPointerUp={onDragEnd}
+          onPointerCancel={onDragEnd}
+          onClick={(e) => {
+            // Distinguish a click from a drag-end click by ensuring no drag occurred.
+            if (dragRef.current) return;
+            e.preventDefault();
+            setMinimized(false);
+          }}
+          title="Open dialer pad"
+          className={cn(
+            'inline-flex items-center gap-2 px-4 py-2.5 rounded-full shadow-[0_8px_24px_rgba(30,154,128,0.35)] cursor-grab active:cursor-grabbing',
+            isLive
+              ? 'bg-[#1E9A80] text-white'
+              : 'bg-white text-[#1A1A1A] border border-[#E5E7EB]'
+          )}
+        >
+          <Phone className="w-4 h-4" />
+          <span className="text-[13px] font-semibold">Caller</span>
+          {isLive && state.lead && (
+            <>
+              <span className="w-1.5 h-1.5 rounded-full bg-white animate-pulse" />
+              <span className="text-[12px] truncate max-w-[140px]">{state.lead.name}</span>
+            </>
+          )}
+        </button>
       </div>
+    );
+  }
 
-      {blocked && blockReason && (
-        <div className="bg-[#FEF3C7] border border-[#FDE68A] text-[#92400E] text-[12px] rounded-[10px] px-3 py-2">
-          {blockReason}
+  // Expanded floating pad.
+  return (
+    <div
+      className="fixed z-[90] select-text"
+      style={{ left: pos.x, top: pos.y, width: PAD_W }}
+    >
+      <div className="bg-[#F3F3EE] border border-[#E5E7EB] rounded-[20px] shadow-[0_24px_64px_rgba(0,0,0,0.18)] overflow-hidden flex flex-col max-h-[calc(100vh-96px)]">
+        {/* Drag handle / header. */}
+        <div
+          onPointerDown={onDragStart}
+          onPointerMove={onDragMove}
+          onPointerUp={onDragEnd}
+          onPointerCancel={onDragEnd}
+          className="px-3 py-2 bg-white border-b border-[#E5E7EB] flex items-center gap-2 cursor-grab active:cursor-grabbing"
+          title="Drag to move"
+        >
+          <GripVertical className="w-4 h-4 text-[#9CA3AF]" />
+          <div className="flex-1 min-w-0 flex items-baseline gap-2">
+            <span className="text-[13px] font-bold text-[#1A1A1A]">Caller</span>
+            {camp && (
+              <span className="text-[11px] text-[#6B7280] truncate">· {camp.name}</span>
+            )}
+            {isLive && (
+              <span className="ml-auto w-1.5 h-1.5 rounded-full bg-[#1E9A80] animate-pulse" />
+            )}
+          </div>
+          <button
+            type="button"
+            onClick={() => setMinimized(true)}
+            title="Minimize"
+            className="p-1 rounded hover:bg-[#F3F3EE] text-[#6B7280]"
+          >
+            <Minus className="w-4 h-4" />
+          </button>
         </div>
-      )}
 
-      <CampaignCard
-        campaigns={campaigns}
-        activeId={activeCampaignId}
-        onSelect={setActiveCampaignId}
-        loading={campaignsLoading}
-        camp={camp}
-      />
+        {/* Scrollable body. */}
+        <div className="flex-1 overflow-y-auto p-3 space-y-3">
+          {/* Block reason banner. */}
+          {blocked && blockReason && (
+            <div className="bg-[#FEF3C7] border border-[#FDE68A] text-[#92400E] text-[11px] rounded-[10px] px-2.5 py-1.5">
+              {blockReason}
+            </div>
+          )}
 
-      {/* Single compact control bar — pacing when idle, live-call info
-          + Mute + Hang up + Skip & next + Pause/Resume + Stop when in
-          any other phase. Hugo asked for one place not two. */}
-      <ControlBar
-        phase={state.phase}
-        lead={state.lead}
-        startedAt={state.startedAt}
-        muted={muted}
-        sessionStarted={state.sessionStarted}
-        pacing={pacing}
-        setPacing={setPacing}
-        pacingDelaySec={pacingDelaySec}
-        setPacingDelaySec={setPacingDelaySec}
-        onMute={toggleMute}
-        onHangUp={() => void hangUp()}
-        onSkipNext={() => void dialNextManual()}
-        onPause={pause}
-        onResume={resume}
-        onStop={stop}
-      />
+          {/* Compact campaign + KPI strip. */}
+          <CompactCampaignStrip
+            campaigns={campaigns}
+            activeId={activeCampaignId}
+            onSelect={setActiveCampaignId}
+            loading={campaignsLoading}
+            camp={camp}
+          />
 
-      {state.phase === 'wrap_up' && state.lead && (
-        <WrapUpCard
-          contactName={state.lead.name}
-          contactPhone={state.lead.phone}
-          endReason={state.endReason ?? 'ended'}
-          error={state.error}
-          notes={notes}
-          setNotes={setNotes}
-          columns={outcomeColumns}
-          applying={applying}
-          onApply={(id) => void applyOutcome(id)}
-          onSkip={skip}
-        />
-      )}
+          {/* Single compact control bar — pacing when idle, live-call info
+              + Mute + Hang up + Skip & next + Pause/Resume + Stop when in
+              any other phase. */}
+          <ControlBar
+            phase={state.phase}
+            lead={state.lead}
+            startedAt={state.startedAt}
+            muted={muted}
+            sessionStarted={state.sessionStarted}
+            pacing={pacing}
+            setPacing={setPacing}
+            pacingDelaySec={pacingDelaySec}
+            setPacingDelaySec={setPacingDelaySec}
+            onMute={toggleMute}
+            onHangUp={() => void hangUp()}
+            onSkipNext={() => void dialNextManual()}
+            onPause={pause}
+            onResume={resume}
+            onStop={stop}
+          />
 
-      {state.pacingDeadlineMs !== null && state.phase === 'idle' && (
-        <PacingCountdownBar
-          deadlineMs={state.pacingDeadlineMs}
-          onDialNow={() => void dialNow()}
-          onPause={pause}
-        />
-      )}
+          {state.phase === 'wrap_up' && state.lead && (
+            <WrapUpCard
+              contactName={state.lead.name}
+              contactPhone={state.lead.phone}
+              endReason={state.endReason ?? 'ended'}
+              error={state.error}
+              notes={notes}
+              setNotes={setNotes}
+              columns={outcomeColumns}
+              applying={applying}
+              onApply={(id) => void applyOutcome(id)}
+              onSkip={skip}
+            />
+          )}
 
-      {!state.sessionStarted && state.phase === 'idle' && (
-        <button
-          type="button"
-          onClick={() => void startDialer()}
-          disabled={blocked || !camp}
-          className="w-full inline-flex items-center justify-center gap-2 text-[16px] font-semibold text-white bg-[#1E9A80] hover:bg-[#1E9A80]/90 px-5 py-4 rounded-2xl shadow-[0_4px_16px_rgba(30,154,128,0.35)] disabled:opacity-50 disabled:cursor-not-allowed disabled:shadow-none"
-        >
-          <Phone className="w-4 h-4" />
-          Start power dialer
-        </button>
-      )}
-      {state.sessionStarted && state.phase === 'idle' && state.pacingDeadlineMs === null && (
-        <button
-          type="button"
-          onClick={() => void dialNow()}
-          disabled={blocked}
-          className="w-full inline-flex items-center justify-center gap-2 text-[15px] font-semibold text-white bg-[#1E9A80] hover:bg-[#1E9A80]/90 px-5 py-3 rounded-2xl shadow-[0_4px_16px_rgba(30,154,128,0.35)] disabled:opacity-50 disabled:cursor-not-allowed"
-        >
-          <Phone className="w-4 h-4" />
-          Dial next lead
-        </button>
-      )}
-      {state.phase === 'paused' && (
-        <button
-          type="button"
-          onClick={() => void resume()}
-          disabled={blocked}
-          className="w-full inline-flex items-center justify-center gap-2 text-[15px] font-semibold text-white bg-[#1E9A80] hover:bg-[#1E9A80]/90 px-5 py-3 rounded-2xl disabled:opacity-50 disabled:cursor-not-allowed"
-        >
-          <Play className="w-4 h-4" />
-          Resume — dial next lead
-        </button>
-      )}
+          {state.pacingDeadlineMs !== null && state.phase === 'idle' && (
+            <PacingCountdownBar
+              deadlineMs={state.pacingDeadlineMs}
+              onDialNow={() => void dialNow()}
+              onPause={pause}
+            />
+          )}
 
-      {/* Two-column queue + history below the call controls. */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-        <UpcomingQueuePanel
-          campaignId={camp?.id ?? null}
-          agentId={!isEffectiveAdmin && user ? user.id : null}
-          dialed={dialed}
-          currentLead={state.lead}
-          currentPhase={state.phase}
-        />
-        <CallHistoryPanel
-          agentId={!isEffectiveAdmin && user ? user.id : null}
-        />
+          {!state.sessionStarted && state.phase === 'idle' && (
+            <button
+              type="button"
+              onClick={() => void startDialer()}
+              disabled={blocked || !camp}
+              className="w-full inline-flex items-center justify-center gap-2 text-[14px] font-semibold text-white bg-[#1E9A80] hover:bg-[#1E9A80]/90 px-4 py-3 rounded-2xl shadow-[0_4px_16px_rgba(30,154,128,0.35)] disabled:opacity-50 disabled:cursor-not-allowed disabled:shadow-none"
+            >
+              <Phone className="w-4 h-4" />
+              Start power dialer
+            </button>
+          )}
+          {state.sessionStarted && state.phase === 'idle' && state.pacingDeadlineMs === null && (
+            <button
+              type="button"
+              onClick={() => void dialNow()}
+              disabled={blocked}
+              className="w-full inline-flex items-center justify-center gap-2 text-[13px] font-semibold text-white bg-[#1E9A80] hover:bg-[#1E9A80]/90 px-4 py-2.5 rounded-2xl shadow-[0_4px_16px_rgba(30,154,128,0.35)] disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              <Phone className="w-4 h-4" />
+              Dial next lead
+            </button>
+          )}
+          {state.phase === 'paused' && (
+            <button
+              type="button"
+              onClick={() => void resume()}
+              disabled={blocked}
+              className="w-full inline-flex items-center justify-center gap-2 text-[13px] font-semibold text-white bg-[#1E9A80] hover:bg-[#1E9A80]/90 px-4 py-2.5 rounded-2xl disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              <Play className="w-4 h-4" />
+              Resume
+            </button>
+          )}
+
+          {/* Accordion: queue + history. Click a header to expand that
+              section; the other auto-collapses to header-only. Click again
+              to return both to peek mode (3 items each). */}
+          <UpcomingQueuePanel
+            campaignId={camp?.id ?? null}
+            agentId={!isEffectiveAdmin && user ? user.id : null}
+            dialed={dialed}
+            currentLead={state.lead}
+            currentPhase={state.phase}
+            dense
+            maxItems={accordion === 'queue' ? 12 : 3}
+            collapsed={accordion === 'history'}
+            onHeaderClick={() =>
+              setAccordion((prev) => (prev === 'queue' ? 'peek' : 'queue'))
+            }
+          />
+          <CallHistoryPanel
+            agentId={!isEffectiveAdmin && user ? user.id : null}
+            dense
+            maxItems={accordion === 'history' ? 20 : 3}
+            collapsed={accordion === 'queue'}
+            onHeaderClick={() =>
+              setAccordion((prev) => (prev === 'history' ? 'peek' : 'history'))
+            }
+          />
+        </div>
       </div>
     </div>
   );
 }
 
 // ─── Sub-components ──────────────────────────────────────────────────
+
+// Compact one-row campaign + KPI strip for the floating pad. Replaces
+// the old full-bleed CampaignCard. Each KPI shows its literal status
+// count (no aggregation) so Pending + Connected + Done + others = Total.
+function CompactCampaignStrip({
+  campaigns, activeId, onSelect, loading, camp,
+}: {
+  campaigns: Campaign[];
+  activeId: string;
+  onSelect: (id: string) => void;
+  loading: boolean;
+  camp: Campaign | null;
+}) {
+  if (loading && campaigns.length === 0) {
+    return (
+      <div className="bg-white border border-[#E5E7EB] rounded-2xl p-3">
+        <div className="h-4 w-32 bg-[#F3F3EE] rounded animate-pulse" />
+      </div>
+    );
+  }
+  if (!camp) {
+    return (
+      <div className="bg-white border border-[#E5E7EB] rounded-2xl p-3 text-center">
+        <div className="text-[12px] font-semibold text-[#1A1A1A]">No campaigns yet</div>
+        <div className="text-[11px] text-[#6B7280]">Ask an admin to create one.</div>
+      </div>
+    );
+  }
+  return (
+    <div className="bg-white border border-[#E5E7EB] rounded-2xl p-3 space-y-2">
+      {campaigns.length > 1 && (
+        <select
+          value={activeId}
+          onChange={(e) => onSelect(e.target.value)}
+          className="w-full text-[12px] border border-[#E5E7EB] rounded-[8px] px-2 py-1 bg-white"
+        >
+          {campaigns.map((c) => (<option key={c.id} value={c.id}>{c.name}</option>))}
+        </select>
+      )}
+      <div className="grid grid-cols-4 gap-1.5">
+        <MiniStat label="Pending" value={camp.pendingLeads} accent />
+        <MiniStat label="Connected" value={camp.connectedLeads} />
+        <MiniStat label="Done" value={camp.doneLeads} />
+        <MiniStat label="Total" value={camp.totalLeads} />
+      </div>
+    </div>
+  );
+}
+
+function MiniStat({ label, value, accent }: { label: string; value: number; accent?: boolean }) {
+  return (
+    <div className={cn(
+      'rounded-[8px] px-2 py-1.5 text-center',
+      accent ? 'bg-[#ECFDF5]' : 'bg-[#F3F3EE]'
+    )}>
+      <div className="text-[9px] uppercase tracking-wide text-[#9CA3AF] font-semibold leading-none">
+        {label}
+      </div>
+      <div className={cn(
+        'text-[16px] font-bold tabular-nums leading-tight mt-0.5',
+        accent ? 'text-[#1E9A80]' : 'text-[#1A1A1A]'
+      )}>
+        {value}
+      </div>
+    </div>
+  );
+}
 
 function CampaignCard({
   campaigns, activeId, onSelect, loading, camp,
@@ -1145,12 +1377,24 @@ function UpcomingQueuePanel({
   dialed,
   currentLead,
   currentPhase,
+  maxItems,
+  dense,
+  onHeaderClick,
+  collapsed,
 }: {
   campaignId: string | null;
   agentId: string | null;
   dialed: ReadonlySet<string>;
   currentLead: Lead | null;
   currentPhase: Phase;
+  /** Cap visible rows. Use small (3) for peek mode, larger (8+) when expanded. */
+  maxItems?: number;
+  /** Tighter padding for the floating dialer pad. */
+  dense?: boolean;
+  /** Click handler on the section header (toggles accordion). */
+  onHeaderClick?: () => void;
+  /** When collapsed, only render the header. */
+  collapsed?: boolean;
 }) {
   const [items, setItems] = useState<QueueItem[]>([]);
   const [loading, setLoading] = useState(true);
@@ -1254,55 +1498,92 @@ function UpcomingQueuePanel({
     currentPhase === 'connected' ? 'CONNECTED' :
     currentPhase === 'wrap_up' ? 'WRAP-UP' : '';
 
+  const displayed = typeof maxItems === 'number' ? visible.slice(0, maxItems) : visible;
+
+  const headerInner = (
+    <>
+      <div className={cn(
+        'uppercase tracking-wide text-[#9CA3AF] font-semibold',
+        dense ? 'text-[11px]' : 'text-[12px]'
+      )}>
+        Upcoming queue
+      </div>
+      <div className={cn(
+        'text-[#6B7280] tabular-nums',
+        dense ? 'text-[10px]' : 'text-[11px]'
+      )}>
+        {visible.length}{dialedThisSession > 0 ? ` · ${dialedThisSession} dialed` : ''}
+      </div>
+    </>
+  );
+
   return (
     <div className="bg-white border border-[#E5E7EB] rounded-2xl flex flex-col overflow-hidden">
-      <div className="px-4 py-3 border-b border-[#E5E7EB] flex items-center justify-between">
-        <div className="text-[12px] uppercase tracking-wide text-[#9CA3AF] font-semibold">
-          Upcoming queue
-        </div>
-        <div className="text-[11px] text-[#6B7280] tabular-nums">
-          {visible.length}{dialedThisSession > 0 ? ` · ${dialedThisSession} dialed this session` : ''}
-        </div>
-      </div>
-
-      {/* Currently-dialing lead pinned at the top so the agent sees the
-          continuity — the lead being called is the same one that was at
-          #1 in the queue a moment ago. Without this pin, the panel jumps
-          straight to "next-after-current" which Hugo flagged as
-          confusing. */}
-      {isCallActive && currentLead && (
-        <div className="px-4 py-2 bg-[#ECFDF5]/40 border-b border-[#E5E7EB] flex items-center gap-3">
-          <span className={`px-2 py-0.5 rounded-full text-[10px] font-semibold uppercase tracking-wide flex-shrink-0 ${dialingTint}`}>
-            {dialingLabel}
-          </span>
-          <div className="flex-1 min-w-0">
-            <div className="text-[12px] font-semibold text-[#1A1A1A] truncate">{currentLead.name}</div>
-            <div className="text-[11px] text-[#6B7280] tabular-nums truncate">{currentLead.phone}</div>
-          </div>
+      {onHeaderClick ? (
+        <button
+          type="button"
+          onClick={onHeaderClick}
+          className={cn(
+            'border-b border-[#E5E7EB] flex items-center justify-between gap-2 hover:bg-[#F3F3EE]/40 text-left',
+            dense ? 'px-3 py-2' : 'px-4 py-3'
+          )}
+        >
+          {headerInner}
+        </button>
+      ) : (
+        <div className={cn(
+          'border-b border-[#E5E7EB] flex items-center justify-between gap-2',
+          dense ? 'px-3 py-2' : 'px-4 py-3'
+        )}>
+          {headerInner}
         </div>
       )}
 
-      {error && (
-        <div className="text-[12px] text-[#B91C1C] bg-[#FEF2F2] border border-[#FECACA] rounded-[8px] mx-3 my-2 px-3 py-2">
-          {error}
-        </div>
-      )}
+      {!collapsed && (
+        <>
+          {isCallActive && currentLead && (
+            <div className={cn(
+              'bg-[#ECFDF5]/40 border-b border-[#E5E7EB] flex items-center gap-3',
+              dense ? 'px-3 py-1.5' : 'px-4 py-2'
+            )}>
+              <span className={`px-2 py-0.5 rounded-full text-[10px] font-semibold uppercase tracking-wide flex-shrink-0 ${dialingTint}`}>
+                {dialingLabel}
+              </span>
+              <div className="flex-1 min-w-0">
+                <div className="text-[12px] font-semibold text-[#1A1A1A] truncate">{currentLead.name}</div>
+                <div className="text-[11px] text-[#6B7280] tabular-nums truncate">{currentLead.phone}</div>
+              </div>
+            </div>
+          )}
 
-      {loading && items.length === 0 && (
-        <div className="text-[12px] text-[#9CA3AF] italic py-8 text-center">Loading queue…</div>
-      )}
+          {error && (
+            <div className="text-[12px] text-[#B91C1C] bg-[#FEF2F2] border border-[#FECACA] rounded-[8px] mx-3 my-2 px-3 py-2">
+              {error}
+            </div>
+          )}
 
-      {!loading && visible.length === 0 && (
-        <div className="text-[12px] text-[#9CA3AF] italic py-8 text-center">
-          {items.length === 0 ? 'Queue empty.' : 'All visible leads dialed this session.'}
-        </div>
-      )}
+          {loading && items.length === 0 && (
+            <div className={cn('italic text-center text-[#9CA3AF]', dense ? 'text-[11px] py-4' : 'text-[12px] py-8')}>
+              Loading queue…
+            </div>
+          )}
 
-      <ul className="overflow-y-auto max-h-[480px] divide-y divide-[#E5E7EB]">
-        {visible.map((lead, idx) => (
-          <UpcomingRow key={lead.queueId} idx={idx + 1} lead={lead} />
-        ))}
-      </ul>
+          {!loading && visible.length === 0 && (
+            <div className={cn('italic text-center text-[#9CA3AF]', dense ? 'text-[11px] py-4' : 'text-[12px] py-8')}>
+              {items.length === 0 ? 'Queue empty.' : 'All visible leads dialed this session.'}
+            </div>
+          )}
+
+          <ul className={cn(
+            'overflow-y-auto divide-y divide-[#E5E7EB]',
+            dense ? 'max-h-[280px]' : 'max-h-[480px]'
+          )}>
+            {displayed.map((lead, idx) => (
+              <UpcomingRow key={lead.queueId} idx={idx + 1} lead={lead} />
+            ))}
+          </ul>
+        </>
+      )}
     </div>
   );
 }
@@ -1456,35 +1737,80 @@ function ContactField({ label, children }: { label: string; children: React.Reac
 
 // ─── Call history (compact, scrollable, realtime) ────────────────────
 
-function CallHistoryPanel({ agentId }: { agentId: string | null }) {
+function CallHistoryPanel({
+  agentId,
+  maxItems,
+  dense,
+  onHeaderClick,
+  collapsed,
+}: {
+  agentId: string | null;
+  maxItems?: number;
+  dense?: boolean;
+  onHeaderClick?: () => void;
+  collapsed?: boolean;
+}) {
   const { calls, loading, error } = useCalls({ agentId, limit: 50 });
+  const displayed = typeof maxItems === 'number' ? calls.slice(0, maxItems) : calls;
+
+  const headerInner = (
+    <>
+      <div className={cn(
+        'uppercase tracking-wide text-[#9CA3AF] font-semibold',
+        dense ? 'text-[11px]' : 'text-[12px]'
+      )}>
+        Call history
+      </div>
+      <div className={cn('text-[#6B7280] tabular-nums', dense ? 'text-[10px]' : 'text-[11px]')}>
+        {calls.length}
+      </div>
+    </>
+  );
 
   return (
     <div className="bg-white border border-[#E5E7EB] rounded-2xl flex flex-col overflow-hidden">
-      <div className="px-4 py-3 border-b border-[#E5E7EB] flex items-center justify-between">
-        <div className="text-[12px] uppercase tracking-wide text-[#9CA3AF] font-semibold">
-          Call history
-        </div>
-        <div className="text-[11px] text-[#6B7280] tabular-nums">{calls.length}</div>
-      </div>
-
-      {error && (
-        <div className="text-[12px] text-[#B91C1C] bg-[#FEF2F2] border border-[#FECACA] rounded-[8px] mx-3 my-2 px-3 py-2">
-          {error}
-        </div>
-      )}
-
-      {loading && calls.length === 0 && (
-        <div className="text-[12px] text-[#9CA3AF] italic py-8 text-center">Loading…</div>
-      )}
-      {!loading && calls.length === 0 && (
-        <div className="text-[12px] text-[#9CA3AF] italic py-8 text-center">
-          No calls yet. Start dialing to see history here.
+      {onHeaderClick ? (
+        <button
+          type="button"
+          onClick={onHeaderClick}
+          className={cn(
+            'border-b border-[#E5E7EB] flex items-center justify-between gap-2 hover:bg-[#F3F3EE]/40 text-left',
+            dense ? 'px-3 py-2' : 'px-4 py-3'
+          )}
+        >
+          {headerInner}
+        </button>
+      ) : (
+        <div className={cn(
+          'border-b border-[#E5E7EB] flex items-center justify-between gap-2',
+          dense ? 'px-3 py-2' : 'px-4 py-3'
+        )}>
+          {headerInner}
         </div>
       )}
 
-      <ul className="overflow-y-auto max-h-[480px] divide-y divide-[#E5E7EB]">
-        {calls.map((c) => (
+      {!collapsed && (
+        <>
+          {error && (
+            <div className="text-[12px] text-[#B91C1C] bg-[#FEF2F2] border border-[#FECACA] rounded-[8px] mx-3 my-2 px-3 py-2">
+              {error}
+            </div>
+          )}
+
+          {loading && calls.length === 0 && (
+            <div className={cn('italic text-center text-[#9CA3AF]', dense ? 'text-[11px] py-4' : 'text-[12px] py-8')}>Loading…</div>
+          )}
+          {!loading && calls.length === 0 && (
+            <div className={cn('italic text-center text-[#9CA3AF]', dense ? 'text-[11px] py-4' : 'text-[12px] py-8')}>
+              No calls yet. Start dialing to see history here.
+            </div>
+          )}
+
+          <ul className={cn(
+            'overflow-y-auto divide-y divide-[#E5E7EB]',
+            dense ? 'max-h-[280px]' : 'max-h-[480px]'
+          )}>
+        {displayed.map((c) => (
           <li key={c.id}>
             <Link
               to={`/caller/calls/${c.id}`}
@@ -1519,7 +1845,9 @@ function CallHistoryPanel({ agentId }: { agentId: string | null }) {
             </Link>
           </li>
         ))}
-      </ul>
+          </ul>
+        </>
+      )}
     </div>
   );
 }
