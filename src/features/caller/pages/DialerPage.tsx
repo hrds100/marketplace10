@@ -43,6 +43,7 @@ import { useSpendLimit } from '../hooks/useSpendLimit';
 import { useKillSwitch } from '../hooks/useKillSwitch';
 import { useCalls } from '../hooks/useCalls';
 import { useCallerToasts } from '../store/toastsProvider';
+import { useActiveCallCtx } from '@/features/smsv2/components/live-call/ActiveCallContext';
 import type { Campaign } from '../types';
 
 // ─── Types ──────────────────────────────────────────────────────────
@@ -165,6 +166,7 @@ export function CallerPad() {
   const { user, isAdmin } = useAuth();
   const toasts = useCallerToasts();
   const { pathname } = useLocation();
+  const activeCallCtx = useActiveCallCtx();
   // The pad lives in CallerLayout, so it renders for every /caller/*
   // route. On /caller/dialer it's the full pad (current behaviour).
   // Elsewhere it's an Intercom-style icon by default — click to open.
@@ -373,6 +375,13 @@ export function CallerPad() {
       }
 
       dispatch({ type: 'DIAL_START', lead });
+      activeCallCtx.enterDialingPlaceholder({
+        contactId: lead.id,
+        contactName: lead.name ?? lead.phone,
+        phone: lead.phone,
+        campaignId: camp?.id ?? null,
+      });
+      activeCallCtx.setFullScreen(true);
       setNotes('');
       setMuted(false);
       twilioCallRef.current = null;
@@ -430,22 +439,26 @@ export function CallerPad() {
           if (isThisCall()) dispatch({ type: 'RINGING' });
         });
         twilioCall.on('accept', () => {
-          if (isThisCall()) dispatch({ type: 'CONNECTED' });
+          if (isThisCall()) {
+            dispatch({ type: 'CONNECTED' });
+            activeCallCtx.resumeFromBroadcast({
+              contactId: lead.id,
+              contactName: lead.name ?? lead.phone,
+              phone: lead.phone,
+              callId,
+            });
+          }
         });
         twilioCall.on('disconnect', () => {
           if (!isThisCall()) return;
           twilioCallRef.current = null;
-          // Leave the queue row at 'dialing' so the outcome flow
-          // (wk_apply_outcome) can transition it to 'done' atomically
-          // alongside the pipeline move + automation. If we set 'done'
-          // here first, the outcome RPC's UPDATE filter (pending/
-          // dialing/connected/voicemail) won't match and we lose the
-          // automatic queue cleanup hook.
+          activeCallCtx.clearCall();
           dispatch({ type: 'CALL_ENDED', reason: 'hangup' });
         });
         twilioCall.on('cancel', () => {
           if (!isThisCall()) return;
           twilioCallRef.current = null;
+          activeCallCtx.clearCall();
           void updateQueueStatus(lead.queueId, 'missed');
           currentLeadRef.current = null;
           dispatch({ type: 'CALL_ENDED', reason: 'cancel' });
@@ -453,6 +466,7 @@ export function CallerPad() {
         twilioCall.on('reject', () => {
           if (!isThisCall()) return;
           twilioCallRef.current = null;
+          activeCallCtx.clearCall();
           void updateQueueStatus(lead.queueId, 'missed');
           currentLeadRef.current = null;
           dispatch({ type: 'CALL_ENDED', reason: 'reject' });
@@ -464,6 +478,7 @@ export function CallerPad() {
           const mapped = mapTwilioError(code, err?.message ?? '');
           toasts.push(mapped.friendlyMessage, 'error');
           twilioCallRef.current = null;
+          activeCallCtx.clearCall();
           void updateQueueStatus(lead.queueId, 'missed');
           currentLeadRef.current = null;
           dispatch({ type: 'CALL_ENDED', reason: 'error', error: mapped.friendlyMessage });
@@ -476,12 +491,13 @@ export function CallerPad() {
       } catch (e) {
         const msg = e instanceof Error ? e.message : 'dial crashed';
         toasts.push(`Dial failed: ${msg}`, 'error');
+        activeCallCtx.clearCall();
         void updateQueueStatus(lead.queueId, 'missed');
         currentLeadRef.current = null;
         dispatch({ type: 'CALL_ENDED', reason: 'failed', error: msg });
       }
     },
-    [camp, toasts, updateQueueStatus]
+    [camp, toasts, updateQueueStatus, activeCallCtx]
   );
 
   // ─── Start dialer ─────────────────────────────────────────────────
