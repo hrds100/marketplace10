@@ -713,13 +713,18 @@ export function CallerPad() {
   }, [accordion]);
 
   // Drag handlers. Pointer events so it works with mouse + touch.
-  const dragRef = useRef<{ offX: number; offY: number } | null>(null);
+  const dragRef = useRef<{ offX: number; offY: number; moved: boolean } | null>(null);
+  const justDraggedRef = useRef(false);
   const onDragStart = (e: React.PointerEvent) => {
     (e.currentTarget as Element).setPointerCapture(e.pointerId);
-    dragRef.current = { offX: e.clientX - pos.x, offY: e.clientY - pos.y };
+    dragRef.current = { offX: e.clientX - pos.x, offY: e.clientY - pos.y, moved: false };
+    justDraggedRef.current = false;
   };
   const onDragMove = (e: React.PointerEvent) => {
     if (!dragRef.current) return;
+    const dx = e.clientX - (pos.x + dragRef.current.offX);
+    const dy = e.clientY - (pos.y + dragRef.current.offY);
+    if (Math.abs(dx) > 2 || Math.abs(dy) > 2) dragRef.current.moved = true;
     const newX = e.clientX - dragRef.current.offX;
     const newY = e.clientY - dragRef.current.offY;
     const maxX = Math.max(0, window.innerWidth - PAD_W);
@@ -731,8 +736,10 @@ export function CallerPad() {
   };
   const onDragEnd = (e: React.PointerEvent) => {
     if (dragRef.current) {
+      justDraggedRef.current = dragRef.current.moved;
       try { (e.currentTarget as Element).releasePointerCapture(e.pointerId); } catch { /* ignore */ }
       dragRef.current = null;
+      window.setTimeout(() => { justDraggedRef.current = false; }, 0);
     }
   };
 
@@ -774,7 +781,7 @@ export function CallerPad() {
           onPointerUp={onDragEnd}
           onPointerCancel={onDragEnd}
           onClick={(e) => {
-            if (dragRef.current) return;
+            if (justDraggedRef.current) return;
             e.preventDefault();
             setIconOpen(true);
           }}
@@ -795,7 +802,8 @@ export function CallerPad() {
     );
   }
 
-  // When minimized (only on /caller/dialer), just a floating chip.
+  // When minimized (only on /caller/dialer), show a draggable green
+  // floating icon that reopens the full dialer pad.
   if (onDialerPage && minimized) {
     return (
       <div
@@ -809,26 +817,16 @@ export function CallerPad() {
           onPointerUp={onDragEnd}
           onPointerCancel={onDragEnd}
           onClick={(e) => {
-            // Distinguish a click from a drag-end click by ensuring no drag occurred.
-            if (dragRef.current) return;
+            if (justDraggedRef.current) return;
             e.preventDefault();
             setMinimized(false);
           }}
           title="Open dialer pad"
-          className={cn(
-            'inline-flex items-center gap-2 px-4 py-2.5 rounded-full shadow-[0_8px_24px_rgba(30,154,128,0.35)] cursor-grab active:cursor-grabbing',
-            isLive
-              ? 'bg-[#1E9A80] text-white'
-              : 'bg-white text-[#1A1A1A] border border-[#E5E7EB]'
-          )}
+          className="relative inline-flex items-center justify-center w-14 h-14 rounded-[16px] shadow-[0_12px_28px_rgba(30,154,128,0.35)] cursor-grab active:cursor-grabbing bg-[#1E9A80] text-white"
         >
-          <Phone className="w-4 h-4" />
-          <span className="text-[13px] font-semibold">Caller</span>
-          {isLive && state.lead && (
-            <>
-              <span className="w-1.5 h-1.5 rounded-full bg-white animate-pulse" />
-              <span className="text-[12px] truncate max-w-[140px]">{state.lead.name}</span>
-            </>
+          <Phone className="w-6 h-6" strokeWidth={2} />
+          {isLive && (
+            <span className="absolute top-1 right-1 w-2 h-2 rounded-full bg-white animate-pulse" />
           )}
         </button>
       </div>
@@ -999,7 +997,7 @@ export function CallerPad() {
             }
           />
           <CallHistoryPanel
-            agentId={!isEffectiveAdmin && user ? user.id : null}
+            agentId={user ? user.id : null}
             dense
             maxItems={accordion === 'history' ? 20 : 3}
             collapsed={accordion === 'queue'}
@@ -1508,12 +1506,14 @@ function UpcomingQueuePanel({
   collapsed?: boolean;
 }) {
   const [items, setItems] = useState<QueueItem[]>([]);
+  const [totalCount, setTotalCount] = useState(0);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     if (!campaignId) {
       setItems([]);
+      setTotalCount(0);
       setLoading(false);
       return;
     }
@@ -1538,15 +1538,26 @@ function UpcomingQueuePanel({
         .order('attempts', { ascending: true })
         .order('created_at', { ascending: true })
         .limit(100);
-      if (agentId) q = q.or(`agent_id.eq.${agentId},agent_id.is.null`);
-      const { data, error: e } = await q;
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      let countQ = (supabase.from('wk_dialer_queue' as any) as any)
+        .select('id', { count: 'exact', head: true })
+        .eq('campaign_id', campaignId)
+        .eq('status', 'pending')
+        .or(`scheduled_for.is.null,scheduled_for.lte.${nowIso}`);
+      if (agentId) {
+        q = q.or(`agent_id.eq.${agentId},agent_id.is.null`);
+        countQ = countQ.or(`agent_id.eq.${agentId},agent_id.is.null`);
+      }
+      const [{ data, error: e }, { count, error: countErr }] = await Promise.all([q, countQ]);
       if (cancelled) return;
-      if (e) {
-        setError(e.message);
+      if (e || countErr) {
+        setError(e?.message ?? countErr?.message ?? 'Failed to load queue');
         setItems([]);
+        setTotalCount(0);
         setLoading(false);
         return;
       }
+      setTotalCount(count ?? 0);
       const mapped = ((data ?? []) as QueueItemRow[])
         .filter((r) => r.wk_contacts && r.wk_contacts.phone)
         .map<QueueItem>((r) => ({
@@ -1626,7 +1637,7 @@ function UpcomingQueuePanel({
         'text-[#6B7280] tabular-nums',
         dense ? 'text-[10px]' : 'text-[11px]'
       )}>
-        {visible.length}{dialedThisSession > 0 ? ` · ${dialedThisSession} dialed` : ''}
+        {totalCount}{dialedThisSession > 0 ? ` · ${dialedThisSession} dialed` : ''}
       </div>
     </>
   );
@@ -1864,7 +1875,7 @@ function CallHistoryPanel({
   onHeaderClick?: () => void;
   collapsed?: boolean;
 }) {
-  const { calls, loading, error } = useCalls({ agentId, limit: 50 });
+  const { calls, totalCount, loading, error } = useCalls({ agentId, limit: 50 });
   const displayed = typeof maxItems === 'number' ? calls.slice(0, maxItems) : calls;
 
   const headerInner = (
@@ -1876,7 +1887,7 @@ function CallHistoryPanel({
         Call history
       </div>
       <div className={cn('text-[#6B7280] tabular-nums', dense ? 'text-[10px]' : 'text-[11px]')}>
-        {calls.length}
+        {totalCount}
       </div>
     </>
   );

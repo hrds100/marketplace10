@@ -67,6 +67,7 @@ interface Opts {
 export function useCalls(opts: Opts = {}) {
   const { agentId = null, contactId = null, limit = 200 } = opts;
   const [calls, setCalls] = useState<CallListRow[]>([]);
+  const [totalCount, setTotalCount] = useState(0);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -84,19 +85,30 @@ export function useCalls(opts: Opts = {}) {
         )
         .order('started_at', { ascending: false })
         .limit(limit);
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      let countQ = (supabase.from('wk_calls' as any) as any)
+        .select('id', { count: 'exact', head: true });
 
-      if (agentId) q = q.eq('agent_id', agentId);
-      if (contactId) q = q.eq('contact_id', contactId);
+      if (agentId) {
+        q = q.eq('agent_id', agentId);
+        countQ = countQ.eq('agent_id', agentId);
+      }
+      if (contactId) {
+        q = q.eq('contact_id', contactId);
+        countQ = countQ.eq('contact_id', contactId);
+      }
 
-      const { data, error: e } = await q;
+      const [{ data, error: e }, { count, error: countErr }] = await Promise.all([q, countQ]);
       if (cancelled) return;
 
-      if (e) {
-        setError(e.message);
+      if (e || countErr) {
+        setError(e?.message ?? countErr?.message ?? 'Failed to load calls');
         setCalls([]);
+        setTotalCount(0);
         setLoading(false);
         return;
       }
+      setTotalCount(count ?? 0);
       const callRows = (data ?? []) as WkCallRow[];
       const contactIds = Array.from(new Set(callRows.map((r) => r.contact_id)));
       let contactsById = new Map<string, ContactNamePhone>();
@@ -152,5 +164,5 @@ export function useCalls(opts: Opts = {}) {
     };
   }, [agentId, contactId, limit]);
 
-  return { calls, loading, error };
+  return { calls, totalCount, loading, error };
 }

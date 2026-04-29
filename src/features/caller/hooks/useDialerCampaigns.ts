@@ -133,10 +133,18 @@ export function useDialerCampaigns(
       if (allowedCampaignIds) {
         campaignsQuery = campaignsQuery.in('id', allowedCampaignIds);
       }
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      let queueQuery = (supabase.from('wk_dialer_queue' as any) as any).select('campaign_id, status');
+      if (allowedCampaignIds) {
+        queueQuery = queueQuery.in('campaign_id', allowedCampaignIds);
+      }
+      if (scopedToAgentId) {
+        queueQuery = queueQuery.or(`agent_id.eq.${scopedToAgentId},agent_id.is.null`);
+      }
+
       const [campaignsRes, queueRes] = await Promise.all([
         campaignsQuery,
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        (supabase.from('wk_dialer_queue' as any) as any).select('campaign_id, status'),
+        queueQuery,
       ]);
 
       if (cancelled) return;
