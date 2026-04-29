@@ -12,6 +12,7 @@ import {
   ArrowLeft,
   type LucideIcon,
 } from 'lucide-react';
+import { useLocation } from 'react-router-dom';
 import { cn } from '@/lib/utils';
 import { useActiveCallCtx } from './ActiveCallContext';
 import { useSmsV2 } from '../../store/SmsV2Store';
@@ -29,6 +30,7 @@ const ICON_MAP: Record<string, LucideIcon> = {
 export default function PostCallPanel() {
   const { applyOutcome, call, lastEndedContactId, openPreviousCall } = useActiveCallCtx();
   const store = useSmsV2();
+  const onCallerDialer = useLocation().pathname === '/crm/dialer';
   const columns = store.columns;
   const autoAdvanceSeconds = store.activeCampaign?.autoAdvanceSeconds ?? 10;
   const [secondsLeft, setSecondsLeft] = useState(autoAdvanceSeconds);
@@ -55,18 +57,18 @@ export default function PostCallPanel() {
   }, [autoAdvanceSeconds]);
 
   useEffect(() => {
-    if (paused || submitted || pendingFollowupColId) return;
+    if (paused || submitted || pendingFollowupColId || onCallerDialer) return;
     const id = setInterval(() => setSecondsLeft((s) => Math.max(0, s - 1)), 1000);
     return () => clearInterval(id);
-  }, [paused, submitted, pendingFollowupColId]);
+  }, [paused, submitted, pendingFollowupColId, onCallerDialer]);
 
   useEffect(() => {
-    if (secondsLeft === 0 && !paused && !submitted) {
+    if (secondsLeft === 0 && !paused && !submitted && !onCallerDialer) {
       const def = columns.find((c) => c.isDefaultOnTimeout);
       if (def) handleClick(def.id);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [secondsLeft, paused, submitted]);
+  }, [secondsLeft, paused, submitted, onCallerDialer]);
 
   const handleClick = (columnId: string) => {
     if (submitted) return;
@@ -96,7 +98,7 @@ export default function PostCallPanel() {
   // Keyboard shortcuts
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
-      if (submitted) return;
+      if (submitted || onCallerDialer) return;
       const num = parseInt(e.key, 10);
       if (num >= 1 && num <= 9) {
         const col = columns.find((c) => c.position === num);
@@ -235,8 +237,8 @@ export default function PostCallPanel() {
         )}
       </div>
 
-      {/* Footer auto-advance */}
-      <div className="px-5 py-3 border-t border-[#E5E7EB] bg-[#F3F3EE]/50 flex items-center gap-3">
+      {/* Footer auto-advance — hidden on /crm/dialer where CallerPad owns pacing */}
+      {onCallerDialer ? null : <div className="px-5 py-3 border-t border-[#E5E7EB] bg-[#F3F3EE]/50 flex items-center gap-3">
         <div className="flex-1 text-[12px] text-[#6B7280]">
           {paused ? (
             <span>Paused — pick when ready</span>
@@ -294,7 +296,7 @@ export default function PostCallPanel() {
         >
           <Phone className="w-3.5 h-3.5" /> Next call
         </button>
-      </div>
+      </div>}
 
       {/* PR 19: follow-up prompt for Nurturing / Callback / Interested.
           Mount only when the agent picks a follow-up stage; auto-
