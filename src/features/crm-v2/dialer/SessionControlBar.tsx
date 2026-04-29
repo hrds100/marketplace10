@@ -101,27 +101,42 @@ export default function SessionControlBar({
   const showCountdown =
     rules.next && remainingSec !== null && remainingSec > 0 && !ctx.session.paused;
 
-  const onSkip = () => {
+  const onSkip = async () => {
     if (ctx.callPhase === 'idle') {
       const target = secondLeadId ?? headLeadId;
       if (target && onDial) onDial(target);
       return;
     }
-    // Live / wrap-up branches activate in PR C with the side-effects layer.
-    if (
-      ctx.callPhase === 'stopped_waiting_outcome' ||
-      ctx.callPhase === 'error_waiting_outcome'
-    ) {
-      ctx.dispatch({ type: 'SKIP_REQUESTED' });
-    }
+    // PR C: live + wrap-up + outcome_done all delegate to ctx.requestSkip
+    // which: from wrap-up flips through outcome_done as 'skipped'; from
+    // anywhere else falls through to requestNextCall.
+    await ctx.requestSkip();
   };
 
-  const onNext = () => {
+  const onNext = async () => {
     if (ctx.callPhase === 'idle') {
       if (headLeadId && onDial) onDial(headLeadId);
       return;
     }
-    // Live / wrap-up branches activate in PR C.
+    // PR C: live → end call first, then advance. The provider's
+    // requestNextCall is gated on outcome_done/idle, so for live phases
+    // we end first.
+    if (
+      ctx.callPhase === 'dialing' ||
+      ctx.callPhase === 'ringing' ||
+      ctx.callPhase === 'in_call'
+    ) {
+      await ctx.endCall();
+      // The reducer is now in *_waiting_outcome — fall through to skip
+      // (no stage move) which advances.
+      await ctx.requestSkip();
+      return;
+    }
+    await ctx.requestNextCall();
+  };
+
+  const onHangUp = async () => {
+    await ctx.endCall();
   };
 
   // Keyboard shortcuts — H/P/R/S/N. Skip when typing in an input.
@@ -137,10 +152,11 @@ export default function SessionControlBar({
         return;
       }
       const k = e.key.toLowerCase();
-      if (k === 'p' && rules.pause) ctx.pause();
+      if (k === 'h' && rules.hangUp) void onHangUp();
+      else if (k === 'p' && rules.pause) ctx.pause();
       else if (k === 'r' && rules.resume) ctx.resume();
-      else if (k === 's' && rules.skip && !rules.blockSkipNext) onSkip();
-      else if (k === 'n' && rules.next && !rules.blockSkipNext) onNext();
+      else if (k === 's' && rules.skip && !rules.blockSkipNext) void onSkip();
+      else if (k === 'n' && rules.next && !rules.blockSkipNext) void onNext();
     };
     window.addEventListener('keydown', handler);
     return () => window.removeEventListener('keydown', handler);
@@ -161,17 +177,16 @@ export default function SessionControlBar({
     >
       {rules.hangUp && (
         <button
-          // PR C wires this to ctx.endCall.
-          disabled
+          onClick={() => void onHangUp()}
           className={cn(
-            'flex items-center gap-2 rounded-[10px] font-semibold opacity-50',
-            'bg-[#EF4444] text-white',
+            'flex items-center gap-2 rounded-[10px] font-semibold',
+            'bg-[#EF4444] hover:bg-[#DC2626] text-white',
             padX,
             padY,
             text
           )}
           data-testid="control-hangup"
-          title="Hang up (live wiring lands in PR C)"
+          title="Hang up (H)"
         >
           <PhoneOff className="w-4 h-4" />
           {rules.hangUpLabel}

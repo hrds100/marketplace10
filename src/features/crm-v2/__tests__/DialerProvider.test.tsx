@@ -1,6 +1,51 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, vi } from 'vitest';
 import { render, act } from '@testing-library/react';
 import { useEffect } from 'react';
+
+// Stub supabase + Twilio device so the provider mounts in JSDOM
+// without trying to register a real device.
+vi.mock('@/integrations/supabase/client', () => ({
+  supabase: {
+    from: () => ({
+      select: () => ({
+        eq: () => ({ maybeSingle: () => Promise.resolve({ data: null, error: null }) }),
+      }),
+    }),
+    channel: () => ({ on: () => ({ subscribe: () => ({}) }), subscribe: () => ({}) }),
+    removeChannel: vi.fn(),
+    functions: { invoke: vi.fn().mockResolvedValue({ data: null, error: null }) },
+    auth: { getSession: vi.fn().mockResolvedValue({ data: { session: null } }) },
+  },
+}));
+
+vi.mock('@/core/integrations/twilio-voice', () => ({
+  addIncomingCallListener: () => () => {},
+  addTokenRefreshFailListener: () => () => {},
+  createDevice: vi.fn().mockResolvedValue({ device: null, identity: 'x', extension: null }),
+  destroyDevice: vi.fn().mockResolvedValue(undefined),
+  dial: vi.fn(),
+  disconnectAllCalls: vi.fn(),
+  disconnectAllCallsAndWait: vi.fn().mockResolvedValue(undefined),
+  getDevice: () => null,
+  getDeviceCalls: () => [],
+  muteAllCalls: vi.fn(),
+  fetchVoiceToken: vi.fn(),
+}));
+
+vi.mock('@/features/smsv2/hooks/useTwilioDevice', () => ({
+  useTwilioDevice: () => ({
+    status: 'ready',
+    error: null,
+    muted: false,
+    setMuted: vi.fn(),
+    dial: vi.fn(),
+    hangup: vi.fn().mockResolvedValue(undefined),
+    sendDigits: vi.fn(),
+    activeCall: null,
+    waitUntilReady: vi.fn().mockResolvedValue(true),
+  }),
+}));
+
 import { DialerProvider, useDialer } from '../state/DialerProvider';
 import type { ActiveCall } from '../state/callMachine.types';
 
