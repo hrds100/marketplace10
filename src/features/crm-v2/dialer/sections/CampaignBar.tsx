@@ -5,10 +5,10 @@
 import { useEffect, useState } from 'react';
 import { useDialer } from '../../state/DialerProvider';
 import PacingControl from '../PacingControl';
-import type { CampaignRow } from '../../data/types';
+import type { CampaignWithCounts } from '../../hooks/useCampaigns';
 
 export interface CampaignBarProps {
-  campaigns: CampaignRow[];
+  campaigns: CampaignWithCounts[];
   activeCampaignId: string;
   onSelectCampaign: (id: string) => void;
   campaignDefaultSeconds?: number | null;
@@ -63,7 +63,10 @@ export default function CampaignBar({
           {campaigns.map((c) => (
             <option key={c.id} value={c.id}>
               {c.name}
-              {c.is_active === false ? ' (paused)' : ''}
+              {c.isActive === false ? ' (paused)' : ''}
+              {' · '}
+              {c.pendingLeads} left
+              {c.doneLeads > 0 ? ` · ${c.doneLeads} done` : ''}
             </option>
           ))}
         </select>
