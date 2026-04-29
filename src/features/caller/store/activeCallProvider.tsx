@@ -39,6 +39,7 @@ import {
   addTokenRefreshFailListener,
   createDevice,
   destroyDevice,
+  dial as twilioDial,
   disconnectAllCalls,
   disconnectAllCallsAndWait,
   getDeviceCalls,
@@ -386,7 +387,10 @@ export function ActiveCallProvider({ children }: { children: ReactNode }) {
             }
             return { data, error };
           },
-          dial: handle.dial,
+          // Adapter: startCallOrchestration expects (phone, params); the
+          // core wrapper exposes dial({ to, extraParams }).
+          dial: (phone, params) =>
+            twilioDial({ to: phone, extraParams: params }),
           pushToast: (text, kind) => toasts.push(text, kind),
         }
       );
