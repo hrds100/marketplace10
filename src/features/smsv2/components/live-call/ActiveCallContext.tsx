@@ -575,7 +575,29 @@ export function ActiveCallProvider({ children }: { children: ReactNode }) {
     //   2. Dispatch CALL_ENDED IMMEDIATELY — UI moves to wrap-up.
     //   3. Run server-side hangup-leg + client-side WebRTC teardown
     //      asynchronously. The reducer doesn't care if those succeed.
+    //
+    // PR 148 (Hugo 2026-04-29): Hang up MUST kill audio synchronously,
+    // not after a 1.5 s timeout. Previously the WebRTC teardown was
+    // deferred to a `void async () => disconnectAllCallsAndWait(1500)`
+    // IIFE — UI flipped instantly but the audio kept streaming for up
+    // to 1.5 s. Now we call .disconnect() on the active TwilioCall ref
+    // synchronously here, plus a sync disconnectAllCalls() to evict any
+    // zombies. The async wait stays for the device-level cleanup but is
+    // no longer the user-facing hang-up path.
+    const callToKill = activeTwilioCallRef.current;
     activeTwilioCallRef.current = null;
+    if (callToKill) {
+      try {
+        callToKill.disconnect();
+      } catch (e) {
+        console.warn('[endCall] sync disconnect threw', e);
+      }
+    }
+    try {
+      disconnectAllCalls();
+    } catch (e) {
+      console.warn('[endCall] sync disconnectAllCalls threw', e);
+    }
     dispatch({ type: 'CALL_ENDED', reason: 'user_hangup' });
     dispatch({ type: 'MUTE_CHANGED', muted: false });
 

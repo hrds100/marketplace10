@@ -55,6 +55,16 @@ export default function PostCallPanel() {
   // outcome iff callPhase has advanced past *_waiting_outcome.
   const submitted =
     callPhase === 'outcome_submitting' || callPhase === 'outcome_done';
+
+  // PR 148 (Hugo 2026-04-29): Skip + Next call must STAY USABLE in
+  // outcome_done. The auto-advance after a real outcome card pick fires
+  // requestNextCall in a microtask; if that resolves to "queue empty"
+  // the reducer parks at outcome_done with both action buttons disabled
+  // — the room visibly traps the agent on "OUTCOME SAVED" with no way
+  // forward. Only block clicks while the outcome write is in flight
+  // (outcome_submitting). After it lands (outcome_done), the agent can
+  // re-trigger Skip / Next call to retry advancement.
+  const buttonsBlocked = callPhase === 'outcome_submitting';
   // PR 105 (Hugo 2026-04-28): the chosen outcome card stays highlighted
   // as "this is the one you picked", while the rest dim out so it's
   // obvious WHICH card the agent clicked.
@@ -246,16 +256,18 @@ export default function PostCallPanel() {
         </div>
         <button
           onClick={async () => {
-            if (submitted) return;
-            // PR 138 follow-up (11/10): Skip = no stage move + advance.
-            // applyOutcome('skipped') flips reducer to outcome_done
-            // synchronously; awaiting one microtask is enough for
-            // requestNextCall to see the new phase.
-            applyOutcome('skipped', quickNote.trim() || undefined);
-            await Promise.resolve();
+            if (buttonsBlocked) return;
+            // PR 148 (Hugo 2026-04-29): Skip works from BOTH
+            // *_waiting_outcome (no stage move + advance) AND
+            // outcome_done (re-trigger advance after a previous
+            // requestNextCall came back empty).
+            if (callPhase === 'stopped_waiting_outcome' || callPhase === 'error_waiting_outcome') {
+              applyOutcome('skipped', quickNote.trim() || undefined);
+              await Promise.resolve();
+            }
             await requestNextCall();
           }}
-          disabled={submitted}
+          disabled={buttonsBlocked}
           className="flex items-center gap-1.5 px-3 py-1.5 rounded-[10px] border border-[#E5E7EB] text-[12px] font-medium text-[#6B7280] hover:bg-white disabled:opacity-50"
           data-testid="postcall-skip"
         >
@@ -263,25 +275,22 @@ export default function PostCallPanel() {
         </button>
         <button
           onClick={async () => {
-            if (submitted) return;
-            // PR 134 (Hugo 2026-04-28): Hugo's report: "We press next
-            // call when it goes to the voicemail, and then we press
-            // next call, you should hang up." endCall is idempotent in
-            // post_call (no-op on already-disconnected Twilio Calls)
-            // but crucially it SWEEPS any zombie wk_calls + WebRTC
-            // legs that would otherwise trip "A Call is already
-            // active" on the next dial.
-            //
-            // PR 138 follow-up (11/10): after applyOutcome lands the
-            // reducer in outcome_done, fire requestNextCall to actually
-            // dial the next contact — previously this button was a no-
-            // op once the reducer reached outcome_done.
+            if (buttonsBlocked) return;
+            // PR 148 (Hugo 2026-04-29): Next call works from BOTH
+            // *_waiting_outcome (no-stage-move + advance) AND
+            // outcome_done (retry advance after queue-empty parked
+            // the room there). endCall is idempotent in post-call;
+            // applyOutcome('next-now') only fires when the reducer
+            // is in *_waiting_outcome (the OUTCOME_PICKED guard rejects
+            // it from outcome_done — safe).
             await endCall();
-            applyOutcome('next-now', quickNote.trim() || undefined);
-            await Promise.resolve();
+            if (callPhase === 'stopped_waiting_outcome' || callPhase === 'error_waiting_outcome') {
+              applyOutcome('next-now', quickNote.trim() || undefined);
+              await Promise.resolve();
+            }
             await requestNextCall();
           }}
-          disabled={submitted}
+          disabled={buttonsBlocked}
           className="flex items-center gap-1.5 px-3 py-1.5 rounded-[10px] bg-[#1E9A80] text-white text-[12px] font-semibold hover:bg-[#1E9A80]/90 shadow-[0_4px_12px_rgba(30,154,128,0.35)] disabled:opacity-50"
           data-testid="postcall-next-call"
         >

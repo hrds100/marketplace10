@@ -108,13 +108,15 @@ export default function InCallRoom() {
   const { legs: activeLegs } = useActiveDialerLegs();
   const placingLegStatus = isLive ? activeLegs[0]?.status ?? null : null;
 
-  // Ringing timer for the badge meta. Rerenders 1Hz while live.
+  // PR 148 (Hugo 2026-04-29): tick the badge meta 1Hz while live AND
+  // during wrap-up so the agent sees seconds-since-call-ended (the
+  // "old dial UI" timing feedback he asked for). 1Hz is enough.
   const [, setTick] = useState(0);
   useEffect(() => {
-    if (!isLive && uiState.kind !== 'submitting') return;
+    if (!isLive && !isWrapUp) return;
     const id = window.setInterval(() => setTick((t) => t + 1), 1000);
     return () => window.clearInterval(id);
-  }, [isLive, uiState.kind]);
+  }, [isLive, isWrapUp]);
 
   const placingElapsedSec =
     uiState.kind === 'dialing' || uiState.kind === 'ringing'
@@ -123,6 +125,14 @@ export default function InCallRoom() {
         : call?.startedAt
           ? Math.max(0, Math.floor((Date.now() - call.startedAt) / 1000))
           : 0
+      : 0;
+
+  // PR 148: wrap-up elapsed seconds — time since the call's last
+  // start anchor. Approximation, but accurate enough for the agent
+  // to see "I've been parked here for 0:08, time to advance".
+  const wrapUpElapsedSec =
+    isWrapUp && call?.startedAt
+      ? Math.max(0, Math.floor((Date.now() - call.startedAt) / 1000))
       : 0;
 
   useNoAnswerHangup({
@@ -175,6 +185,9 @@ export default function InCallRoom() {
   const contactFirstName = contact.name?.trim().split(/\s+/)[0] ?? '';
 
   // Badge meta — secondary tabular text next to the label.
+  // PR 148 (Hugo 2026-04-29): show wrap-up elapsed seconds during
+  // every wrap_up / submitting / done phase so the agent sees the
+  // "seconds between calls" feedback the old dial UI had.
   const badgeMeta =
     uiState.kind === 'connected'
       ? formatDuration(durationSec)
@@ -182,7 +195,11 @@ export default function InCallRoom() {
         ? `${Math.floor(placingElapsedSec / 60)}:${(placingElapsedSec % 60)
             .toString()
             .padStart(2, '0')}`
-        : null;
+        : isWrapUp && wrapUpElapsedSec > 0
+          ? `${Math.floor(wrapUpElapsedSec / 60)}:${(wrapUpElapsedSec % 60)
+              .toString()
+              .padStart(2, '0')}`
+          : null;
 
   const hangUpLabel =
     uiState.kind === 'dialing' || uiState.kind === 'ringing' ? 'Cancel' : 'Hang up';
