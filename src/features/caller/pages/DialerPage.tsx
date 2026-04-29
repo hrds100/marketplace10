@@ -864,6 +864,7 @@ export function CallerPad() {
           {onDialerPage ? (
             <button
               type="button"
+              onPointerDown={(e) => e.stopPropagation()}
               onClick={() => setMinimized(true)}
               title="Minimize"
               className="p-1 rounded hover:bg-[#F3F3EE] text-[#6B7280]"
@@ -873,6 +874,7 @@ export function CallerPad() {
           ) : (
             <button
               type="button"
+              onPointerDown={(e) => e.stopPropagation()}
               onClick={() => setIconOpen(false)}
               title="Close"
               className="p-1 rounded hover:bg-[#F3F3EE] text-[#6B7280]"
