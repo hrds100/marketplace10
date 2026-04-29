@@ -10,6 +10,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, act, waitFor } from '@testing-library/react';
 import { useEffect } from 'react';
 import { ActiveCallProvider, useActiveCallCtx } from '../ActiveCallContext';
+import { DialerSessionProvider } from '../../../hooks/useDialerSession';
 import { SmsV2Provider, useSmsV2 } from '../../../store/SmsV2Store';
 
 // ────────────────────────────────────────────────────────────────────────────
@@ -123,9 +124,11 @@ function renderProvider() {
   return render(
     <SmsV2Provider>
       <ProbeWithSeed />
-      <ActiveCallProvider>
-        <Probe />
-      </ActiveCallProvider>
+      <DialerSessionProvider>
+        <ActiveCallProvider>
+          <Probe />
+        </ActiveCallProvider>
+      </DialerSessionProvider>
     </SmsV2Provider>
   );
 }
@@ -478,9 +481,11 @@ function renderProviderWithQueue() {
   return render(
     <SmsV2Provider>
       <ProbeWithTwoSeeds />
-      <ActiveCallProvider>
-        <Probe />
-      </ActiveCallProvider>
+      <DialerSessionProvider>
+        <ActiveCallProvider>
+          <Probe />
+        </ActiveCallProvider>
+      </DialerSessionProvider>
     </SmsV2Provider>
   );
 }

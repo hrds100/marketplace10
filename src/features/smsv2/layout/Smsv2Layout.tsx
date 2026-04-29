@@ -6,6 +6,7 @@ import Smsv2Sidebar from './Smsv2Sidebar';
 import Smsv2StatusBar from './Smsv2StatusBar';
 import Softphone from '../components/softphone/Softphone';
 import { ActiveCallProvider } from '../components/live-call/ActiveCallContext';
+import { DialerSessionProvider } from '../hooks/useDialerSession';
 import { SmsV2Provider } from '../store/SmsV2Store';
 import GlobalToasts from '../store/GlobalToasts';
 import { useHydrateContacts } from '../hooks/useHydrateContacts';
@@ -28,6 +29,12 @@ export default function Smsv2Layout() {
     <CrmGuard>
       <SmsV2Provider>
         <StoreHydrator />
+        {/* PR 151 (Hugo 2026-04-29): DialerSessionProvider mounts ABOVE
+            ActiveCallProvider so the call context can read session state
+            (paused / pacing / dialedThisSession) and dispatch reducer
+            events that mirror it. Provider lifetime = single agent
+            session; sessionId is stamped on first dial. */}
+        <DialerSessionProvider>
         <ActiveCallProvider>
           <div
             data-feature="SMSV2__LAYOUT"
@@ -71,6 +78,7 @@ export default function Smsv2Layout() {
             <GlobalToasts />
           </div>
         </ActiveCallProvider>
+        </DialerSessionProvider>
       </SmsV2Provider>
     </CrmGuard>
   );
