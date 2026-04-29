@@ -292,107 +292,82 @@ export function CallerPad() {
   );
 
   // ─── Pick next lead ───────────────────────────────────────────────
-  // We deliberately do NOT call the wk_pick_next_lead RPC. The RPC's
-  // ORDER BY is `priority DESC, scheduled_for ASC NULLS FIRST,
-  // attempts ASC` — no created_at tie-breaker. When dozens of queue
-  // rows share priority=0 + attempts=0 + scheduled_for=null (very
-  // common for a fresh CSV import), Postgres returns one of them
-  // arbitrarily. Meanwhile the upcoming-queue panel sorts ties by
-  // created_at ASC, so the panel says "next is X" while the RPC
-  // picks Y. Hugo flagged this as Skip & Next jumping around.
+  // Calls the `wk_pick_next_lead` RPC. The RPC is SECURITY DEFINER so
+  // it bypasses RLS — non-admin agents can't UPDATE wk_dialer_queue
+  // directly (no agent UPDATE policy), so the prior client-side
+  // SELECT + UPDATE silently failed: every claim returned 0 rows
+  // and the picker reported "No leads in queue" while the panel
+  // showed pending leads.
   //
-  // Fix: do the SELECT client-side with the SAME ordering as the
-  // panel, then atomically claim the row via a conditional UPDATE
-  // (`status='pending'`). Postgres guarantees only one concurrent
-  // UPDATE matches — same atomicity as FOR UPDATE SKIP LOCKED, just
-  // expressed differently. Three-strikes is preserved by filtering
-  // `attempts < 3` and incrementing `attempts` in the UPDATE.
+  // Known limitation: the RPC's ORDER BY is `priority DESC,
+  // scheduled_for ASC NULLS FIRST, attempts ASC` — no `created_at`
+  // tiebreak. When many rows share priority + scheduled_for + attempts
+  // (typical of a fresh CSV import) Postgres returns one of them
+  // arbitrarily, so "Skip & next" can pick a row that's not at the
+  // top of the panel. The follow-up migration in
+  // supabase/migrations/20260430000160_smsv2_picker_created_at_tiebreak.sql
+  // adds `created_at ASC` to the ORDER BY and drops the attempts<3
+  // filter; once it's applied the picker will exactly match the
+  // panel.
   const pickNextLead = useCallback(async (): Promise<Lead | null> => {
     if (!camp || !user) return null;
-    const nowIso = new Date().toISOString();
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    let q = (supabase.from('wk_dialer_queue' as any) as any)
-      .select(
-        'id, contact_id, agent_id, status, priority, attempts, scheduled_for, created_at, ' +
-          'wk_contacts:contact_id ( id, name, phone, pipeline_column_id )'
-      )
-      .eq('campaign_id', camp.id)
-      .eq('status', 'pending')
-      // No `attempts < N` cap here — the visible upcoming-queue panel
-      // doesn't apply one, and the contract is "picker matches panel".
-      // If we ever want a hard cap, do it as a status transition
-      // (mark row 'lost' after N) so panel and picker can never
-      // disagree on what's pickable.
-      .or(`scheduled_for.is.null,scheduled_for.lte.${nowIso}`)
-      .order('priority', { ascending: false })
-      .order('scheduled_for', { ascending: true, nullsFirst: true })
-      .order('attempts', { ascending: true })
-      .order('created_at', { ascending: true })
-      .limit(50);
-    if (!isEffectiveAdmin) {
-      q = q.or(`agent_id.eq.${user.id},agent_id.is.null`);
-    }
-    const { data, error } = await q;
-    if (error) {
-      toasts.push(`Queue pick failed: ${error.message}`, 'error');
-      return null;
-    }
-    const rows = (data ?? []) as Array<{
-      id: string;
-      contact_id: string;
-      attempts: number;
-      wk_contacts: {
-        id: string;
-        name: string | null;
-        phone: string | null;
-        pipeline_column_id: string | null;
-      } | null;
-    }>;
 
-    for (const row of rows) {
-      const c = row.wk_contacts;
-      if (!c) {
-        // Orphan queue row (contact deleted) — mark missed and continue.
-        void updateQueueStatus(row.id, 'missed');
-        continue;
-      }
-      if (!c.phone) {
-        void updateQueueStatus(row.id, 'missed');
-        continue;
-      }
-      if (dialed.has(c.id)) continue;
-
-      // Atomic claim. Only one client wins this UPDATE per row.
+    // Anti-loop within a session: try a few RPC calls, marking each
+    // pick as 'skipped' if we've already dialed that contact. The RPC
+    // claims a row each call, so we have to release the duplicate
+    // claim back to a terminal status (skipped) so it doesn't stay
+    // stuck at 'dialing'.
+    for (let attempt = 0; attempt < 5; attempt++) {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const { data: claimed, error: claimErr } = await (supabase.from('wk_dialer_queue' as any) as any)
-        .update({
-          status: 'dialing',
-          agent_id: user.id,
-          attempts: row.attempts + 1,
-        })
-        .eq('id', row.id)
-        .eq('status', 'pending')
-        .select('id');
-      if (claimErr) {
-        toasts.push(`Queue claim failed: ${claimErr.message}`, 'error');
+      const { data: pickRow, error } = await (supabase as any).rpc('wk_pick_next_lead', {
+        p_agent_id: user.id,
+        p_campaign_id: camp.id,
+      });
+      if (error) {
+        toasts.push(`Queue pick failed: ${error.message}`, 'error');
+        return null;
+      }
+      // The function returns SETOF — supabase-js returns the first row
+      // (or null if 0 rows). Normalize.
+      const picked = Array.isArray(pickRow) ? pickRow[0] : pickRow;
+      if (!picked) return null;
+      const queueId = picked.queue_id as string;
+      const contactId = picked.contact_id as string;
+
+      // Resolve the contact (RLS on wk_contacts allows agent reads of
+      // contacts they own / are assigned to; the RPC has already
+      // claimed the queue row to this agent, so the agent will see it).
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const { data: contact } = await (supabase.from('wk_contacts' as any) as any)
+        .select('id, name, phone, pipeline_column_id')
+        .eq('id', contactId)
+        .maybeSingle();
+      if (!contact) {
+        // Orphan queue row — mark missed and try again.
+        void updateQueueStatus(queueId, 'missed');
         continue;
       }
-      const claimedRows = (claimed ?? []) as Array<{ id: string }>;
-      if (claimedRows.length === 0) {
-        // Another agent claimed this row first. Try the next one.
+      if (!contact.phone) {
+        void updateQueueStatus(queueId, 'missed');
+        continue;
+      }
+      if (dialed.has(contact.id)) {
+        // Already dialed this contact in this session. Release the
+        // claim back as 'skipped' so the row doesn't stay at 'dialing'.
+        void updateQueueStatus(queueId, 'skipped');
         continue;
       }
 
       return {
-        id: c.id,
-        name: c.name ?? c.phone,
-        phone: c.phone,
-        queueId: row.id,
-        pipelineColumnId: c.pipeline_column_id ?? null,
+        id: contact.id,
+        name: contact.name ?? contact.phone,
+        phone: contact.phone,
+        queueId,
+        pipelineColumnId: contact.pipeline_column_id ?? null,
       };
     }
     return null;
-  }, [camp, dialed, isEffectiveAdmin, user, toasts, updateQueueStatus]);
+  }, [camp, dialed, user, toasts, updateQueueStatus]);
 
   // ─── Dial a lead ───────────────────────────────────────────────────
   const dialLead = useCallback(
