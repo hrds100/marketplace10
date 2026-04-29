@@ -6,6 +6,8 @@ import {
   X,
   Voicemail,
   Ban,
+  SkipForward,
+  Phone,
   type LucideIcon,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
@@ -53,6 +55,16 @@ export default function PostCallPanel() {
   // outcome iff callPhase has advanced past *_waiting_outcome.
   const submitted =
     callPhase === 'outcome_submitting' || callPhase === 'outcome_done';
+
+  // PR 148 (Hugo 2026-04-29): Skip + Next call must STAY USABLE in
+  // outcome_done. The auto-advance after a real outcome card pick fires
+  // requestNextCall in a microtask; if that resolves to "queue empty"
+  // the reducer parks at outcome_done with both action buttons disabled
+  // — the room visibly traps the agent on "OUTCOME SAVED" with no way
+  // forward. Only block clicks while the outcome write is in flight
+  // (outcome_submitting). After it lands (outcome_done), the agent can
+  // re-trigger Skip / Next call to retry advancement.
+  const buttonsBlocked = callPhase === 'outcome_submitting';
   // PR 105 (Hugo 2026-04-28): the chosen outcome card stays highlighted
   // as "this is the one you picked", while the rest dim out so it's
   // obvious WHICH card the agent clicked.
@@ -228,17 +240,13 @@ export default function PostCallPanel() {
         )}
       </div>
 
-      {/* PR 155 (Hugo 2026-04-29): the duplicate Skip / Next call
-          buttons that used to live here are GONE. The InCallRoom
-          footer's <SessionControlBar> already exposes them with the
-          same handlers — having them in two places confused agents
-          ("Skip / Next call showing inside the AI coach tab,
-          unnecessary"). Helper text only — keyboard shortcuts 1-9,
-          S, N still bind via the window listener above. */}
+      {/* Footer — PR 138: NO countdown, NO "Next call in 0:XX". Just
+          Skip / Next call. The "Previous call" button was dropped (Hugo
+          confirmed: Recent Calls panel does this job). */}
       <div className="px-5 py-3 border-t border-[#E5E7EB] bg-[#F3F3EE]/50 flex items-center gap-3">
         <div className="flex-1 text-[12px] text-[#6B7280]">
           {submitted ? (
-            <span>Outcome saved — pick the next contact from Recent Calls or press Next call below.</span>
+            <span>Outcome saved — pick the next contact from Recent Calls or press Next call.</span>
           ) : (
             <span>Pick an outcome to continue.</span>
           )}
@@ -246,6 +254,48 @@ export default function PostCallPanel() {
             ⌨ 1–9 outcomes · S skip · N next call
           </span>
         </div>
+        <button
+          onClick={async () => {
+            if (buttonsBlocked) return;
+            // PR 148 (Hugo 2026-04-29): Skip works from BOTH
+            // *_waiting_outcome (no stage move + advance) AND
+            // outcome_done (re-trigger advance after a previous
+            // requestNextCall came back empty).
+            if (callPhase === 'stopped_waiting_outcome' || callPhase === 'error_waiting_outcome') {
+              applyOutcome('skipped', quickNote.trim() || undefined);
+              await Promise.resolve();
+            }
+            await requestNextCall();
+          }}
+          disabled={buttonsBlocked}
+          className="flex items-center gap-1.5 px-3 py-1.5 rounded-[10px] border border-[#E5E7EB] text-[12px] font-medium text-[#6B7280] hover:bg-white disabled:opacity-50"
+          data-testid="postcall-skip"
+        >
+          <SkipForward className="w-3.5 h-3.5" /> Skip
+        </button>
+        <button
+          onClick={async () => {
+            if (buttonsBlocked) return;
+            // PR 148 (Hugo 2026-04-29): Next call works from BOTH
+            // *_waiting_outcome (no-stage-move + advance) AND
+            // outcome_done (retry advance after queue-empty parked
+            // the room there). endCall is idempotent in post-call;
+            // applyOutcome('next-now') only fires when the reducer
+            // is in *_waiting_outcome (the OUTCOME_PICKED guard rejects
+            // it from outcome_done — safe).
+            await endCall();
+            if (callPhase === 'stopped_waiting_outcome' || callPhase === 'error_waiting_outcome') {
+              applyOutcome('next-now', quickNote.trim() || undefined);
+              await Promise.resolve();
+            }
+            await requestNextCall();
+          }}
+          disabled={buttonsBlocked}
+          className="flex items-center gap-1.5 px-3 py-1.5 rounded-[10px] bg-[#1E9A80] text-white text-[12px] font-semibold hover:bg-[#1E9A80]/90 shadow-[0_4px_12px_rgba(30,154,128,0.35)] disabled:opacity-50"
+          data-testid="postcall-next-call"
+        >
+          <Phone className="w-3.5 h-3.5" /> Next call
+        </button>
       </div>
 
       {/* PR 19: follow-up prompt for Nurturing / Callback / Interested. */}

@@ -166,33 +166,6 @@ export function useCurrentAgent(): UseCurrentAgentResult {
           },
           () => void refresh(uid)
         )
-        // PR 154 (Hugo 2026-04-29): bump callsToday in real time when
-        // a new wk_calls row lands for this agent. Previously this hook
-        // only refreshed on the 30s poll, so the InCallRoom Calls badge
-        // and SessionFooter "Today" cell lagged by up to 30 s during
-        // active dialing. Hugo Rule 13: numbers must be truthful.
-        .on(
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          'postgres_changes' as any,
-          {
-            event: 'INSERT',
-            schema: 'public',
-            table: 'wk_calls',
-            filter: `agent_id=eq.${uid}`,
-          },
-          () => void refresh(uid)
-        )
-        .on(
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          'postgres_changes' as any,
-          {
-            event: 'UPDATE',
-            schema: 'public',
-            table: 'wk_calls',
-            filter: `agent_id=eq.${uid}`,
-          },
-          () => void refresh(uid)
-        )
         .subscribe();
     })();
 

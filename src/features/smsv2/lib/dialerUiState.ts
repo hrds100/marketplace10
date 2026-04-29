@@ -31,14 +31,7 @@ export type DialerUiState =
   | { kind: 'connected' }
   | { kind: 'wrap_up'; reason: WrapUpReason }
   | { kind: 'submitting' }
-  | { kind: 'done' }
-  // PR 150 (Hugo 2026-04-29): explicit paused phase between calls.
-  // Reachable from done after the agent clicks Pause; exits on Resume.
-  | { kind: 'paused' }
-  // PR 150: short-lived "resolving the next contact" state used while
-  // the auto-next pacing timer fires and the resolver runs. Lets the
-  // badge show a spinner / "Resolving next…" instead of looking idle.
-  | { kind: 'next_resolving' };
+  | { kind: 'done' };
 
 export type DialerUiTone = 'neutral' | 'info' | 'success' | 'warning' | 'danger';
 
@@ -70,10 +63,6 @@ function reasonFromSignal(
 }
 
 export function deriveDialerUiState(state: CallLifecycleState): DialerUiState {
-  // PR 150 (Hugo 2026-04-29): explicit paused phase wins over everything
-  // except live phases (which can't reach 'paused' anyway).
-  if (state.callPhase === 'paused') return { kind: 'paused' };
-
   // Preview ALWAYS loses to a live call — the call is what the agent
   // is actually doing.
   if (state.callPhase === 'idle') {
@@ -98,12 +87,6 @@ export function deriveDialerUiState(state: CallLifecycleState): DialerUiState {
   }
 
   if (state.callPhase === 'outcome_submitting') return { kind: 'submitting' };
-
-  // outcome_done — distinguish "resolving next" from "done waiting for
-  // agent" via the pacing-timer mirror. PR 150.
-  if (state.pendingNextCall === 'cooling_down') {
-    return { kind: 'next_resolving' };
-  }
   return { kind: 'done' };
 }
 
@@ -147,11 +130,6 @@ export function uiStateLabel(s: DialerUiState): string {
       return 'Saving outcome';
     case 'done':
       return 'Outcome saved';
-    // PR 150 (Hugo 2026-04-29): paused + next_resolving labels.
-    case 'paused':
-      return 'Session paused';
-    case 'next_resolving':
-      return 'Resolving next';
   }
 }
 
@@ -159,12 +137,10 @@ export function uiStateTone(s: DialerUiState): DialerUiTone {
   switch (s.kind) {
     case 'idle':
     case 'preview':
-    case 'paused':
       return 'neutral';
     case 'dialing':
     case 'ringing':
     case 'submitting':
-    case 'next_resolving':
       return 'info';
     case 'connected':
     case 'done':
@@ -183,14 +159,12 @@ export function uiStateTone(s: DialerUiState): DialerUiTone {
 
 export function uiStatePulse(s: DialerUiState): boolean {
   // Pulses indicate "something is happening that may resolve at any
-  // moment". Live call legs, outcome submission, and the short
-  // resolving-next phase all qualify. PR 150 adds next_resolving.
+  // moment". Live call legs and outcome submission both qualify.
   return (
     s.kind === 'dialing' ||
     s.kind === 'ringing' ||
     s.kind === 'connected' ||
-    s.kind === 'submitting' ||
-    s.kind === 'next_resolving'
+    s.kind === 'submitting'
   );
 }
 
