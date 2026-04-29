@@ -265,67 +265,103 @@ export default function DialerPage() {
   );
 
   // ─── Pick next lead ───────────────────────────────────────────────
-  // Calls the server RPC `wk_pick_next_lead`. The RPC is the single
-  // source of truth — it atomically (FOR UPDATE SKIP LOCKED):
-  //   1. selects the highest-priority pending row (priority DESC,
-  //      scheduled_for ASC, attempts ASC)
-  //   2. enforces three-strikes (`attempts < 3`)
-  //   3. flips status to 'dialing' and increments attempts
-  // We then fetch the contact's name/phone separately and apply the
-  // session-scoped dialed-set guard. If the RPC hands back a contact
-  // we've already dialed this session we mark the row 'pending' again
-  // so the picker moves on to the next one (loop, max 50 iterations).
+  // We deliberately do NOT call the wk_pick_next_lead RPC. The RPC's
+  // ORDER BY is `priority DESC, scheduled_for ASC NULLS FIRST,
+  // attempts ASC` — no created_at tie-breaker. When dozens of queue
+  // rows share priority=0 + attempts=0 + scheduled_for=null (very
+  // common for a fresh CSV import), Postgres returns one of them
+  // arbitrarily. Meanwhile the upcoming-queue panel sorts ties by
+  // created_at ASC, so the panel says "next is X" while the RPC
+  // picks Y. Hugo flagged this as Skip & Next jumping around.
+  //
+  // Fix: do the SELECT client-side with the SAME ordering as the
+  // panel, then atomically claim the row via a conditional UPDATE
+  // (`status='pending'`). Postgres guarantees only one concurrent
+  // UPDATE matches — same atomicity as FOR UPDATE SKIP LOCKED, just
+  // expressed differently. Three-strikes is preserved by filtering
+  // `attempts < 3` and incrementing `attempts` in the UPDATE.
   const pickNextLead = useCallback(async (): Promise<Lead | null> => {
     if (!camp || !user) return null;
-    for (let i = 0; i < 50; i++) {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const { data, error } = await (supabase.rpc as any)('wk_pick_next_lead', {
-        p_agent_id: user.id,
-        p_campaign_id: camp.id,
-      });
-      if (error) {
-        toasts.push(`Queue pick failed: ${error.message}`, 'error');
-        return null;
-      }
-      const rows = (data ?? []) as Array<{
-        queue_id: string;
-        contact_id: string;
-        campaign_id: string;
-        attempts: number;
-      }>;
-      if (rows.length === 0) return null;
-      const row = rows[0];
+    const nowIso = new Date().toISOString();
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    let q = (supabase.from('wk_dialer_queue' as any) as any)
+      .select(
+        'id, contact_id, agent_id, status, priority, attempts, scheduled_for, created_at, ' +
+          'wk_contacts:contact_id ( id, name, phone, pipeline_column_id )'
+      )
+      .eq('campaign_id', camp.id)
+      .eq('status', 'pending')
+      .lt('attempts', 3)
+      .or(`scheduled_for.is.null,scheduled_for.lte.${nowIso}`)
+      .order('priority', { ascending: false })
+      .order('scheduled_for', { ascending: true, nullsFirst: true })
+      .order('attempts', { ascending: true })
+      .order('created_at', { ascending: true })
+      .limit(50);
+    if (!isEffectiveAdmin) {
+      q = q.or(`agent_id.eq.${user.id},agent_id.is.null`);
+    }
+    const { data, error } = await q;
+    if (error) {
+      toasts.push(`Queue pick failed: ${error.message}`, 'error');
+      return null;
+    }
+    const rows = (data ?? []) as Array<{
+      id: string;
+      contact_id: string;
+      attempts: number;
+      wk_contacts: {
+        id: string;
+        name: string | null;
+        phone: string | null;
+        pipeline_column_id: string | null;
+      } | null;
+    }>;
 
-      if (dialed.has(row.contact_id)) {
-        // Already tried this session. Roll the row back to 'pending'
-        // (the RPC already incremented attempts — we leave that bump
-        // in place so a contact that's been hit repeatedly drifts
-        // toward the three-strikes threshold).
-        await updateQueueStatus(row.queue_id, 'pending');
+    for (const row of rows) {
+      const c = row.wk_contacts;
+      if (!c) {
+        // Orphan queue row (contact deleted) — mark missed and continue.
+        void updateQueueStatus(row.id, 'missed');
         continue;
       }
+      if (!c.phone) {
+        void updateQueueStatus(row.id, 'missed');
+        continue;
+      }
+      if (dialed.has(c.id)) continue;
 
+      // Atomic claim. Only one client wins this UPDATE per row.
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const { data: c } = await (supabase.from('wk_contacts' as any) as any)
-        .select('id, name, phone, pipeline_column_id')
-        .eq('id', row.contact_id)
-        .maybeSingle();
-      if (!c || !c.phone) {
-        // Orphan / phoneless row — mark missed so it never comes back.
-        await updateQueueStatus(row.queue_id, 'missed');
+      const { data: claimed, error: claimErr } = await (supabase.from('wk_dialer_queue' as any) as any)
+        .update({
+          status: 'dialing',
+          agent_id: user.id,
+          attempts: row.attempts + 1,
+        })
+        .eq('id', row.id)
+        .eq('status', 'pending')
+        .select('id');
+      if (claimErr) {
+        toasts.push(`Queue claim failed: ${claimErr.message}`, 'error');
+        continue;
+      }
+      const claimedRows = (claimed ?? []) as Array<{ id: string }>;
+      if (claimedRows.length === 0) {
+        // Another agent claimed this row first. Try the next one.
         continue;
       }
 
       return {
-        id: c.id as string,
-        name: (c.name as string | null) ?? (c.phone as string),
-        phone: c.phone as string,
-        queueId: row.queue_id,
-        pipelineColumnId: (c.pipeline_column_id as string | null) ?? null,
+        id: c.id,
+        name: c.name ?? c.phone,
+        phone: c.phone,
+        queueId: row.id,
+        pipelineColumnId: c.pipeline_column_id ?? null,
       };
     }
     return null;
-  }, [camp, dialed, user, toasts, updateQueueStatus]);
+  }, [camp, dialed, isEffectiveAdmin, user, toasts, updateQueueStatus]);
 
   // ─── Dial a lead ───────────────────────────────────────────────────
   const dialLead = useCallback(
