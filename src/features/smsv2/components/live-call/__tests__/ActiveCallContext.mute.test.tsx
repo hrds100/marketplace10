@@ -21,12 +21,6 @@ const fakeDeviceCalls: Array<{ mute: (s: boolean) => void; disconnect: () => voi
 
 vi.mock('@/core/integrations/twilio-voice', () => ({
   addIncomingCallListener: vi.fn(() => () => {}),
-  // PR 132: ActiveCallContext now imports these too. The mock returns
-  // unsubscribe no-ops + best-effort disconnect, matching the real shape.
-  addTokenRefreshFailListener: vi.fn(() => () => {}),
-  disconnectAllCallsAndWait: vi.fn(async () => {
-    for (const c of [...fakeDeviceCalls]) c.disconnect();
-  }),
   getDeviceCalls: () => [...fakeDeviceCalls],
   muteAllCalls: (shouldMute: boolean) => {
     for (const c of fakeDeviceCalls) c.mute(shouldMute);
