@@ -38,6 +38,18 @@ function dial(state: CallLifecycleState = INITIAL_STATE): CallLifecycleState {
   return callLifecycleReducer(state, { type: 'START_CALL', call: SAMPLE_CALL });
 }
 
+describe('PR 149 — INITIAL_STATE defaults the new pacing/session fields', () => {
+  // The new fields land WITH safe defaults so the existing reducer
+  // behaviour is unchanged. PR 150 introduces the events that read /
+  // write these fields. This test pins the foundation contract.
+  it('INITIAL_STATE has pendingNextCall=idle, pacingDeadlineMs=null, sessionPaused=false, noNewLeadsBanner=false', () => {
+    expect(INITIAL_STATE.pendingNextCall).toBe('idle');
+    expect(INITIAL_STATE.pacingDeadlineMs).toBeNull();
+    expect(INITIAL_STATE.sessionPaused).toBe(false);
+    expect(INITIAL_STATE.noNewLeadsBanner).toBe(false);
+  });
+});
+
 describe('callLifecycleReducer — happy path', () => {
   it('idle → dialing on START_CALL', () => {
     const next = dial();
