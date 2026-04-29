@@ -232,9 +232,34 @@ export default function DialerPage() {
 
   // Active Twilio call handle.
   const twilioCallRef = useRef<TwilioCall | null>(null);
+  // Tracks the queue row currently in flight so hangUp / handlers can
+  // transition wk_dialer_queue.status without relying on stale state.
+  const currentLeadRef = useRef<Lead | null>(null);
   const [muted, setMuted] = useState(false);
 
   const [notes, setNotes] = useState('');
+
+  // ─── Queue status writer ─────────────────────────────────────────
+  // Without this, failed dials leave wk_dialer_queue.status='pending'
+  // forever — the same contact is re-picked on the next tick and
+  // shows up in BOTH the upcoming queue and call history. This makes
+  // the queue self-cleaning at every state transition.
+  const updateQueueStatus = useCallback(
+    async (
+      queueId: string,
+      status: 'dialing' | 'done' | 'missed' | 'failed' | 'skipped'
+    ) => {
+      try {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        await (supabase.from('wk_dialer_queue' as any) as any)
+          .update({ status })
+          .eq('id', queueId);
+      } catch (e) {
+        console.warn('[caller] updateQueueStatus failed', e);
+      }
+    },
+    []
+  );
 
   // ─── Pick next lead ───────────────────────────────────────────────
   const pickNextLead = useCallback(async (): Promise<Lead | null> => {
@@ -289,11 +314,15 @@ export default function DialerPage() {
       setNotes('');
       setMuted(false);
       twilioCallRef.current = null;
+      currentLeadRef.current = lead;
       setDialed((prev) => {
         const next = new Set(prev);
         next.add(lead.id);
         return next;
       });
+      // Claim the queue row immediately so a parallel pickNextLead
+      // (e.g. the auto-pacing tick) cannot pick the same row again.
+      void updateQueueStatus(lead.queueId, 'dialing');
 
       try {
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -303,18 +332,24 @@ export default function DialerPage() {
         if (error || !data) {
           const msg = (error?.message as string | undefined) ?? 'unknown error';
           toasts.push(`Could not place call: ${msg}`, 'error');
+          void updateQueueStatus(lead.queueId, 'failed');
+          currentLeadRef.current = null;
           dispatch({ type: 'CALL_ENDED', reason: 'failed', error: msg });
           return;
         }
         if (data.allowed === false) {
           const reason = (data.reason as string | undefined) ?? 'spend limit reached';
           toasts.push(`Call blocked: ${reason}`, 'error');
+          void updateQueueStatus(lead.queueId, 'failed');
+          currentLeadRef.current = null;
           dispatch({ type: 'CALL_ENDED', reason: 'blocked', error: reason });
           return;
         }
         const callId = data.call_id as string | undefined;
         if (!callId) {
           toasts.push('Server did not return a call id', 'error');
+          void updateQueueStatus(lead.queueId, 'failed');
+          currentLeadRef.current = null;
           dispatch({ type: 'CALL_ENDED', reason: 'failed', error: 'missing call_id' });
           return;
         }
@@ -337,16 +372,22 @@ export default function DialerPage() {
         twilioCall.on('disconnect', () => {
           if (!isThisCall()) return;
           twilioCallRef.current = null;
+          void updateQueueStatus(lead.queueId, 'done');
+          currentLeadRef.current = null;
           dispatch({ type: 'CALL_ENDED', reason: 'hangup' });
         });
         twilioCall.on('cancel', () => {
           if (!isThisCall()) return;
           twilioCallRef.current = null;
+          void updateQueueStatus(lead.queueId, 'missed');
+          currentLeadRef.current = null;
           dispatch({ type: 'CALL_ENDED', reason: 'cancel' });
         });
         twilioCall.on('reject', () => {
           if (!isThisCall()) return;
           twilioCallRef.current = null;
+          void updateQueueStatus(lead.queueId, 'missed');
+          currentLeadRef.current = null;
           dispatch({ type: 'CALL_ENDED', reason: 'reject' });
         });
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -356,6 +397,8 @@ export default function DialerPage() {
           const mapped = mapTwilioError(code, err?.message ?? '');
           toasts.push(mapped.friendlyMessage, 'error');
           twilioCallRef.current = null;
+          void updateQueueStatus(lead.queueId, 'failed');
+          currentLeadRef.current = null;
           dispatch({ type: 'CALL_ENDED', reason: 'error', error: mapped.friendlyMessage });
           if (mapped.fatal) {
             void (async () => {
@@ -366,10 +409,12 @@ export default function DialerPage() {
       } catch (e) {
         const msg = e instanceof Error ? e.message : 'dial crashed';
         toasts.push(`Dial failed: ${msg}`, 'error');
+        void updateQueueStatus(lead.queueId, 'failed');
+        currentLeadRef.current = null;
         dispatch({ type: 'CALL_ENDED', reason: 'failed', error: msg });
       }
     },
-    [camp, toasts]
+    [camp, toasts, updateQueueStatus]
   );
 
   // ─── Start dialer ─────────────────────────────────────────────────
@@ -402,9 +447,16 @@ export default function DialerPage() {
       try { c.disconnect(); } catch { /* ignore */ }
     }
     try { disconnectAllCalls(); } catch { /* ignore */ }
+    // The disconnect handler bails out because twilioCallRef is null —
+    // mark the queue ourselves so the row leaves 'pending' / 'dialing'.
+    const lead = currentLeadRef.current;
+    if (lead) {
+      void updateQueueStatus(lead.queueId, 'done');
+      currentLeadRef.current = null;
+    }
     dispatch({ type: 'CALL_ENDED', reason: 'hangup' });
     try { await disconnectAllCallsAndWait(1500); } catch { /* ignore */ }
-  }, []);
+  }, [updateQueueStatus]);
 
   // ─── Mute ─────────────────────────────────────────────────────────
   const toggleMute = useCallback(() => {
@@ -449,8 +501,15 @@ export default function DialerPage() {
   );
 
   const skip = useCallback(() => {
+    // Skip = no outcome chosen; mark queue 'skipped' so it doesn't
+    // come back round in the same session.
+    const lead = currentLeadRef.current ?? state.lead;
+    if (lead) {
+      void updateQueueStatus(lead.queueId, 'skipped');
+      currentLeadRef.current = null;
+    }
     dispatch({ type: 'OUTCOME_DONE' });
-  }, []);
+  }, [state.lead, updateQueueStatus]);
 
   // ─── Auto-pacing ──────────────────────────────────────────────────
   useEffect(() => {
@@ -513,8 +572,13 @@ export default function DialerPage() {
       twilioCallRef.current = null;
       try { disconnectAllCalls(); } catch { /* ignore */ }
     }
+    const lead = currentLeadRef.current;
+    if (lead) {
+      void updateQueueStatus(lead.queueId, 'done');
+      currentLeadRef.current = null;
+    }
     dispatch({ type: 'STOP' });
-  }, []);
+  }, [updateQueueStatus]);
 
   const { columns: outcomeColumns } = usePipelineColumns(camp?.pipelineId ?? null);
 
