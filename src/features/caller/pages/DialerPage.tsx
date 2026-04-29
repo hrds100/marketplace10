@@ -22,6 +22,7 @@
 //   7. Pause / Resume / Stop are explicit buttons in the top bar.
 
 import { useCallback, useEffect, useMemo, useReducer, useRef, useState } from 'react';
+import ReactDOM from 'react-dom';
 import { Link, useLocation } from 'react-router-dom';
 import {
   Phone, PhoneOff, Mic, MicOff, Pause, Play, Square, SkipForward, Zap,
@@ -312,7 +313,7 @@ export function CallerPad() {
       .order('scheduled_for', { ascending: true, nullsFirst: true })
       .order('attempts', { ascending: true })
       .order('created_at', { ascending: true })
-      .limit(20);
+      .limit(100);
 
     if (qErr) {
       toasts.push(`Queue read failed: ${qErr.message}`, 'error');
@@ -1795,17 +1796,17 @@ function RichEditContactBridge({ contactId, onClose }: { contactId: string; onCl
   }, [contactId]);
 
   if (loading) {
-    return (
+    return ReactDOM.createPortal(
       <div className="fixed inset-0 z-[250] bg-black/40 flex items-center justify-center">
         <div className="bg-white rounded-2xl p-8">
           <Loader2 className="w-5 h-5 animate-spin text-[#9CA3AF]" />
         </div>
-      </div>
+      </div>,
+      document.body
     );
   }
 
-  return (
-    <div className="[&>div]:!z-[250]">
+  return ReactDOM.createPortal(
     <EditContactModal
       contact={contact}
       onClose={onClose}
@@ -1826,8 +1827,8 @@ function RichEditContactBridge({ contactId, onClose }: { contactId: string; onCl
           .eq('id', contactId);
         onClose();
       }}
-    />
-    </div>
+    />,
+    document.body
   );
 }
 
