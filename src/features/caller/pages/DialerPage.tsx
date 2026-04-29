@@ -528,7 +528,7 @@ export default function DialerPage() {
         : null;
 
   return (
-    <div className="p-6 max-w-[1100px] mx-auto space-y-4">
+    <div className="p-6 max-w-[1280px] mx-auto space-y-4">
       <div>
         <h1 className="text-[26px] font-bold text-[#1A1A1A] tracking-tight">Power dialer</h1>
         <p className="text-[12px] text-[#6B7280] mt-0.5">
@@ -638,7 +638,18 @@ export default function DialerPage() {
         </button>
       )}
 
-      <RecentCalls agentId={!isEffectiveAdmin && user ? user.id : null} />
+      {/* Two-column queue + history below the call controls. */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+        <UpcomingQueuePanel
+          campaignId={camp?.id ?? null}
+          agentId={!isEffectiveAdmin && user ? user.id : null}
+          dialed={dialed}
+          currentContactId={state.lead?.id ?? null}
+        />
+        <CallHistoryPanel
+          agentId={!isEffectiveAdmin && user ? user.id : null}
+        />
+      </div>
     </div>
   );
 }
@@ -971,30 +982,259 @@ function PacingCountdownBar({
   );
 }
 
-function RecentCalls({ agentId }: { agentId: string | null }) {
-  const { calls, loading } = useCalls({ agentId, limit: 5 });
+// ─── Upcoming queue (next 100 leads, scrollable, realtime) ────────────
+
+interface QueueItemRow {
+  id: string;
+  status: string;
+  priority: number;
+  scheduled_for: string | null;
+  attempts: number;
+  wk_contacts: {
+    id: string;
+    name: string | null;
+    phone: string | null;
+  } | null;
+}
+
+interface QueueItem {
+  queueId: string;
+  contactId: string;
+  name: string;
+  phone: string;
+  priority: number;
+  attempts: number;
+  scheduledFor: string | null;
+}
+
+function UpcomingQueuePanel({
+  campaignId,
+  agentId,
+  dialed,
+  currentContactId,
+}: {
+  campaignId: string | null;
+  agentId: string | null;
+  dialed: ReadonlySet<string>;
+  currentContactId: string | null;
+}) {
+  const [items, setItems] = useState<QueueItem[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!campaignId) {
+      setItems([]);
+      setLoading(false);
+      return;
+    }
+    let cancelled = false;
+
+    const load = async () => {
+      const nowIso = new Date().toISOString();
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      let q = (supabase.from('wk_dialer_queue' as any) as any)
+        .select(
+          'id, status, priority, scheduled_for, attempts, ' +
+            'wk_contacts:contact_id ( id, name, phone )'
+        )
+        .eq('campaign_id', campaignId)
+        .eq('status', 'pending')
+        .or(`scheduled_for.is.null,scheduled_for.lte.${nowIso}`)
+        .order('priority', { ascending: false })
+        .order('scheduled_for', { ascending: true, nullsFirst: true })
+        .order('attempts', { ascending: true })
+        .order('created_at', { ascending: true })
+        .limit(100);
+      if (agentId) q = q.or(`agent_id.eq.${agentId},agent_id.is.null`);
+      const { data, error: e } = await q;
+      if (cancelled) return;
+      if (e) {
+        setError(e.message);
+        setItems([]);
+        setLoading(false);
+        return;
+      }
+      const mapped = ((data ?? []) as QueueItemRow[])
+        .filter((r) => r.wk_contacts && r.wk_contacts.phone)
+        .map<QueueItem>((r) => ({
+          queueId: r.id,
+          contactId: r.wk_contacts!.id,
+          name: r.wk_contacts!.name ?? r.wk_contacts!.phone ?? 'Unknown',
+          phone: r.wk_contacts!.phone ?? '',
+          priority: r.priority,
+          attempts: r.attempts,
+          scheduledFor: r.scheduled_for,
+        }));
+      setItems(mapped);
+      setLoading(false);
+    };
+
+    void load();
+
+    let pending: ReturnType<typeof setTimeout> | null = null;
+    const refresh = () => {
+      if (pending) return;
+      pending = setTimeout(() => {
+        pending = null;
+        if (!cancelled) void load();
+      }, 400);
+    };
+    const ch = supabase
+      .channel(`caller-upcoming-${campaignId}-${Math.random().toString(36).slice(2, 8)}`)
+      .on(
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        'postgres_changes' as any,
+        { event: '*', schema: 'public', table: 'wk_dialer_queue', filter: `campaign_id=eq.${campaignId}` },
+        refresh
+      )
+      .subscribe();
+
+    return () => {
+      cancelled = true;
+      if (pending) clearTimeout(pending);
+      try { void supabase.removeChannel(ch); } catch { /* ignore */ }
+    };
+  }, [campaignId, agentId]);
+
+  const visible = items.filter(
+    (i) => !dialed.has(i.contactId) && i.contactId !== currentContactId
+  );
+  const skippedCount = items.length - visible.length;
+
   return (
-    <div className="bg-white border border-[#E5E7EB] rounded-2xl p-4">
-      <div className="text-[12px] uppercase tracking-wide text-[#9CA3AF] font-semibold mb-2">
-        Recent calls
+    <div className="bg-white border border-[#E5E7EB] rounded-2xl flex flex-col overflow-hidden">
+      <div className="px-4 py-3 border-b border-[#E5E7EB] flex items-center justify-between">
+        <div className="text-[12px] uppercase tracking-wide text-[#9CA3AF] font-semibold">
+          Upcoming queue
+        </div>
+        <div className="text-[11px] text-[#6B7280] tabular-nums">
+          {visible.length}{skippedCount > 0 ? ` · ${skippedCount} dialed this session` : ''}
+        </div>
       </div>
-      {loading && calls.length === 0 && (
-        <div className="text-[11px] text-[#9CA3AF] italic py-2 text-center">Loading…</div>
+
+      {error && (
+        <div className="text-[12px] text-[#B91C1C] bg-[#FEF2F2] border border-[#FECACA] rounded-[8px] mx-3 my-2 px-3 py-2">
+          {error}
+        </div>
       )}
-      {!loading && calls.length === 0 && (
-        <div className="text-[11px] text-[#9CA3AF] italic py-2 text-center">No calls yet.</div>
+
+      {loading && items.length === 0 && (
+        <div className="text-[12px] text-[#9CA3AF] italic py-8 text-center">Loading queue…</div>
       )}
-      <ul className="divide-y divide-[#E5E7EB]">
-        {calls.map((c) => (
-          <li key={c.id} className="py-2 flex items-center justify-between gap-2 text-[12px]">
-            <span className="text-[#6B7280] tabular-nums truncate">
-              {c.startedAt ? new Date(c.startedAt).toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' }) : '—'}
-            </span>
-            <span className="text-[10px] uppercase tracking-wide text-[#9CA3AF] font-semibold">{c.status}</span>
-            <span className="text-[#6B7280] tabular-nums">{c.durationSec ? `${c.durationSec}s` : '—'}</span>
+
+      {!loading && visible.length === 0 && (
+        <div className="text-[12px] text-[#9CA3AF] italic py-8 text-center">
+          {items.length === 0 ? 'Queue empty.' : 'All visible leads dialed this session.'}
+        </div>
+      )}
+
+      <ul className="overflow-y-auto max-h-[480px] divide-y divide-[#E5E7EB]">
+        {visible.map((lead, idx) => (
+          <li key={lead.queueId} className="px-4 py-2 flex items-center gap-3 hover:bg-[#F3F3EE]/30">
+            <div className="w-6 h-6 flex items-center justify-center rounded-full bg-[#F3F3EE] text-[10px] font-bold text-[#6B7280] tabular-nums flex-shrink-0">
+              {idx + 1}
+            </div>
+            <div className="flex-1 min-w-0">
+              <div className="text-[12px] font-semibold text-[#1A1A1A] truncate">{lead.name}</div>
+              <div className="text-[11px] text-[#6B7280] tabular-nums truncate">{lead.phone}</div>
+            </div>
+            {lead.attempts > 0 && (
+              <span className="text-[10px] text-[#9CA3AF] tabular-nums">
+                {lead.attempts}× tried
+              </span>
+            )}
+            {lead.priority > 0 && (
+              <span className="text-[10px] font-bold text-[#1E9A80] tabular-nums">
+                p{lead.priority}
+              </span>
+            )}
           </li>
         ))}
       </ul>
     </div>
   );
+}
+
+// ─── Call history (compact, scrollable, realtime) ────────────────────
+
+function CallHistoryPanel({ agentId }: { agentId: string | null }) {
+  const { calls, loading, error } = useCalls({ agentId, limit: 50 });
+
+  return (
+    <div className="bg-white border border-[#E5E7EB] rounded-2xl flex flex-col overflow-hidden">
+      <div className="px-4 py-3 border-b border-[#E5E7EB] flex items-center justify-between">
+        <div className="text-[12px] uppercase tracking-wide text-[#9CA3AF] font-semibold">
+          Call history
+        </div>
+        <div className="text-[11px] text-[#6B7280] tabular-nums">{calls.length}</div>
+      </div>
+
+      {error && (
+        <div className="text-[12px] text-[#B91C1C] bg-[#FEF2F2] border border-[#FECACA] rounded-[8px] mx-3 my-2 px-3 py-2">
+          {error}
+        </div>
+      )}
+
+      {loading && calls.length === 0 && (
+        <div className="text-[12px] text-[#9CA3AF] italic py-8 text-center">Loading…</div>
+      )}
+      {!loading && calls.length === 0 && (
+        <div className="text-[12px] text-[#9CA3AF] italic py-8 text-center">
+          No calls yet. Start dialing to see history here.
+        </div>
+      )}
+
+      <ul className="overflow-y-auto max-h-[480px] divide-y divide-[#E5E7EB]">
+        {calls.map((c) => (
+          <li key={c.id} className="px-4 py-2 flex items-center gap-3 hover:bg-[#F3F3EE]/30">
+            <CallStatusIndicator status={c.status} />
+            <div className="flex-1 min-w-0">
+              <div className="text-[12px] text-[#1A1A1A] tabular-nums">
+                {c.startedAt
+                  ? new Date(c.startedAt).toLocaleString(undefined, {
+                      hour: '2-digit',
+                      minute: '2-digit',
+                      day: '2-digit',
+                      month: 'short',
+                    })
+                  : '—'}
+              </div>
+              <div className="text-[10px] uppercase tracking-wide text-[#9CA3AF] font-semibold">
+                {c.direction} · {c.status}
+              </div>
+            </div>
+            <div className="text-[11px] text-[#6B7280] tabular-nums">
+              {c.durationSec ? formatDur(c.durationSec) : '—'}
+            </div>
+          </li>
+        ))}
+      </ul>
+    </div>
+  );
+}
+
+function CallStatusIndicator({ status }: { status: string }) {
+  const tint =
+    status === 'completed'
+      ? 'bg-[#1E9A80]'
+      : status === 'in_progress' || status === 'in-progress'
+        ? 'bg-[#FBBF24]'
+        : status === 'missed' || status === 'no_answer' || status === 'no-answer'
+          ? 'bg-[#9CA3AF]'
+          : status === 'failed' || status === 'busy'
+            ? 'bg-[#B91C1C]'
+            : 'bg-[#9CA3AF]';
+  return (
+    <span
+      className={`inline-block w-2 h-2 rounded-full flex-shrink-0 ${tint}`}
+      title={status}
+    />
+  );
+}
+
+function formatDur(sec: number): string {
+  const m = Math.floor(sec / 60);
+  const s = sec % 60;
+  return `${m}:${String(s).padStart(2, '0')}`;
 }
