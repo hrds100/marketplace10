@@ -16,6 +16,10 @@ export interface CallListRow {
   durationSec: number | null;
   dispositionColumnId: string | null;
   agentNote: string | null;
+  /** Joined from wk_contacts for the call-history panel. Null if the
+   *  contact row was deleted between call insert and now. */
+  contactName: string | null;
+  contactPhone: string | null;
 }
 
 interface WkCallRow {
@@ -30,7 +34,13 @@ interface WkCallRow {
   agent_note: string | null;
 }
 
-function rowToCall(r: WkCallRow): CallListRow {
+interface ContactNamePhone {
+  id: string;
+  name: string | null;
+  phone: string | null;
+}
+
+function rowToCall(r: WkCallRow, contact?: ContactNamePhone): CallListRow {
   return {
     id: r.id,
     contactId: r.contact_id,
@@ -41,6 +51,8 @@ function rowToCall(r: WkCallRow): CallListRow {
     durationSec: r.duration_sec,
     dispositionColumnId: r.disposition_column_id,
     agentNote: r.agent_note,
+    contactName: contact?.name ?? null,
+    contactPhone: contact?.phone ?? null,
   };
 }
 
@@ -85,7 +97,20 @@ export function useCalls(opts: Opts = {}) {
         setLoading(false);
         return;
       }
-      setCalls(((data ?? []) as WkCallRow[]).map(rowToCall));
+      const callRows = (data ?? []) as WkCallRow[];
+      const contactIds = Array.from(new Set(callRows.map((r) => r.contact_id)));
+      let contactsById = new Map<string, ContactNamePhone>();
+      if (contactIds.length > 0) {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const { data: cs } = await (supabase.from('wk_contacts' as any) as any)
+          .select('id, name, phone')
+          .in('id', contactIds);
+        if (cancelled) return;
+        contactsById = new Map(
+          ((cs ?? []) as ContactNamePhone[]).map((c) => [c.id, c] as const)
+        );
+      }
+      setCalls(callRows.map((r) => rowToCall(r, contactsById.get(r.contact_id))));
       setLoading(false);
     }
 

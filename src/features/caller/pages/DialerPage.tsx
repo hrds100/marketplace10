@@ -635,7 +635,8 @@ export default function DialerPage() {
           campaignId={camp?.id ?? null}
           agentId={!isEffectiveAdmin && user ? user.id : null}
           dialed={dialed}
-          currentContactId={state.lead?.id ?? null}
+          currentLead={state.lead}
+          currentPhase={state.phase}
         />
         <CallHistoryPanel
           agentId={!isEffectiveAdmin && user ? user.id : null}
@@ -1041,12 +1042,14 @@ function UpcomingQueuePanel({
   campaignId,
   agentId,
   dialed,
-  currentContactId,
+  currentLead,
+  currentPhase,
 }: {
   campaignId: string | null;
   agentId: string | null;
   dialed: ReadonlySet<string>;
-  currentContactId: string | null;
+  currentLead: Lead | null;
+  currentPhase: Phase;
 }) {
   const [items, setItems] = useState<QueueItem[]>([]);
   const [loading, setLoading] = useState(true);
@@ -1128,9 +1131,27 @@ function UpcomingQueuePanel({
   }, [campaignId, agentId]);
 
   const visible = items.filter(
-    (i) => !dialed.has(i.contactId) && i.contactId !== currentContactId
+    (i) => !dialed.has(i.contactId) && i.contactId !== (currentLead?.id ?? null)
   );
-  const skippedCount = items.length - visible.length;
+  // Use the actual session set, not items.length-visible.length — leads
+  // that transitioned out of `pending` (status='dialing'/'connected'/done)
+  // wouldn't show up in items at all, so the diff under-reports.
+  const dialedThisSession = dialed.size;
+  const isCallActive =
+    currentPhase === 'dialing' ||
+    currentPhase === 'ringing' ||
+    currentPhase === 'connected' ||
+    currentPhase === 'wrap_up';
+
+  const dialingTint =
+    currentPhase === 'connected' ? 'bg-[#ECFDF5] text-[#1E9A80]' :
+    currentPhase === 'wrap_up' ? 'bg-[#F3F3EE] text-[#6B7280]' :
+    'bg-[#FEF3C7] text-[#92400E]';
+  const dialingLabel =
+    currentPhase === 'dialing' ? 'DIALING' :
+    currentPhase === 'ringing' ? 'RINGING' :
+    currentPhase === 'connected' ? 'CONNECTED' :
+    currentPhase === 'wrap_up' ? 'WRAP-UP' : '';
 
   return (
     <div className="bg-white border border-[#E5E7EB] rounded-2xl flex flex-col overflow-hidden">
@@ -1139,9 +1160,26 @@ function UpcomingQueuePanel({
           Upcoming queue
         </div>
         <div className="text-[11px] text-[#6B7280] tabular-nums">
-          {visible.length}{skippedCount > 0 ? ` · ${skippedCount} dialed this session` : ''}
+          {visible.length}{dialedThisSession > 0 ? ` · ${dialedThisSession} dialed this session` : ''}
         </div>
       </div>
+
+      {/* Currently-dialing lead pinned at the top so the agent sees the
+          continuity — the lead being called is the same one that was at
+          #1 in the queue a moment ago. Without this pin, the panel jumps
+          straight to "next-after-current" which Hugo flagged as
+          confusing. */}
+      {isCallActive && currentLead && (
+        <div className="px-4 py-2 bg-[#ECFDF5]/40 border-b border-[#E5E7EB] flex items-center gap-3">
+          <span className={`px-2 py-0.5 rounded-full text-[10px] font-semibold uppercase tracking-wide flex-shrink-0 ${dialingTint}`}>
+            {dialingLabel}
+          </span>
+          <div className="flex-1 min-w-0">
+            <div className="text-[12px] font-semibold text-[#1A1A1A] truncate">{currentLead.name}</div>
+            <div className="text-[11px] text-[#6B7280] tabular-nums truncate">{currentLead.phone}</div>
+          </div>
+        </div>
+      )}
 
       {error && (
         <div className="text-[12px] text-[#B91C1C] bg-[#FEF2F2] border border-[#FECACA] rounded-[8px] mx-3 my-2 px-3 py-2">
@@ -1354,21 +1392,27 @@ function CallHistoryPanel({ agentId }: { agentId: string | null }) {
             >
               <CallStatusIndicator status={c.status} />
               <div className="flex-1 min-w-0">
-                <div className="text-[12px] text-[#1A1A1A] tabular-nums">
-                  {c.startedAt
-                    ? new Date(c.startedAt).toLocaleString(undefined, {
+                <div className="text-[12px] font-semibold text-[#1A1A1A] truncate">
+                  {c.contactName ?? c.contactPhone ?? 'Unknown contact'}
+                </div>
+                <div className="text-[11px] text-[#6B7280] tabular-nums truncate">
+                  {c.contactPhone ?? '—'}
+                  {c.startedAt && (
+                    <span className="ml-1">
+                      · {new Date(c.startedAt).toLocaleString(undefined, {
                         hour: '2-digit',
                         minute: '2-digit',
                         day: '2-digit',
                         month: 'short',
-                      })
-                    : '—'}
+                      })}
+                    </span>
+                  )}
                 </div>
-                <div className="text-[10px] uppercase tracking-wide text-[#9CA3AF] font-semibold">
+                <div className="text-[10px] uppercase tracking-wide text-[#9CA3AF] font-semibold mt-0.5">
                   {c.direction} · {c.status}
                 </div>
               </div>
-              <div className="text-[11px] text-[#6B7280] tabular-nums">
+              <div className="text-[11px] text-[#6B7280] tabular-nums flex-shrink-0">
                 {c.durationSec ? formatDur(c.durationSec) : '—'}
               </div>
             </Link>
