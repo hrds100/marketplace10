@@ -118,21 +118,22 @@ export default function SessionControlBar({
       if (headLeadId && onDial) onDial(headLeadId);
       return;
     }
-    // PR C: live → end call first, then advance. The provider's
-    // requestNextCall is gated on outcome_done/idle, so for live phases
-    // we end first.
+    // PR C: live → end call first.
     if (
       ctx.callPhase === 'dialing' ||
       ctx.callPhase === 'ringing' ||
       ctx.callPhase === 'in_call'
     ) {
       await ctx.endCall();
-      // The reducer is now in *_waiting_outcome — fall through to skip
-      // (no stage move) which advances.
-      await ctx.requestSkip();
-      return;
     }
-    await ctx.requestNextCall();
+    // PR C.2 (Hugo 2026-04-29): from any wrap-up state — including
+    // `*_waiting_outcome` AND post-end-call — call requestSkip which
+    // dispatches OUTCOME_PICKED('skipped') → OUTCOME_RESOLVED →
+    // outcome_done THEN calls requestNextCall internally. Previously
+    // we called requestNextCall directly, which silently returned
+    // because it requires callPhase === 'outcome_done'. That was the
+    // "Next button does nothing" bug.
+    await ctx.requestSkip();
   };
 
   const onHangUp = async () => {
