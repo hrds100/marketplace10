@@ -6,8 +6,10 @@ import {
   X,
   Voicemail,
   Ban,
+  Pause,
   SkipForward,
   Phone,
+  ArrowLeft,
   type LucideIcon,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
@@ -24,60 +26,53 @@ const ICON_MAP: Record<string, LucideIcon> = {
   Ban,
 };
 
-// PR 138 (Hugo 2026-04-28): rewritten to use the new state machine.
-//
-// Removed
-// ───────
-//   - secondsLeft / paused / submitted state — replaced by
-//     `callPhase ∈ {outcome_submitting, outcome_done}` reads from
-//     the reducer.
-//   - the auto-advance countdown timer (Rule 2: kill post-call
-//     countdown completely).
-//   - the empty-default fallback that auto-fired
-//     applyOutcome('next-now') (Rule 4: no auto-outcome).
-//   - the setTimeout(applyOutcome, 200) chains — reducer transitions
-//     synchronously now.
-//   - the "Previous call" button (Hugo confirmed: Recent Calls
-//     panel does this job).
-//
-// Kept
-// ────
-//   - keyboard shortcuts 1-9 / S / N — they dispatch immediately.
-//   - QuickNote, outcome cards, SkipForward, "Next call".
-//   - FollowupPromptModal for stages with requires_followup.
-
 export default function PostCallPanel() {
-  const { applyOutcome, call, callPhase, endCall, requestNextCall } =
-    useActiveCallCtx();
+  const { applyOutcome, call, lastEndedContactId, openPreviousCall } = useActiveCallCtx();
   const store = useSmsV2();
   const columns = store.columns;
-  // Submission state lives in the reducer. The agent has clicked an
-  // outcome iff callPhase has advanced past *_waiting_outcome.
-  const submitted =
-    callPhase === 'outcome_submitting' || callPhase === 'outcome_done';
-
-  // PR 148 (Hugo 2026-04-29): Skip + Next call must STAY USABLE in
-  // outcome_done. The auto-advance after a real outcome card pick fires
-  // requestNextCall in a microtask; if that resolves to "queue empty"
-  // the reducer parks at outcome_done with both action buttons disabled
-  // — the room visibly traps the agent on "OUTCOME SAVED" with no way
-  // forward. Only block clicks while the outcome write is in flight
-  // (outcome_submitting). After it lands (outcome_done), the agent can
-  // re-trigger Skip / Next call to retry advancement.
-  const buttonsBlocked = callPhase === 'outcome_submitting';
+  const autoAdvanceSeconds = store.activeCampaign?.autoAdvanceSeconds ?? 10;
+  const [secondsLeft, setSecondsLeft] = useState(autoAdvanceSeconds);
+  const [paused, setPaused] = useState(false);
+  const [submitted, setSubmitted] = useState(false);
   // PR 105 (Hugo 2026-04-28): the chosen outcome card stays highlighted
   // as "this is the one you picked", while the rest dim out so it's
-  // obvious WHICH card the agent clicked.
+  // obvious WHICH card the agent clicked. Skipped / Next-now leave
+  // pickedColumnId null and every card just dims.
   const [pickedColumnId, setPickedColumnId] = useState<string | null>(null);
   // PR 19: when the picked stage carries requires_followup=true, open
-  // the prompt modal BEFORE committing applyOutcome.
+  // the prompt modal BEFORE committing applyOutcome. Pausing the auto-
+  // advance timer while the modal is open keeps the agent from being
+  // dragged onto the next call before they've set the timer.
   const [pendingFollowupColId, setPendingFollowupColId] = useState<string | null>(null);
-  // PR 90: quick-note input state-bound, threaded through applyOutcome.
+  // PR 90 (Hugo 2026-04-27): the quick-note input was uncontrolled \u2014
+  // anything typed disappeared on phase change. Now state-bound + threaded
+  // through applyOutcome.
   const [quickNote, setQuickNote] = useState('');
+
+  // Reset countdown if the active campaign changes (different auto-advance)
+  useEffect(() => {
+    setSecondsLeft(autoAdvanceSeconds);
+  }, [autoAdvanceSeconds]);
+
+  useEffect(() => {
+    if (paused || submitted || pendingFollowupColId) return;
+    const id = setInterval(() => setSecondsLeft((s) => Math.max(0, s - 1)), 1000);
+    return () => clearInterval(id);
+  }, [paused, submitted, pendingFollowupColId]);
+
+  useEffect(() => {
+    if (secondsLeft === 0 && !paused && !submitted) {
+      const def = columns.find((c) => c.isDefaultOnTimeout);
+      if (def) handleClick(def.id);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [secondsLeft, paused, submitted]);
 
   const handleClick = (columnId: string) => {
     if (submitted) return;
     const col = columns.find((c) => c.id === columnId);
+    // PR 105: mark the visually-picked card as soon as the agent clicks
+    // (before the follow-up modal opens) so they can see WHAT they chose.
     setPickedColumnId(columnId);
     // PR 19: if the picked stage requires a follow-up, open the modal
     // FIRST and let the agent pick a time + note. The actual outcome
@@ -92,25 +87,13 @@ export default function PostCallPanel() {
 
   const commitOutcome = (columnId: string) => {
     setPickedColumnId(columnId);
+    setSubmitted(true);
     const note = quickNote.trim() || undefined;
-    // PR 138: synchronous dispatch — reducer flips to
-    // outcome_submitting → outcome_done. No setTimeout dance.
-    applyOutcome(columnId, note);
-    // PR 138 follow-up (11/10): the agent's outcome click IS the
-    // advance signal (Hugo's clarification: "no auto-advance" meant
-    // no TIMER-driven advance). After the reducer settles to
-    // outcome_done, dial the next contact. Skip / Next-call buttons
-    // do their own dial — only real outcome cards land here.
-    void Promise.resolve().then(() => {
-      void requestNextCall();
-    });
+    // Defer slightly so the button's optimistic disabled state paints first
+    setTimeout(() => applyOutcome(columnId, note), 200);
   };
 
-  // Keyboard shortcuts (PR 138: dispatch immediately, no setTimeout).
-  // PR 138 follow-up (11/10): S / N now trigger requestNextCall after
-  // applyOutcome — previously they flipped state to outcome_done and
-  // stopped. Real outcomes 1-9 also dial next via commitOutcome →
-  // handleClick.
+  // Keyboard shortcuts
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       if (submitted) return;
@@ -118,26 +101,23 @@ export default function PostCallPanel() {
       if (num >= 1 && num <= 9) {
         const col = columns.find((c) => c.position === num);
         if (col) handleClick(col.id);
+      } else if (e.key.toLowerCase() === 'p') {
+        setPaused((p) => !p);
       } else if (e.key.toLowerCase() === 's') {
-        applyOutcome('skipped', quickNote.trim() || undefined);
-        void Promise.resolve().then(() => {
-          void requestNextCall();
-        });
+        setSubmitted(true);
+        setTimeout(() => applyOutcome('skipped', quickNote.trim() || undefined), 200);
       } else if (e.key.toLowerCase() === 'n') {
-        // Mirror the Next-call button: hang up first to sweep zombie
-        // legs, then advance.
-        void (async () => {
-          await endCall();
-          applyOutcome('next-now', quickNote.trim() || undefined);
-          await Promise.resolve();
-          await requestNextCall();
-        })();
+        setSubmitted(true);
+        setTimeout(() => applyOutcome('next-now', quickNote.trim() || undefined), 200);
       }
     };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [submitted, columns]);
+
+  const nextId = store.queue[0];
+  const nextContact = nextId ? store.getContact(nextId) : undefined;
 
   return (
     <div className="flex flex-col h-full">
@@ -156,11 +136,16 @@ export default function PostCallPanel() {
         {/* Hugo 2026-04-26 (PR 17): outcome cards are pure pipeline
             routing now. The +SMS / +task / +tag automation badges came
             off because Hugo doesn't want the post-call pick to fire
-            extra side-effects. */}
+            extra side-effects — the SMS already went out via the mid-
+            call SMS sender (PR 16, mandatory stage). The outcome card
+            just records WHERE the lead lands. */}
         <div className="grid grid-cols-2 gap-3">
           {columns.map((col) => {
             const Icon = ICON_MAP[col.icon] ?? Sparkles;
             // PR 105: three visual states for outcome cards.
+            //   picked   → the card the agent chose, green border + ✓ badge.
+            //   dimmed   → submitted but NOT picked → faded out so contrast is clear.
+            //   default  → pre-submit, hover-able.
             const isPicked = submitted && pickedColumnId === col.id;
             const isDimmed = submitted && pickedColumnId !== col.id;
             return (
@@ -179,6 +164,9 @@ export default function PostCallPanel() {
                       : 'border-[#E5E7EB] hover:border-[#1E9A80]/50 hover:shadow-[0_8px_24px_rgba(0,0,0,0.08)]'
                 )}
               >
+                {/* PR 114 (Hugo 2026-04-28): louder DONE badge + bigger
+                    tick. Hugo: "very clear orange DONE, very obvious
+                    which one is selected." */}
                 {isPicked && (
                   <>
                     <span
@@ -218,7 +206,10 @@ export default function PostCallPanel() {
           })}
         </div>
 
-        {/* Quick note */}
+        {/* Quick note — single row, full width. The "Quick SMS template"
+            dropdown that used to live here was removed: SMS automation runs
+            from the column's automation rules already (no manual override
+            needed at this surface), and Hugo asked for buttons-only here. */}
         <div className="mt-5">
           <div className="text-[11px] uppercase tracking-wide text-[#9CA3AF] font-semibold mb-1.5">
             Quick note
@@ -232,6 +223,10 @@ export default function PostCallPanel() {
           />
         </div>
 
+        {/* Empty-state hint when no pipeline columns are hydrated yet. The
+            most common cause is a fresh workspace before useHydratePipelineColumns
+            populates the store. Without this, PostCallPanel rendered just
+            the section header + dropdown and looked broken. */}
         {columns.length === 0 && (
           <div className="mt-4 p-3 rounded-[10px] bg-[#FEF7E6] border border-[#FDE68A] text-[12px] text-[#1A1A1A]">
             No pipeline columns yet. Open Settings → Pipelines and add a few
@@ -240,65 +235,70 @@ export default function PostCallPanel() {
         )}
       </div>
 
-      {/* Footer — PR 138: NO countdown, NO "Next call in 0:XX". Just
-          Skip / Next call. The "Previous call" button was dropped (Hugo
-          confirmed: Recent Calls panel does this job). */}
+      {/* Footer auto-advance */}
       <div className="px-5 py-3 border-t border-[#E5E7EB] bg-[#F3F3EE]/50 flex items-center gap-3">
         <div className="flex-1 text-[12px] text-[#6B7280]">
-          {submitted ? (
-            <span>Outcome saved — pick the next contact from Recent Calls or press Next call.</span>
+          {paused ? (
+            <span>Paused — pick when ready</span>
           ) : (
-            <span>Pick an outcome to continue.</span>
+            <>
+              Next call in{' '}
+              <span className="text-[#1A1A1A] font-semibold tabular-nums">
+                0:{secondsLeft.toString().padStart(2, '0')}
+              </span>
+              {nextContact && (
+                <span className="ml-2 text-[#9CA3AF]">
+                  · Next: <span className="text-[#1A1A1A] font-medium">{nextContact.name}</span>
+                </span>
+              )}
+              {!nextContact && <span className="ml-2 text-[#9CA3AF]">· Queue empty</span>}
+            </>
           )}
           <span className="ml-2 text-[10px] text-[#9CA3AF]">
-            ⌨ 1–9 outcomes · S skip · N next call
+            ⌨ 1–9 · S skip · P pause · N next call
           </span>
         </div>
+        {lastEndedContactId && (
+          <button
+            onClick={openPreviousCall}
+            disabled={submitted}
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-[10px] border border-[#E5E7EB] text-[12px] font-medium text-[#6B7280] hover:bg-white disabled:opacity-50"
+            title="Go back to the previous call's room (doesn't end the dial cycle)"
+          >
+            <ArrowLeft className="w-3.5 h-3.5" /> Previous call
+          </button>
+        )}
         <button
-          onClick={async () => {
-            if (buttonsBlocked) return;
-            // PR 148 (Hugo 2026-04-29): Skip works from BOTH
-            // *_waiting_outcome (no stage move + advance) AND
-            // outcome_done (re-trigger advance after a previous
-            // requestNextCall came back empty).
-            if (callPhase === 'stopped_waiting_outcome' || callPhase === 'error_waiting_outcome') {
-              applyOutcome('skipped', quickNote.trim() || undefined);
-              await Promise.resolve();
-            }
-            await requestNextCall();
+          onClick={() => setPaused((p) => !p)}
+          className="flex items-center gap-1.5 px-3 py-1.5 rounded-[10px] border border-[#E5E7EB] text-[12px] font-medium text-[#6B7280] hover:bg-white"
+        >
+          <Pause className="w-3.5 h-3.5" /> {paused ? 'Resume' : 'Pause'}
+        </button>
+        <button
+          onClick={() => {
+            if (submitted) return;
+            setSubmitted(true);
+            setTimeout(() => applyOutcome('skipped', quickNote.trim() || undefined), 200);
           }}
-          disabled={buttonsBlocked}
-          className="flex items-center gap-1.5 px-3 py-1.5 rounded-[10px] border border-[#E5E7EB] text-[12px] font-medium text-[#6B7280] hover:bg-white disabled:opacity-50"
-          data-testid="postcall-skip"
+          className="flex items-center gap-1.5 px-3 py-1.5 rounded-[10px] border border-[#E5E7EB] text-[12px] font-medium text-[#6B7280] hover:bg-white"
         >
           <SkipForward className="w-3.5 h-3.5" /> Skip
         </button>
         <button
-          onClick={async () => {
-            if (buttonsBlocked) return;
-            // PR 148 (Hugo 2026-04-29): Next call works from BOTH
-            // *_waiting_outcome (no-stage-move + advance) AND
-            // outcome_done (retry advance after queue-empty parked
-            // the room there). endCall is idempotent in post-call;
-            // applyOutcome('next-now') only fires when the reducer
-            // is in *_waiting_outcome (the OUTCOME_PICKED guard rejects
-            // it from outcome_done — safe).
-            await endCall();
-            if (callPhase === 'stopped_waiting_outcome' || callPhase === 'error_waiting_outcome') {
-              applyOutcome('next-now', quickNote.trim() || undefined);
-              await Promise.resolve();
-            }
-            await requestNextCall();
+          onClick={() => {
+            if (submitted) return;
+            setSubmitted(true);
+            setTimeout(() => applyOutcome('next-now', quickNote.trim() || undefined), 200);
           }}
-          disabled={buttonsBlocked}
-          className="flex items-center gap-1.5 px-3 py-1.5 rounded-[10px] bg-[#1E9A80] text-white text-[12px] font-semibold hover:bg-[#1E9A80]/90 shadow-[0_4px_12px_rgba(30,154,128,0.35)] disabled:opacity-50"
-          data-testid="postcall-next-call"
+          className="flex items-center gap-1.5 px-3 py-1.5 rounded-[10px] bg-[#1E9A80] text-white text-[12px] font-semibold hover:bg-[#1E9A80]/90 shadow-[0_4px_12px_rgba(30,154,128,0.35)]"
         >
           <Phone className="w-3.5 h-3.5" /> Next call
         </button>
       </div>
 
-      {/* PR 19: follow-up prompt for Nurturing / Callback / Interested. */}
+      {/* PR 19: follow-up prompt for Nurturing / Callback / Interested.
+          Mount only when the agent picks a follow-up stage; auto-
+          unmount after save/skip + commitOutcome runs. */}
       {pendingFollowupColId && call?.contactId && (() => {
         const col = columns.find((c) => c.id === pendingFollowupColId);
         const contact = store.getContact(call.contactId);
@@ -314,6 +314,9 @@ export default function PostCallPanel() {
             open
             onOpenChange={(o) => {
               if (!o) {
+                // Closed without saving = treated as "skip" — still
+                // commits the outcome so the contact moves to the
+                // chosen stage; agent just hasn't set a follow-up.
                 const colId = pendingFollowupColId;
                 setPendingFollowupColId(null);
                 if (colId) commitOutcome(colId);

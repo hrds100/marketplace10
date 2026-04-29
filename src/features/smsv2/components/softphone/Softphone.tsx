@@ -14,11 +14,7 @@ import { useActiveCallCtx } from '../live-call/ActiveCallContext';
 import { useTwilioDevice } from '../../hooks/useTwilioDevice';
 import { useSpendLimit } from '../../hooks/useSpendLimit';
 import { formatDuration, formatPence } from '../../data/helpers';
-// PR 140 (Hugo 2026-04-28): the in-call full-screen overlay is now
-// InCallRoom (state-badge-driven shell). LiveCallScreen is retained
-// in the codebase only for the existing reducer/context tests; new
-// product surfaces render InCallRoom.
-import InCallRoom from '../dialer/v2/InCallRoom';
+import LiveCallScreen from '../live-call/LiveCallScreen';
 import { useCurrentAgent } from '../../hooks/useCurrentAgent';
 
 export default function Softphone() {
@@ -27,15 +23,15 @@ export default function Softphone() {
   const device = useTwilioDevice();
   const {
     phase,
-    callPhase,
     call,
     durationSec,
-    roomView,
+    fullScreen,
     setFullScreen,
     startCall,
     endCall,
     muted,
     toggleMute,
+    previewContactId,
   } = useActiveCallCtx();
   const spend = useSpendLimit();
   const { agent: me } = useCurrentAgent();
@@ -58,18 +54,17 @@ export default function Softphone() {
     setOpen(false);
   };
 
-  // PR 138 (Hugo 2026-04-28): roomView is now the single source of
-  // truth for "is the live-call overlay visible?". The reducer flips
-  // it independently from callPhase, so hang-up no longer closes the
-  // room (Rule 6) and minimise/maximise don't end the call (Rule 7).
-  if (roomView === 'open_full') {
-    return <InCallRoom />;
+  // Render the live call full-screen overlay if the call is active and
+  // full-screen mode is on. PR 10: also render in idle-preview mode so
+  // the agent can open the call room layout for a contact from the
+  // inbox without dialling.
+  if ((phase !== 'idle' || previewContactId !== null) && fullScreen) {
+    return <LiveCallScreen />;
   }
 
   // Placing collapsed bar (calling but not yet answered) — black + ringing
   // dot. Hugo's call (2026-04-26): orange "felt off" for a connecting state.
-  // PR 138: roomView gates visibility, not the legacy fullScreen boolean.
-  if (phase === 'placing' && roomView === 'open_min') {
+  if (phase === 'placing' && !fullScreen) {
     return (
       <div className="fixed bottom-5 right-5 z-[120] bg-white border border-[#E5E7EB] rounded-2xl shadow-[0_8px_32px_rgba(0,0,0,0.12)] w-[320px] overflow-hidden">
         <div className="px-4 py-2.5 bg-[#1A1A1A] text-white flex items-center gap-2">
@@ -103,8 +98,7 @@ export default function Softphone() {
   }
 
   // Mid-call collapsed bar
-  // PR 138: roomView gates visibility, not the legacy fullScreen boolean.
-  if (phase === 'in_call' && roomView === 'open_min') {
+  if (phase === 'in_call' && !fullScreen) {
     return (
       <div className="fixed bottom-5 right-5 z-[120] bg-white border border-[#E5E7EB] rounded-2xl shadow-[0_8px_32px_rgba(0,0,0,0.12)] w-[320px] overflow-hidden">
         <div className="px-4 py-2.5 bg-[#1E9A80] text-white flex items-center gap-2">
@@ -143,27 +137,21 @@ export default function Softphone() {
     );
   }
 
-  // PR 138 (Hugo 2026-04-28): post-call minimised pill. Shows when
-  // roomView='open_min' AND we're in any of the post-call sub-phases
-  // (stopped_waiting_outcome, error_waiting_outcome, outcome_done).
-  // Replaces the old hasRealCallId UUID regex — pill text rules are
-  // explicit now: any of those phases means the agent still owes a
-  // pick, so the label calls that out by contact name.
-  const isPostCallSubPhase =
-    callPhase === 'stopped_waiting_outcome' ||
-    callPhase === 'error_waiting_outcome' ||
-    callPhase === 'outcome_done';
-  if (isPostCallSubPhase && roomView === 'open_min') {
+  // Post-call collapsed (rare — usually full-screen).
+  // Guard: only render the orange "Pick outcome" button when there's a real
+  // wk_calls.id (UUID) to apply the outcome to. Without it, wk-outcome-apply
+  // can't fire and the click would be a no-op + leak fake state.
+  const UUID_RE =
+    /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+  const hasRealCallId = !!call?.callId && UUID_RE.test(call.callId);
+  if (phase === 'post_call' && !fullScreen && hasRealCallId) {
     return (
       <button
         onClick={() => setFullScreen(true)}
         className="fixed bottom-5 right-5 z-[120] bg-[#F59E0B] text-white px-4 py-3 rounded-2xl shadow-lg flex items-center gap-2 text-[13px] font-semibold"
-        data-testid="softphone-postcall-maximize"
       >
         <Maximize2 className="w-4 h-4" />
-        {callPhase === 'outcome_done'
-          ? `Outcome saved · ${call?.contactName ?? 'caller'}`
-          : `Pick outcome for ${call?.contactName ?? 'caller'}`}
+        Pick outcome for {call?.contactName}
       </button>
     );
   }
@@ -185,12 +173,6 @@ export default function Softphone() {
     return (
       <button
         onClick={() => setOpen(true)}
-        // PR 132 (Hugo 2026-04-28, Bug 4): expose the Twilio Device status
-        // so Playwright can assert readiness ('ready' / 'registering' /
-        // 'error' / 'idle') before pressing Start. Used by the dialer
-        // page e2e test that verifies the first call rings.
-        data-device-status={device.status}
-        data-testid="softphone-launcher"
         className="fixed bottom-5 right-5 z-[120] bg-white border border-[#E5E7EB] rounded-full shadow-[0_4px_16px_rgba(0,0,0,0.1)] pl-2 pr-4 py-2 flex items-center gap-2 hover:shadow-[0_6px_24px_rgba(0,0,0,0.12)] transition-all"
       >
         <span className="w-8 h-8 rounded-full bg-[#1E9A80] text-white flex items-center justify-center">
