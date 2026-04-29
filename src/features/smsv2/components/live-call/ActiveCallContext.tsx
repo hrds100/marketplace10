@@ -26,6 +26,8 @@ import type { Call as TwilioCall } from '@twilio/voice-sdk';
 import { useSmsV2 } from '../../store/SmsV2Store';
 import { supabase } from '@/integrations/supabase/client';
 import { useTwilioDevice } from '../../hooks/useTwilioDevice';
+import { useDialerSession } from '../../hooks/useDialerSession';
+import { dialerLog } from '../../lib/dialerLog';
 import {
   addIncomingCallListener,
   addTokenRefreshFailListener,
@@ -160,6 +162,17 @@ interface ActiveCallCtx {
    *  shortcuts AND by real outcome card clicks once the reducer
    *  settles. */
   requestNextCall: () => Promise<void>;
+  // ─── PR 151 (Hugo 2026-04-29): universal session controls ──────────
+  /** Pause the session: gates auto-next pacing, transitions to
+   *  callPhase='paused' when idle in outcome_done. Mid-call only
+   *  toggles the flag — the live call is untouched. */
+  requestPause: () => void;
+  /** Resume the session: clears sessionPaused, exits callPhase='paused'
+   *  back to outcome_done (or idle if no last call). */
+  requestResume: () => void;
+  /** Skip the current contact: from *_waiting_outcome, transitions to
+   *  outcome_done with no stage move, then fires requestNextCall. */
+  requestSkip: () => Promise<void>;
 }
 
 const Ctx = createContext<ActiveCallCtx | null>(null);
@@ -167,6 +180,7 @@ const Ctx = createContext<ActiveCallCtx | null>(null);
 export function ActiveCallProvider({ children }: { children: ReactNode }) {
   const store = useSmsV2();
   const device = useTwilioDevice();
+  const session = useDialerSession();
   const [state, dispatch] = useReducer(callLifecycleReducer, INITIAL_STATE);
   const { callPhase, call, roomView, muted, error, dispositionSignal, previewContactId, lastEndedContactId } = state;
 
@@ -183,12 +197,13 @@ export function ActiveCallProvider({ children }: { children: ReactNode }) {
   const stateRef = useRef(state);
   stateRef.current = state;
 
-  // PR 147 (Hugo 2026-04-29, Bug #4): track every contactId dialed in
-  // this provider's lifetime so requestNextCall + startCall can reject
-  // a "next" choice that loops back to the same contact. The set lives
-  // for the agent's session (Provider mount lifetime); a hard reset
-  // happens on Provider remount or explicit clearCall().
-  const dialedThisSessionRef = useRef<Set<string>>(new Set());
+  // PR 151 (Hugo 2026-04-29): dialedThisSession migrated from a local
+  // useRef into useDialerSession() so the same set is visible to other
+  // consumers (OverviewHeader counts, debugger, future logging). The
+  // store lives in DialerSessionProvider — see Smsv2Layout.tsx wiring.
+  // Read live via `session.dialedThisSession`; append via
+  // `session.recordDialed(contactId)`. PR 147's anti-loop semantics
+  // unchanged.
 
   // PR 147 (Hugo 2026-04-29, Bug #2): track which callIds we've already
   // stamped client-side ended_at on so the persistence useEffect below
@@ -206,6 +221,74 @@ export function ActiveCallProvider({ children }: { children: ReactNode }) {
       if (intervalRef.current) clearInterval(intervalRef.current);
     };
   }, [callPhase]);
+
+  // PR 151 (Hugo 2026-04-29): mirror dialerSession.paused into the
+  // reducer so pure transitions can gate auto-next without reaching
+  // outside. The reducer's PAUSE_REQUESTED / RESUME_REQUESTED handlers
+  // are idempotent — dispatching twice for the same value is a no-op.
+  useEffect(() => {
+    if (session.paused && !state.sessionPaused) {
+      dispatch({ type: 'PAUSE_REQUESTED' });
+    } else if (!session.paused && state.sessionPaused) {
+      dispatch({ type: 'RESUME_REQUESTED' });
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [session.paused, state.sessionPaused]);
+
+  // PR 151: pacing timer. When the agent lands in outcome_done with
+  // auto_next pacing AND the session is not paused AND no timer is
+  // already armed, schedule a setTimeout for `delaySeconds` and dispatch
+  // PACING_ARMED so the badge can render the visible countdown. On
+  // any state change (or unmount), cancel the timer + dispatch
+  // PACING_CANCELLED. When the timer fires, dispatch
+  // PACING_DEADLINE_TICK + call requestNextCallRef.current() to
+  // resolve the next contact. Hugo Rule 3: pacing is convenience, not
+  // a blocker — agent intent (manual Next / Skip / Pause) cancels the
+  // timer instantly because every action triggers a state change.
+  const requestNextCallRef = useRef<() => Promise<void>>(async () => {});
+  const pacingTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  useEffect(() => {
+    const shouldArm =
+      callPhase === 'outcome_done' &&
+      !session.paused &&
+      session.pacing.mode === 'auto_next' &&
+      state.pendingNextCall === 'idle';
+    if (!shouldArm) {
+      // Cancel any prior timer + clear the reducer mirror.
+      if (pacingTimerRef.current) {
+        clearTimeout(pacingTimerRef.current);
+        pacingTimerRef.current = null;
+        if (state.pendingNextCall !== 'idle' || state.pacingDeadlineMs !== null) {
+          dispatch({ type: 'PACING_CANCELLED' });
+          dialerLog('pacing.cancelled', {
+            sessionId: session.sessionId,
+            fromPhase: callPhase,
+          });
+        }
+      }
+      return;
+    }
+    const delayMs = Math.max(0, session.pacing.delaySeconds) * 1000;
+    const deadlineMs = Date.now() + delayMs;
+    dispatch({ type: 'PACING_ARMED', deadlineMs });
+    dialerLog('pacing.armed', {
+      sessionId: session.sessionId,
+      extra: { delayMs, deadlineMs },
+    });
+    pacingTimerRef.current = setTimeout(() => {
+      pacingTimerRef.current = null;
+      dispatch({ type: 'PACING_DEADLINE_TICK' });
+      dialerLog('pacing.fire', { sessionId: session.sessionId });
+      void requestNextCallRef.current();
+    }, delayMs);
+    return () => {
+      if (pacingTimerRef.current) {
+        clearTimeout(pacingTimerRef.current);
+        pacingTimerRef.current = null;
+      }
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [callPhase, session.paused, session.pacing.mode, session.pacing.delaySeconds, state.pendingNextCall]);
 
   // PR 147 (Hugo 2026-04-29, Bug #2): when the call lands in any wrap-
   // up phase, stamp wk_calls.ended_at client-side. Twilio's
@@ -373,12 +456,13 @@ export function ActiveCallProvider({ children }: { children: ReactNode }) {
       // so sentinel flows like Skip / Next-now don't pop it again.
       store.removeFromQueue(contactId);
 
-      // PR 147: mark this contact as dialed-this-session so the anti-
-      // loop guard in requestNextCall can avoid bouncing back here.
+      // PR 147 / PR 151: mark this contact as dialed-this-session so
+      // the anti-loop guard in requestNextCall can avoid bouncing back.
       // Skip recording for synthetic manual-dial IDs (`manual-...`)
-      // since each manual dial gets a fresh id anyway.
+      // since each manual dial gets a fresh id anyway. PR 151: source
+      // is now useDialerSession() (was useRef).
       if (!contactId.startsWith('manual-')) {
-        dialedThisSessionRef.current.add(contactId);
+        session.recordDialed(contactId);
       }
 
       activeTwilioCallRef.current = null;
@@ -729,6 +813,19 @@ export function ActiveCallProvider({ children }: { children: ReactNode }) {
                 `Server outcome failed: ${real} — restored previous stage`,
                 'error'
               );
+              // PR 151: dispatch OUTCOME_FAILED so the reducer flips to
+              // outcome_done (no trap on save failure). Note: we already
+              // dispatched OUTCOME_RESOLVED below for the optimistic
+              // path; OUTCOME_FAILED is idempotent if state is already
+              // outcome_done so dispatching here is safe even though the
+              // reducer is already past outcome_submitting.
+              dispatch({ type: 'OUTCOME_FAILED', message: real });
+              dialerLog('outcome.failed', {
+                callId: call.callId,
+                contactId: call.contactId,
+                sessionId: session.sessionId,
+                extra: { message: real },
+              }, 'error');
             } else if (data?.applied && data.applied.length === 0 && badges.length > 0) {
               console.warn('outcome: server fired no automations', data);
             }
@@ -740,6 +837,14 @@ export function ActiveCallProvider({ children }: { children: ReactNode }) {
               `Outcome did not save server-side: ${e instanceof Error ? e.message : 'unknown'} — restored previous stage`,
               'error'
             );
+            const msg = e instanceof Error ? e.message : 'unknown';
+            dispatch({ type: 'OUTCOME_FAILED', message: msg });
+            dialerLog('outcome.failed', {
+              callId: call.callId,
+              contactId: call.contactId,
+              sessionId: session.sessionId,
+              extra: { message: msg },
+            }, 'error');
           }
         })();
       }
@@ -747,6 +852,8 @@ export function ActiveCallProvider({ children }: { children: ReactNode }) {
       // Reducer transitions to outcome_done. NO auto-advance, NO
       // setTimeout chain to startCall (Rules 3, 4). Agent presses
       // "Next call" or picks a different contact from Recent Calls.
+      // (PR 151: OUTCOME_FAILED handler in the reducer is idempotent in
+      // outcome_done so the optimistic OUTCOME_RESOLVED below is fine.)
       dispatch({ type: 'OUTCOME_RESOLVED' });
 
       // Empty-queue case is now handled at the UI layer (PostCallPanel
@@ -798,11 +905,20 @@ export function ActiveCallProvider({ children }: { children: ReactNode }) {
     const prevContactId = cur.call?.contactId ?? null;
     const campaignId = cur.call?.campaignId ?? null;
 
-    // PR 147 (Hugo 2026-04-29, Bug #4): deterministic anti-loop. Pop
-    // up to N times, skipping any contact already dialed this session.
-    // If every reachable lead has been dialed, surface a clear toast
-    // and stop — never silently re-dial the previous contact.
-    const dialed = dialedThisSessionRef.current;
+    // PR 147/151: deterministic anti-loop. Pop up to N times, skipping
+    // any contact already dialed this session (set lives in
+    // useDialerSession). If every reachable lead has been dialed,
+    // dispatch NEXT_CALL_EMPTY so the reducer's sticky banner flag
+    // turns on; UI surfaces "No new leads — N already dialed".
+    dialerLog('next.requested', {
+      callId: cur.call?.callId ?? null,
+      contactId: prevContactId,
+      campaignId,
+      sessionId: session.sessionId,
+      source: 'manual',
+      fromPhase: cur.callPhase,
+    });
+    const dialed = session.dialedThisSession;
     let nextContactId: string | null = null;
     const skipped: string[] = [];
     for (let i = 0; i < 20; i++) {
@@ -841,6 +957,7 @@ export function ActiveCallProvider({ children }: { children: ReactNode }) {
               '[requestNextCall] wk-leads-next returned already-dialed contact, skipping',
               candidate
             );
+            skipped.push(candidate);
           }
         }
       } catch (e) {
@@ -850,6 +967,19 @@ export function ActiveCallProvider({ children }: { children: ReactNode }) {
 
     // 3. Empty (or only already-dialed contacts left).
     if (!nextContactId) {
+      // PR 151: dispatch NEXT_CALL_EMPTY so the reducer flips its
+      // sticky banner flag. Toast still fires for immediate feedback.
+      dispatch({
+        type: 'NEXT_CALL_EMPTY',
+        skippedAlreadyDialed: skipped.length,
+      });
+      dialerLog('next.empty', {
+        callId: cur.call?.callId ?? null,
+        contactId: prevContactId,
+        campaignId,
+        sessionId: session.sessionId,
+        extra: { skipped: skipped.length },
+      });
       const msg =
         skipped.length > 0
           ? `No new leads — ${skipped.length} already dialed this session`
@@ -860,8 +990,68 @@ export function ActiveCallProvider({ children }: { children: ReactNode }) {
 
     // 4. Dial. startCall handles dispatch + Twilio wiring + spend gate
     //    + listener registration. This is the SINGLE dial path.
+    dialerLog('next.selected', {
+      callId: cur.call?.callId ?? null,
+      contactId: nextContactId,
+      campaignId,
+      sessionId: session.sessionId,
+    });
     await startCall(nextContactId);
-  }, [store, startCall]);
+  }, [store, startCall, session]);
+
+  // PR 151: keep the pacing-timer's ref-callback in sync with the
+  // latest requestNextCall closure so the timer's callback always sees
+  // the freshest dependencies (state, session). Without this the timer
+  // fires with a stale closure when the agent toggles pacing mid-session.
+  useEffect(() => {
+    requestNextCallRef.current = requestNextCall;
+  }, [requestNextCall]);
+
+  // PR 151: universal session controls — Pause / Resume / Skip. These
+  // adapt the agent's intent into the right combination of session-store
+  // mutation + reducer dispatch. Hugo's universal-control rule: these
+  // must work in EVERY phase; the underlying store/reducer handle the
+  // gating per-phase.
+  const requestPause = useCallback(() => {
+    session.pause();
+    dispatch({ type: 'PAUSE_REQUESTED' });
+    dialerLog('pause', {
+      sessionId: session.sessionId,
+      fromPhase: stateRef.current.callPhase,
+    });
+  }, [session]);
+
+  const requestResume = useCallback(() => {
+    session.resume();
+    dispatch({ type: 'RESUME_REQUESTED' });
+    dialerLog('resume', {
+      sessionId: session.sessionId,
+      fromPhase: stateRef.current.callPhase,
+    });
+  }, [session]);
+
+  const requestSkip = useCallback(async (): Promise<void> => {
+    const cur = stateRef.current;
+    dialerLog('skip', {
+      callId: cur.call?.callId ?? null,
+      contactId: cur.call?.contactId ?? null,
+      sessionId: session.sessionId,
+      fromPhase: cur.callPhase,
+    });
+    // From wrap-up, dispatch SKIP_REQUESTED (atomic outcome_done
+    // transition, no stage move). From any other state we fall through
+    // to requestNextCall which itself handles the live-call-end-first
+    // semantics via startCall.
+    if (
+      cur.callPhase === 'stopped_waiting_outcome' ||
+      cur.callPhase === 'error_waiting_outcome'
+    ) {
+      dispatch({ type: 'SKIP_REQUESTED' });
+      // Allow the reducer transition to settle before requesting next.
+      await Promise.resolve();
+    }
+    await requestNextCall();
+  }, [requestNextCall, session]);
 
   // ─── Public context value ───────────────────────────────────────
   const legacyPhase = mapToLegacyPhase(callPhase);
@@ -903,10 +1093,11 @@ export function ActiveCallProvider({ children }: { children: ReactNode }) {
       enterDialingPlaceholder,
       endCall,
       clearCall: () => {
-        // PR 147 (Bug #4): clearCall is the explicit "start over" hook —
+        // PR 147 / PR 151: clearCall is the explicit "start over" hook —
         // wipe the dialed-this-session set so the agent can re-dial
-        // contacts in a fresh session.
-        dialedThisSessionRef.current.clear();
+        // contacts in a fresh session. PR 151: source is now
+        // useDialerSession.endSession() (was useRef.clear()).
+        session.endSession();
         dispatch({ type: 'CLEAR' });
       },
       applyOutcome,
@@ -919,6 +1110,10 @@ export function ActiveCallProvider({ children }: { children: ReactNode }) {
       minimiseRoom: () => dispatch({ type: 'MINIMISE_ROOM' }),
       maximiseRoom: () => dispatch({ type: 'MAXIMISE_ROOM' }),
       requestNextCall,
+      // PR 151 (Hugo 2026-04-29): universal session controls.
+      requestPause,
+      requestResume,
+      requestSkip,
     };
   }, [
     legacyPhase,
@@ -938,6 +1133,10 @@ export function ActiveCallProvider({ children }: { children: ReactNode }) {
     endCall,
     applyOutcome,
     requestNextCall,
+    requestPause,
+    requestResume,
+    requestSkip,
+    session,
   ]);
 
   return <Ctx.Provider value={value}>{children}</Ctx.Provider>;
