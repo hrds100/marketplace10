@@ -139,15 +139,36 @@ export default function InCallRoom() {
     endCall,
   });
 
-  const contact =
-    store.contacts.find((c) =>
-      isPreview ? c.id === previewContactId : c.id === call?.contactId
-    ) ?? store.contacts[0];
+  // PR 147 (Hugo 2026-04-29, Bug #1): the header used to fall back to
+  // `store.contacts[0]` when the contact-id lookup failed — which
+  // happens for manual dials from the softphone DialPad (contactId =
+  // 'manual-${Date.now()}', never in the store). The result was the
+  // header showing some random other contact's name/phone during a
+  // live call. Fix: when the lookup fails, build a minimal contact
+  // shell from the active call's contactName + phone (which the dial
+  // path always populates). Only fall back to store.contacts[0] when
+  // there is no active call and no preview either (true edge case).
+  const storeContact = store.contacts.find((c) =>
+    isPreview ? c.id === previewContactId : c.id === call?.contactId
+  );
+  const fallbackFromCall =
+    !storeContact && call
+      ? ({
+          id: call.contactId,
+          name: call.contactName || call.phone || 'Unknown caller',
+          phone: call.phone,
+          tags: [],
+          isHot: false,
+          customFields: {},
+          createdAt: new Date().toISOString(),
+        } as Contact)
+      : null;
+  const contact = storeContact ?? fallbackFromCall ?? store.contacts[0];
 
   if (!contact) {
-    // Edge case: room mounted but no contact resolvable — just render
-    // an empty shell rather than crash. Should not happen in practice
-    // because closeCallRoom() runs on outcome_done.
+    // Edge case: room mounted but nothing resolvable — render nothing
+    // rather than crash. Should not happen in practice because
+    // closeCallRoom() runs on outcome_done.
     return null;
   }
 
@@ -409,7 +430,7 @@ export default function InCallRoom() {
           className="ml-auto text-[12px] text-[#6B7280]"
           data-testid="incall-help-text"
         >
-          {helpTextForKind(uiState.kind)}
+          {helpTextForUiState(uiState)}
         </span>
       </footer>
 
@@ -422,8 +443,12 @@ export default function InCallRoom() {
   );
 }
 
-function helpTextForKind(kind: string): string {
-  switch (kind) {
+// PR 147 (Hugo 2026-04-29, Bug #3): per-wrap-up-reason help text. The
+// CallStateBadge already shows the SHORT label ("No answer", "Busy",
+// "Unreachable", etc.); this footer string adds the actionable
+// instruction below the badge so the agent knows what to do next.
+function helpTextForUiState(s: import('../../../lib/dialerUiState').DialerUiState): string {
+  switch (s.kind) {
     case 'dialing':
       return 'Connecting through Twilio · cancel any time';
     case 'ringing':
@@ -431,13 +456,32 @@ function helpTextForKind(kind: string): string {
     case 'connected':
       return 'Microphone live · use Mute to silence your end';
     case 'wrap_up':
-      return 'Pick an outcome below to log the call';
+      switch (s.reason) {
+        case 'completed':
+          return 'Call ended — pick an outcome below to log the call';
+        case 'no_answer':
+          return 'No answer — pick an outcome to move on';
+        case 'voicemail':
+          return 'Voicemail detected — pick Voicemail or move on';
+        case 'busy':
+          return 'Destination is busy — try the next lead or retry later';
+        case 'unreachable':
+          return 'Contact not found — please dial the next lead';
+        case 'invalid_number':
+          return 'Number invalid for this carrier — pick the next lead';
+        case 'failed':
+          return 'Call failed — pick an outcome to move on';
+        case 'unknown':
+          return 'Pick an outcome below to log the call';
+      }
+    // eslint-disable-next-line no-fallthrough
     case 'submitting':
       return 'Saving outcome…';
     case 'done':
       return 'Outcome saved · close to return to the dialer or press Next call';
     case 'preview':
       return 'Preview · click Call now to dial this lead';
+    case 'idle':
     default:
       return '';
   }

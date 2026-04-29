@@ -410,6 +410,33 @@ describe('PR 141 — error-then-disconnect (Bug 1)', () => {
     expect(s.callPhase).toBe('stopped_waiting_outcome');
     expect(s.dispositionSignal).not.toBe('unreachable');
   });
+
+  // PR 147 (Hugo 2026-04-29): SDK precision-flag codes 31404 NotFound
+  // and 31480 TemporarilyUnavailable both reflect carrier-side
+  // unreachability for our outbound dial flow. Map them to
+  // 'unreachable' so the badge shows the same red wrap-up state as
+  // 31000/31005/31009.
+  it('CALL_ERROR(31404, fatal) flips to error_waiting_outcome with unreachable signal', () => {
+    let s = dial();
+    s = callLifecycleReducer(s, {
+      type: 'CALL_ERROR',
+      error: { code: 31404, friendlyMessage: 'NotFound' },
+      fatal: true,
+    });
+    expect(s.callPhase).toBe('error_waiting_outcome');
+    expect(s.dispositionSignal).toBe('unreachable');
+  });
+
+  it('CALL_ERROR(31480, fatal) flips to error_waiting_outcome with unreachable signal', () => {
+    let s = dial();
+    s = callLifecycleReducer(s, {
+      type: 'CALL_ERROR',
+      error: { code: 31480, friendlyMessage: 'TemporarilyUnavailable' },
+      fatal: true,
+    });
+    expect(s.callPhase).toBe('error_waiting_outcome');
+    expect(s.dispositionSignal).toBe('unreachable');
+  });
 });
 
 describe('PR 141 — Open from any wrap-up (Bug 2)', () => {

@@ -53,6 +53,26 @@ export function mapTwilioError(code: number, message: string): MappedTwilioError
       fatal: true,
     };
   }
+  if (code === 31404) {
+    // PR 147 (Hugo 2026-04-29): SIP 404 NotFound. With the precision
+    // flag enabled (PR 144), Twilio's gateway uses this code when the
+    // dialed destination cannot be routed (carrier-side rejection,
+    // wraps an underlying 13224 invalid-phone-number from the network).
+    // The agent should move on, not retry this contact.
+    return {
+      friendlyMessage: 'Contact not found — please dial the next lead.',
+      fatal: true,
+    };
+  }
+  if (code === 31480) {
+    // SIP 480 TemporarilyUnavailable — destination Client/number
+    // exists but isn't reachable right now (turned off, no signal,
+    // carrier-side block). Same UX outcome as 31404: move on.
+    return {
+      friendlyMessage: 'Destination temporarily unavailable — try the next lead.',
+      fatal: true,
+    };
+  }
   if (code === 31486) {
     // PR 146 (Hugo 2026-04-28): 31486 (SIP BusyHere) is fired by the
     // Twilio gateway when the DESTINATION phone returned a busy signal

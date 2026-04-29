@@ -39,6 +39,13 @@ export function computeDispositionSignal(input: TelephonyInputs): TelephonySigna
   if (errorCode === 31000 || errorCode === 31005 || errorCode === 31009) {
     return 'unreachable';
   }
+  // PR 147 (Hugo 2026-04-29): SDK precision-flag codes for "destination
+  // can't be reached" — 31404 NotFound, 31480 TemporarilyUnavailable.
+  // Both surface in our flow when the carrier rejects the dial leg.
+  // Same UX disposition as 31000/31005/31009.
+  if (errorCode === 31404 || errorCode === 31480) {
+    return 'unreachable';
+  }
 
   if (twilioStatus === 'busy') return 'busy';
   if (twilioStatus === 'no-answer') return 'no_answer';
