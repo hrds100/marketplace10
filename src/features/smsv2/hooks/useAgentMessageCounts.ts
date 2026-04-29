@@ -53,43 +53,16 @@ export function useAgentMessageCounts(agentId: string | null): AgentMessageCount
 
     void load();
 
-    // PR 154 (Hugo 2026-04-29): realtime INSERT listener on
-    // wk_sms_messages filtered by created_by=me. Counts now bump
-    // immediately when the agent fires a mid-call send — no 30s lag.
-    // Hugo Rule 13: numbers must be truthful. Cheap fallback poll
-    // kept at a longer interval as belt-and-braces.
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const channel = (supabase as any)
-      .channel(`smsv2-agent-msgs-${agentId}`)
-      .on(
-        'postgres_changes',
-        {
-          event: 'INSERT',
-          schema: 'public',
-          table: 'wk_sms_messages',
-          filter: `created_by=eq.${agentId}`,
-        },
-        () => {
-          if (!cancelled) void load();
-        }
-      )
-      .subscribe();
-
-    // Belt-and-braces fallback poll (longer interval since realtime
-    // covers the live case).
+    // Cheap 30s poll — agents care about freshness when they're firing
+    // mid-call sends, but realtime on a wk_sms_messages-wide channel is
+    // overkill for a counter.
     const id = window.setInterval(() => {
       if (!cancelled) void load();
-    }, 60_000);
+    }, 30_000);
 
     return () => {
       cancelled = true;
       window.clearInterval(id);
-      try {
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        (supabase as any).removeChannel(channel);
-      } catch {
-        /* ignore */
-      }
     };
   }, [agentId]);
 

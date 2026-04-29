@@ -57,7 +57,6 @@ import {
 } from '../../../data/helpers';
 import { deriveDialerUiState } from '../../../lib/dialerUiState';
 import CallStateBadge from './CallStateBadge';
-import SessionControlBar from '../v3/SessionControlBar';
 
 export default function InCallRoom() {
   const ctx = useActiveCallCtx();
@@ -202,7 +201,8 @@ export default function InCallRoom() {
               .padStart(2, '0')}`
           : null;
 
-  // PR 152: hangUpLabel logic moved into SessionControlBar.
+  const hangUpLabel =
+    uiState.kind === 'dialing' || uiState.kind === 'ringing' ? 'Cancel' : 'Hang up';
 
   return (
     <div
@@ -420,14 +420,20 @@ export default function InCallRoom() {
         </ResizablePanel>
       </ResizablePanelGroup>
 
-      {/* PR 152 (Hugo 2026-04-29): action bar now uses the universal
-          SessionControlBar (Hang up / Pause / Resume / Skip / Next call)
-          rendered per the visibility matrix. The legacy single-button
-          row is replaced. The preview-mode "Call now" button stays as
-          a separate concern (it's a START_CALL trigger, not a session
-          control). Help text on the right is unchanged. */}
+      {/* Action bar — bottom-fixed; the Hang Up / Call Now button is
+          the loudest element. Status help text on the right. */}
       <footer className="flex items-center px-5 gap-3 flex-shrink-0 h-14 bg-white border-t border-[#E5E7EB]">
-        {isPreview ? (
+        {isLive ? (
+          <button
+            onClick={async () => {
+              await endCall();
+            }}
+            className="flex items-center gap-2 bg-[#EF4444] hover:bg-[#DC2626] text-white px-4 py-2 rounded-[10px] text-[13px] font-semibold"
+            data-testid="incall-hangup"
+          >
+            <PhoneOff className="w-4 h-4" /> {hangUpLabel}
+          </button>
+        ) : isPreview ? (
           <button
             onClick={() => void startCall(contact.id)}
             className="flex items-center gap-2 bg-[#1E9A80] hover:bg-[#1E9A80]/90 text-white px-4 py-2 rounded-[10px] text-[13px] font-semibold shadow-[0_4px_12px_rgba(30,154,128,0.35)]"
@@ -435,12 +441,7 @@ export default function InCallRoom() {
           >
             <PhoneOff className="w-4 h-4 rotate-[135deg]" /> Call now
           </button>
-        ) : (
-          <SessionControlBar
-            size="lg"
-            pacingDeadlineMs={ctx.pacingDeadlineMs}
-          />
-        )}
+        ) : null}
 
         <span
           className="ml-auto text-[12px] text-[#6B7280]"
