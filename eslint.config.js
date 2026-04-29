@@ -37,4 +37,35 @@ export default tseslint.config(
       "@typescript-eslint/no-empty-object-type": "warn",
     },
   },
+  // PR A (crm-v2 rebuild): the new dialer must NOT import any code
+  // from the old smsv2 dialer — that's the whole point of the
+  // clean-slate rebuild. If we ever accidentally re-import an old
+  // module, lint fails before review.
+  {
+    files: ["src/features/crm-v2/**/*.{ts,tsx}"],
+    rules: {
+      "no-restricted-imports": [
+        "error",
+        {
+          patterns: [
+            {
+              group: [
+                "@/features/smsv2/components/dialer/**",
+                "@/features/smsv2/components/live-call/**",
+                "@/features/smsv2/components/softphone/**",
+                "../../smsv2/components/dialer/**",
+                "../../smsv2/components/live-call/**",
+                "../../smsv2/components/softphone/**",
+                "../../../smsv2/components/dialer/**",
+                "../../../smsv2/components/live-call/**",
+                "../../../smsv2/components/softphone/**",
+              ],
+              message:
+                "crm-v2 must not import from the old smsv2 dialer. The whole point of the rebuild is no shared logic.",
+            },
+          ],
+        },
+      ],
+    },
+  },
 );
