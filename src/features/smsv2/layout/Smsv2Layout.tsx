@@ -11,7 +11,6 @@ import GlobalToasts from '../store/GlobalToasts';
 import { useHydrateContacts } from '../hooks/useHydrateContacts';
 import { useHydratePipelineColumns } from '../hooks/useHydratePipelineColumns';
 import FollowupBanner from '../components/followups/FollowupBanner';
-import { CallerPad } from '@/features/caller/pages/DialerPage';
 
 // Side-effect-only component: pumps real wk_contacts and wk_pipeline_columns
 // into the store so every /smsv2 page reads live data with real UUIDs
@@ -68,9 +67,8 @@ export default function Smsv2Layout() {
               </main>
             </div>
 
-            {/* Softphone hidden on /crm/dialer — CallerPad handles it */}
+            {/* Softphone hidden on /crm/dialer — CallerPad inside DialerPage handles it */}
             {!onDialerPage && <Softphone />}
-            {onDialerPage && <CallerPad />}
             <GlobalToasts />
           </div>
         </ActiveCallProvider>
