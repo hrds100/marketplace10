@@ -22,7 +22,7 @@
 //   7. Pause / Resume / Stop are explicit buttons in the top bar.
 
 import { useCallback, useEffect, useMemo, useReducer, useRef, useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useLocation } from 'react-router-dom';
 import {
   Phone, PhoneOff, Mic, MicOff, Pause, Play, Square, SkipForward, Zap,
   CheckCircle2, Loader2, Clock, Radio, Pencil, X, Minus, GripVertical,
@@ -148,10 +148,37 @@ function reducer(s: State, a: Action): State {
 }
 
 // ─── Component ──────────────────────────────────────────────────────
+//
+// `CallerPad` is mounted ONCE in CallerLayout so its state (Twilio
+// Device, dialer reducer, queue subscriptions, in-flight call) survives
+// route navigation. On `/caller/dialer` it renders as the full pad
+// (top-right, minimize-to-chip). On every other `/caller/*` route it
+// renders as a small Intercom-style square icon (bottom-right by
+// default); clicking the icon expands the same pad as a floating
+// overlay so the agent can dial from any caller page.
+//
+// The route component for `/caller/dialer` is `DialerPage` (default
+// export below), which renders nothing — the pad rendered by the
+// layout already provides the dialer UI.
 
-export default function DialerPage() {
+export function CallerPad() {
   const { user, isAdmin } = useAuth();
   const toasts = useCallerToasts();
+  const { pathname } = useLocation();
+  // The pad lives in CallerLayout, so it renders for every /caller/*
+  // route. On /caller/dialer it's the full pad (current behaviour).
+  // Elsewhere it's an Intercom-style icon by default — click to open.
+  const onDialerPage = pathname === '/caller/dialer' || pathname.startsWith('/caller/dialer/');
+  const onCallerSurface = pathname.startsWith('/caller/');
+  // Persisted on/off for the icon mode. 'icon' = collapsed icon
+  // visible; 'open' = full pad visible as an overlay. Independent
+  // from `minimized` which only governs behaviour on /caller/dialer.
+  const [iconOpen, setIconOpen] = useState<boolean>(() => {
+    try { return localStorage.getItem('caller_pad_open_v1') === '1'; } catch { return false; }
+  });
+  useEffect(() => {
+    try { localStorage.setItem('caller_pad_open_v1', iconOpen ? '1' : '0'); } catch { /* ignore */ }
+  }, [iconOpen]);
 
   // Workspace-role check (mirrors CallerGuard).
   const [workspaceRole, setWorkspaceRole] = useState<string | null | undefined>(undefined);
@@ -749,8 +776,52 @@ export default function DialerPage() {
     state.phase === 'ringing' ||
     state.phase === 'connected';
 
-  // When minimized, just a floating chip. Click to restore.
-  if (minimized) {
+  // Pad is only visible inside the /caller/* surface. The component is
+  // mounted in CallerLayout, but defensively check in case it ever
+  // ends up rendered outside.
+  if (!onCallerSurface) return null;
+
+  // ─── Non-dialer routes: Intercom-style square icon ──────────────────
+  // On any /caller/* route that isn't /caller/dialer, the pad collapses
+  // to a small square-with-rounded-corners icon (phone glyph in the
+  // middle). Click expands the same pad as a floating overlay; the
+  // overlay's X button returns to the icon.
+  if (!onDialerPage && !iconOpen) {
+    return (
+      <div
+        className="fixed z-[90] select-none"
+        style={{ left: pos.x, top: pos.y }}
+      >
+        <button
+          type="button"
+          onPointerDown={onDragStart}
+          onPointerMove={onDragMove}
+          onPointerUp={onDragEnd}
+          onPointerCancel={onDragEnd}
+          onClick={(e) => {
+            if (dragRef.current) return;
+            e.preventDefault();
+            setIconOpen(true);
+          }}
+          title={isLive && state.lead ? `Live · ${state.lead.name}` : 'Open dialer'}
+          className={cn(
+            'relative inline-flex items-center justify-center w-14 h-14 rounded-[16px] shadow-[0_12px_28px_rgba(30,154,128,0.35)] cursor-grab active:cursor-grabbing transition-colors',
+            isLive
+              ? 'bg-[#1E9A80] text-white'
+              : 'bg-white text-[#1E9A80] border border-[#E5E7EB] hover:bg-[#ECFDF5]'
+          )}
+        >
+          <Phone className="w-6 h-6" strokeWidth={2} />
+          {isLive && (
+            <span className="absolute top-1 right-1 w-2 h-2 rounded-full bg-white animate-pulse" />
+          )}
+        </button>
+      </div>
+    );
+  }
+
+  // When minimized (only on /caller/dialer), just a floating chip.
+  if (onDialerPage && minimized) {
     return (
       <div
         className="fixed z-[90] select-none"
@@ -815,14 +886,27 @@ export default function DialerPage() {
               <span className="ml-auto w-1.5 h-1.5 rounded-full bg-[#1E9A80] animate-pulse" />
             )}
           </div>
-          <button
-            type="button"
-            onClick={() => setMinimized(true)}
-            title="Minimize"
-            className="p-1 rounded hover:bg-[#F3F3EE] text-[#6B7280]"
-          >
-            <Minus className="w-4 h-4" />
-          </button>
+          {/* On /caller/dialer the header button minimizes to the chip.
+              On other /caller/* routes it closes back to the icon. */}
+          {onDialerPage ? (
+            <button
+              type="button"
+              onClick={() => setMinimized(true)}
+              title="Minimize"
+              className="p-1 rounded hover:bg-[#F3F3EE] text-[#6B7280]"
+            >
+              <Minus className="w-4 h-4" />
+            </button>
+          ) : (
+            <button
+              type="button"
+              onClick={() => setIconOpen(false)}
+              title="Close"
+              className="p-1 rounded hover:bg-[#F3F3EE] text-[#6B7280]"
+            >
+              <X className="w-4 h-4" />
+            </button>
+          )}
         </div>
 
         {/* Scrollable body. */}
@@ -950,6 +1034,16 @@ export default function DialerPage() {
       </div>
     </div>
   );
+}
+
+// ─── /caller/dialer route component ─────────────────────────────────
+//
+// The pad UI lives in CallerLayout (above the Outlet) so it survives
+// route navigation. The route component itself renders nothing — the
+// pad floats over whatever the current page would have been.
+
+export default function DialerPage() {
+  return null;
 }
 
 // ─── Sub-components ──────────────────────────────────────────────────
