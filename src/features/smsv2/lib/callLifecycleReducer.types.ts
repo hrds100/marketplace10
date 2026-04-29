@@ -170,9 +170,52 @@ export type CallLifecycleEvent =
   | {
       type: 'OUTCOME_RESOLVED';
     }
+  // PR 150 (Hugo 2026-04-29): outcome write failed (e.g. wk-outcome-apply
+  // returned 5xx). Reducer flips outcome_submitting → outcome_done so the
+  // agent isn't trapped on a spinning button. UI surface a toast.
+  | {
+      type: 'OUTCOME_FAILED';
+      message: string;
+    }
   | {
       type: 'NEXT_CALL_REQUESTED';
       call: ActiveCall;
+    }
+  // PR 150 (Hugo 2026-04-29): wk-leads-next returned no claimable lead
+  // (queue empty or all already-dialed-this-session). Stay in
+  // outcome_done; flip noNewLeadsBanner so the OverviewHeader / sticky
+  // banner can render.
+  | {
+      type: 'NEXT_CALL_EMPTY';
+      skippedAlreadyDialed: number;
+    }
+  // PR 150: agent Skip — applies a no-stage-move outcome and moves on.
+  // From *_waiting_outcome we transition straight to outcome_done.
+  // Context follows up with NEXT_CALL_REQUESTED.
+  | {
+      type: 'SKIP_REQUESTED';
+    }
+  // PR 150: session pacing flag toggle. PAUSE sets sessionPaused=true,
+  // cancels any armed timer. From outcome_done while idle, transitions
+  // callPhase to 'paused'. RESUME clears the flag and exits 'paused'.
+  | {
+      type: 'PAUSE_REQUESTED';
+    }
+  | {
+      type: 'RESUME_REQUESTED';
+    }
+  // PR 150: pacing-timer status mirror events. The actual setTimeout
+  // lives in ActiveCallContext (PR 151). The reducer just stores the
+  // status + deadline so the UI can render the visible countdown.
+  | {
+      type: 'PACING_ARMED';
+      deadlineMs: number;
+    }
+  | {
+      type: 'PACING_CANCELLED';
+    }
+  | {
+      type: 'PACING_DEADLINE_TICK';
     }
   // ─── Inbound ────────────────────────────────────────────────────────
   | {

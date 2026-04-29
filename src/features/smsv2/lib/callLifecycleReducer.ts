@@ -22,6 +22,7 @@
 import type {
   CallLifecycleEvent,
   CallLifecycleState,
+  CallPhase,
   TelephonyInputs,
   TelephonySignal,
 } from './callLifecycleReducer.types';
@@ -211,8 +212,20 @@ export function callLifecycleReducer(
       return { ...state, callPhase: 'outcome_done' };
     }
 
+    case 'OUTCOME_FAILED': {
+      // PR 150 (Hugo 2026-04-29): server-side outcome write failed.
+      // Don't trap the agent on a spinning button — treat it like a
+      // resolved outcome so the buttons re-enable. UI surface a toast
+      // (handled in ActiveCallContext, not here). Idempotent if the
+      // reducer already left outcome_submitting.
+      if (state.callPhase !== 'outcome_submitting') return state;
+      return { ...state, callPhase: 'outcome_done' };
+    }
+
     case 'NEXT_CALL_REQUESTED': {
       // Only valid from outcome_done. Starts a fresh dial.
+      // PR 150: clear pacing fields + sticky banner — a fresh call is
+      // starting, no timer is armed any more.
       if (state.callPhase !== 'outcome_done') return state;
       return {
         ...state,
@@ -222,9 +235,118 @@ export function callLifecycleReducer(
         muted: false,
         error: null,
         dispositionSignal: null,
+        pendingNextCall: 'idle',
+        pacingDeadlineMs: null,
+        noNewLeadsBanner: false,
         // We keep lastEndedContactId so PostCall back-nav still works
         // until the new call ends.
       };
+    }
+
+    case 'NEXT_CALL_EMPTY': {
+      // PR 150: wk-leads-next returned no claimable lead. Stay in
+      // outcome_done, raise the sticky banner. Clear any pacing timer
+      // mirror — the resolver took its turn and came back empty.
+      if (state.callPhase !== 'outcome_done') return state;
+      return {
+        ...state,
+        pendingNextCall: 'idle',
+        pacingDeadlineMs: null,
+        noNewLeadsBanner: true,
+      };
+    }
+
+    case 'SKIP_REQUESTED': {
+      // PR 150: agent Skip from a wrap-up state. Equivalent to
+      // OUTCOME_PICKED('skipped') + OUTCOME_RESOLVED collapsed into one
+      // event so the reducer can encode it atomically. Context follows
+      // up with NEXT_CALL_REQUESTED to advance.
+      if (
+        state.callPhase !== 'stopped_waiting_outcome' &&
+        state.callPhase !== 'error_waiting_outcome'
+      ) {
+        return state;
+      }
+      return { ...state, callPhase: 'outcome_done' };
+    }
+
+    case 'PAUSE_REQUESTED': {
+      // PR 150: session pacing flag. Always sets sessionPaused=true
+      // (idempotent — same-state returns same ref). When idle in
+      // outcome_done, also flips callPhase to the explicit 'paused'
+      // state so the UI shows a distinct paused screen between calls.
+      // Mid-call, only the flag changes — the live call is untouched
+      // (Rule 4: agent intent never severs an active call).
+      if (state.sessionPaused && state.callPhase !== 'outcome_done') {
+        return state;
+      }
+      const cancelled =
+        state.pendingNextCall !== 'idle' || state.pacingDeadlineMs !== null;
+      const nextPhase: CallPhase =
+        state.callPhase === 'outcome_done' ? 'paused' : state.callPhase;
+      if (
+        state.sessionPaused &&
+        state.callPhase === nextPhase &&
+        !cancelled
+      ) {
+        return state;
+      }
+      return {
+        ...state,
+        sessionPaused: true,
+        callPhase: nextPhase,
+        pendingNextCall: 'idle',
+        pacingDeadlineMs: null,
+      };
+    }
+
+    case 'RESUME_REQUESTED': {
+      // PR 150: clear sessionPaused. From the explicit 'paused' phase,
+      // exit back to outcome_done (or idle if no prior call). Mid-call
+      // resume just clears the flag.
+      if (!state.sessionPaused && state.callPhase !== 'paused') {
+        return state;
+      }
+      const nextPhase: CallPhase =
+        state.callPhase === 'paused'
+          ? state.call
+            ? 'outcome_done'
+            : 'idle'
+          : state.callPhase;
+      return {
+        ...state,
+        sessionPaused: false,
+        callPhase: nextPhase,
+      };
+    }
+
+    case 'PACING_ARMED': {
+      // PR 150: the context scheduled an auto-next setTimeout. Mirror
+      // it here so the UI can render the visible countdown via
+      // pacingDeadlineMs. Defensive: only valid in outcome_done.
+      if (state.callPhase !== 'outcome_done') return state;
+      return {
+        ...state,
+        pendingNextCall: 'armed',
+        pacingDeadlineMs: event.deadlineMs,
+      };
+    }
+
+    case 'PACING_CANCELLED': {
+      // PR 150: context cleared its setTimeout (state changed, agent
+      // clicked, etc.). Reset the mirror.
+      if (state.pendingNextCall === 'idle' && state.pacingDeadlineMs === null) {
+        return state;
+      }
+      return { ...state, pendingNextCall: 'idle', pacingDeadlineMs: null };
+    }
+
+    case 'PACING_DEADLINE_TICK': {
+      // PR 150: timer fired. Move to cooling_down so the context picks
+      // up and dispatches NEXT_CALL_REQUESTED (or NEXT_CALL_EMPTY).
+      // Defensive: only valid when armed.
+      if (state.pendingNextCall !== 'armed') return state;
+      return { ...state, pendingNextCall: 'cooling_down' };
     }
 
     // ─── Inbound / winner ─────────────────────────────────────────────
