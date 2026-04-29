@@ -7,11 +7,15 @@
 import type { CallEvent, CallMachineState } from './callMachine.types';
 import { INITIAL_STATE } from './callMachine.types';
 
-const LIVE_PHASES = new Set(['dialing', 'ringing', 'in_call'] as const);
-const WAITING_OUTCOME = new Set([
+const LIVE_PHASES: ReadonlySet<string> = new Set([
+  'dialing',
+  'ringing',
+  'in_call',
+]);
+const WAITING_OUTCOME: ReadonlySet<string> = new Set([
   'stopped_waiting_outcome',
   'error_waiting_outcome',
-] as const);
+]);
 
 export function callMachine(
   state: CallMachineState,
@@ -32,6 +36,7 @@ export function callMachine(
         pacingDeadlineMs: null,
         noNewLeadsBanner: null,
         previewContactId: null,
+        advanceIntent: 'idle', // intent fulfilled
       };
     }
 
@@ -123,7 +128,49 @@ export function callMachine(
           skippedAlreadyDialed: event.skippedAlreadyDialed,
         },
         pacingDeadlineMs: null,
+        advanceIntent: 'idle',
       };
+    }
+
+    // ─── PR C.5 advance flow ────────────────────────────────────────
+    case 'ADVANCE_REQUESTED': {
+      // Refuse from live phases — never dial twice in parallel.
+      if (LIVE_PHASES.has(state.callPhase as never)) return state;
+      // From wrap-up: flip atomically through outcome_done + intent.
+      // Agent's "Next" click is meant as: skip outcome AND advance.
+      // The reducer expresses both in one tick so the effect downstream
+      // sees a coherent state (no stateRef gymnastics).
+      if (WAITING_OUTCOME.has(state.callPhase as never)) {
+        return {
+          ...state,
+          callPhase: 'outcome_done',
+          advanceIntent: 'pending',
+          pacingDeadlineMs: null,
+          noNewLeadsBanner: null,
+        };
+      }
+      // From outcome_submitting: queue intent; the effect waits until
+      // OUTCOME_RESOLVED / OUTCOME_FAILED lands before firing.
+      if (state.callPhase === 'outcome_submitting') {
+        return { ...state, advanceIntent: 'pending' };
+      }
+      // From outcome_done / idle / paused: just set the intent.
+      return {
+        ...state,
+        advanceIntent: 'pending',
+        pacingDeadlineMs: null,
+        noNewLeadsBanner: null,
+      };
+    }
+
+    case 'ADVANCE_FETCHING': {
+      if (state.advanceIntent !== 'pending') return state;
+      return { ...state, advanceIntent: 'fetching' };
+    }
+
+    case 'ADVANCE_RESOLVED': {
+      if (state.advanceIntent === 'idle') return state;
+      return { ...state, advanceIntent: 'idle' };
     }
 
     case 'PAUSE_MIRROR_CHANGED': {
