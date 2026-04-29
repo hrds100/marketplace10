@@ -16,10 +16,9 @@ export interface CallListRow {
   durationSec: number | null;
   dispositionColumnId: string | null;
   agentNote: string | null;
-  /** Joined from wk_contacts for the call-history panel. Null if the
-   *  contact row was deleted between call insert and now. */
   contactName: string | null;
   contactPhone: string | null;
+  recordingUrl: string | null;
 }
 
 interface WkCallRow {
@@ -40,7 +39,7 @@ interface ContactNamePhone {
   phone: string | null;
 }
 
-function rowToCall(r: WkCallRow, contact?: ContactNamePhone): CallListRow {
+function rowToCall(r: WkCallRow, contact?: ContactNamePhone, recordingUrl?: string | null): CallListRow {
   return {
     id: r.id,
     contactId: r.contact_id,
@@ -53,6 +52,7 @@ function rowToCall(r: WkCallRow, contact?: ContactNamePhone): CallListRow {
     agentNote: r.agent_note,
     contactName: contact?.name ?? null,
     contactPhone: contact?.phone ?? null,
+    recordingUrl: recordingUrl ?? null,
   };
 }
 
@@ -110,8 +110,10 @@ export function useCalls(opts: Opts = {}) {
       }
       setTotalCount(count ?? 0);
       const callRows = (data ?? []) as WkCallRow[];
+      const callIds = callRows.map((r) => r.id);
       const contactIds = Array.from(new Set(callRows.map((r) => r.contact_id)));
       let contactsById = new Map<string, ContactNamePhone>();
+      let recordingsByCallId = new Map<string, string>();
       if (contactIds.length > 0) {
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const { data: cs } = await (supabase.from('wk_contacts' as any) as any)
@@ -122,7 +124,17 @@ export function useCalls(opts: Opts = {}) {
           ((cs ?? []) as ContactNamePhone[]).map((c) => [c.id, c] as const)
         );
       }
-      setCalls(callRows.map((r) => rowToCall(r, contactsById.get(r.contact_id))));
+      if (callIds.length > 0) {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const { data: recs } = await (supabase.from('wk_call_recordings' as any) as any)
+          .select('call_id, storage_path')
+          .in('call_id', callIds);
+        if (cancelled) return;
+        for (const r of (recs ?? []) as { call_id: string; storage_path: string }[]) {
+          recordingsByCallId.set(r.call_id, r.storage_path);
+        }
+      }
+      setCalls(callRows.map((r) => rowToCall(r, contactsById.get(r.contact_id), recordingsByCallId.get(r.id))));
       setLoading(false);
     }
 
@@ -165,4 +177,16 @@ export function useCalls(opts: Opts = {}) {
   }, [agentId, contactId, limit]);
 
   return { calls, totalCount, loading, error };
+}
+
+export async function signCallRecording(path: string): Promise<string | null> {
+  try {
+    const { data, error } = await supabase.storage
+      .from('call-recordings')
+      .createSignedUrl(path, 600);
+    if (error || !data?.signedUrl) return null;
+    return data.signedUrl;
+  } catch {
+    return null;
+  }
 }
