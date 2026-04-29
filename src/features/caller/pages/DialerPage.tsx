@@ -240,14 +240,17 @@ export default function DialerPage() {
   const [notes, setNotes] = useState('');
 
   // ─── Queue status writer ─────────────────────────────────────────
-  // Without this, failed dials leave wk_dialer_queue.status='pending'
-  // forever — the same contact is re-picked on the next tick and
-  // shows up in BOTH the upcoming queue and call history. This makes
-  // the queue self-cleaning at every state transition.
+  // wk_dialer_queue.status CHECK constraint allows ONLY:
+  //   pending · dialing · connected · voicemail · missed · done ·
+  //   skipped · lost
+  // Writing anything else (e.g. 'failed') silently fails — the row
+  // stays at whatever status it was. That is exactly the bug Hugo hit
+  // pre-2026-04-29 (the dialer kept looping on the same numbers
+  // because failed dials never transitioned out of 'dialing').
   const updateQueueStatus = useCallback(
     async (
       queueId: string,
-      status: 'dialing' | 'done' | 'missed' | 'failed' | 'skipped'
+      status: 'pending' | 'dialing' | 'done' | 'missed' | 'skipped'
     ) => {
       try {
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -262,50 +265,67 @@ export default function DialerPage() {
   );
 
   // ─── Pick next lead ───────────────────────────────────────────────
+  // Calls the server RPC `wk_pick_next_lead`. The RPC is the single
+  // source of truth — it atomically (FOR UPDATE SKIP LOCKED):
+  //   1. selects the highest-priority pending row (priority DESC,
+  //      scheduled_for ASC, attempts ASC)
+  //   2. enforces three-strikes (`attempts < 3`)
+  //   3. flips status to 'dialing' and increments attempts
+  // We then fetch the contact's name/phone separately and apply the
+  // session-scoped dialed-set guard. If the RPC hands back a contact
+  // we've already dialed this session we mark the row 'pending' again
+  // so the picker moves on to the next one (loop, max 50 iterations).
   const pickNextLead = useCallback(async (): Promise<Lead | null> => {
-    if (!camp) return null;
-    const nowIso = new Date().toISOString();
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    let q = (supabase.from('wk_dialer_queue' as any) as any)
-      .select(
-        'id, contact_id, agent_id, status, priority, attempts, scheduled_for, ' +
-          'wk_contacts:contact_id ( id, name, phone, pipeline_column_id )'
-      )
-      .eq('campaign_id', camp.id)
-      .eq('status', 'pending')
-      .or(`scheduled_for.is.null,scheduled_for.lte.${nowIso}`)
-      .order('priority', { ascending: false })
-      .order('scheduled_for', { ascending: true, nullsFirst: true })
-      .order('attempts', { ascending: true })
-      .order('created_at', { ascending: true })
-      .limit(20);
-    if (!isEffectiveAdmin && user) {
-      q = q.or(`agent_id.eq.${user.id},agent_id.is.null`);
-    }
-    const { data, error } = await q;
-    if (error) {
-      toasts.push(`Queue load failed: ${error.message}`, 'error');
-      return null;
-    }
-    const rows = (data ?? []) as Array<{
-      id: string;
-      wk_contacts: { id: string; name: string | null; phone: string | null; pipeline_column_id: string | null } | null;
-    }>;
-    for (const r of rows) {
-      const c = r.wk_contacts;
-      if (!c) continue;
-      if (!c.phone) continue;
-      if (dialed.has(c.id)) continue;
+    if (!camp || !user) return null;
+    for (let i = 0; i < 50; i++) {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const { data, error } = await (supabase.rpc as any)('wk_pick_next_lead', {
+        p_agent_id: user.id,
+        p_campaign_id: camp.id,
+      });
+      if (error) {
+        toasts.push(`Queue pick failed: ${error.message}`, 'error');
+        return null;
+      }
+      const rows = (data ?? []) as Array<{
+        queue_id: string;
+        contact_id: string;
+        campaign_id: string;
+        attempts: number;
+      }>;
+      if (rows.length === 0) return null;
+      const row = rows[0];
+
+      if (dialed.has(row.contact_id)) {
+        // Already tried this session. Roll the row back to 'pending'
+        // (the RPC already incremented attempts — we leave that bump
+        // in place so a contact that's been hit repeatedly drifts
+        // toward the three-strikes threshold).
+        await updateQueueStatus(row.queue_id, 'pending');
+        continue;
+      }
+
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const { data: c } = await (supabase.from('wk_contacts' as any) as any)
+        .select('id, name, phone, pipeline_column_id')
+        .eq('id', row.contact_id)
+        .maybeSingle();
+      if (!c || !c.phone) {
+        // Orphan / phoneless row — mark missed so it never comes back.
+        await updateQueueStatus(row.queue_id, 'missed');
+        continue;
+      }
+
       return {
-        id: c.id,
-        name: c.name ?? c.phone,
-        phone: c.phone,
-        queueId: r.id,
-        pipelineColumnId: c.pipeline_column_id,
+        id: c.id as string,
+        name: (c.name as string | null) ?? (c.phone as string),
+        phone: c.phone as string,
+        queueId: row.queue_id,
+        pipelineColumnId: (c.pipeline_column_id as string | null) ?? null,
       };
     }
     return null;
-  }, [camp, dialed, isEffectiveAdmin, user, toasts]);
+  }, [camp, dialed, user, toasts, updateQueueStatus]);
 
   // ─── Dial a lead ───────────────────────────────────────────────────
   const dialLead = useCallback(
@@ -320,9 +340,8 @@ export default function DialerPage() {
         next.add(lead.id);
         return next;
       });
-      // Claim the queue row immediately so a parallel pickNextLead
-      // (e.g. the auto-pacing tick) cannot pick the same row again.
-      void updateQueueStatus(lead.queueId, 'dialing');
+      // Note: the queue row is already at status='dialing' — the
+      // wk_pick_next_lead RPC flipped it atomically inside pickNextLead.
 
       try {
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -332,7 +351,7 @@ export default function DialerPage() {
         if (error || !data) {
           const msg = (error?.message as string | undefined) ?? 'unknown error';
           toasts.push(`Could not place call: ${msg}`, 'error');
-          void updateQueueStatus(lead.queueId, 'failed');
+          void updateQueueStatus(lead.queueId, 'missed');
           currentLeadRef.current = null;
           dispatch({ type: 'CALL_ENDED', reason: 'failed', error: msg });
           return;
@@ -340,7 +359,9 @@ export default function DialerPage() {
         if (data.allowed === false) {
           const reason = (data.reason as string | undefined) ?? 'spend limit reached';
           toasts.push(`Call blocked: ${reason}`, 'error');
-          void updateQueueStatus(lead.queueId, 'failed');
+          // Spend / killswitch block — give the lead back to the queue.
+          // It's not the contact's fault and we want to retry tomorrow.
+          void updateQueueStatus(lead.queueId, 'pending');
           currentLeadRef.current = null;
           dispatch({ type: 'CALL_ENDED', reason: 'blocked', error: reason });
           return;
@@ -348,7 +369,7 @@ export default function DialerPage() {
         const callId = data.call_id as string | undefined;
         if (!callId) {
           toasts.push('Server did not return a call id', 'error');
-          void updateQueueStatus(lead.queueId, 'failed');
+          void updateQueueStatus(lead.queueId, 'missed');
           currentLeadRef.current = null;
           dispatch({ type: 'CALL_ENDED', reason: 'failed', error: 'missing call_id' });
           return;
@@ -372,8 +393,12 @@ export default function DialerPage() {
         twilioCall.on('disconnect', () => {
           if (!isThisCall()) return;
           twilioCallRef.current = null;
-          void updateQueueStatus(lead.queueId, 'done');
-          currentLeadRef.current = null;
+          // Leave the queue row at 'dialing' so the outcome flow
+          // (wk_apply_outcome) can transition it to 'done' atomically
+          // alongside the pipeline move + automation. If we set 'done'
+          // here first, the outcome RPC's UPDATE filter (pending/
+          // dialing/connected/voicemail) won't match and we lose the
+          // automatic queue cleanup hook.
           dispatch({ type: 'CALL_ENDED', reason: 'hangup' });
         });
         twilioCall.on('cancel', () => {
@@ -397,7 +422,7 @@ export default function DialerPage() {
           const mapped = mapTwilioError(code, err?.message ?? '');
           toasts.push(mapped.friendlyMessage, 'error');
           twilioCallRef.current = null;
-          void updateQueueStatus(lead.queueId, 'failed');
+          void updateQueueStatus(lead.queueId, 'missed');
           currentLeadRef.current = null;
           dispatch({ type: 'CALL_ENDED', reason: 'error', error: mapped.friendlyMessage });
           if (mapped.fatal) {
@@ -409,7 +434,7 @@ export default function DialerPage() {
       } catch (e) {
         const msg = e instanceof Error ? e.message : 'dial crashed';
         toasts.push(`Dial failed: ${msg}`, 'error');
-        void updateQueueStatus(lead.queueId, 'failed');
+        void updateQueueStatus(lead.queueId, 'missed');
         currentLeadRef.current = null;
         dispatch({ type: 'CALL_ENDED', reason: 'failed', error: msg });
       }
@@ -447,16 +472,14 @@ export default function DialerPage() {
       try { c.disconnect(); } catch { /* ignore */ }
     }
     try { disconnectAllCalls(); } catch { /* ignore */ }
-    // The disconnect handler bails out because twilioCallRef is null —
-    // mark the queue ourselves so the row leaves 'pending' / 'dialing'.
-    const lead = currentLeadRef.current;
-    if (lead) {
-      void updateQueueStatus(lead.queueId, 'done');
-      currentLeadRef.current = null;
-    }
+    // Don't transition the queue row here — leave it at 'dialing' so
+    // the wrap-up outcome can tag it (wk_apply_outcome). If the agent
+    // skips without picking an outcome the skip handler marks
+    // 'skipped'.
+    currentLeadRef.current = null;
     dispatch({ type: 'CALL_ENDED', reason: 'hangup' });
     try { await disconnectAllCallsAndWait(1500); } catch { /* ignore */ }
-  }, [updateQueueStatus]);
+  }, []);
 
   // ─── Mute ─────────────────────────────────────────────────────────
   const toggleMute = useCallback(() => {
@@ -572,13 +595,13 @@ export default function DialerPage() {
       twilioCallRef.current = null;
       try { disconnectAllCalls(); } catch { /* ignore */ }
     }
-    const lead = currentLeadRef.current;
-    if (lead) {
-      void updateQueueStatus(lead.queueId, 'done');
-      currentLeadRef.current = null;
-    }
+    // If we Stop mid-call without an outcome, the queue row stays at
+    // 'dialing'. That is intentional — three-strikes still kicks in,
+    // and an admin can reset from /caller/contacts if needed. We do
+    // NOT mark 'done' because no outcome was applied.
+    currentLeadRef.current = null;
     dispatch({ type: 'STOP' });
-  }, [updateQueueStatus]);
+  }, []);
 
   const { columns: outcomeColumns } = usePipelineColumns(camp?.pipelineId ?? null);
 
