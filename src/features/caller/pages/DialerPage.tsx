@@ -13,6 +13,7 @@
 // summary card, parallel-mode UI.
 
 import { useEffect, useMemo, useState } from 'react';
+import { Phone } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
 import CampaignHero from '../components/dialer/CampaignHero';
@@ -136,6 +137,19 @@ export default function DialerPage() {
 
           {camp && (
             <>
+              {/* Big "Start dialing" button — auto-dials lead #1 in the queue. */}
+              <button
+                type="button"
+                onClick={() => queue[0] && onCall(queue[0])}
+                disabled={dialerBlocked || callActive || queue.length === 0}
+                className="w-full inline-flex items-center justify-center gap-2 text-[16px] font-semibold text-white bg-[#1E9A80] hover:bg-[#1E9A80]/90 px-5 py-4 rounded-2xl shadow-[0_4px_16px_rgba(30,154,128,0.35)] disabled:opacity-50 disabled:cursor-not-allowed disabled:shadow-none"
+              >
+                <Phone className="w-4 h-4" />
+                {queue.length === 0
+                  ? 'Queue empty'
+                  : `Start dialing — ${queue[0].name}`}
+              </button>
+
               <PacingControl />
               <QueuePreview
                 items={queue}
