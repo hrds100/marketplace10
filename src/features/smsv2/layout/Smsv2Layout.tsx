@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Outlet, Link } from 'react-router-dom';
+import { Outlet, Link, useLocation } from 'react-router-dom';
 import { ArrowLeft } from 'lucide-react';
 import CrmGuard from '../components/CrmGuard';
 import Smsv2Sidebar from './Smsv2Sidebar';
@@ -23,6 +23,7 @@ function StoreHydrator() {
 
 export default function Smsv2Layout() {
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+  const onDialerPage = useLocation().pathname === '/crm/dialer';
 
   return (
     <CrmGuard>
@@ -66,8 +67,8 @@ export default function Smsv2Layout() {
               </main>
             </div>
 
-            {/* Persistent floating softphone + toasts */}
-            <Softphone />
+            {/* Softphone hidden on /crm/dialer — CallerPad + LiveCallScreen handle it */}
+            {!onDialerPage && <Softphone />}
             <GlobalToasts />
           </div>
         </ActiveCallProvider>
