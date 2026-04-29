@@ -347,7 +347,13 @@ export function CallerPad() {
         return null;
       }
       const claimedRow = Array.isArray(claimed) ? claimed[0] : claimed;
-      if (!claimedRow) continue;
+      if (!claimedRow) {
+        // Row is stuck at a non-pending status (e.g. 'dialing' from a
+        // previous skip without cleanup). Mark it 'missed' so it stops
+        // blocking position #1 in the queue.
+        void updateQueueStatus(row.id, 'missed');
+        continue;
+      }
 
       return {
         id: contact.id,
@@ -630,6 +636,11 @@ export function CallerPad() {
   }, [pickNextLead, dialLead, toasts]);
 
   const dialNextManual = useCallback(async () => {
+    const lead = currentLeadRef.current ?? state.lead;
+    if (lead) {
+      void updateQueueStatus(lead.queueId, 'skipped');
+      currentLeadRef.current = null;
+    }
     if (state.phase === 'connected' || state.phase === 'ringing' || state.phase === 'dialing') {
       await hangUp();
     }
@@ -639,7 +650,7 @@ export function CallerPad() {
       if (next) void dialLead(next);
       else toasts.push('Queue empty', 'info');
     }, 200);
-  }, [state.phase, hangUp, pickNextLead, dialLead, toasts]);
+  }, [state.phase, state.lead, hangUp, pickNextLead, dialLead, toasts, updateQueueStatus]);
 
   const pause = useCallback(() => {
     dispatch({ type: 'PAUSE' });
