@@ -423,7 +423,24 @@ export function DialerProvider({
   // ─── Side-effects: requestNextCall ─────────────────────────────
   const requestNextCall = useCallback(async (): Promise<void> => {
     const cur = stateRef.current;
-    if (cur.callPhase !== 'outcome_done' && cur.callPhase !== 'idle') {
+    // PR C.4 (Hugo 2026-04-29): allow advance from any non-live phase.
+    //
+    // Previous guard was `!== 'outcome_done' && !== 'idle'` — broken
+    // because requestSkip dispatches OUTCOME_PICKED + OUTCOME_RESOLVED
+    // SYNCHRONOUSLY then immediately awaits requestNextCall. React
+    // hasn't re-rendered between dispatch and await, so stateRef.current
+    // still points at the OLD phase ('error_waiting_outcome' or
+    // 'stopped_waiting_outcome'). The guard rejected the advance and
+    // Next was a silent no-op.
+    //
+    // The only state we MUST refuse advancing from is a live call —
+    // dialing twice in parallel would dupe Twilio Calls. Everything
+    // else is safe to advance from.
+    if (
+      cur.callPhase === 'dialing' ||
+      cur.callPhase === 'ringing' ||
+      cur.callPhase === 'in_call'
+    ) {
       return;
     }
     const campaignId =
