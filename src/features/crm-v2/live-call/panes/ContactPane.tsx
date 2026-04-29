@@ -8,6 +8,7 @@ import { useEffect, useState } from 'react';
 import { Phone, User } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useDialer } from '../../state/DialerProvider';
+import MidCallSmsSender from './MidCallSmsSender';
 
 interface ContactDetail {
   id: string;
@@ -50,7 +51,8 @@ export default function ContactPane() {
   }
 
   return (
-    <div className="p-4 space-y-3" data-testid="incall-contact-pane">
+    <div className="flex flex-col h-full" data-testid="incall-contact-pane">
+      <div className="p-4 space-y-3 flex-1 overflow-y-auto">
       <div className="flex items-center gap-2">
         <div className="w-9 h-9 rounded-full bg-[#ECFDF5] text-[#1E9A80] flex items-center justify-center">
           <User className="w-4 h-4" />
@@ -85,6 +87,8 @@ export default function ContactPane() {
           Started {new Date(call.startedAt).toLocaleTimeString()}
         </div>
       </div>
+      </div>
+      <MidCallSmsSender />
     </div>
   );
 }
