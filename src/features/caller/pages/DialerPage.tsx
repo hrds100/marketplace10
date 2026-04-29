@@ -25,7 +25,7 @@ import { useCallback, useEffect, useMemo, useReducer, useRef, useState } from 'r
 import { Link, useLocation } from 'react-router-dom';
 import {
   Phone, PhoneOff, Mic, MicOff, Pause, Play, Square, SkipForward, Zap,
-  CheckCircle2, Loader2, Clock, Radio, Pencil, X, Minus, GripVertical,
+  CheckCircle2, Loader2, Clock, Radio, Pencil, X, Minus, GripVertical, PlayCircle,
 } from 'lucide-react';
 import type { Call as TwilioCall } from '@twilio/voice-sdk';
 import { useAuth } from '@/hooks/useAuth';
@@ -41,9 +41,11 @@ import { useDialerCampaigns } from '../hooks/useDialerCampaigns';
 import { usePipelineColumns } from '../hooks/usePipelineColumns';
 import { useSpendLimit } from '../hooks/useSpendLimit';
 import { useKillSwitch } from '../hooks/useKillSwitch';
-import { useCalls } from '../hooks/useCalls';
+import { useCalls, signCallRecording } from '../hooks/useCalls';
 import { useCallerToasts } from '../store/toastsProvider';
 import { useActiveCallCtx } from '@/features/smsv2/components/live-call/ActiveCallContext';
+import EditContactModal from '@/features/smsv2/components/contacts/EditContactModal';
+import type { Contact } from '@/features/smsv2/types';
 import type { Campaign } from '../types';
 
 // ─── Types ──────────────────────────────────────────────────────────
@@ -1749,12 +1751,81 @@ function UpcomingRow({ idx, lead }: { idx: number; lead: QueueItem }) {
         </button>
       </li>
       {editing && (
-        <EditQueueLeadModal
+        <RichEditContactBridge
           contactId={lead.contactId}
           onClose={() => setEditing(false)}
         />
       )}
     </>
+  );
+}
+
+function RichEditContactBridge({ contactId, onClose }: { contactId: string; onClose: () => void }) {
+  const [contact, setContact] = useState<Contact | null>(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    let cancelled = false;
+    void (async () => {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const { data } = await (supabase.from('wk_contacts' as any) as any)
+        .select('id, name, phone, email, owner_agent_id, pipeline_column_id, tags, is_hot, deal_value_pence, custom_fields, created_at, last_contact_at')
+        .eq('id', contactId)
+        .maybeSingle();
+      if (cancelled) return;
+      if (data) {
+        setContact({
+          id: data.id,
+          name: data.name ?? '',
+          phone: data.phone ?? '',
+          email: data.email ?? undefined,
+          ownerAgentId: data.owner_agent_id ?? undefined,
+          pipelineColumnId: data.pipeline_column_id ?? undefined,
+          tags: data.tags ?? [],
+          isHot: data.is_hot ?? false,
+          dealValuePence: data.deal_value_pence ?? undefined,
+          customFields: data.custom_fields ?? {},
+          createdAt: data.created_at ?? new Date().toISOString(),
+          lastContactAt: data.last_contact_at ?? undefined,
+        });
+      }
+      setLoading(false);
+    })();
+    return () => { cancelled = true; };
+  }, [contactId]);
+
+  if (loading) {
+    return (
+      <div className="fixed inset-0 z-[150] bg-black/40 flex items-center justify-center">
+        <div className="bg-white rounded-2xl p-8">
+          <Loader2 className="w-5 h-5 animate-spin text-[#9CA3AF]" />
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <EditContactModal
+      contact={contact}
+      onClose={onClose}
+      onSave={async (updated) => {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        await (supabase.from('wk_contacts' as any) as any)
+          .update({
+            name: updated.name || null,
+            phone: updated.phone,
+            email: updated.email || null,
+            pipeline_column_id: updated.pipelineColumnId || null,
+            owner_agent_id: updated.ownerAgentId || null,
+            tags: updated.tags,
+            is_hot: updated.isHot,
+            deal_value_pence: updated.dealValuePence ?? null,
+            custom_fields: updated.customFields,
+          })
+          .eq('id', contactId);
+        onClose();
+      }}
+    />
   );
 }
 
@@ -1940,44 +2011,76 @@ function CallHistoryPanel({
             dense ? 'max-h-[280px]' : 'max-h-[480px]'
           )}>
         {displayed.map((c) => (
-          <li key={c.id}>
-            <Link
-              to={`/caller/calls/${c.id}`}
-              title="Open transcript, recording + AI summary"
-              className="px-4 py-2 flex items-center gap-3 hover:bg-[#F3F3EE]/30 cursor-pointer"
-            >
-              <CallStatusIndicator status={c.status} />
-              <div className="flex-1 min-w-0">
-                <div className="text-[12px] font-semibold text-[#1A1A1A] truncate">
-                  {c.contactName ?? c.contactPhone ?? 'Unknown contact'}
-                </div>
-                <div className="text-[11px] text-[#6B7280] tabular-nums truncate">
-                  {c.contactPhone ?? '—'}
-                  {c.startedAt && (
-                    <span className="ml-1">
-                      · {new Date(c.startedAt).toLocaleString(undefined, {
-                        hour: '2-digit',
-                        minute: '2-digit',
-                        day: '2-digit',
-                        month: 'short',
-                      })}
-                    </span>
-                  )}
-                </div>
-                <div className="text-[10px] uppercase tracking-wide text-[#9CA3AF] font-semibold mt-0.5">
-                  {c.direction} · {c.status}
-                </div>
-              </div>
-              <div className="text-[11px] text-[#6B7280] tabular-nums flex-shrink-0">
-                {c.durationSec ? formatDur(c.durationSec) : '—'}
-              </div>
-            </Link>
-          </li>
+          <CallHistoryRow key={c.id} call={c} />
         ))}
           </ul>
         </>
       )}
     </div>
+  );
+}
+
+function CallHistoryRow({ call: c }: { call: import('../hooks/useCalls').CallListRow }) {
+  const [audioUrl, setAudioUrl] = useState<string | null>(null);
+  const [playing, setPlaying] = useState(false);
+  const audioRef = useRef<HTMLAudioElement | null>(null);
+
+  const handlePlay = async (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (playing && audioRef.current) {
+      audioRef.current.pause();
+      setPlaying(false);
+      return;
+    }
+    if (audioUrl) {
+      audioRef.current?.play();
+      setPlaying(true);
+      return;
+    }
+    if (!c.recordingUrl) return;
+    const url = await signCallRecording(c.recordingUrl);
+    if (url) {
+      setAudioUrl(url);
+      const audio = new Audio(url);
+      audioRef.current = audio;
+      audio.onended = () => setPlaying(false);
+      audio.play();
+      setPlaying(true);
+    }
+  };
+
+  const dateStr = c.startedAt
+    ? new Date(c.startedAt).toLocaleString('en-GB', {
+        day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit',
+      })
+    : '';
+
+  return (
+    <li className="px-3 py-1.5 flex items-center gap-2 hover:bg-[#F3F3EE]/30 group">
+      <CallStatusIndicator status={c.status} />
+      <div className="flex-1 min-w-0">
+        <div className="text-[11px] font-semibold text-[#1A1A1A] truncate">
+          {c.contactName ?? c.contactPhone ?? '—'}
+        </div>
+        <div className="text-[10px] text-[#9CA3AF] tabular-nums truncate">
+          {dateStr}
+          {c.durationSec ? ` · ${formatDur(c.durationSec)}` : ''}
+        </div>
+      </div>
+      {c.recordingUrl && (
+        <button
+          type="button"
+          onClick={handlePlay}
+          title={playing ? 'Pause' : 'Play recording'}
+          className="p-1 rounded-[6px] text-[#6B7280] hover:text-[#1E9A80] hover:bg-[#ECFDF5] transition-colors flex-shrink-0"
+        >
+          {playing
+            ? <Pause className="w-3.5 h-3.5" />
+            : <PlayCircle className="w-3.5 h-3.5" />}
+        </button>
+      )}
+    </li>
   );
 }
 
