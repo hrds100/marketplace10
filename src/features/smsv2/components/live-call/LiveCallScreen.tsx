@@ -56,9 +56,27 @@ export default function LiveCallScreen() {
   const contact =
     store.contacts.find((c) =>
       isPreview ? c.id === previewContactId : c.id === call?.contactId
-    ) ?? store.contacts[0];
+    ) ?? store.contacts[0] ?? null;
 
-  const contactFirstName = contact.name?.trim().split(/\s+/)[0] ?? '';
+  const contactFirstName = contact?.name?.trim().split(/\s+/)[0] ?? '';
+
+  if (!contact) {
+    return (
+      <div className="fixed inset-0 z-[200] bg-[#F3F3EE] flex flex-col">
+        <header className="h-14 flex items-center px-5 gap-3 flex-shrink-0 bg-white border-b border-[#E5E7EB]">
+          <span className="text-[14px] font-semibold text-[#1A1A1A]">Call room</span>
+          <div className="ml-auto">
+            <button onClick={closeCallRoom} className="p-2 rounded-lg hover:bg-black/[0.04]">
+              <Minimize2 className="w-4 h-4 text-[#6B7280]" />
+            </button>
+          </div>
+        </header>
+        <div className="flex-1 flex items-center justify-center">
+          <p className="text-[14px] text-[#9CA3AF]">Select a contact or start a campaign to begin</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="fixed inset-0 z-[200] bg-[#F3F3EE] flex flex-col">
@@ -110,7 +128,7 @@ export default function LiveCallScreen() {
           {phase === 'idle' && !isPreview && <span>Idle</span>}
           {isPreview && (
             <>
-              <span>Call room · {contact.name}</span>
+              <span>Call room · {contact?.name}</span>
               <span className="ml-1 text-[10px] uppercase tracking-wide font-semibold bg-[#1E9A80]/10 text-[#1E9A80] px-1.5 py-0.5 rounded">
                 Preview
               </span>
