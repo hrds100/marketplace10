@@ -16,6 +16,23 @@ describe('mapTwilioError', () => {
     expect(mapTwilioError(31403, '').fatal).toBe(true);
   });
 
+  it('31404 (NotFound) → contact-not-found copy, fatal (PR 147)', () => {
+    // PR 147 (Hugo 2026-04-29): 31404 is the SDK's SIP-404-equivalent
+    // for "destination Client not found" — in our flow it surfaces
+    // when the carrier rejects the dial leg (wraps an underlying
+    // 13224 invalid-phone-number from the gateway). Toast must
+    // tell the agent to dial the next lead, not retry this one.
+    const r = mapTwilioError(31404, 'NotFound');
+    expect(r.friendlyMessage).toMatch(/not found|unreachable|next lead/i);
+    expect(r.fatal).toBe(true);
+  });
+
+  it('31480 (TemporarilyUnavailable) → unreachable copy, fatal (PR 147)', () => {
+    const r = mapTwilioError(31480, 'TemporarilyUnavailable');
+    expect(r.friendlyMessage).toMatch(/unavailable|unreachable|busy|next/i);
+    expect(r.fatal).toBe(true);
+  });
+
   it('31486 → destination busy, NOT refused (PR 146)', () => {
     // PR 146 (Hugo 2026-04-28): verified against Twilio Events for
     // call CAa0bf687d8be56e87fd62a25af65c3b1e — dial_call_status was

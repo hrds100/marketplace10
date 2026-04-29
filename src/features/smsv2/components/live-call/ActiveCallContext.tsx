@@ -183,6 +183,18 @@ export function ActiveCallProvider({ children }: { children: ReactNode }) {
   const stateRef = useRef(state);
   stateRef.current = state;
 
+  // PR 147 (Hugo 2026-04-29, Bug #4): track every contactId dialed in
+  // this provider's lifetime so requestNextCall + startCall can reject
+  // a "next" choice that loops back to the same contact. The set lives
+  // for the agent's session (Provider mount lifetime); a hard reset
+  // happens on Provider remount or explicit clearCall().
+  const dialedThisSessionRef = useRef<Set<string>>(new Set());
+
+  // PR 147 (Hugo 2026-04-29, Bug #2): track which callIds we've already
+  // stamped client-side ended_at on so the persistence useEffect below
+  // doesn't fire repeatedly while the agent sits in wrap-up.
+  const persistedEndedRef = useRef<Set<string>>(new Set());
+
   useEffect(() => {
     if (callPhase === 'in_call') {
       intervalRef.current = setInterval(() => setTick(), 1000);
@@ -194,6 +206,40 @@ export function ActiveCallProvider({ children }: { children: ReactNode }) {
       if (intervalRef.current) clearInterval(intervalRef.current);
     };
   }, [callPhase]);
+
+  // PR 147 (Hugo 2026-04-29, Bug #2): when the call lands in any wrap-
+  // up phase, stamp wk_calls.ended_at client-side. Twilio's
+  // wk-voice-status webhook is the primary source of truth, but it
+  // can fail or arrive late on gateway-error disconnects — and Recent
+  // Calls reads from wk_calls. Without this, error-ended calls were
+  // missing from history until the agent reloaded the page. Idempotent:
+  // only fires the first time we see each (callId, wrap-up) transition.
+  // Conditional `is('ended_at', null)` so we never overwrite a real
+  // status the webhook already wrote.
+  useEffect(() => {
+    const isWrapUp =
+      callPhase === 'stopped_waiting_outcome' ||
+      callPhase === 'error_waiting_outcome';
+    if (!isWrapUp) return;
+    const cid = call?.callId;
+    if (!cid) return;
+    if (persistedEndedRef.current.has(cid)) return;
+    persistedEndedRef.current.add(cid);
+    void (async () => {
+      try {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        await (supabase.from('wk_calls' as any) as any)
+          .update({
+            ended_at: new Date().toISOString(),
+            status: 'completed',
+          })
+          .eq('id', cid)
+          .is('ended_at', null);
+      } catch (e) {
+        console.warn('[wk_calls] client-side ended_at fallback failed', e);
+      }
+    })();
+  }, [callPhase, call?.callId]);
 
   const toggleMute = useCallback(() => {
     // Same logic as before — the mute mechanic itself is unchanged.
@@ -326,6 +372,14 @@ export function ActiveCallProvider({ children }: { children: ReactNode }) {
       // PR 46: remove the contact from the queue BEFORE the dial fires,
       // so sentinel flows like Skip / Next-now don't pop it again.
       store.removeFromQueue(contactId);
+
+      // PR 147: mark this contact as dialed-this-session so the anti-
+      // loop guard in requestNextCall can avoid bouncing back here.
+      // Skip recording for synthetic manual-dial IDs (`manual-...`)
+      // since each manual dial gets a fresh id anyway.
+      if (!contactId.startsWith('manual-')) {
+        dialedThisSessionRef.current.add(contactId);
+      }
 
       activeTwilioCallRef.current = null;
 
@@ -526,6 +580,10 @@ export function ActiveCallProvider({ children }: { children: ReactNode }) {
     dispatch({ type: 'MUTE_CHANGED', muted: false });
 
     const currentCallId = call?.callId ?? null;
+    // Note: client-side wk_calls.ended_at stamping happens in the
+    // useEffect that watches callPhase transition into wrap-up — that
+    // path catches every disconnect cause (user hangup, SDK disconnect,
+    // gateway error, race) without needing endCall to fire it manually.
 
     // Server-side sweep — Twilio tears PSTN leg down regardless.
     void (async () => {
@@ -718,10 +776,25 @@ export function ActiveCallProvider({ children }: { children: ReactNode }) {
     const prevContactId = cur.call?.contactId ?? null;
     const campaignId = cur.call?.campaignId ?? null;
 
-    // 1. Local queue
-    let nextContactId = store.popNextFromQueue(prevContactId);
+    // PR 147 (Hugo 2026-04-29, Bug #4): deterministic anti-loop. Pop
+    // up to N times, skipping any contact already dialed this session.
+    // If every reachable lead has been dialed, surface a clear toast
+    // and stop — never silently re-dial the previous contact.
+    const dialed = dialedThisSessionRef.current;
+    let nextContactId: string | null = null;
+    const skipped: string[] = [];
+    for (let i = 0; i < 20; i++) {
+      const candidate = store.popNextFromQueue(prevContactId);
+      if (!candidate) break;
+      if (dialed.has(candidate)) {
+        skipped.push(candidate);
+        continue;
+      }
+      nextContactId = candidate;
+      break;
+    }
 
-    // 2. Campaign fallback
+    // 2. Campaign fallback (only if local queue produced nothing).
     if (!nextContactId && campaignId) {
       try {
         const { data, error: fnError } = await (
@@ -732,13 +805,19 @@ export function ActiveCallProvider({ children }: { children: ReactNode }) {
         if (fnError) {
           console.warn('[requestNextCall] wk-leads-next failed:', fnError.message);
         } else if (data && !data.empty && data.contact_id) {
-          nextContactId = data.contact_id;
-          // Make sure the contact mirror has at least a stub so
-          // startCall can resolve a phone (real hydration happens via
-          // realtime / store).
-          if (!store.getContact(nextContactId)) {
+          const candidate = data.contact_id;
+          // Apply the same anti-loop guard to server-picked contacts.
+          if (!dialed.has(candidate)) {
+            nextContactId = candidate;
+            if (!store.getContact(candidate)) {
+              console.info(
+                '[requestNextCall] contact not in local mirror — startCall will use phone from server later'
+              );
+            }
+          } else {
             console.info(
-              '[requestNextCall] contact not in local mirror — startCall will use phone from server later'
+              '[requestNextCall] wk-leads-next returned already-dialed contact, skipping',
+              candidate
             );
           }
         }
@@ -747,9 +826,13 @@ export function ActiveCallProvider({ children }: { children: ReactNode }) {
       }
     }
 
-    // 3. Empty
+    // 3. Empty (or only already-dialed contacts left).
     if (!nextContactId) {
-      store.pushToast('Queue is empty — no more leads', 'info');
+      const msg =
+        skipped.length > 0
+          ? `No new leads — ${skipped.length} already dialed this session`
+          : 'Queue is empty — no more leads';
+      store.pushToast(msg, 'info');
       return;
     }
 
@@ -798,6 +881,10 @@ export function ActiveCallProvider({ children }: { children: ReactNode }) {
       enterDialingPlaceholder,
       endCall,
       clearCall: () => {
+        // PR 147 (Bug #4): clearCall is the explicit "start over" hook —
+        // wipe the dialed-this-session set so the agent can re-dial
+        // contacts in a fresh session.
+        dialedThisSessionRef.current.clear();
         dispatch({ type: 'CLEAR' });
       },
       applyOutcome,
