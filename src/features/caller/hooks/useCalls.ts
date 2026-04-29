@@ -16,6 +16,10 @@ export interface CallListRow {
   durationSec: number | null;
   dispositionColumnId: string | null;
   agentNote: string | null;
+  /** Joined from wk_contacts for the call-history panel. Null if the
+   *  contact row was deleted between call insert and now. */
+  contactName: string | null;
+  contactPhone: string | null;
 }
 
 interface WkCallRow {
@@ -30,7 +34,13 @@ interface WkCallRow {
   agent_note: string | null;
 }
 
-function rowToCall(r: WkCallRow): CallListRow {
+interface ContactNamePhone {
+  id: string;
+  name: string | null;
+  phone: string | null;
+}
+
+function rowToCall(r: WkCallRow, contact?: ContactNamePhone): CallListRow {
   return {
     id: r.id,
     contactId: r.contact_id,
@@ -41,6 +51,8 @@ function rowToCall(r: WkCallRow): CallListRow {
     durationSec: r.duration_sec,
     dispositionColumnId: r.disposition_column_id,
     agentNote: r.agent_note,
+    contactName: contact?.name ?? null,
+    contactPhone: contact?.phone ?? null,
   };
 }
 
@@ -55,6 +67,7 @@ interface Opts {
 export function useCalls(opts: Opts = {}) {
   const { agentId = null, contactId = null, limit = 200 } = opts;
   const [calls, setCalls] = useState<CallListRow[]>([]);
+  const [totalCount, setTotalCount] = useState(0);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -72,20 +85,44 @@ export function useCalls(opts: Opts = {}) {
         )
         .order('started_at', { ascending: false })
         .limit(limit);
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      let countQ = (supabase.from('wk_calls' as any) as any)
+        .select('id', { count: 'exact', head: true });
 
-      if (agentId) q = q.eq('agent_id', agentId);
-      if (contactId) q = q.eq('contact_id', contactId);
+      if (agentId) {
+        q = q.eq('agent_id', agentId);
+        countQ = countQ.eq('agent_id', agentId);
+      }
+      if (contactId) {
+        q = q.eq('contact_id', contactId);
+        countQ = countQ.eq('contact_id', contactId);
+      }
 
-      const { data, error: e } = await q;
+      const [{ data, error: e }, { count, error: countErr }] = await Promise.all([q, countQ]);
       if (cancelled) return;
 
-      if (e) {
-        setError(e.message);
+      if (e || countErr) {
+        setError(e?.message ?? countErr?.message ?? 'Failed to load calls');
         setCalls([]);
+        setTotalCount(0);
         setLoading(false);
         return;
       }
-      setCalls(((data ?? []) as WkCallRow[]).map(rowToCall));
+      setTotalCount(count ?? 0);
+      const callRows = (data ?? []) as WkCallRow[];
+      const contactIds = Array.from(new Set(callRows.map((r) => r.contact_id)));
+      let contactsById = new Map<string, ContactNamePhone>();
+      if (contactIds.length > 0) {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const { data: cs } = await (supabase.from('wk_contacts' as any) as any)
+          .select('id, name, phone')
+          .in('id', contactIds);
+        if (cancelled) return;
+        contactsById = new Map(
+          ((cs ?? []) as ContactNamePhone[]).map((c) => [c.id, c] as const)
+        );
+      }
+      setCalls(callRows.map((r) => rowToCall(r, contactsById.get(r.contact_id))));
       setLoading(false);
     }
 
@@ -100,8 +137,9 @@ export function useCalls(opts: Opts = {}) {
       }, 500);
     };
 
+    const channelSuffix = `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
     const ch = supabase
-      .channel(`caller-calls-${agentId ?? 'all'}-${contactId ?? 'any'}`)
+      .channel(`caller-calls-${agentId ?? 'all'}-${contactId ?? 'any'}-${channelSuffix}`)
       .on(
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         'postgres_changes' as any,
@@ -110,12 +148,21 @@ export function useCalls(opts: Opts = {}) {
       )
       .subscribe();
 
+    // Polling fallback (8s) — Supabase realtime drops events under load
+    // or when RLS evaluates server-side. Hugo flagged that the call
+    // history wasn't updating live; polling guarantees eventual
+    // consistency without relying on the websocket.
+    const pollId = window.setInterval(() => {
+      if (!cancelled) void load();
+    }, 8_000);
+
     return () => {
       cancelled = true;
       if (pending) clearTimeout(pending);
+      window.clearInterval(pollId);
       try { void supabase.removeChannel(ch); } catch { /* ignore */ }
     };
   }, [agentId, contactId, limit]);
 
-  return { calls, loading, error };
+  return { calls, totalCount, loading, error };
 }

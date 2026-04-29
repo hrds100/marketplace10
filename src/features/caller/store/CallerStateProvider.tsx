@@ -1,27 +1,16 @@
-// CallerStateProvider — root provider stack for Caller.
+// CallerStateProvider — root provider for Caller.
 //
-// Order matters:
-//   - CallerToastsProvider mounts first so any provider below can push
-//     toasts during its mount effects.
-//   - DialerSessionProvider next; it owns session pacing + dialed-set.
-//   - ActiveCallProvider last; the call context reads
-//     session.recordDialed + session.paused.
+// After the dialer rewrite (2026-04-29) all dialer-specific state lives
+// inside DialerPage itself (no global provider). This wrapper now only
+// mounts the toast surface so success/error feedback works app-wide.
 
 import type { ReactNode } from 'react';
 import { CallerToastsProvider } from './toastsProvider';
-import { DialerSessionProvider } from './dialerSessionProvider';
-import { ActiveCallProvider } from './activeCallProvider';
 
 interface Props {
   children: ReactNode;
 }
 
 export default function CallerStateProvider({ children }: Props) {
-  return (
-    <CallerToastsProvider>
-      <DialerSessionProvider>
-        <ActiveCallProvider>{children}</ActiveCallProvider>
-      </DialerSessionProvider>
-    </CallerToastsProvider>
-  );
+  return <CallerToastsProvider>{children}</CallerToastsProvider>;
 }
