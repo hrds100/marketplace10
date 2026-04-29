@@ -24,7 +24,10 @@ export default function OverviewPage() {
   const agentId = user?.id ?? null;
   const ctx = useDialer();
 
-  const { campaigns } = useCampaigns({ agentId, isAdmin });
+  // includeInactive: agents (and Hugo) often need to see campaigns
+  // that are paused at the campaign level — they may have leads to
+  // burn through. Matches the smsv2 dialer page.
+  const { campaigns } = useCampaigns({ agentId, isAdmin, includeInactive: true });
   const [activeId, setActiveId] = useState<string>('');
   useEffect(() => {
     if (campaigns.length === 0) return;
