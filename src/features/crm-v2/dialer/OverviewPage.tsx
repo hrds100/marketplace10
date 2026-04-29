@@ -62,7 +62,7 @@ export default function OverviewPage() {
   const blockedReason: string | null =
     limits?.blocked
       ? 'Daily spend limit reached'
-      : campaign?.is_active === false
+      : campaign?.isActive === false
         ? 'Campaign paused by admin'
         : null;
 
@@ -104,7 +104,7 @@ export default function OverviewPage() {
         campaigns={campaigns}
         activeCampaignId={activeId}
         onSelectCampaign={setActiveId}
-        campaignDefaultSeconds={campaign?.auto_advance_seconds ?? null}
+        campaignDefaultSeconds={campaign?.autoAdvanceSeconds ?? null}
       />
 
       {!campaign ? (
