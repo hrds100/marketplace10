@@ -132,6 +132,14 @@
       "destination": "/app.html"
     },
     {
+      "source": "/caller",
+      "destination": "/app.html"
+    },
+    {
+      "source": "/caller/:path*",
+      "destination": "/app.html"
+    },
+    {
       "source": "/ads",
       "destination": "/app.html"
     },
