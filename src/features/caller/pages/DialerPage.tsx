@@ -985,7 +985,9 @@ export function CallerPad() {
               to return both to peek mode (3 items each). */}
           <UpcomingQueuePanel
             campaignId={camp?.id ?? null}
-            agentId={!isEffectiveAdmin && user ? user.id : null}
+            // Keep panel scope identical to wk_pick_next_lead so "Skip & next"
+            // always dials what the operator can see in this list.
+            agentId={user ? user.id : null}
             dialed={dialed}
             currentLead={state.lead}
             currentPhase={state.phase}
@@ -1528,7 +1530,10 @@ function UpcomingQueuePanel({
         .eq('campaign_id', campaignId)
         .eq('status', 'pending')
         .or(`scheduled_for.is.null,scheduled_for.lte.${nowIso}`)
-        .order('priority', { ascending: false })
+        // Must match wk_pick_next_lead exactly:
+        // ORDER BY priority DESC NULLS LAST, scheduled_for ASC NULLS FIRST,
+        // attempts ASC, created_at ASC
+        .order('priority', { ascending: false, nullsFirst: false })
         .order('scheduled_for', { ascending: true, nullsFirst: true })
         .order('attempts', { ascending: true })
         .order('created_at', { ascending: true })
