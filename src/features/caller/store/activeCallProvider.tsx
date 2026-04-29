@@ -29,6 +29,7 @@ import {
   useMemo,
   useReducer,
   useRef,
+  useState,
 } from 'react';
 import type { ReactNode } from 'react';
 import type { Call as TwilioCall } from '@twilio/voice-sdk';
@@ -118,7 +119,10 @@ export function ActiveCallProvider({ children }: { children: ReactNode }) {
   const toasts = useCallerToasts();
 
   const deviceRef = useRef<DeviceHandle | null>(null);
-  const deviceReadyRef = useRef(false);
+  // deviceReady must be state (not ref) so consumers re-render when the
+  // Twilio device finishes booting. With a ref the DialerPage stayed
+  // stuck on "Phone is starting up — try again in a moment" forever.
+  const [deviceReady, setDeviceReady] = useState(false);
   const activeTwilioCallRef = useRef<TwilioCall | null>(null);
 
   // ─── Device lifecycle ─────────────────────────────────────────────
@@ -135,7 +139,7 @@ export function ActiveCallProvider({ children }: { children: ReactNode }) {
           return;
         }
         deviceRef.current = handle;
-        deviceReadyRef.current = true;
+        setDeviceReady(true);
       } catch (e) {
         console.warn('[caller] createDevice failed', e);
       }
@@ -144,7 +148,7 @@ export function ActiveCallProvider({ children }: { children: ReactNode }) {
       cancelled = true;
       void destroyDevice();
       deviceRef.current = null;
-      deviceReadyRef.current = false;
+      setDeviceReady(false);
     };
   }, []);
 
@@ -509,7 +513,7 @@ export function ActiveCallProvider({ children }: { children: ReactNode }) {
       call: state.call,
       roomView: state.roomView,
       error: state.error,
-      deviceReady: deviceReadyRef.current,
+      deviceReady,
       muted: state.muted,
       startCall,
       endCall,
@@ -522,6 +526,7 @@ export function ActiveCallProvider({ children }: { children: ReactNode }) {
       state.roomView,
       state.error,
       state.muted,
+      deviceReady,
       startCall,
       endCall,
       toggleMute,

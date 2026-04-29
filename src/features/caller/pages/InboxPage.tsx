@@ -6,11 +6,10 @@
 //   - Unread-reset: marks inbound messages read_at=now on thread open
 //   - Channel filter (sms / whatsapp / email)
 
-import { useEffect, useMemo, useState } from 'react';
+import { useMemo, useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { MessageSquare, Mail, Phone, ExternalLink } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { supabase } from '@/integrations/supabase/client';
 import { useInboxThreads } from '../hooks/useInboxThreads';
 import { useContactMessages } from '../hooks/useContactMessages';
 import ReplyComposer from '../components/inbox/ReplyComposer';
@@ -25,23 +24,8 @@ export default function InboxPage() {
   const { threads, loading, error } = useInboxThreads(500);
   const { messages, loading: msgsLoading } = useContactMessages(selected);
 
-  // Mark inbound messages read when a thread is opened.
-  useEffect(() => {
-    if (!selected) return;
-    let cancelled = false;
-    void (async () => {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      await (supabase.from('wk_sms_messages' as any) as any)
-        .update({ read_at: new Date().toISOString() })
-        .eq('contact_id', selected)
-        .eq('direction', 'inbound')
-        .is('read_at', null);
-      if (cancelled) return;
-    })();
-    return () => {
-      cancelled = true;
-    };
-  }, [selected]);
+  // Note: wk_sms_messages has no read_at column. Unread tracking +
+  // mark-as-read on thread open ships in a future migration.
 
   const filteredThreads = useMemo(
     () =>
