@@ -420,69 +420,116 @@ export function DialerProvider({
     []
   );
 
-  // ─── Side-effects: requestNextCall ─────────────────────────────
-  const requestNextCall = useCallback(async (): Promise<void> => {
-    const cur = stateRef.current;
-    if (cur.callPhase !== 'outcome_done' && cur.callPhase !== 'idle') {
-      return;
-    }
-    const campaignId =
-      cur.call?.campaignId ?? store.getSnapshot().activeCampaignId ?? null;
-    if (!campaignId) {
-      dispatchRaw({ type: 'NEXT_CALL_EMPTY', skippedAlreadyDialed: 0 });
-      return;
-    }
-    const dialed = store.getSnapshot().dialedThisSession;
-    let nextContactId: string | null = null;
-    let skipped = 0;
-    for (let attempt = 0; attempt < 5; attempt++) {
-      const res = await api.leadsNext({ campaign_id: campaignId });
-      if (!res.ok) break;
-      const data = res.data;
-      if (data.empty || !('contact_id' in data) || !data.contact_id) break;
-      if (dialed.has(data.contact_id)) {
-        skipped++;
-        continue;
-      }
-      nextContactId = data.contact_id;
-      break;
-    }
-    if (!nextContactId) {
-      dispatchRaw({ type: 'NEXT_CALL_EMPTY', skippedAlreadyDialed: skipped });
-      return;
-    }
-    // wk-leads-next gives us the contact id but not name/phone — we
-    // need them for the optimistic START_CALL payload. The simplest
-    // path: a tiny lookup via wk_contacts. (Could be folded into the
-    // edge fn later.)
-    const contactRow = await fetchContactLite(nextContactId);
-    if (!contactRow) {
-      dispatchRaw({ type: 'NEXT_CALL_EMPTY', skippedAlreadyDialed: skipped });
-      return;
-    }
-    await startCall({
-      contactId: contactRow.id,
-      contactName: contactRow.name,
-      phone: contactRow.phone,
-      campaignId,
-    });
-  }, [startCall, store]);
-
-  // ─── Side-effects: requestSkip ─────────────────────────────────
+  // ─── Side-effects: requestNextCall + requestSkip ───────────────
+  // PR C.5 (Hugo 2026-04-29) — REWRITE.
+  //
+  // Old design: requestSkip dispatched OUTCOME_PICKED + OUTCOME_RESOLVED
+  // SYNCHRONOUSLY then awaited requestNextCall. requestNextCall read
+  // stateRef.current.callPhase as a guard. React hadn't re-rendered
+  // yet, stateRef was stale, guard rejected, Next was a silent no-op.
+  // Three patches in a row failed to fix this because the architecture
+  // was wrong.
+  //
+  // New design (canonical effect-driven advance, see
+  // https://redux.js.org/usage/side-effects-approaches):
+  //   1. requestNextCall / requestSkip just dispatch ADVANCE_REQUESTED.
+  //   2. The reducer transitions wrap-up→outcome_done AND sets
+  //      advanceIntent='pending' atomically (one tick).
+  //   3. An effect (below, separately) watches state.advanceIntent;
+  //      when it's 'pending' the effect runs wk-leads-next + startCall
+  //      with FRESH state (because effects run AFTER React commits).
+  //   4. No stateRef reads. No stale guards.
+  const requestNextCall = useCallback(async () => {
+    console.info('[crm-v2 next] requestNextCall — dispatching ADVANCE_REQUESTED');
+    dispatchRaw({ type: 'ADVANCE_REQUESTED' });
+  }, []);
   const requestSkip = useCallback(async () => {
-    const cur = stateRef.current;
-    if (
-      cur.callPhase === 'stopped_waiting_outcome' ||
-      cur.callPhase === 'error_waiting_outcome'
-    ) {
-      // Save 'skipped' sentinel via the API (no stage move on the
-      // contact); reducer flips through outcome_submitting →
-      // outcome_done.
-      dispatchRaw({ type: 'OUTCOME_PICKED', columnId: 'skipped' });
-      dispatchRaw({ type: 'OUTCOME_RESOLVED' });
-    }
-    await requestNextCall();
-  }, [requestNextCall]);
+    console.info('[crm-v2 next] requestSkip — dispatching ADVANCE_REQUESTED');
+    dispatchRaw({ type: 'ADVANCE_REQUESTED' });
+  }, []);
+
+  // ─── Side-effects: ADVANCE resolver ─────────────────────────────
+  // PR C.5: this effect fires when state.advanceIntent flips to
+  // 'pending'. Because effects run AFTER React commits, state is
+  // FRESH in here — no stateRef reads needed. Runs wk-leads-next +
+  // startCall, dispatches NEXT_CALL_EMPTY if nothing to dial.
+  useEffect(() => {
+    if (state.advanceIntent !== 'pending') return;
+    // Don't fire if outcome is mid-flight; wait for it to land.
+    if (state.callPhase === 'outcome_submitting') return;
+    let cancelled = false;
+    void (async () => {
+      const campaignId =
+        state.call?.campaignId ?? store.getSnapshot().activeCampaignId ?? null;
+      console.info('[crm-v2 advance] effect FIRED', {
+        callPhase: state.callPhase,
+        campaignId,
+        dialedCount: store.getSnapshot().dialedThisSession.size,
+      });
+      if (!campaignId) {
+        console.info('[crm-v2 advance] no campaignId — emitting NEXT_CALL_EMPTY');
+        dispatchRaw({ type: 'NEXT_CALL_EMPTY', skippedAlreadyDialed: 0 });
+        return;
+      }
+      dispatchRaw({ type: 'ADVANCE_FETCHING' });
+      const dialed = store.getSnapshot().dialedThisSession;
+      let nextContactId: string | null = null;
+      let skipped = 0;
+      for (let attempt = 0; attempt < 5; attempt++) {
+        if (cancelled) return;
+        console.info(`[crm-v2 advance] attempt ${attempt + 1}/5 wk-leads-next`);
+        const res = await api.leadsNext({ campaign_id: campaignId });
+        console.info(`[crm-v2 advance] attempt ${attempt + 1} response`, res);
+        if (!res.ok) {
+          console.warn('[crm-v2 advance] wk-leads-next FAILED', res.error);
+          break;
+        }
+        const data = res.data;
+        if (data.empty || !('contact_id' in data) || !data.contact_id) {
+          console.info('[crm-v2 advance] wk-leads-next empty');
+          break;
+        }
+        if (dialed.has(data.contact_id)) {
+          console.info('[crm-v2 advance] anti-loop skip', data.contact_id);
+          skipped++;
+          continue;
+        }
+        nextContactId = data.contact_id;
+        break;
+      }
+      if (cancelled) return;
+      if (!nextContactId) {
+        console.info('[crm-v2 advance] empty result — banner', { skipped });
+        dispatchRaw({
+          type: 'NEXT_CALL_EMPTY',
+          skippedAlreadyDialed: skipped,
+        });
+        return;
+      }
+      const contactRow = await fetchContactLite(nextContactId);
+      if (cancelled) return;
+      if (!contactRow) {
+        console.warn('[crm-v2 advance] fetchContactLite returned null', nextContactId);
+        dispatchRaw({
+          type: 'NEXT_CALL_EMPTY',
+          skippedAlreadyDialed: skipped,
+        });
+        return;
+      }
+      console.info('[crm-v2 advance] resolved', contactRow);
+      dispatchRaw({ type: 'ADVANCE_RESOLVED' });
+      await startCall({
+        contactId: contactRow.id,
+        contactName: contactRow.name,
+        phone: contactRow.phone,
+        campaignId,
+      });
+    })();
+    return () => {
+      cancelled = true;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [state.advanceIntent, state.callPhase]);
 
   // ─── Side-effects: toggleMute ──────────────────────────────────
   const toggleMute = useCallback(() => {
@@ -496,14 +543,12 @@ export function DialerProvider({
   }, [device.activeCall, state.muted]);
 
   // ─── Side-effects: pacing timer ────────────────────────────────
-  // PR 155 lesson: the dep array must NOT include reducer state that
-  // the effect itself flips, or the cleanup cancels the timer it just
-  // armed. Gate solely on external signals.
-  const requestNextCallRef = useRef<() => Promise<void>>(async () => {});
+  // Auto-next: when in outcome_done + auto_next mode + !paused, arm a
+  // setTimeout. When it fires, dispatch ADVANCE_REQUESTED — the
+  // advance effect above picks it up. PR 155 lesson: gate the dep
+  // array SOLELY on external signals; never include reducer state the
+  // effect itself flips.
   const pacingTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  useEffect(() => {
-    requestNextCallRef.current = requestNextCall;
-  }, [requestNextCall]);
   useEffect(() => {
     const shouldArm =
       state.callPhase === 'outcome_done' &&
@@ -524,7 +569,8 @@ export function DialerProvider({
     pacingTimerRef.current = setTimeout(() => {
       pacingTimerRef.current = null;
       dispatchRaw({ type: 'PACING_DEADLINE_TICK' });
-      void requestNextCallRef.current();
+      console.info('[crm-v2 pacing] timer fired — dispatching ADVANCE_REQUESTED');
+      dispatchRaw({ type: 'ADVANCE_REQUESTED' });
     }, delayMs);
     return () => {
       if (pacingTimerRef.current) {
