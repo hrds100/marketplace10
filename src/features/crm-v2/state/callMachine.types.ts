@@ -54,6 +54,15 @@ export type TelephonyReason =
   | 'twilio_cancel'
   | 'twilio_reject';
 
+/** PR C.5 (Hugo 2026-04-29): the agent's intent to advance to the next
+ *  call, modelled as a flag the reducer flips. An effect in the
+ *  provider watches this flag — when it goes 'pending', the effect
+ *  runs the wk-leads-next + startCall side-effects with FRESH state
+ *  (because it runs AFTER React commits). Replaces the broken
+ *  stateRef.current.callPhase guard pattern. See:
+ *  https://redux.js.org/usage/side-effects-approaches */
+export type AdvanceIntent = 'idle' | 'pending' | 'fetching';
+
 export interface CallMachineState {
   callPhase: CallPhase;
   roomView: RoomView;
@@ -71,6 +80,8 @@ export interface CallMachineState {
   previewContactId: string | null;
   /** Last contact whose call ended (used by "open previous"). */
   lastEndedContactId: string | null;
+  /** PR C.5: agent intent to advance — the effect picks this up. */
+  advanceIntent: AdvanceIntent;
 }
 
 export const INITIAL_STATE: CallMachineState = {
@@ -85,6 +96,7 @@ export const INITIAL_STATE: CallMachineState = {
   noNewLeadsBanner: null,
   previewContactId: null,
   lastEndedContactId: null,
+  advanceIntent: 'idle',
 };
 
 // ─── Events ─────────────────────────────────────────────────────────
@@ -110,4 +122,19 @@ export type CallEvent =
   | { type: 'CLOSE_ROOM' }
   | { type: 'MINIMISE_ROOM' }
   | { type: 'MAXIMISE_ROOM' }
-  | { type: 'CLEAR' };
+  | { type: 'CLEAR' }
+  // ─── PR C.5 — advance intent (replaces stateRef-driven flow) ────────
+  /** Agent (or pacing tick) wants to advance to the next call. From
+   *  wrap-up phases the reducer atomically flips through outcome_done
+   *  AND sets advanceIntent='pending' in one tick. The provider's
+   *  effect picks it up post-render and runs wk-leads-next + startCall.
+   *  No-op from live phases — never dial twice in parallel. */
+  | { type: 'ADVANCE_REQUESTED' }
+  /** The effect has begun the wk-leads-next fetch. UI can show a tiny
+   *  spinner if it wants. */
+  | { type: 'ADVANCE_FETCHING' }
+  /** The effect resolved a contact + about to call startCall. Reducer
+   *  clears the intent flag so a duplicate ADVANCE_REQUESTED while
+   *  fetching doesn't double-fire. (startCall itself dispatches
+   *  START_CALL which also clears.) */
+  | { type: 'ADVANCE_RESOLVED' };
