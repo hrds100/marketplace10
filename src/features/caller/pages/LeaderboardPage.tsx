@@ -46,7 +46,7 @@ export default function LeaderboardPage() {
         map.set(c.agent_id, r);
       }
       const ids = Array.from(map.keys());
-      let names = new Map<string, string>();
+      const names = new Map<string, string>();
       if (ids.length > 0) {
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const { data: profs } = await (supabase.from('profiles' as any) as any)

@@ -33,7 +33,7 @@ export function useScriptStage(callId: string | null, scriptMd: string | null) {
   useEffect(() => {
     if (!callId || blocks.length === 0) return;
     let cancelled = false;
-    let processed = new Set<string>();
+    const processed = new Set<string>();
 
     const consume = (chunk: string) => {
       const r = matchChunkToBlock(chunk, blocks, stageRef.current);
