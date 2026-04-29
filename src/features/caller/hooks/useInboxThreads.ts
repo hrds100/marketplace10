@@ -26,7 +26,6 @@ interface MessageRow {
   body: string;
   created_at: string;
   channel: ChannelKind | null;
-  read_at: string | null;
 }
 
 interface ContactJoin {
@@ -50,7 +49,7 @@ export function useInboxThreads(limit = 500) {
 
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const { data: msgs, error: e } = await (supabase.from('wk_sms_messages' as any) as any)
-        .select('id, contact_id, direction, body, created_at, channel, read_at')
+        .select('id, contact_id, direction, body, created_at, channel')
         .order('created_at', { ascending: false })
         .limit(limit);
 
@@ -120,9 +119,8 @@ export function useInboxThreads(limit = 500) {
         b.created_at.localeCompare(a.created_at)
       );
       const latest = sorted[0];
-      const unread = msgs.filter(
-        (m) => m.direction === 'inbound' && !m.read_at
-      ).length;
+      // wk_sms_messages has no `read_at` column — unread tracking lives
+      // in a future migration. For now show 0 unread on every thread.
       const c = contacts.get(contactId);
       out.push({
         contactId,
@@ -132,7 +130,7 @@ export function useInboxThreads(limit = 500) {
         lastDirection: latest.direction,
         lastChannel: (latest.channel ?? 'sms') as ChannelKind,
         lastAt: latest.created_at,
-        unreadCount: unread,
+        unreadCount: 0,
       });
     }
     return out.sort((a, b) => b.lastAt.localeCompare(a.lastAt));
