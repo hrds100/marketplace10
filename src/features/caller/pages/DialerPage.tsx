@@ -32,7 +32,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
 import { cn } from '@/lib/utils';
 import {
-  createDevice, destroyDevice, dial as twilioDial, disconnectAllCalls,
+  createDevice, dial as twilioDial, disconnectAllCalls,
   disconnectAllCallsAndWait, muteAllCalls, getDeviceCalls,
   addTokenRefreshFailListener,
 } from '@/core/integrations/twilio-voice';
@@ -168,8 +168,9 @@ export function CallerPad() {
   // The pad lives in CallerLayout, so it renders for every /caller/*
   // route. On /caller/dialer it's the full pad (current behaviour).
   // Elsewhere it's an Intercom-style icon by default — click to open.
-  const onDialerPage = pathname === '/caller/dialer' || pathname.startsWith('/caller/dialer/');
-  const onCallerSurface = pathname.startsWith('/caller/');
+  const onDialerPage = pathname === '/caller/dialer' || pathname.startsWith('/caller/dialer/')
+    || pathname === '/crm/dialer' || pathname.startsWith('/crm/dialer/');
+  const onCallerSurface = pathname.startsWith('/caller/') || pathname.startsWith('/crm/');
   // Persisted on/off for the icon mode. 'icon' = collapsed icon
   // visible; 'open' = full pad visible as an overlay. Independent
   // from `minimized` which only governs behaviour on /caller/dialer.
@@ -233,7 +234,6 @@ export function CallerPad() {
     })();
     return () => {
       cancelled = true;
-      void destroyDevice();
       setDeviceReady(false);
     };
   }, []);
