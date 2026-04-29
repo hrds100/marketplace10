@@ -354,7 +354,6 @@ const App = () => (
           <Route path="/smsv2" element={<Navigate to="/crm" replace />} />
           <Route path="/smsv2/*" element={<Navigate to="/crm" replace />} />
           {/* /caller/* removed — /crm/* is the official surface. */}
-          <Route path="/caller/*" element={<Navigate to="/crm" replace />} />
           {/* nfstay traveler-facing routes — standalone (no operator layout) */}
           <Route path="/nfstay/property/:id" element={<NfsPropertyView />} />
           <Route path="/nfstay/payment/success" element={<NfsPaymentSuccess />} />
