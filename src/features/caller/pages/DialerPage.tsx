@@ -22,9 +22,10 @@
 //   7. Pause / Resume / Stop are explicit buttons in the top bar.
 
 import { useCallback, useEffect, useMemo, useReducer, useRef, useState } from 'react';
+import { Link } from 'react-router-dom';
 import {
   Phone, PhoneOff, Mic, MicOff, Pause, Play, Square, SkipForward, Zap,
-  CheckCircle2, Loader2, Clock, Radio,
+  CheckCircle2, Loader2, Clock, Radio, Pencil, X,
 } from 'lucide-react';
 import type { Call as TwilioCall } from '@twilio/voice-sdk';
 import { useAuth } from '@/hooks/useAuth';
@@ -1131,28 +1132,157 @@ function UpcomingQueuePanel({
 
       <ul className="overflow-y-auto max-h-[480px] divide-y divide-[#E5E7EB]">
         {visible.map((lead, idx) => (
-          <li key={lead.queueId} className="px-4 py-2 flex items-center gap-3 hover:bg-[#F3F3EE]/30">
-            <div className="w-6 h-6 flex items-center justify-center rounded-full bg-[#F3F3EE] text-[10px] font-bold text-[#6B7280] tabular-nums flex-shrink-0">
-              {idx + 1}
-            </div>
-            <div className="flex-1 min-w-0">
-              <div className="text-[12px] font-semibold text-[#1A1A1A] truncate">{lead.name}</div>
-              <div className="text-[11px] text-[#6B7280] tabular-nums truncate">{lead.phone}</div>
-            </div>
-            {lead.attempts > 0 && (
-              <span className="text-[10px] text-[#9CA3AF] tabular-nums">
-                {lead.attempts}× tried
-              </span>
-            )}
-            {lead.priority > 0 && (
-              <span className="text-[10px] font-bold text-[#1E9A80] tabular-nums">
-                p{lead.priority}
-              </span>
-            )}
-          </li>
+          <UpcomingRow key={lead.queueId} idx={idx + 1} lead={lead} />
         ))}
       </ul>
     </div>
+  );
+}
+
+function UpcomingRow({ idx, lead }: { idx: number; lead: QueueItem }) {
+  const [editing, setEditing] = useState(false);
+  return (
+    <>
+      <li className="px-4 py-2 flex items-center gap-3 hover:bg-[#F3F3EE]/30 group">
+        <div className="w-6 h-6 flex items-center justify-center rounded-full bg-[#F3F3EE] text-[10px] font-bold text-[#6B7280] tabular-nums flex-shrink-0">
+          {idx}
+        </div>
+        <button
+          type="button"
+          onClick={() => setEditing(true)}
+          className="flex-1 min-w-0 text-left"
+        >
+          <div className="text-[12px] font-semibold text-[#1A1A1A] truncate hover:text-[#1E9A80]">{lead.name}</div>
+          <div className="text-[11px] text-[#6B7280] tabular-nums truncate">{lead.phone}</div>
+        </button>
+        {lead.attempts > 0 && (
+          <span className="text-[10px] text-[#9CA3AF] tabular-nums">{lead.attempts}× tried</span>
+        )}
+        {lead.priority > 0 && (
+          <span className="text-[10px] font-bold text-[#1E9A80] tabular-nums">p{lead.priority}</span>
+        )}
+        <button
+          type="button"
+          onClick={() => setEditing(true)}
+          title="Edit contact"
+          className="opacity-0 group-hover:opacity-100 transition-opacity p-1.5 rounded-[8px] text-[#6B7280] hover:bg-[#F3F3EE] hover:text-[#1A1A1A]"
+        >
+          <Pencil className="w-3 h-3" />
+        </button>
+      </li>
+      {editing && (
+        <EditQueueLeadModal
+          contactId={lead.contactId}
+          onClose={() => setEditing(false)}
+        />
+      )}
+    </>
+  );
+}
+
+function EditQueueLeadModal({
+  contactId,
+  onClose,
+}: {
+  contactId: string;
+  onClose: () => void;
+}) {
+  const toasts = useCallerToasts();
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [name, setName] = useState('');
+  const [phone, setPhone] = useState('');
+  const [email, setEmail] = useState('');
+
+  useEffect(() => {
+    let cancelled = false;
+    void (async () => {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const { data, error: e } = await (supabase.from('wk_contacts' as any) as any)
+        .select('name, phone, email')
+        .eq('id', contactId)
+        .maybeSingle();
+      if (cancelled) return;
+      if (e) setError(e.message);
+      else if (data) {
+        setName(data.name ?? '');
+        setPhone(data.phone ?? '');
+        setEmail(data.email ?? '');
+      }
+      setLoading(false);
+    })();
+    return () => { cancelled = true; };
+  }, [contactId]);
+
+  const onSave = async () => {
+    setSaving(true);
+    setError(null);
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { error: e } = await (supabase.from('wk_contacts' as any) as any)
+      .update({ name: name.trim() || null, phone: phone.trim(), email: email.trim() || null })
+      .eq('id', contactId);
+    setSaving(false);
+    if (e) {
+      setError(e.message);
+      return;
+    }
+    toasts.push('Contact updated', 'success');
+    onClose();
+  };
+
+  return (
+    <div className="fixed inset-0 z-[150] bg-black/40 flex items-center justify-center p-4">
+      <div className="bg-white rounded-2xl border border-[#E5E7EB] w-full max-w-[440px] overflow-hidden">
+        <div className="flex items-center justify-between px-5 py-3 border-b border-[#E5E7EB]">
+          <h2 className="text-[15px] font-bold text-[#1A1A1A]">Edit contact</h2>
+          <button type="button" onClick={onClose} className="text-[#9CA3AF] hover:text-[#1A1A1A] p-1">
+            <X className="w-4 h-4" />
+          </button>
+        </div>
+        <div className="p-5 space-y-3">
+          {error && (
+            <div className="text-[12px] text-[#B91C1C] bg-[#FEF2F2] border border-[#FECACA] rounded-[8px] px-3 py-2">{error}</div>
+          )}
+          {loading ? (
+            <div className="text-[12px] text-[#9CA3AF] italic py-4 text-center">Loading…</div>
+          ) : (
+            <>
+              <ContactField label="Name">
+                <input value={name} onChange={(e) => setName(e.target.value)}
+                  className="w-full text-[13px] border border-[#E5E7EB] rounded-[10px] px-3 py-2 bg-white" />
+              </ContactField>
+              <ContactField label="Phone (E.164)">
+                <input value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="+447..."
+                  className="w-full text-[13px] tabular-nums border border-[#E5E7EB] rounded-[10px] px-3 py-2 bg-white" />
+              </ContactField>
+              <ContactField label="Email">
+                <input type="email" value={email} onChange={(e) => setEmail(e.target.value)}
+                  className="w-full text-[13px] border border-[#E5E7EB] rounded-[10px] px-3 py-2 bg-white" />
+              </ContactField>
+            </>
+          )}
+        </div>
+        <div className="flex items-center justify-end gap-2 px-5 py-3 border-t border-[#E5E7EB]">
+          <button type="button" onClick={onClose}
+            className="text-[12px] font-semibold text-[#6B7280] px-3 py-1.5 hover:text-[#1A1A1A]">Cancel</button>
+          <button type="button" onClick={() => void onSave()} disabled={saving || loading}
+            className="inline-flex items-center gap-2 text-[12px] font-semibold text-white bg-[#1E9A80] px-3 py-1.5 rounded-[10px] disabled:opacity-50">
+            {saving && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
+            Save
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function ContactField({ label, children }: { label: string; children: React.ReactNode }) {
+  return (
+    <label className="block">
+      <div className="text-[11px] uppercase tracking-wide text-[#9CA3AF] font-semibold mb-1">{label}</div>
+      {children}
+    </label>
   );
 }
 
@@ -1187,26 +1317,32 @@ function CallHistoryPanel({ agentId }: { agentId: string | null }) {
 
       <ul className="overflow-y-auto max-h-[480px] divide-y divide-[#E5E7EB]">
         {calls.map((c) => (
-          <li key={c.id} className="px-4 py-2 flex items-center gap-3 hover:bg-[#F3F3EE]/30">
-            <CallStatusIndicator status={c.status} />
-            <div className="flex-1 min-w-0">
-              <div className="text-[12px] text-[#1A1A1A] tabular-nums">
-                {c.startedAt
-                  ? new Date(c.startedAt).toLocaleString(undefined, {
-                      hour: '2-digit',
-                      minute: '2-digit',
-                      day: '2-digit',
-                      month: 'short',
-                    })
-                  : '—'}
+          <li key={c.id}>
+            <Link
+              to={`/caller/calls/${c.id}`}
+              title="Open transcript, recording + AI summary"
+              className="px-4 py-2 flex items-center gap-3 hover:bg-[#F3F3EE]/30 cursor-pointer"
+            >
+              <CallStatusIndicator status={c.status} />
+              <div className="flex-1 min-w-0">
+                <div className="text-[12px] text-[#1A1A1A] tabular-nums">
+                  {c.startedAt
+                    ? new Date(c.startedAt).toLocaleString(undefined, {
+                        hour: '2-digit',
+                        minute: '2-digit',
+                        day: '2-digit',
+                        month: 'short',
+                      })
+                    : '—'}
+                </div>
+                <div className="text-[10px] uppercase tracking-wide text-[#9CA3AF] font-semibold">
+                  {c.direction} · {c.status}
+                </div>
               </div>
-              <div className="text-[10px] uppercase tracking-wide text-[#9CA3AF] font-semibold">
-                {c.direction} · {c.status}
+              <div className="text-[11px] text-[#6B7280] tabular-nums">
+                {c.durationSec ? formatDur(c.durationSec) : '—'}
               </div>
-            </div>
-            <div className="text-[11px] text-[#6B7280] tabular-nums">
-              {c.durationSec ? formatDur(c.durationSec) : '—'}
-            </div>
+            </Link>
           </li>
         ))}
       </ul>

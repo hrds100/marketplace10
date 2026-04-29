@@ -100,8 +100,9 @@ export function useCalls(opts: Opts = {}) {
       }, 500);
     };
 
+    const channelSuffix = `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
     const ch = supabase
-      .channel(`caller-calls-${agentId ?? 'all'}-${contactId ?? 'any'}`)
+      .channel(`caller-calls-${agentId ?? 'all'}-${contactId ?? 'any'}-${channelSuffix}`)
       .on(
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         'postgres_changes' as any,
@@ -110,9 +111,18 @@ export function useCalls(opts: Opts = {}) {
       )
       .subscribe();
 
+    // Polling fallback (8s) — Supabase realtime drops events under load
+    // or when RLS evaluates server-side. Hugo flagged that the call
+    // history wasn't updating live; polling guarantees eventual
+    // consistency without relying on the websocket.
+    const pollId = window.setInterval(() => {
+      if (!cancelled) void load();
+    }, 8_000);
+
     return () => {
       cancelled = true;
       if (pending) clearTimeout(pending);
+      window.clearInterval(pollId);
       try { void supabase.removeChannel(ch); } catch { /* ignore */ }
     };
   }, [agentId, contactId, limit]);
