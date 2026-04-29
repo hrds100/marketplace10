@@ -32,6 +32,7 @@ interface QueueRollup {
   missed: number;
   done: number;
   skipped: number;
+  lost: number;
 }
 
 export function rowToCampaign(row: WkCampaignRow, queue: QueueRollup | undefined): Campaign {
@@ -42,13 +43,18 @@ export function rowToCampaign(row: WkCampaignRow, queue: QueueRollup | undefined
   const missed = queue?.missed ?? 0;
   const done = queue?.done ?? 0;
   const skipped = queue?.skipped ?? 0;
+  const lost = queue?.lost ?? 0;
   return {
     id: row.id,
     name: row.name,
     pipelineId: row.pipeline_id ?? '',
     ownerAgentId: row.created_by ?? '',
-    totalLeads: pending + dialing + connected + voicemail + missed + done + skipped,
-    doneLeads: connected + voicemail + missed + skipped + done,
+    // Each KPI card now shows its literal status count. Previously
+    // doneLeads aggregated connected+voicemail+missed+skipped+done
+    // which double-counted live calls into Done. 'lost' (added by the
+    // three-strikes migration) was silently dropped from totalLeads.
+    totalLeads: pending + dialing + connected + voicemail + missed + done + skipped + lost,
+    doneLeads: done,
     connectedLeads: connected,
     voicemailLeads: voicemail,
     pendingLeads: pending,
@@ -152,6 +158,7 @@ export function useDialerCampaigns(
           missed: 0,
           done: 0,
           skipped: 0,
+          lost: 0,
         };
         if (row.status === 'pending') r.pending += 1;
         else if (row.status === 'dialing') r.dialing += 1;
@@ -160,6 +167,7 @@ export function useDialerCampaigns(
         else if (row.status === 'missed') r.missed += 1;
         else if (row.status === 'done') r.done += 1;
         else if (row.status === 'skipped') r.skipped += 1;
+        else if (row.status === 'lost') r.lost += 1;
         rollups.set(row.campaign_id, r);
       }
 

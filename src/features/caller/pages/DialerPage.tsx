@@ -330,6 +330,20 @@ export default function DialerPage() {
   // ─── Dial a lead ───────────────────────────────────────────────────
   const dialLead = useCallback(
     async (lead: Lead) => {
+      // Clean up any leftover Twilio call before starting the next one.
+      // Without this, auto-pacing fires faster than Twilio Device tears
+      // down the previous call → twilioDial throws "A Call is already
+      // active" and every subsequent dial fails. Hugo screenshots
+      // 2026-04-29 caught this on every dial after the first.
+      try {
+        const stale = getDeviceCalls();
+        if (stale.length > 0) {
+          await disconnectAllCallsAndWait(800);
+        }
+      } catch {
+        try { disconnectAllCalls(); } catch { /* ignore */ }
+      }
+
       dispatch({ type: 'DIAL_START', lead });
       setNotes('');
       setMuted(false);
