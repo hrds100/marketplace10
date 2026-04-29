@@ -66,23 +66,16 @@ export default function OverviewPage() {
         ? 'Campaign paused by admin'
         : null;
 
-  // PR B: HeroCard's onDial just dispatches START_CALL via the
-  // reducer + records the dial. The Twilio side-effects layer
-  // (wk-calls-create + device.dial + listeners) lands in PR C.
+  // PR C: onDial fires the full Twilio orchestration via the
+  // provider — wk-calls-create + device.dial + listeners.
   const onDial = (contactId: string) => {
     const lead = all.find((l) => l.contactId === contactId);
     if (!lead) return;
-    ctx.recordDialed(lead.contactId);
-    ctx.dispatch({
-      type: 'START_CALL',
-      call: {
-        contactId: lead.contactId,
-        contactName: lead.name,
-        phone: lead.phone,
-        startedAt: Date.now(),
-        callId: null,
-        campaignId: queueCampaignId,
-      },
+    void ctx.startCall({
+      contactId: lead.contactId,
+      contactName: lead.name,
+      phone: lead.phone,
+      campaignId: queueCampaignId,
     });
   };
 
