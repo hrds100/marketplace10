@@ -109,6 +109,28 @@ export default function DialerPage() {
     });
   };
 
+  // "Back to dialer" — returns to the pre-call surface (campaign hero +
+  // queue + pacing). The agent picks manual / auto next from there.
+  const onBackToQueue = () => ctx.clearCall();
+
+  // "Dial next lead" — picks the first queue entry that ISN'T the
+  // contact we're currently/just-were on, then dials it.
+  const onDialNext = () => {
+    const currentId = ctx.call?.contactId ?? null;
+    const next =
+      queue.find((l) => l.id !== currentId) ??
+      (queue.length > 0 ? queue[0] : null);
+    ctx.clearCall();
+    if (next) {
+      // Slight defer so reducer state settles before the next start.
+      setTimeout(() => onCall(next), 100);
+    }
+  };
+
+  const hasNextLead = queue.some(
+    (l) => l.id !== (ctx.call?.contactId ?? null)
+  );
+
   return (
     <div className="p-6 max-w-[1100px] mx-auto space-y-4">
       <div>
@@ -168,6 +190,9 @@ export default function DialerPage() {
         <LiveCallScreen
           pipelineId={camp?.pipelineId ?? null}
           scriptMd={camp?.scriptMd ?? null}
+          onBackToQueue={onBackToQueue}
+          onDialNext={onDialNext}
+          hasNextLead={hasNextLead}
         />
       )}
     </div>
