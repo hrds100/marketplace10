@@ -18,7 +18,15 @@
 
 /** Fine-grained call phase. The legacy `phase` (idle / placing / in_call /
  *  post_call) consumed by existing components is mapped from this in
- *  ActiveCallContext for backwards compatibility. */
+ *  ActiveCallContext for backwards compatibility.
+ *
+ *  PR 149 (Hugo 2026-04-29): `paused` added as a CALL-PHASE state. It is
+ *  reachable only from `outcome_done` (after a Pause click while the
+ *  agent is between calls) and exits to `outcome_done` (or `idle` if no
+ *  prior call) on Resume. Distinct from `sessionPaused` (a session flag,
+ *  see CallLifecycleState below) — `paused` is a discrete dialer phase,
+ *  `sessionPaused` is a flag that can be true in any phase to gate
+ *  auto-next pacing without changing the call lifecycle. */
 export type CallPhase =
   | 'idle'
   | 'dialing'
@@ -27,7 +35,8 @@ export type CallPhase =
   | 'stopped_waiting_outcome'
   | 'error_waiting_outcome'
   | 'outcome_submitting'
-  | 'outcome_done';
+  | 'outcome_done'
+  | 'paused';
 
 /** Whether the live-call room is mounted. Hang-up does not change this —
  *  Rule 6: "Stop / Hang up must NOT close the room." */
@@ -76,6 +85,14 @@ export interface TelephonyInputs {
   userCanceled?: boolean;
 }
 
+/** PR 149 (Hugo 2026-04-29): pacing state for the auto-next timer.
+ *  - 'idle'         — no pacing timer pending.
+ *  - 'armed'        — timer scheduled; deadline is `pacingDeadlineMs`.
+ *  - 'cooling_down' — deadline reached and PACING_DEADLINE_TICK fired,
+ *                     waiting for the new dial to start (avoids re-arming).
+ *  Cancelled on any state change away from outcome_done. */
+export type PendingNextCall = 'idle' | 'armed' | 'cooling_down';
+
 /** The whole reducer state. */
 export interface CallLifecycleState {
   callPhase: CallPhase;
@@ -87,6 +104,23 @@ export interface CallLifecycleState {
   error: CallError | null;
   /** Phase 2 metadata — set on transition into *_waiting_outcome. */
   dispositionSignal: TelephonySignal;
+  /** PR 149 (Hugo 2026-04-29): pacing-timer status mirror. The actual
+   *  setTimeout lives in ActiveCallContext; this tells the reducer (and
+   *  any consumer) whether a timer is currently armed. */
+  pendingNextCall: PendingNextCall;
+  /** PR 149: when set, the absolute ms timestamp at which the auto-next
+   *  pacing timer is scheduled to fire. Drives the visible countdown
+   *  in the badge during outcome_done. Null when no timer is armed. */
+  pacingDeadlineMs: number | null;
+  /** PR 149: session-level pause flag mirrored from dialerSessionStore.
+   *  When true, the pacing timer is cancelled / never armed and the
+   *  session bar shows "Paused — Resume to continue". Distinct from
+   *  CallPhase 'paused' (an explicit phase reachable from outcome_done
+   *  while idle); sessionPaused can be true in ANY phase. */
+  sessionPaused: boolean;
+  /** PR 149: when NEXT_CALL_EMPTY fires, sticky banner stays up until the
+   *  next agent action. Cleared on every other transition. */
+  noNewLeadsBanner: boolean;
 }
 
 // ────────────────────────────────────────────────────────────────────────
@@ -187,4 +221,12 @@ export const INITIAL_STATE: CallLifecycleState = {
   muted: false,
   error: null,
   dispositionSignal: null,
+  // PR 149 — defaults chosen so existing reducer behaviour is unchanged
+  // when the new fields are not yet read by any case (pacing wiring lands
+  // in PR 150 with the new event handlers). All consumers that destructure
+  // INITIAL_STATE keep working.
+  pendingNextCall: 'idle',
+  pacingDeadlineMs: null,
+  sessionPaused: false,
+  noNewLeadsBanner: false,
 };
