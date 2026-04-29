@@ -223,6 +223,55 @@ describe('deriveDialerUiState', () => {
     });
   });
 
+  // ─── PR 150: paused + next_resolving ──────────────────────────────
+  describe('PR 150 — paused + next_resolving (new in PR 150)', () => {
+    it('callPhase=paused → { kind: "paused" }', () => {
+      const s = st({ callPhase: 'paused', call: baseCall });
+      expect(deriveDialerUiState(s)).toEqual({ kind: 'paused' });
+    });
+
+    it('callPhase=outcome_done with pendingNextCall=cooling_down → { kind: "next_resolving" }', () => {
+      const s = st({
+        callPhase: 'outcome_done',
+        call: baseCall,
+        pendingNextCall: 'cooling_down',
+      });
+      expect(deriveDialerUiState(s)).toEqual({ kind: 'next_resolving' });
+    });
+
+    it('callPhase=outcome_done with pendingNextCall=armed → { kind: "done" } (waiting for timer)', () => {
+      const s = st({
+        callPhase: 'outcome_done',
+        call: baseCall,
+        pendingNextCall: 'armed',
+        pacingDeadlineMs: Date.now() + 5000,
+      });
+      expect(deriveDialerUiState(s)).toEqual({ kind: 'done' });
+    });
+
+    it('uiStateLabel("paused") = "Session paused"', async () => {
+      const { uiStateLabel } = await import('../dialerUiState');
+      expect(uiStateLabel({ kind: 'paused' })).toBe('Session paused');
+    });
+
+    it('uiStateLabel("next_resolving") = "Resolving next"', async () => {
+      const { uiStateLabel } = await import('../dialerUiState');
+      expect(uiStateLabel({ kind: 'next_resolving' })).toBe('Resolving next');
+    });
+
+    it('uiStateTone("paused") = "neutral"; uiStateTone("next_resolving") = "info"', async () => {
+      const { uiStateTone } = await import('../dialerUiState');
+      expect(uiStateTone({ kind: 'paused' })).toBe('neutral');
+      expect(uiStateTone({ kind: 'next_resolving' })).toBe('info');
+    });
+
+    it('uiStatePulse — paused does NOT pulse; next_resolving DOES pulse', async () => {
+      const { uiStatePulse } = await import('../dialerUiState');
+      expect(uiStatePulse({ kind: 'paused' })).toBe(false);
+      expect(uiStatePulse({ kind: 'next_resolving' })).toBe(true);
+    });
+  });
+
   // ─── Outcome submission flow ──────────────────────────────────────
   describe('outcome submission', () => {
     it('callPhase=outcome_submitting → { kind: "submitting" }', () => {
