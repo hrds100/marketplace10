@@ -449,85 +449,91 @@ export function DialerProvider({
   }, []);
 
   // ─── Side-effects: ADVANCE resolver ─────────────────────────────
-  // PR C.5: this effect fires when state.advanceIntent flips to
-  // 'pending'. Because effects run AFTER React commits, state is
-  // FRESH in here — no stateRef reads needed. Runs wk-leads-next +
-  // startCall, dispatches NEXT_CALL_EMPTY if nothing to dial.
+  // PR C.6 (Hugo 2026-04-29): the PR C.5 version had a self-cancel
+  // bug — the async chain dispatched ADVANCE_FETCHING mid-flight,
+  // which changed state, triggered effect cleanup, set cancelled=true,
+  // and the chain bailed before dialing. So Next still did nothing.
+  //
+  // Fix: don't dispatch from inside the chain (no ADVANCE_FETCHING).
+  // Use a re-entry ref so re-renders can't double-trigger the
+  // resolver. Drop the cancellation token entirely — once we commit
+  // to dialing the next lead, we don't want to cancel partway.
+  const advanceRunningRef = useRef(false);
   useEffect(() => {
     if (state.advanceIntent !== 'pending') return;
     // Don't fire if outcome is mid-flight; wait for it to land.
     if (state.callPhase === 'outcome_submitting') return;
-    let cancelled = false;
+    if (advanceRunningRef.current) return;
+    advanceRunningRef.current = true;
     void (async () => {
-      const campaignId =
-        state.call?.campaignId ?? store.getSnapshot().activeCampaignId ?? null;
-      console.info('[crm-v2 advance] effect FIRED', {
-        callPhase: state.callPhase,
-        campaignId,
-        dialedCount: store.getSnapshot().dialedThisSession.size,
-      });
-      if (!campaignId) {
-        console.info('[crm-v2 advance] no campaignId — emitting NEXT_CALL_EMPTY');
-        dispatchRaw({ type: 'NEXT_CALL_EMPTY', skippedAlreadyDialed: 0 });
-        return;
-      }
-      dispatchRaw({ type: 'ADVANCE_FETCHING' });
-      const dialed = store.getSnapshot().dialedThisSession;
-      let nextContactId: string | null = null;
-      let skipped = 0;
-      for (let attempt = 0; attempt < 5; attempt++) {
-        if (cancelled) return;
-        console.info(`[crm-v2 advance] attempt ${attempt + 1}/5 wk-leads-next`);
-        const res = await api.leadsNext({ campaign_id: campaignId });
-        console.info(`[crm-v2 advance] attempt ${attempt + 1} response`, res);
-        if (!res.ok) {
-          console.warn('[crm-v2 advance] wk-leads-next FAILED', res.error);
+      try {
+        const campaignId =
+          state.call?.campaignId ??
+          store.getSnapshot().activeCampaignId ??
+          null;
+        console.info('[crm-v2 advance] effect FIRED', {
+          callPhase: state.callPhase,
+          campaignId,
+          dialedCount: store.getSnapshot().dialedThisSession.size,
+        });
+        if (!campaignId) {
+          console.info('[crm-v2 advance] no campaignId — NEXT_CALL_EMPTY');
+          dispatchRaw({ type: 'NEXT_CALL_EMPTY', skippedAlreadyDialed: 0 });
+          return;
+        }
+        const dialed = store.getSnapshot().dialedThisSession;
+        let nextContactId: string | null = null;
+        let skipped = 0;
+        for (let attempt = 0; attempt < 5; attempt++) {
+          console.info(`[crm-v2 advance] attempt ${attempt + 1}/5 wk-leads-next`);
+          const res = await api.leadsNext({ campaign_id: campaignId });
+          console.info(`[crm-v2 advance] attempt ${attempt + 1} response`, res);
+          if (!res.ok) {
+            console.warn('[crm-v2 advance] wk-leads-next FAILED', res.error);
+            break;
+          }
+          const data = res.data;
+          if (data.empty || !('contact_id' in data) || !data.contact_id) {
+            console.info('[crm-v2 advance] wk-leads-next empty');
+            break;
+          }
+          if (dialed.has(data.contact_id)) {
+            console.info('[crm-v2 advance] anti-loop skip', data.contact_id);
+            skipped++;
+            continue;
+          }
+          nextContactId = data.contact_id;
           break;
         }
-        const data = res.data;
-        if (data.empty || !('contact_id' in data) || !data.contact_id) {
-          console.info('[crm-v2 advance] wk-leads-next empty');
-          break;
+        if (!nextContactId) {
+          console.info('[crm-v2 advance] empty result — banner', { skipped });
+          dispatchRaw({
+            type: 'NEXT_CALL_EMPTY',
+            skippedAlreadyDialed: skipped,
+          });
+          return;
         }
-        if (dialed.has(data.contact_id)) {
-          console.info('[crm-v2 advance] anti-loop skip', data.contact_id);
-          skipped++;
-          continue;
+        const contactRow = await fetchContactLite(nextContactId);
+        if (!contactRow) {
+          console.warn('[crm-v2 advance] fetchContactLite returned null', nextContactId);
+          dispatchRaw({
+            type: 'NEXT_CALL_EMPTY',
+            skippedAlreadyDialed: skipped,
+          });
+          return;
         }
-        nextContactId = data.contact_id;
-        break;
-      }
-      if (cancelled) return;
-      if (!nextContactId) {
-        console.info('[crm-v2 advance] empty result — banner', { skipped });
-        dispatchRaw({
-          type: 'NEXT_CALL_EMPTY',
-          skippedAlreadyDialed: skipped,
+        console.info('[crm-v2 advance] resolved — calling startCall', contactRow);
+        dispatchRaw({ type: 'ADVANCE_RESOLVED' });
+        await startCall({
+          contactId: contactRow.id,
+          contactName: contactRow.name,
+          phone: contactRow.phone,
+          campaignId,
         });
-        return;
+      } finally {
+        advanceRunningRef.current = false;
       }
-      const contactRow = await fetchContactLite(nextContactId);
-      if (cancelled) return;
-      if (!contactRow) {
-        console.warn('[crm-v2 advance] fetchContactLite returned null', nextContactId);
-        dispatchRaw({
-          type: 'NEXT_CALL_EMPTY',
-          skippedAlreadyDialed: skipped,
-        });
-        return;
-      }
-      console.info('[crm-v2 advance] resolved', contactRow);
-      dispatchRaw({ type: 'ADVANCE_RESOLVED' });
-      await startCall({
-        contactId: contactRow.id,
-        contactName: contactRow.name,
-        phone: contactRow.phone,
-        campaignId,
-      });
     })();
-    return () => {
-      cancelled = true;
-    };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [state.advanceIntent, state.callPhase]);
 
