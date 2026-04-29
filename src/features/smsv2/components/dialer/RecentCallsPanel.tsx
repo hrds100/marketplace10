@@ -62,6 +62,8 @@ interface CallRow {
   started_at: string | null;
   ended_at: string | null;
   duration_sec: number | null;
+  // PR 154 (Hugo 2026-04-29): outcome column.
+  pipeline_column_id: string | null;
 }
 
 interface ContactRow {
@@ -229,9 +231,14 @@ export default function RecentCallsPanel() {
     if (!agentId) return;
     let cancelled = false;
     const reload = async () => {
+      // PR 154 (Hugo 2026-04-29): pipeline_column_id added to the
+      // SELECT so the new Outcome column can render the picked stage.
+      // Joined client-side via useSmsV2().columns (cached).
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const { data } = await (supabase.from('wk_calls' as any) as any)
-        .select('id, contact_id, to_e164, status, started_at, ended_at, duration_sec')
+        .select(
+          'id, contact_id, to_e164, status, started_at, ended_at, duration_sec, pipeline_column_id'
+        )
         .eq('agent_id', agentId)
         .order('started_at', { ascending: false })
         // PR 137 (Hugo 2026-04-28): pull more raw rows so the React-side
@@ -430,6 +437,15 @@ export default function RecentCallsPanel() {
         const stageColumn = storeContact?.pipelineColumnId
           ? columns.find((c) => c.id === storeContact.pipelineColumnId)
           : undefined;
+        // PR 154 (Hugo 2026-04-29): outcome column = the pipeline column
+        // the agent picked when this specific call ended. Distinct from
+        // the contact's CURRENT stage (above) which may have moved on.
+        // Source of truth: wk_calls.pipeline_column_id (set by
+        // wk_apply_outcome). Joined client-side via the cached columns
+        // list. Renders `—` if null (Hugo Rule 13).
+        const outcomeColumn = r.pipeline_column_id
+          ? columns.find((c) => c.id === r.pipeline_column_id)
+          : undefined;
         const recording = recordingsByCall.get(r.id);
         const windowEnd = smsWindowEnd(r.started_at, r.ended_at);
         const smsCount =
@@ -451,6 +467,8 @@ export default function RecentCallsPanel() {
           isActive: ACTIVE_STATUSES.has(r.status) && r.ended_at === null,
           stageName: stageColumn?.name ?? null,
           stageColour: stageColumn?.colour ?? null,
+          outcomeName: outcomeColumn?.name ?? null,
+          outcomeColour: outcomeColumn?.colour ?? null,
           hasRecording: !!recording?.storage_path && recording.status === 'ready',
           smsCount,
           storeContact: storeContact ?? null,
@@ -556,6 +574,26 @@ export default function RecentCallsPanel() {
                     data-testid={`recent-call-stage-${item.id}`}
                   >
                     {item.stageName}
+                  </span>
+                )}
+                {/* PR 154 (Hugo 2026-04-29): outcome chip — the
+                    pipeline column the agent picked AT THIS CALL.
+                    Distinct from stage above (current contact stage). */}
+                {item.outcomeName && (
+                  <span
+                    className="text-[10px] font-semibold px-1.5 py-0.5 rounded ring-1 ring-inset"
+                    style={{
+                      backgroundColor: item.outcomeColour
+                        ? `${item.outcomeColour}26` // ~15% alpha
+                        : '#F3F4F6',
+                      color: item.outcomeColour ?? '#6B7280',
+                      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                      ['--tw-ring-color' as any]: item.outcomeColour ?? '#E5E7EB',
+                    }}
+                    title={`Outcome saved on this call: ${item.outcomeName}`}
+                    data-testid={`recent-call-outcome-${item.id}`}
+                  >
+                    ✓ {item.outcomeName}
                   </span>
                 )}
                 {item.smsCount > 0 && (
