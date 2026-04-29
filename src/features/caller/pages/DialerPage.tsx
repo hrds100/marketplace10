@@ -775,7 +775,7 @@ export function CallerPad() {
   if (!onDialerPage && !iconOpen) {
     return (
       <div
-        className="fixed z-[90] select-none"
+        className="fixed z-[210] select-none"
         style={{ left: pos.x, top: pos.y }}
       >
         <button
@@ -811,7 +811,7 @@ export function CallerPad() {
   if (onDialerPage && minimized) {
     return (
       <div
-        className="fixed z-[90] select-none"
+        className="fixed z-[210] select-none"
         style={{ left: pos.x, top: pos.y }}
       >
         <button
@@ -840,7 +840,7 @@ export function CallerPad() {
   // Expanded floating pad.
   return (
     <div
-      className="fixed z-[90] select-text"
+      className="fixed z-[210] select-text"
       style={{ left: pos.x, top: pos.y, width: PAD_W }}
     >
       <div className="bg-[#F3F3EE] border border-[#E5E7EB] rounded-[20px] shadow-[0_24px_64px_rgba(0,0,0,0.18)] overflow-hidden flex flex-col max-h-[calc(100vh-96px)]">
@@ -1796,7 +1796,7 @@ function RichEditContactBridge({ contactId, onClose }: { contactId: string; onCl
 
   if (loading) {
     return (
-      <div className="fixed inset-0 z-[150] bg-black/40 flex items-center justify-center">
+      <div className="fixed inset-0 z-[250] bg-black/40 flex items-center justify-center">
         <div className="bg-white rounded-2xl p-8">
           <Loader2 className="w-5 h-5 animate-spin text-[#9CA3AF]" />
         </div>
@@ -1805,6 +1805,7 @@ function RichEditContactBridge({ contactId, onClose }: { contactId: string; onCl
   }
 
   return (
+    <div className="[&>div]:!z-[250]">
     <EditContactModal
       contact={contact}
       onClose={onClose}
@@ -1826,6 +1827,7 @@ function RichEditContactBridge({ contactId, onClose }: { contactId: string; onCl
         onClose();
       }}
     />
+    </div>
   );
 }
 
