@@ -351,7 +351,7 @@ const App = () => (
             <Route path="inbox" element={<Smsv2InboxPage />} />
             <Route path="calls" element={<Smsv2CallsPage />} />
             <Route path="calls/:callId" element={<Smsv2PastCallScreen />} />
-            <Route path="dialer" element={<Navigate to="/caller/dialer" replace />} />
+            <Route path="dialer" element={<Smsv2DialerPage />} />
             {/* crm-v2 parallel rebuild — testing route. PR B mounts
                 the new pre-call overview page; PR C adds the in-call
                 room. PR D flips /crm/dialer to this and deletes the
