@@ -490,14 +490,26 @@ function renderProviderWithQueue() {
   );
 }
 
-describe('ActiveCallProvider.requestNextCall — PR 138 follow-up', () => {
-  it('skip → outcome_done → requestNextCall → dial fires for next contact', async () => {
+describe('ActiveCallProvider.requestNextCall — PR 138 + PR 155', () => {
+  it('skip → outcome_done → requestNextCall → dial fires for next contact (via wk-leads-next)', async () => {
     const firstCall = makeFakeCall();
     const secondCall = makeFakeCall();
     invokeMock
       // wk-calls-create for first call
       .mockResolvedValueOnce({
         data: { call_id: CALL_UUID, allowed: true },
+        error: null,
+      })
+      // PR 155: requestNextCall now resolves the next contact via
+      // wk-leads-next (server is the only authority). Mock it to
+      // return the second contact id for this campaign.
+      .mockResolvedValueOnce({
+        data: {
+          empty: false,
+          contact_id: SECOND_CONTACT.id,
+          queue_id: 'q-2',
+          campaign_id: 'campaign-test',
+        },
         error: null,
       })
       // wk-calls-create for second (next) call
@@ -511,6 +523,13 @@ describe('ActiveCallProvider.requestNextCall — PR 138 follow-up', () => {
 
     renderProviderWithQueue();
     await waitFor(() => snapshot && expect(snapshot).not.toBeNull());
+
+    // PR 155: stamp the active campaign so requestNextCall can call
+    // wk-leads-next. This is what the v3 OverviewPage does when the
+    // agent picks a campaign in the dropdown.
+    await act(async () => {
+      snapshot!.setActiveCampaignId('campaign-test');
+    });
 
     // First call: dial → accept → disconnect
     await act(async () => {
@@ -533,7 +552,8 @@ describe('ActiveCallProvider.requestNextCall — PR 138 follow-up', () => {
     const dialCallsBefore = dialMock.mock.calls.length;
     expect(dialCallsBefore).toBe(1);
 
-    // requestNextCall should pick the queued contact and dial.
+    // requestNextCall should call wk-leads-next, get SECOND_CONTACT,
+    // and dial.
     await act(async () => {
       await snapshot!.requestNextCall();
     });

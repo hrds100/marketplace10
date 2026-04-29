@@ -1,16 +1,19 @@
 // PR 148 (Hugo 2026-04-29): pin the contract that Skip and Next call
-// MUST stay clickable in `outcome_done`. They were `disabled={submitted}`
-// where `submitted = outcome_submitting || outcome_done`, which trapped
-// the agent on the "OUTCOME SAVED" screen whenever the auto-advance
-// requestNextCall came back empty.
+// MUST stay reachable in `outcome_done`. They used to live in this
+// panel's footer (postcall-skip / postcall-next-call testids).
 //
-// New rule: only block clicks while the outcome write is in flight
-// (`outcome_submitting`). After it lands (`outcome_done`), the agent
-// must be able to retry advancement.
+// PR 155 (Hugo 2026-04-29): the duplicate Skip / Next call buttons
+// were REMOVED from PostCallPanel. The InCallRoom footer's
+// <SessionControlBar> now owns those handlers (testids
+// `control-skip` / `control-next`). PostCallPanel is responsible for
+// the outcome cards + the helper text / keyboard hints. This test
+// pins the new contract:
+//   - PostCallPanel does NOT render its own Skip / Next call buttons.
+//   - The helper text "Pick an outcome to continue." is present.
+//   - Outcome card disable state still tracks `submitted`.
 
 import { describe, it, expect, vi } from 'vitest';
 import { render, screen } from '@testing-library/react';
-import type { ReactNode } from 'react';
 
 const ctxState: {
   phase: 'idle' | 'placing' | 'in_call' | 'post_call';
@@ -70,35 +73,53 @@ vi.mock('../../followups/FollowupPromptModal', () => ({
 
 import PostCallPanel from '../PostCallPanel';
 
-const renderPanel = (children?: ReactNode) =>
-  render(<>{children ?? <PostCallPanel />}</>);
-
-describe('PostCallPanel — Skip + Next call wiring (PR 148)', () => {
-  it('Skip and Next call are ENABLED while waiting for outcome (callPhase=stopped_waiting_outcome)', () => {
+describe('PostCallPanel — Skip + Next call wiring (PR 155)', () => {
+  it('does NOT render Skip / Next call buttons in stopped_waiting_outcome — those live on SessionControlBar now', () => {
     ctxState.callPhase = 'stopped_waiting_outcome';
-    renderPanel();
-    expect(screen.getByTestId('postcall-skip')).not.toBeDisabled();
-    expect(screen.getByTestId('postcall-next-call')).not.toBeDisabled();
+    render(<PostCallPanel />);
+    expect(screen.queryByTestId('postcall-skip')).toBeNull();
+    expect(screen.queryByTestId('postcall-next-call')).toBeNull();
   });
 
-  it('Skip and Next call are DISABLED while the outcome is being submitted (callPhase=outcome_submitting)', () => {
+  it('does NOT render Skip / Next call buttons in outcome_submitting', () => {
     ctxState.callPhase = 'outcome_submitting';
-    renderPanel();
-    expect(screen.getByTestId('postcall-skip')).toBeDisabled();
-    expect(screen.getByTestId('postcall-next-call')).toBeDisabled();
+    render(<PostCallPanel />);
+    expect(screen.queryByTestId('postcall-skip')).toBeNull();
+    expect(screen.queryByTestId('postcall-next-call')).toBeNull();
   });
 
-  it('Skip and Next call are ENABLED in callPhase=outcome_done so the agent can retry advancement (PR 148 fix for the "OUTCOME SAVED trap")', () => {
+  it('does NOT render Skip / Next call buttons in outcome_done', () => {
     ctxState.callPhase = 'outcome_done';
-    renderPanel();
-    expect(screen.getByTestId('postcall-skip')).not.toBeDisabled();
-    expect(screen.getByTestId('postcall-next-call')).not.toBeDisabled();
+    render(<PostCallPanel />);
+    expect(screen.queryByTestId('postcall-skip')).toBeNull();
+    expect(screen.queryByTestId('postcall-next-call')).toBeNull();
   });
 
-  it('Skip and Next call are ENABLED in error_waiting_outcome (post-error wrap-up)', () => {
+  it('does NOT render Skip / Next call buttons in error_waiting_outcome', () => {
     ctxState.callPhase = 'error_waiting_outcome';
-    renderPanel();
-    expect(screen.getByTestId('postcall-skip')).not.toBeDisabled();
-    expect(screen.getByTestId('postcall-next-call')).not.toBeDisabled();
+    render(<PostCallPanel />);
+    expect(screen.queryByTestId('postcall-skip')).toBeNull();
+    expect(screen.queryByTestId('postcall-next-call')).toBeNull();
+  });
+
+  it('still shows the keyboard helper text + outcome cards', () => {
+    ctxState.callPhase = 'stopped_waiting_outcome';
+    render(<PostCallPanel />);
+    // Footer helper line: "Pick an outcome to continue."
+    expect(screen.getByText('Pick an outcome to continue.')).toBeTruthy();
+    expect(screen.getByText(/1–9 outcomes · S skip · N next call/)).toBeTruthy();
+    expect(screen.getByTestId('postcall-outcome-col-new-leads')).toBeTruthy();
+  });
+
+  it('outcome cards are clickable in *_waiting_outcome (not disabled)', () => {
+    ctxState.callPhase = 'stopped_waiting_outcome';
+    render(<PostCallPanel />);
+    expect(screen.getByTestId('postcall-outcome-col-new-leads')).not.toBeDisabled();
+  });
+
+  it('outcome cards are disabled once submitted (outcome_submitting / outcome_done)', () => {
+    ctxState.callPhase = 'outcome_submitting';
+    render(<PostCallPanel />);
+    expect(screen.getByTestId('postcall-outcome-col-new-leads')).toBeDisabled();
   });
 });

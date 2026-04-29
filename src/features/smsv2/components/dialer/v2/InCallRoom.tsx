@@ -436,7 +436,10 @@ export default function InCallRoom() {
             <PhoneOff className="w-4 h-4 rotate-[135deg]" /> Call now
           </button>
         ) : (
-          <SessionControlBar size="lg" />
+          <SessionControlBar
+            size="lg"
+            pacingDeadlineMs={ctx.pacingDeadlineMs}
+          />
         )}
 
         <span
