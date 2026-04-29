@@ -12,7 +12,6 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, act, waitFor } from '@testing-library/react';
 import { useEffect } from 'react';
 import { ActiveCallProvider, useActiveCallCtx } from '../ActiveCallContext';
-import { DialerSessionProvider } from '../../../hooks/useDialerSession';
 import { SmsV2Provider, useSmsV2 } from '../../../store/SmsV2Store';
 
 // Shared fake-Device list used by the twilio-voice mock below. Tests push
@@ -22,12 +21,6 @@ const fakeDeviceCalls: Array<{ mute: (s: boolean) => void; disconnect: () => voi
 
 vi.mock('@/core/integrations/twilio-voice', () => ({
   addIncomingCallListener: vi.fn(() => () => {}),
-  // PR 132: ActiveCallContext now imports these too. The mock returns
-  // unsubscribe no-ops + best-effort disconnect, matching the real shape.
-  addTokenRefreshFailListener: vi.fn(() => () => {}),
-  disconnectAllCallsAndWait: vi.fn(async () => {
-    for (const c of [...fakeDeviceCalls]) c.disconnect();
-  }),
   getDeviceCalls: () => [...fakeDeviceCalls],
   muteAllCalls: (shouldMute: boolean) => {
     for (const c of fakeDeviceCalls) c.mute(shouldMute);
@@ -153,11 +146,9 @@ function renderProvider() {
   return render(
     <SmsV2Provider>
       <ProbeWithSeed />
-      <DialerSessionProvider>
-        <ActiveCallProvider>
-          <Probe />
-        </ActiveCallProvider>
-      </DialerSessionProvider>
+      <ActiveCallProvider>
+        <Probe />
+      </ActiveCallProvider>
     </SmsV2Provider>
   );
 }

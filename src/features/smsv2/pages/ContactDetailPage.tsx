@@ -20,7 +20,6 @@ import {
 import { useActiveCallCtx } from '../components/live-call/ActiveCallContext';
 import StageSelector from '../components/shared/StageSelector';
 import ContactSmsModal from '../components/contacts/ContactSmsModal';
-import FollowupPromptModal from '../components/followups/FollowupPromptModal';
 import EditContactModal from '../components/contacts/EditContactModal';
 import { useCurrentAgent } from '../hooks/useCurrentAgent';
 import { useSmsV2 } from '../store/SmsV2Store';
@@ -31,17 +30,10 @@ import type { Contact } from '../types';
 
 export default function ContactDetailPage() {
   const { id } = useParams<{ id: string }>();
-  const { getContact, agents, columns, patchContact, upsertContact, pushToast } = useSmsV2();
+  const { getContact, agents, patchContact, upsertContact, pushToast } = useSmsV2();
   const contact = getContact(id ?? '');
   const [editing, setEditing] = useState<Contact | null>(null);
   const [smsTo, setSmsTo] = useState<Contact | null>(null);
-  // PR 122: follow-up prompt at parent level (was rendering behind the
-  // SMS modal at z-230 vs z-300, causing the flash-and-vanish glitch).
-  const [followupTarget, setFollowupTarget] = useState<{
-    contactId: string;
-    contactName: string;
-    columnId: string;
-  } | null>(null);
   const { firstName: agentFirstName } = useCurrentAgent();
   const [newTag, setNewTag] = useState('');
   const [newField, setNewField] = useState({ key: '', value: '' });
@@ -382,33 +374,7 @@ export default function ContactDetailPage() {
         contact={smsTo}
         onClose={() => setSmsTo(null)}
         agentFirstName={agentFirstName ?? ''}
-        onSent={(info) => {
-          setSmsTo(null);
-          setFollowupTarget(info);
-        }}
       />
-      {followupTarget && (
-        <FollowupPromptModal
-          open
-          onOpenChange={(o) => { if (!o) setFollowupTarget(null); }}
-          contactId={followupTarget.contactId}
-          contactName={followupTarget.contactName}
-          columnId={followupTarget.columnId}
-          columnName={
-            columns.find((c) => c.id === followupTarget.columnId)?.name ?? 'Stage'
-          }
-          suggestedHoursAhead={(() => {
-            const lc = columns
-              .find((c) => c.id === followupTarget.columnId)
-              ?.name.toLowerCase();
-            if (lc === 'callback') return 2;
-            if (lc === 'interested') return 24;
-            return 24 * 3;
-          })()}
-          callId={null}
-          onSaved={() => setFollowupTarget(null)}
-        />
-      )}
     </div>
   );
 }

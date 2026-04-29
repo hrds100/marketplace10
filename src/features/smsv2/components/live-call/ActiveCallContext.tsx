@@ -1,60 +1,35 @@
-// PR 138 (Hugo 2026-04-28): refactor — single useReducer drives the
-// entire call lifecycle. No more 5+ scattered useState's, no more fire-
-// and-forget setTimeouts, no more "is this call alive?" booleans
-// duplicated in three components.
-//
-// PUBLIC CONTEXT API IS STABLE — every consumer (LiveCallScreen,
-// PostCallPanel, Softphone, RecentCallsPanel, DialerPage) keeps reading
-// `phase`, `call`, `previewContactId`, `lastEndedContactId`, `muted`,
-// `fullScreen`, `startCall`, `endCall`, `applyOutcome`, etc. The legacy
-// `phase` is mapped from the new fine-grained `callPhase` via
-// `mapToLegacyPhase` (see lib/callLifecycleReducer.ts). New fields:
-// `callPhase`, `roomView`, `error`, `dispositionSignal` — consumers
-// adopt them in commits 4-7.
-
-import {
-  createContext,
-  useContext,
-  useReducer,
-  useEffect,
-  useRef,
-  useMemo,
-  useCallback,
-} from 'react';
+import { createContext, useContext, useState, useEffect, useRef, useMemo, useCallback } from 'react';
 import type { ReactNode } from 'react';
 import type { Call as TwilioCall } from '@twilio/voice-sdk';
 import { useSmsV2 } from '../../store/SmsV2Store';
 import { supabase } from '@/integrations/supabase/client';
 import { useTwilioDevice } from '../../hooks/useTwilioDevice';
-import { useDialerSession } from '../../hooks/useDialerSession';
-import { dialerLog } from '../../lib/dialerLog';
 import {
   addIncomingCallListener,
-  addTokenRefreshFailListener,
   disconnectAllCalls,
-  disconnectAllCallsAndWait,
   getDeviceCalls,
   muteAllCalls,
 } from '@/core/integrations/twilio-voice';
 import { startCallOrchestration, type StartCallResult } from '../../lib/startCallOrchestration';
-import {
-  callLifecycleReducer,
-  mapToLegacyPhase,
-} from '../../lib/callLifecycleReducer';
-import {
-  INITIAL_STATE,
-  type ActiveCall,
-  type CallPhase as FineGrainedCallPhase,
-  type CallError,
-  type RoomView,
-  type TelephonySignal,
-} from '../../lib/callLifecycleReducer.types';
-import { mapTwilioError } from '../../lib/twilioErrorMap';
 
-/** Legacy phase shape kept for backwards compatibility with consumers
- *  that haven't been migrated yet. Mapped from the new fine-grained
- *  callPhase via lib/callLifecycleReducer.mapToLegacyPhase. */
 export type CallPhase = 'idle' | 'placing' | 'in_call' | 'post_call';
+
+interface ActiveCall {
+  contactId: string;
+  contactName: string;
+  phone: string;
+  startedAt: number;
+  /** Server-side wk_calls.id, set when this call originated through the
+   *  real dialer (wk-dialer-start or wk-voice-twiml-outgoing). When null
+   *  we skip the wk-outcome-apply round-trip and rely on the local store
+   *  only — used by the Phase 0 mock data and offline demos. */
+  callId?: string | null;
+  /** PR 96 (Hugo 2026-04-28): campaign this call belongs to. Lets the
+   *  mid-call sender route through wk_campaign_numbers for the from-line
+   *  (matches PR 86's backend resolution). null when the call wasn't
+   *  initiated under a campaign (manual dial). */
+  campaignId?: string | null;
+}
 
 interface OutcomeInvoke {
   invoke: (
@@ -76,6 +51,10 @@ interface CreateCallInvoke {
   }>;
 }
 
+// PR (Hugo 2026-04-28, Bug 1): typed invoke for wk-dialer-hangup-leg.
+// Fires from endCall so pressing "End" actually kills the PSTN leg
+// instead of just dropping the agent's WebRTC client (which left the
+// callee on a still-billed Twilio leg until they hung up themselves).
 interface HangupInvoke {
   invoke: (
     name: string,
@@ -86,9 +65,11 @@ interface HangupInvoke {
   }>;
 }
 
-// PR 138 follow-up (Hugo 2026-04-28): wk-leads-next is invoked from
-// requestNextCall when the local Zustand queue is empty but the agent
-// is on a campaign-driven session. The edge fn atomically picks the
+// PR (Hugo 2026-04-28, Bug 2): typed invoke for wk-leads-next. The
+// local Zustand store doesn't mirror wk_dialer_queue, so after an
+// outcome the "next contact" used to be popped from the local queue
+// and was almost always empty for campaign-driven dialer sessions.
+// We now fall back to wk-leads-next, which atomically picks the
 // next row from wk_dialer_queue (priority + scheduled_for + attempts,
 // SKIP LOCKED) and marks it 'dialing' for this agent.
 interface NextLeadInvoke {
@@ -104,87 +85,77 @@ interface NextLeadInvoke {
 }
 
 interface ActiveCallCtx {
-  // ─── Legacy public API (UNCHANGED) ────────────────────────────────
   phase: CallPhase;
   call: ActiveCall | null;
   durationSec: number;
   fullScreen: boolean;
   setFullScreen: (v: boolean) => void;
+  /** Hugo 2026-04-26 (PR 10): "calling room" preview — open the live-
+   *  call screen layout for a contact WITHOUT dialling. The agent uses
+   *  it to look at the lead's context (script, glossary, mid-call SMS
+   *  sender) without committing to a call. Set via openCallRoom. */
   previewContactId: string | null;
   openCallRoom: (contactId: string) => void;
   closeCallRoom: () => void;
+  /** Hugo 2026-04-27 (PR 44): the contact whose call just ended. Lets
+   *  PostCallPanel show a "← Previous call" button that pops the agent
+   *  back into that lead's room (preview mode) without ending the dial
+   *  cycle. Null on first call of the session. */
   lastEndedContactId: string | null;
   openPreviousCall: () => void;
+  /**
+   * Manual dial — minted call_id server-side, dials Twilio Device, and
+   * drives phase transitions via call event listeners. Returns the
+   * orchestration result for callers that want the typed reason on
+   * failure (most just await and ignore).
+   */
   startCall: (
     contactId: string,
     phoneOverride?: string,
     nameOverride?: string
   ) => Promise<StartCallResult>;
+  /**
+   * Internal: used by the dialer-winner broadcast handler when the call is
+   * already up server-side. Skips the dial/mint flow.
+   */
   resumeFromBroadcast: (input: {
     contactId: string;
     contactName?: string;
     phone?: string;
     callId?: string | null;
   }) => void;
+  /**
+   * PR (Hugo 2026-04-28, Bug 3): mount the live-call screen in 'placing'
+   * state with placeholder contact info. Used by DialerPage right after
+   * wk-dialer-start succeeds, so the agent sees the dialing screen
+   * IMMEDIATELY instead of staring at the dialer panel until the
+   * winner-orchestration broadcast lands ~2-8s later. Does NOT invoke
+   * Twilio (server-side legs are already firing). When the broadcast
+   * arrives, resumeFromBroadcast overwrites with real contact + callId
+   * and flips phase to 'in_call'.
+   */
   enterDialingPlaceholder: (input: {
     contactId: string;
     contactName?: string;
     phone?: string;
     campaignId?: string | null;
   }) => void;
-  endCall: () => Promise<void>;
+  endCall: () => void;
   clearCall: () => void;
+  /** Whether the active TwilioCall's mic is currently muted. */
   muted: boolean;
+  /** Toggle the active TwilioCall's mute. No-op if no live call. */
   toggleMute: () => void;
+  /**
+   * Apply a pipeline-column outcome to the just-ended call.
+   * Mutates store (contact stage + activity + tags + queue) and auto-loads
+   * the next lead from the dialer queue.
+   *
+   * Special sentinels (no automation):
+   *   - 'skipped' — no outcome logged, lead stays in queue, advance to next
+   *   - 'next-now' — same, "Call now" button
+   */
   applyOutcome: (columnId: string, note?: string) => void;
-
-  // ─── New API (PR 138) ─────────────────────────────────────────────
-  /** Fine-grained phase. `phase` is derived from this for legacy
-   *  consumers; new code should read `callPhase`. */
-  callPhase: FineGrainedCallPhase;
-  /** Whether the live-call room is closed / open full / minimised.
-   *  Hang-up does NOT change this (Rule 6). */
-  roomView: RoomView;
-  /** Most recent Twilio error (mapped to a friendly message). */
-  error: CallError | null;
-  /** Phase-2 metadata — telephony signal computed at end-of-call.
-   *  NOT consumed yet; do not auto-act on it. */
-  dispositionSignal: TelephonySignal;
-  /** Minimise the room — call continues. */
-  minimiseRoom: () => void;
-  /** Maximise from minimised state. */
-  maximiseRoom: () => void;
-  /** PR 138 follow-up (11/10): the agent has finished one call and
-   *  picked an outcome (callPhase === 'outcome_done'). Resolve the
-   *  next contact from the local queue first, then wk-leads-next as a
-   *  fallback for campaign sessions, and start the dial. No-op if
-   *  callPhase isn't outcome_done. Used by Next call / Skip / S / N
-   *  shortcuts AND by real outcome card clicks once the reducer
-   *  settles. */
-  requestNextCall: () => Promise<void>;
-  // ─── PR 151 (Hugo 2026-04-29): universal session controls ──────────
-  /** Pause the session: gates auto-next pacing, transitions to
-   *  callPhase='paused' when idle in outcome_done. Mid-call only
-   *  toggles the flag — the live call is untouched. */
-  requestPause: () => void;
-  /** Resume the session: clears sessionPaused, exits callPhase='paused'
-   *  back to outcome_done (or idle if no last call). */
-  requestResume: () => void;
-  /** Skip the current contact: from *_waiting_outcome, transitions to
-   *  outcome_done with no stage move, then fires requestNextCall. */
-  requestSkip: () => Promise<void>;
-  /** PR 155 (Hugo 2026-04-29): auto-next deadline (ms epoch) when the
-   *  pacing timer is armed in outcome_done; null otherwise. UI uses
-   *  this to render a visible countdown next to the Next call button. */
-  pacingDeadlineMs: number | null;
-  /** PR 155 (Hugo 2026-04-29): the v3 OverviewPage stamps the agent's
-   *  selected campaign here so `requestNextCall` (which only sees the
-   *  ActiveCall on the prior dial, not UI campaign state) can call
-   *  wk-leads-next after a manual dial whose ActiveCall didn't carry
-   *  a campaignId. The previous behaviour fell back to a Zustand
-   *  queue mirror which Hugo flagged on the live page ("No new
-   *  leads — 20 already dialed") because the mirror was stale. */
-  setActiveCampaignId: (id: string | null) => void;
 }
 
 const Ctx = createContext<ActiveCallCtx | null>(null);
@@ -192,168 +163,30 @@ const Ctx = createContext<ActiveCallCtx | null>(null);
 export function ActiveCallProvider({ children }: { children: ReactNode }) {
   const store = useSmsV2();
   const device = useTwilioDevice();
-  const session = useDialerSession();
-  const [state, dispatch] = useReducer(callLifecycleReducer, INITIAL_STATE);
-  const { callPhase, call, roomView, muted, error, dispositionSignal, previewContactId, lastEndedContactId } = state;
-
-  // 1Hz tick for the "in_call" duration display. Same idea as the old
-  // useState(setTick) — kept as a separate concern so it doesn't bloat
-  // reducer state with a redraw-only counter.
-  const [, setTick] = useReducer((n: number) => n + 1, 0);
+  const [phase, setPhase] = useState<CallPhase>('idle');
+  const [call, setCall] = useState<ActiveCall | null>(null);
+  const [, setTick] = useState(0);
+  const [fullScreen, setFullScreen] = useState(true);
+  const [muted, setMuted] = useState(false);
+  const [previewContactId, setPreviewContactId] = useState<string | null>(null);
+  const [lastEndedContactId, setLastEndedContactId] = useState<string | null>(null);
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const activeTwilioCallRef = useRef<TwilioCall | null>(null);
 
-  // PR 138 follow-up (11/10): requestNextCall needs to read the LATEST
-  // callPhase + call to decide whether to advance. useCallback closures
-  // capture stale snapshots, so we mirror state into a ref every render.
-  const stateRef = useRef(state);
-  stateRef.current = state;
-
-  // PR 151 (Hugo 2026-04-29): dialedThisSession migrated from a local
-  // useRef into useDialerSession() so the same set is visible to other
-  // consumers (OverviewHeader counts, debugger, future logging). The
-  // store lives in DialerSessionProvider — see Smsv2Layout.tsx wiring.
-  // Read live via `session.dialedThisSession`; append via
-  // `session.recordDialed(contactId)`. PR 147's anti-loop semantics
-  // unchanged.
-
-  // PR 147 (Hugo 2026-04-29, Bug #2): track which callIds we've already
-  // stamped client-side ended_at on so the persistence useEffect below
-  // doesn't fire repeatedly while the agent sits in wrap-up.
-  const persistedEndedRef = useRef<Set<string>>(new Set());
-
-  // PR 155 (Hugo 2026-04-29): the agent's currently-selected campaign,
-  // stamped by the v3 OverviewPage. requestNextCall reads this when
-  // the in-flight ActiveCall has no campaignId (manual dial path).
-  const activeCampaignIdRef = useRef<string | null>(null);
-  const setActiveCampaignId = useCallback((id: string | null) => {
-    activeCampaignIdRef.current = id;
-  }, []);
-
-  useEffect(() => {
-    if (callPhase === 'in_call') {
-      intervalRef.current = setInterval(() => setTick(), 1000);
-    } else if (intervalRef.current) {
-      clearInterval(intervalRef.current);
-      intervalRef.current = null;
-    }
-    return () => {
-      if (intervalRef.current) clearInterval(intervalRef.current);
-    };
-  }, [callPhase]);
-
-  // PR 151 (Hugo 2026-04-29): mirror dialerSession.paused into the
-  // reducer so pure transitions can gate auto-next without reaching
-  // outside. The reducer's PAUSE_REQUESTED / RESUME_REQUESTED handlers
-  // are idempotent — dispatching twice for the same value is a no-op.
-  useEffect(() => {
-    if (session.paused && !state.sessionPaused) {
-      dispatch({ type: 'PAUSE_REQUESTED' });
-    } else if (!session.paused && state.sessionPaused) {
-      dispatch({ type: 'RESUME_REQUESTED' });
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [session.paused, state.sessionPaused]);
-
-  // PR 151: pacing timer. When the agent lands in outcome_done with
-  // auto_next pacing AND the session is not paused AND no timer is
-  // already armed, schedule a setTimeout for `delaySeconds` and dispatch
-  // PACING_ARMED so the badge can render the visible countdown. On
-  // any state change (or unmount), cancel the timer + dispatch
-  // PACING_CANCELLED. When the timer fires, dispatch
-  // PACING_DEADLINE_TICK + call requestNextCallRef.current() to
-  // resolve the next contact. Hugo Rule 3: pacing is convenience, not
-  // a blocker — agent intent (manual Next / Skip / Pause) cancels the
-  // timer instantly because every action triggers a state change.
-  const requestNextCallRef = useRef<() => Promise<void>>(async () => {});
-  const pacingTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  // PR 155 (Hugo 2026-04-29, root-cause fix): the previous deps array
-  // included `state.pendingNextCall`, which the effect itself flips
-  // (PACING_ARMED → 'armed') after scheduling its setTimeout. The
-  // resulting re-render fires the cleanup, which `clearTimeout`s the
-  // very timer that was just armed. Auto-next never fired in production.
-  // Fix: gate solely on the *external* signals (callPhase + session
-  // pacing). Idempotency guard inside the body skips re-arming when a
-  // timer is already pending.
-  useEffect(() => {
-    const shouldArm =
-      callPhase === 'outcome_done' &&
-      !session.paused &&
-      session.pacing.mode === 'auto_next';
-    if (!shouldArm) {
-      if (pacingTimerRef.current) {
-        clearTimeout(pacingTimerRef.current);
-        pacingTimerRef.current = null;
-        dispatch({ type: 'PACING_CANCELLED' });
-        dialerLog('pacing.cancelled', {
-          sessionId: session.sessionId,
-          fromPhase: callPhase,
-        });
-      }
-      return;
-    }
-    if (pacingTimerRef.current) return; // already armed — no-op
-    const delayMs = Math.max(0, session.pacing.delaySeconds) * 1000;
-    const deadlineMs = Date.now() + delayMs;
-    dispatch({ type: 'PACING_ARMED', deadlineMs });
-    dialerLog('pacing.armed', {
-      sessionId: session.sessionId,
-      extra: { delayMs, deadlineMs },
-    });
-    pacingTimerRef.current = setTimeout(() => {
-      pacingTimerRef.current = null;
-      dispatch({ type: 'PACING_DEADLINE_TICK' });
-      dialerLog('pacing.fire', { sessionId: session.sessionId });
-      void requestNextCallRef.current();
-    }, delayMs);
-    return () => {
-      if (pacingTimerRef.current) {
-        clearTimeout(pacingTimerRef.current);
-        pacingTimerRef.current = null;
-      }
-    };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [callPhase, session.paused, session.pacing.mode, session.pacing.delaySeconds]);
-
-  // PR 147 (Hugo 2026-04-29, Bug #2): when the call lands in any wrap-
-  // up phase, stamp wk_calls.ended_at client-side. Twilio's
-  // wk-voice-status webhook is the primary source of truth, but it
-  // can fail or arrive late on gateway-error disconnects — and Recent
-  // Calls reads from wk_calls. Without this, error-ended calls were
-  // missing from history until the agent reloaded the page. Idempotent:
-  // only fires the first time we see each (callId, wrap-up) transition.
-  // Conditional `is('ended_at', null)` so we never overwrite a real
-  // status the webhook already wrote.
-  useEffect(() => {
-    const isWrapUp =
-      callPhase === 'stopped_waiting_outcome' ||
-      callPhase === 'error_waiting_outcome';
-    if (!isWrapUp) return;
-    const cid = call?.callId;
-    if (!cid) return;
-    if (persistedEndedRef.current.has(cid)) return;
-    persistedEndedRef.current.add(cid);
-    void (async () => {
-      try {
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        await (supabase.from('wk_calls' as any) as any)
-          .update({
-            ended_at: new Date().toISOString(),
-            status: 'completed',
-          })
-          .eq('id', cid)
-          .is('ended_at', null);
-      } catch (e) {
-        console.warn('[wk_calls] client-side ended_at fallback failed', e);
-      }
-    })();
-  }, [callPhase, call?.callId]);
-
   const toggleMute = useCallback(() => {
-    // Same logic as before — the mute mechanic itself is unchanged.
-    // ROOT CAUSE of "I clicked Mute, callee still hears me": Twilio
-    // Device maintains MULTIPLE Calls; we mute every Call on the
-    // device, not just the active ref.
+    // ROOT CAUSE of the "I clicked Mute, callee still hears me" bug:
+    // Twilio Device maintains MULTIPLE Calls simultaneously (device.calls).
+    // Every device.connect() appends a new Call without disposing prior
+    // ones — the agent's mic feeds them ALL until each one's track.enabled
+    // is flipped or the Call is disconnected. Across rapid test cycles,
+    // navigating away mid-call, or any missed disconnect, zombie Calls
+    // accumulate. Muting only the activeTwilioCallRef leaves the zombies
+    // streaming, so the callee keeps hearing the agent.
+    //
+    // Fix: mute EVERY Call the Device is maintaining. The active ref is
+    // also muted (it's in device.calls). isMuted() truth comes from the
+    // active ref / device.activeCall (both reflect the same Call) so the
+    // icon flips correctly.
     const all = getDeviceCalls();
     const truth =
       activeTwilioCallRef.current ?? device.activeCall ?? all[all.length - 1] ?? null;
@@ -361,14 +194,50 @@ export function ActiveCallProvider({ children }: { children: ReactNode }) {
       console.info('[mute] no Twilio Calls on device — toggleMute is a no-op');
       return;
     }
+    // Toggle based on React state (the source of truth for the UI) instead of
+    // the SDK's isMuted(). After Layer 3 replaceTrack(null), the SDK's
+    // _sender.track is null, which can leave isMuted() in an inconsistent
+    // state — Hugo (2026-04-26): "click mute, button stays selected".
+    // React state is what the user sees; toggle it predictably.
     const next = !muted;
     console.info('[mute] toggle', { wasMuted: muted, next, calls: all.length, hasFallback: !!truth });
+    // Pass `truth` as the fallback so muteAllCalls can hard-mute the active
+    // outbound Call even when device.calls is empty (the SDK doesn't list
+    // outbound dials in its public `calls` array).
     muteAllCalls(next, truth);
-    dispatch({ type: 'MUTE_CHANGED', muted: next });
+    // The 'mute' event listener wired in startCall / incoming will sync
+    // React state on the active Call. Set optimistically too so the icon
+    // flips immediately even if a Call's stream isn't fully wired yet.
+    setMuted(next);
   }, [muted, device.activeCall]);
 
-  // ─── Winner broadcast ────────────────────────────────────────────
+  useEffect(() => {
+    if (phase === 'in_call') {
+      intervalRef.current = setInterval(() => setTick((t) => t + 1), 1000);
+    } else if (intervalRef.current) {
+      clearInterval(intervalRef.current);
+      intervalRef.current = null;
+    }
+    return () => {
+      if (intervalRef.current) clearInterval(intervalRef.current);
+    };
+  }, [phase]);
+
+  // PR 44 (Hugo 2026-04-27): snapshot the contactId whenever a call
+  // ends (post_call), so the agent can pop back into that lead's room
+  // from PostCallPanel via "← Previous call" without ending the dial
+  // cycle. We don't clear it on idle — the snapshot survives across
+  // calls until the next one ends.
+  useEffect(() => {
+    if (phase === 'post_call' && call?.contactId) {
+      setLastEndedContactId(call.contactId);
+    }
+  }, [phase, call?.contactId]);
+
   // Subscribe to `dialer:<agentId>` for winner-takes-screen.
+  // wk-dialer-answer broadcasts { call_id, contact_id, twilio_call_sid } on
+  // the agent's channel the moment a parallel-dial leg is picked up. We
+  // morph straight into the live-call view with the winning contact loaded.
   useEffect(() => {
     let cancelled = false;
     let unsubscribe: (() => void) | null = null;
@@ -392,17 +261,16 @@ export function ActiveCallProvider({ children }: { children: ReactNode }) {
               const p = payload.payload;
               if (!p?.contact_id) return;
               const contact = store.getContact(p.contact_id);
-              dispatch({
-                type: 'WINNER_BROADCAST',
-                call: {
-                  contactId: p.contact_id,
-                  contactName: contact?.name ?? 'Inbound',
-                  phone: contact?.phone ?? '',
-                  startedAt: Date.now(),
-                  callId: p.call_id ?? null,
-                  campaignId: p.campaign_id ?? null,
-                },
+              setCall({
+                contactId: p.contact_id,
+                contactName: contact?.name ?? 'Inbound',
+                phone: contact?.phone ?? '',
+                startedAt: Date.now(),
+                callId: p.call_id ?? null,
+                campaignId: p.campaign_id ?? null,
               });
+              setPhase('in_call');
+              setFullScreen(true);
               store.pushToast('Connected — call active', 'success');
             }
           )
@@ -420,91 +288,81 @@ export function ActiveCallProvider({ children }: { children: ReactNode }) {
     };
   }, [store]);
 
-  // ─── Token refresh failure toast ─────────────────────────────────
+  // Inbound PSTN calls — Twilio routes to the agent's browser <Client>.
+  // The core voice wrapper auto-accepts and notifies us; we morph into the
+  // live-call screen the same way we do for the dialer-winner broadcast.
   useEffect(() => {
-    const unsubscribe = addTokenRefreshFailListener((retryFn) => {
-      store.pushToast('Phone offline — click to retry', 'error');
-      window.requestAnimationFrame(() => {
-        void retryFn().catch((e) =>
-          console.warn('[twilio-voice] auto-retry threw', e)
-        );
-      });
-    });
-    return unsubscribe;
-  }, [store]);
-
-  // ─── Inbound PSTN calls ──────────────────────────────────────────
-  useEffect(() => {
-    const unsubscribe = addIncomingCallListener((twilioCall) => {
-      const fromParam = twilioCall.parameters?.get?.('From') ?? '';
-      const callSid = twilioCall.parameters?.get?.('CallSid') ?? '';
+    const unsubscribe = addIncomingCallListener((call) => {
+      const fromParam = call.parameters?.get?.('From') ?? '';
+      const callSid = call.parameters?.get?.('CallSid') ?? '';
+      // Try to look up an existing contact by phone before we name them
+      // "Inbound" — keeps continuity with their existing wk_contacts row.
       const phone = typeof fromParam === 'string' ? fromParam : '';
       const matched = phone
         ? store.contacts.find((c) => c.phone === phone)
         : undefined;
-
-      const inbound: ActiveCall = {
+      setCall({
         contactId: matched?.id ?? `inbound-${callSid || Date.now()}`,
         contactName: matched?.name ?? 'Inbound caller',
         phone,
         startedAt: Date.now(),
-        callId: null,
-      };
-      activeTwilioCallRef.current = twilioCall;
-      dispatch({ type: 'INBOUND_ANSWERED', call: inbound });
+        callId: null, // server fills the wk_calls row via wk-voice-twiml-incoming
+      });
+      activeTwilioCallRef.current = call;
+      setPhase('in_call');
+      setFullScreen(true);
+      setMuted(false);
 
-      const isThisCall = () => activeTwilioCallRef.current === twilioCall;
+      // Same stale-call guard as the outbound path: only mutate state if
+      // THIS Call is still the current one. Without this, an old leaked
+      // inbound Call's late 'disconnect' would stomp on a fresh dial.
+      const isThisCall = () => activeTwilioCallRef.current === call;
       const onEnd = () => {
         if (!isThisCall()) return;
         activeTwilioCallRef.current = null;
-        dispatch({ type: 'CALL_ENDED', reason: 'twilio_disconnect' });
+        setPhase('post_call');
       };
-      twilioCall.on('disconnect', onEnd);
-      twilioCall.on('cancel', onEnd);
-      twilioCall.on('reject', onEnd);
-      twilioCall.on('mute', (isMuted: boolean) => {
+      call.on('disconnect', onEnd);
+      call.on('cancel', onEnd);
+      call.on('reject', onEnd);
+      // SDK is the source of truth for mute state — wire it into React.
+      call.on('mute', (isMuted: boolean) => {
         console.info('[mute] sdk event', isMuted);
-        dispatch({ type: 'MUTE_CHANGED', muted: isMuted });
+        setMuted(isMuted);
       });
     });
     return unsubscribe;
   }, [store]);
 
-  // ─── Manual / auto dial ──────────────────────────────────────────
   const startCall = useCallback<ActiveCallCtx['startCall']>(
     async (contactId, phoneOverride, nameOverride) => {
       const contact = store.getContact(contactId);
       const phone = (phoneOverride ?? contact?.phone ?? '').trim();
       const contactName = contact?.name ?? nameOverride ?? 'Unknown caller';
 
-      // PR 46: remove the contact from the queue BEFORE the dial fires,
-      // so sentinel flows like Skip / Next-now don't pop it again.
+      // PR 46 (Hugo 2026-04-27): remove the contact from the queue
+      // BEFORE the dial fires. Otherwise state.queue[0] is still the
+      // contact we just started dialling, and sentinel flows like
+      // Skip / Next-now / auto-advance pop it again → "calls same
+      // person twice in a row" bug.
       store.removeFromQueue(contactId);
 
-      // PR 147 / PR 151: mark this contact as dialed-this-session so
-      // the anti-loop guard in requestNextCall can avoid bouncing back.
-      // Skip recording for synthetic manual-dial IDs (`manual-...`)
-      // since each manual dial gets a fresh id anyway. PR 151: source
-      // is now useDialerSession() (was useRef).
-      if (!contactId.startsWith('manual-')) {
-        session.recordDialed(contactId);
-      }
-
+      // We used to call disconnectAllCalls() here to evict zombie Calls
+      // before each new dial. Hugo's regression report (2026-04-26): "I
+      // try to recall and then it gets hung up immediately, never rings".
+      // Symptom: wk_calls inserted with status='queued', twilio_call_sid
+      // never set — Twilio never reaches our TwiML endpoint. Reverting the
+      // pre-dial eviction restores the dial flow. Zombie cleanup still
+      // happens on endCall and via muteAllCalls (which iterates device.calls
+      // and falls back to the active ref).
       activeTwilioCallRef.current = null;
 
-      // Optimistic UI: dispatch START_CALL — reducer flips to 'dialing'
-      // and roomView to 'open_full'. startedAt is re-anchored on
-      // CALL_ACCEPTED.
-      dispatch({
-        type: 'START_CALL',
-        call: {
-          contactId,
-          contactName,
-          phone,
-          startedAt: Date.now(),
-          callId: null,
-        },
-      });
+      // Optimistic UI: show placing state so the agent gets immediate
+      // feedback (the "calling…" pill). startedAt is set once the call
+      // is accepted, not now, so the duration reflects real talk time.
+      setCall({ contactId, contactName, phone, startedAt: Date.now(), callId: null });
+      setPhase('placing');
+      setFullScreen(true);
 
       const result = await startCallOrchestration(
         { contactId, contactName, phone },
@@ -513,6 +371,11 @@ export function ActiveCallProvider({ children }: { children: ReactNode }) {
             const { data, error } = await (
               supabase.functions as unknown as CreateCallInvoke
             ).invoke('wk-calls-create', { body: input });
+            // supabase-js wraps every non-2xx into FunctionsHttpError with the
+            // useless message "Edge Function returned a non-2xx status code".
+            // Pull the real status + body off the captured Response so the
+            // toast tells the agent what actually happened (auth expired,
+            // spend block, missing env, etc.).
             if (error && (error as { context?: Response }).context) {
               try {
                 const ctx = (error as { context: Response }).context;
@@ -536,101 +399,84 @@ export function ActiveCallProvider({ children }: { children: ReactNode }) {
       );
 
       if (!result.ok) {
-        // Reducer treats CLEAR as a hard reset back to idle.
-        dispatch({ type: 'CLEAR' });
+        setPhase('idle');
+        setCall(null);
         return result;
       }
 
+      // Wire phase transitions to the Twilio Call lifecycle. 'accept' means
+      // the agent's mic is connected to Twilio (call is up). 'disconnect',
+      // 'cancel', 'reject' all collapse to post_call.
       activeTwilioCallRef.current = result.twilioCall;
-      // Stash the resolved callId on the in-flight call without
-      // changing phase.
-      dispatch({ type: 'CALL_ID_RESOLVED', callId: result.callId });
+      setCall((prev) =>
+        prev ? { ...prev, callId: result.callId, startedAt: Date.now() } : prev
+      );
+      setMuted(false);
 
+      // GUARD against stale-call event leaks: every listener checks that the
+      // disconnecting Call is THIS call (the one we just dialed). Without
+      // this, a previous call's 'disconnect' / 'cancel' (fired when
+      // disconnectAllCalls() evicts it at the start of a new dial) would
+      // run setPhase('post_call' / 'idle') and stomp on the new call,
+      // hanging it up before it can ring. Hugo's regression report
+      // (2026-04-26): "I try to recall and then it gets hung up immediately".
       const isThisCall = () => activeTwilioCallRef.current === result.twilioCall;
 
-      // PR 140 (Hugo 2026-04-28): Twilio Call.on('ringing') fires when
-      // the carrier reports the remote leg is alerting. This is the
-      // unambiguous "Ringing" boundary the new dialer UX hinges on —
-      // before this commit the reducer's `ringing` phase was only
-      // reachable from server-side leg-status mirroring, which lagged
-      // the SDK by 1-3s. Twilio docs:
-      // https://www.twilio.com/docs/voice/sdks/javascript/twiliocall
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      (result.twilioCall as any).on?.('ringing', () => {
+      const onAccept = () => {
         if (!isThisCall()) return;
-        dispatch({ type: 'LEG_RINGING' });
-      });
-      result.twilioCall.on('accept', () => {
-        if (!isThisCall()) return;
-        dispatch({ type: 'CALL_ACCEPTED', startedAt: Date.now() });
-      });
-      result.twilioCall.on('disconnect', () => {
+        setPhase('in_call');
+        setCall((prev) => (prev ? { ...prev, startedAt: Date.now() } : prev));
+      };
+      const onEnd = () => {
         if (!isThisCall()) return;
         activeTwilioCallRef.current = null;
-        dispatch({ type: 'CALL_ENDED', reason: 'twilio_disconnect' });
-      });
-      result.twilioCall.on('cancel', () => {
+        setPhase('post_call');
+      };
+      const onCancel = () => {
         if (!isThisCall()) return;
         activeTwilioCallRef.current = null;
-        dispatch({ type: 'CALL_ENDED', reason: 'twilio_cancel' });
-      });
-      result.twilioCall.on('reject', () => {
-        if (!isThisCall()) return;
-        activeTwilioCallRef.current = null;
-        dispatch({ type: 'CALL_ENDED', reason: 'twilio_reject' });
-      });
+        setPhase('idle');
+        setCall(null);
+      };
+      result.twilioCall.on('accept', onAccept);
+      result.twilioCall.on('disconnect', onEnd);
+      result.twilioCall.on('cancel', onCancel);
+      result.twilioCall.on('reject', onEnd);
+      // Surface Twilio Call errors so we can see WHY a dial fails (no
+      // edge errors, no network errors, just the SDK-side reason). Hugo's
+      // "never rings" repro had no error trail at all — this fixes that.
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       result.twilioCall.on('error', (err: any) => {
-        // PR 142 (Hugo 2026-04-28): 31005 was firing repeatedly because
-        // we left activeTwilioCallRef pointing at the dead Call. The
-        // isThisCall() guard on subsequent events couldn't filter the
-        // dupes. We now ALWAYS null the ref on the first error event
-        // so any further error/disconnect events for THIS Call instance
-        // are no-ops at the reducer layer.
-        if (!isThisCall()) return;
-        // PR 144 (Hugo 2026-04-28, Phase 1): the Twilio SDK exposes
-        // `err.originalError` which carries the raw `payload.error` from
-        // the gateway's HANGUP message — including the underlying error
-        // code Twilio's REST API reports (e.g. 13224 invalid number).
-        // Without logging this we threw away the gateway's actual
-        // reason every time a call failed.
         console.error('[twilio-call] error', {
           code: err?.code,
           message: err?.message,
           name: err?.name,
           causes: err?.causes,
           description: err?.description,
-          originalError: err?.originalError,
         });
-        const code = (err?.code as number | undefined) ?? 0;
-        const mapped = mapTwilioError(code, err?.message ?? '');
-        store.pushToast(mapped.friendlyMessage, 'error');
-        // Drop the ref — if the call object somehow recovers, the next
-        // dial is going through startCall again anyway.
-        activeTwilioCallRef.current = null;
-        dispatch({
-          type: 'CALL_ERROR',
-          error: { code, friendlyMessage: mapped.friendlyMessage },
-          fatal: mapped.fatal,
-          telephony: { errorCode: code },
-        });
-        if (mapped.fatal) {
-          // WebRTC cleanup so the next dial doesn't trip "A Call is
-          // already active". Fire-and-forget — UI has already moved on.
-          void (async () => {
-            try {
-              await disconnectAllCallsAndWait(1500);
-            } catch (e) {
-              console.warn('[twilio-call] error-path disconnect threw', e);
-              try { disconnectAllCalls(); } catch { /* ignore */ }
-            }
-            dispatch({ type: 'MUTE_CHANGED', muted: false });
-          })();
+        // Surface the most actionable reason in the toast. 31401 is by far
+        // the most common — Chrome has the mic blocked for hub.nfstay.com.
+        // Generic codes get a one-line summary so the agent isn't staring
+        // at "Call error 31005" with no idea what to do.
+        const code = err?.code as number | undefined;
+        let toast: string;
+        if (code === 31401) {
+          toast = 'Mic blocked. Click the 🔒 next to the URL → Microphone → Allow → reload.';
+        } else if (code === 31403 || code === 31486) {
+          toast = `Call refused by Twilio (${code}). Check phone number / caller ID.`;
+        } else if (code === 31005 || code === 31009) {
+          toast = `Connection lost (${code}). Refresh the page if it doesn't recover.`;
+        } else {
+          toast = `Call error ${code ?? ''}: ${err?.message ?? 'unknown'}`;
         }
+        store.pushToast(toast, 'error');
       });
+      // SDK is the source of truth for mute state. Without this, calling
+      // .mute() externally (or any internal track-replacement re-application)
+      // would leave the React icon out of sync with the actual track.
       result.twilioCall.on('mute', (isMuted: boolean) => {
         console.info('[mute] sdk event', isMuted);
-        dispatch({ type: 'MUTE_CHANGED', muted: isMuted });
+        setMuted(isMuted);
       });
 
       return result;
@@ -640,536 +486,273 @@ export function ActiveCallProvider({ children }: { children: ReactNode }) {
 
   const resumeFromBroadcast = useCallback<ActiveCallCtx['resumeFromBroadcast']>(
     (input) => {
-      dispatch({
-        type: 'WINNER_BROADCAST',
-        call: {
-          contactId: input.contactId,
-          contactName: input.contactName ?? 'Inbound',
-          phone: input.phone ?? '',
-          startedAt: Date.now(),
-          callId: input.callId ?? null,
-        },
+      setCall({
+        contactId: input.contactId,
+        contactName: input.contactName ?? 'Inbound',
+        phone: input.phone ?? '',
+        startedAt: Date.now(),
+        callId: input.callId ?? null,
       });
+      setPhase('in_call');
+      setFullScreen(true);
     },
     []
   );
 
+  // PR (Hugo 2026-04-28, Bug 3): mount the live-call screen in 'placing'
+  // state with placeholder info so the agent doesn't stare at the dialer
+  // panel between Start click and winner broadcast. Pure UI — does NOT
+  // trigger Twilio.connect (the legs are already firing server-side via
+  // wk-dialer-start). When the dialer:{agent_id} winner broadcast lands,
+  // resumeFromBroadcast overrides this with real contactId + callId.
   const enterDialingPlaceholder = useCallback<
     ActiveCallCtx['enterDialingPlaceholder']
   >((input) => {
-    dispatch({
-      type: 'ENTER_DIALING_PLACEHOLDER',
-      call: {
-        contactId: input.contactId,
-        contactName: input.contactName ?? 'Dialing…',
-        phone: input.phone ?? '',
-        startedAt: Date.now(),
-        callId: null,
-        campaignId: input.campaignId ?? null,
-      },
+    setCall({
+      contactId: input.contactId,
+      contactName: input.contactName ?? 'Dialing…',
+      phone: input.phone ?? '',
+      startedAt: Date.now(),
+      callId: null,
+      campaignId: input.campaignId ?? null,
     });
+    setPhase('placing');
+    setFullScreen(true);
   }, []);
-
-  // ─── End call ───────────────────────────────────────────────────
-  const endCall = useCallback(async (): Promise<void> => {
-    // PR 142 (Hugo 2026-04-28): the room used to look "stuck in
-    // RINGING" for ~1.5s after Hang up because we awaited
-    // disconnectAllCallsAndWait BEFORE dispatching CALL_ENDED. If the
-    // Twilio SDK was in a bad state (e.g. after a 31005 HANGUP) those
-    // disconnect events never fired and the timeout had to elapse.
-    //
-    // New order:
-    //   1. Drop the active-call ref so any racing 'error'/'disconnect'
-    //      events from the dead Call are filtered by isThisCall().
-    //   2. Dispatch CALL_ENDED IMMEDIATELY — UI moves to wrap-up.
-    //   3. Run server-side hangup-leg + client-side WebRTC teardown
-    //      asynchronously. The reducer doesn't care if those succeed.
-    //
-    // PR 148 (Hugo 2026-04-29): Hang up MUST kill audio synchronously,
-    // not after a 1.5 s timeout. Previously the WebRTC teardown was
-    // deferred to a `void async () => disconnectAllCallsAndWait(1500)`
-    // IIFE — UI flipped instantly but the audio kept streaming for up
-    // to 1.5 s. Now we call .disconnect() on the active TwilioCall ref
-    // synchronously here, plus a sync disconnectAllCalls() to evict any
-    // zombies. The async wait stays for the device-level cleanup but is
-    // no longer the user-facing hang-up path.
-    const callToKill = activeTwilioCallRef.current;
-    activeTwilioCallRef.current = null;
-    if (callToKill) {
-      try {
-        callToKill.disconnect();
-      } catch (e) {
-        console.warn('[endCall] sync disconnect threw', e);
-      }
-    }
-    try {
-      disconnectAllCalls();
-    } catch (e) {
-      console.warn('[endCall] sync disconnectAllCalls threw', e);
-    }
-    dispatch({ type: 'CALL_ENDED', reason: 'user_hangup' });
-    dispatch({ type: 'MUTE_CHANGED', muted: false });
-
-    const currentCallId = call?.callId ?? null;
-    // Note: client-side wk_calls.ended_at stamping happens in the
-    // useEffect that watches callPhase transition into wrap-up — that
-    // path catches every disconnect cause (user hangup, SDK disconnect,
-    // gateway error, race) without needing endCall to fire it manually.
-
-    // Server-side sweep — Twilio tears PSTN leg down regardless.
-    void (async () => {
-      try {
-        const { data: userData } = await supabase.auth.getUser();
-        const uid = userData.user?.id ?? null;
-        const ids = new Set<string>();
-        if (currentCallId) ids.add(currentCallId);
-        if (uid) {
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          const { data: legs } = await (supabase.from('wk_calls' as any) as any)
-            .select('id')
-            .eq('agent_id', uid)
-            .in('status', ['queued', 'ringing', 'in_progress']);
-          for (const l of (legs ?? []) as Array<{ id: string }>) {
-            ids.add(l.id);
-          }
-        }
-        await Promise.all(
-          Array.from(ids).map(async (callId) => {
-            try {
-              const { error } = await (
-                supabase.functions as unknown as HangupInvoke
-              ).invoke('wk-dialer-hangup-leg', { body: { call_id: callId } });
-              if (error) {
-                console.warn('[endCall] hangup-leg', callId, error.message);
-              }
-            } catch (e) {
-              console.warn('[endCall] hangup-leg threw', callId, e);
-            }
-          })
-        );
-      } catch (e) {
-        console.warn('[endCall] sweep failed', e);
-      }
-    })();
-
-    // Client-side WebRTC teardown — best-effort. If the SDK is dead,
-    // this throws or hangs; either way the UI has already moved on.
-    void (async () => {
-      try {
-        await disconnectAllCallsAndWait(1500);
-      } catch (e) {
-        console.warn('[endCall] disconnectAllCallsAndWait threw', e);
-        try { disconnectAllCalls(); } catch { /* ignore */ }
-      }
-    })();
-  }, [call?.callId]);
-
-  // ─── Apply outcome ──────────────────────────────────────────────
-  const applyOutcome = useCallback<ActiveCallCtx['applyOutcome']>(
-    (columnId, note) => {
-      if (!call) {
-        dispatch({ type: 'CLEAR' });
-        return;
-      }
-
-      // Sentinels — Skip / Next-now: no stage move. Reducer still
-      // flips phase via OUTCOME_PICKED → OUTCOME_RESOLVED so the UI
-      // can disable the picker and surface the "Next call" CTA.
-      dispatch({ type: 'OUTCOME_PICKED', columnId });
-
-      if (columnId === 'skipped' || columnId === 'next-now') {
-        // PR 138: no auto-dial. Reducer transitions to outcome_done;
-        // agent presses "Next call" (or selects another lead from
-        // RecentCallsPanel) to start the next dial.
-        dispatch({ type: 'OUTCOME_RESOLVED' });
-        return;
-      }
-
-      // Real outcome: write to store, surface toast.
-      const previousColumnId =
-        store.contacts.find((c) => c.id === call.contactId)?.pipelineColumnId ?? null;
-      const previousContactId = call.contactId;
-
-      const { badges, columnName } = store.applyOutcome(
-        call.contactId,
-        columnId,
-        note
-      );
-      const summary =
-        badges.length > 0
-          ? `Moved to ${columnName} · ${badges.join(' · ')}`
-          : `Moved to ${columnName}`;
-      store.pushToast(summary, 'success');
-
-      // Server-side automation runs in the background. Reducer flips
-      // to outcome_done as soon as the local store accepts the pick;
-      // a server failure rolls back the optimistic move.
-      if (call.callId) {
-        void (async () => {
-          try {
-            const { data, error } = await (
-              supabase.functions as unknown as OutcomeInvoke
-            ).invoke('wk-outcome-apply', {
-              body: {
-                call_id: call.callId,
-                contact_id: call.contactId,
-                column_id: columnId,
-                agent_note: note ?? null,
-              },
-            });
-            if (error) {
-              let real = error.message;
-              const ctx = (error as unknown as { context?: Response }).context;
-              if (ctx) {
-                try {
-                  const body = await ctx.clone().text();
-                  let parsed: { error?: string } | null = null;
-                  try { parsed = body ? JSON.parse(body) : null; } catch { /* not JSON */ }
-                  real = `${ctx.status} ${parsed?.error || body || error.message}`.trim();
-                } catch {
-                  // fall through
-                }
-              }
-              console.error('[wk-outcome-apply] failed', real);
-              store.patchContact(previousContactId, {
-                pipelineColumnId: previousColumnId ?? undefined,
-              });
-              store.pushToast(
-                `Server outcome failed: ${real} — restored previous stage`,
-                'error'
-              );
-              // PR 151: dispatch OUTCOME_FAILED so the reducer flips to
-              // outcome_done (no trap on save failure). Note: we already
-              // dispatched OUTCOME_RESOLVED below for the optimistic
-              // path; OUTCOME_FAILED is idempotent if state is already
-              // outcome_done so dispatching here is safe even though the
-              // reducer is already past outcome_submitting.
-              dispatch({ type: 'OUTCOME_FAILED', message: real });
-              dialerLog('outcome.failed', {
-                callId: call.callId,
-                contactId: call.contactId,
-                sessionId: session.sessionId,
-                extra: { message: real },
-              }, 'error');
-            } else if (data?.applied && data.applied.length === 0 && badges.length > 0) {
-              console.warn('outcome: server fired no automations', data);
-            }
-          } catch (e) {
-            store.patchContact(previousContactId, {
-              pipelineColumnId: previousColumnId ?? undefined,
-            });
-            store.pushToast(
-              `Outcome did not save server-side: ${e instanceof Error ? e.message : 'unknown'} — restored previous stage`,
-              'error'
-            );
-            const msg = e instanceof Error ? e.message : 'unknown';
-            dispatch({ type: 'OUTCOME_FAILED', message: msg });
-            dialerLog('outcome.failed', {
-              callId: call.callId,
-              contactId: call.contactId,
-              sessionId: session.sessionId,
-              extra: { message: msg },
-            }, 'error');
-          }
-        })();
-      }
-
-      // Reducer transitions to outcome_done. NO auto-advance, NO
-      // setTimeout chain to startCall (Rules 3, 4). Agent presses
-      // "Next call" or picks a different contact from Recent Calls.
-      // (PR 151: OUTCOME_FAILED handler in the reducer is idempotent in
-      // outcome_done so the optimistic OUTCOME_RESOLVED below is fine.)
-      dispatch({ type: 'OUTCOME_RESOLVED' });
-
-      // Empty-queue case is now handled at the UI layer (PostCallPanel
-      // shows the queue state). For campaign-driven flows we just
-      // leave the agent in outcome_done and let them press Next call.
-      // The wk-leads-next round-trip (PR 132) is no longer fired
-      // automatically — it would race with the agent's manual choice.
-      void store; // referenced via the closures above
-    },
-    [call, store]
-  );
-
-  // ─── Request next call ──────────────────────────────────────────
-  // PR 138 follow-up (11/10): the reducer defines NEXT_CALL_REQUESTED
-  // (outcome_done → dialing) but nothing in the codebase dispatched
-  // it before — Next call / Skip / S / N were silent no-ops post-
-  // outcome. This is the dispatch site.
-  //
-  // Resolution order for the next contact:
-  //   1. store.popNextFromQueue(prevContactId) — local Zustand mirror
-  //      (manual queue / RecentCallsPanel pre-loaded leads)
-  //   2. wk-leads-next on the call's campaign — falls back to the
-  //      server-side wk_dialer_queue (priority + scheduled_for +
-  //      attempts, SKIP LOCKED) so campaign sessions don't dead-end
-  //      when the local mirror is empty.
-  //   3. Genuinely empty → toast + STAY in outcome_done. The agent
-  //      decides what to do next (close room / pick from Recent Calls
-  //      / dial manually). Hugo's Rule 3/4 (no auto-advance, no auto-
-  //      outcome) is preserved: this fires because the AGENT clicked
-  //      Next/Skip/an outcome card, not because of a timer.
-  //
-  // Twilio dial fires via the existing `startCall` path, which already
-  // wires every Twilio listener (accept/disconnect/cancel/reject/
-  // error/mute) onto the new TwilioCall — duplicating that here would
-  // be a regression magnet. startCall internally dispatches
-  // START_CALL; the reducer accepts it from outcome_done identically
-  // to NEXT_CALL_REQUESTED (both flip to dialing + open_full + new
-  // call). NEXT_CALL_REQUESTED stays in the reducer for direct
-  // dispatch paths (e.g. future RecentCallsPanel "redial").
-  const requestNextCall = useCallback(async (): Promise<void> => {
-    const cur = stateRef.current;
-    // PR 155 (Hugo 2026-04-29): allow Next/Skip/auto-next to advance
-    // from BOTH `outcome_done` AND `idle`. Plan §8 visibility matrix:
-    // idle (queue ready) → Next call dials the first lead. Previously
-    // `requestNextCall` early-returned on any non-`outcome_done` phase,
-    // so Pause/Skip/Next on the overview page were silent no-ops.
-    if (cur.callPhase !== 'outcome_done' && cur.callPhase !== 'idle') {
-      console.info('[requestNextCall] ignored — callPhase is', cur.callPhase);
-      return;
-    }
-
-    const prevContactId = cur.call?.contactId ?? null;
-    // PR 155: campaignId resolution order — first the in-flight call
-    // (set by ENTER_DIALING_PLACEHOLDER / WINNER_BROADCAST), then the
-    // OverviewPage-stamped active campaign (covers manual dial paths
-    // where startCall doesn't know the campaign). Falls back to null
-    // → NEXT_CALL_EMPTY when neither is set.
-    const campaignId =
-      cur.call?.campaignId ?? activeCampaignIdRef.current ?? null;
-
-    dialerLog('next.requested', {
-      callId: cur.call?.callId ?? null,
-      contactId: prevContactId,
-      campaignId,
-      sessionId: session.sessionId,
-      source: 'manual',
-      fromPhase: cur.callPhase,
-    });
-
-    // PR 155 (Hugo 2026-04-29): the local Zustand `state.queue` path is
-    // GONE for campaign sessions. It was the source of the "No new
-    // leads — 20 already dialed this session" bug Hugo flagged on the
-    // live page: stale CSV-imported entries kept getting popped, every
-    // one of them was in `dialedThisSession`, and the loop ran out
-    // before the real server queue (49 fresh leads in
-    // `wk_dialer_queue`) was ever consulted. Plan §1.D mandated this
-    // deletion in the v3 rebuild — leftover from before. Server
-    // `wk-leads-next` is now the SINGLE authority.
-    const dialed = session.dialedThisSession;
-    let nextContactId: string | null = null;
-    let skippedAlreadyDialed = 0;
-
-    if (!campaignId) {
-      // No campaign context — UI shouldn't reach this from the v3
-      // overview page (HeroCard/PacingControl always have one), but
-      // bail safely if it does.
-      dispatch({ type: 'NEXT_CALL_EMPTY', skippedAlreadyDialed: 0 });
-      store.pushToast('No campaign selected — pick one to advance', 'info');
-      return;
-    }
-
-    // Up to 5 attempts: the server can hand us an already-dialed lead
-    // when SKIP LOCKED races; loop a few times to find a fresh one.
-    for (let attempt = 0; attempt < 5; attempt++) {
-      try {
-        const { data, error: fnError } = await (
-          supabase.functions as unknown as NextLeadInvoke
-        ).invoke('wk-leads-next', {
-          body: { campaign_id: campaignId },
-        });
-        if (fnError) {
-          console.warn('[requestNextCall] wk-leads-next failed:', fnError.message);
-          break;
-        }
-        if (!data || data.empty || !data.contact_id) break;
-        if (dialed.has(data.contact_id)) {
-          skippedAlreadyDialed++;
-          continue;
-        }
-        nextContactId = data.contact_id;
-        break;
-      } catch (e) {
-        console.warn('[requestNextCall] wk-leads-next threw:', e);
-        break;
-      }
-    }
-
-    if (!nextContactId) {
-      dispatch({
-        type: 'NEXT_CALL_EMPTY',
-        skippedAlreadyDialed,
-      });
-      dialerLog('next.empty', {
-        callId: cur.call?.callId ?? null,
-        contactId: prevContactId,
-        campaignId,
-        sessionId: session.sessionId,
-        extra: { skipped: skippedAlreadyDialed },
-      });
-      const msg =
-        skippedAlreadyDialed > 0
-          ? `No new leads — ${skippedAlreadyDialed} already dialed this session`
-          : 'Queue is empty — no more leads';
-      store.pushToast(msg, 'info');
-      return;
-    }
-
-    dialerLog('next.selected', {
-      callId: cur.call?.callId ?? null,
-      contactId: nextContactId,
-      campaignId,
-      sessionId: session.sessionId,
-    });
-    await startCall(nextContactId);
-  }, [store, startCall, session]);
-
-  // PR 151: keep the pacing-timer's ref-callback in sync with the
-  // latest requestNextCall closure so the timer's callback always sees
-  // the freshest dependencies (state, session). Without this the timer
-  // fires with a stale closure when the agent toggles pacing mid-session.
-  useEffect(() => {
-    requestNextCallRef.current = requestNextCall;
-  }, [requestNextCall]);
-
-  // PR 151: universal session controls — Pause / Resume / Skip. These
-  // adapt the agent's intent into the right combination of session-store
-  // mutation + reducer dispatch. Hugo's universal-control rule: these
-  // must work in EVERY phase; the underlying store/reducer handle the
-  // gating per-phase.
-  const requestPause = useCallback(() => {
-    session.pause();
-    dispatch({ type: 'PAUSE_REQUESTED' });
-    dialerLog('pause', {
-      sessionId: session.sessionId,
-      fromPhase: stateRef.current.callPhase,
-    });
-  }, [session]);
-
-  const requestResume = useCallback(() => {
-    session.resume();
-    dispatch({ type: 'RESUME_REQUESTED' });
-    dialerLog('resume', {
-      sessionId: session.sessionId,
-      fromPhase: stateRef.current.callPhase,
-    });
-  }, [session]);
-
-  const requestSkip = useCallback(async (): Promise<void> => {
-    const cur = stateRef.current;
-    dialerLog('skip', {
-      callId: cur.call?.callId ?? null,
-      contactId: cur.call?.contactId ?? null,
-      sessionId: session.sessionId,
-      fromPhase: cur.callPhase,
-    });
-    // From wrap-up, dispatch SKIP_REQUESTED (atomic outcome_done
-    // transition, no stage move). From any other state we fall through
-    // to requestNextCall which itself handles the live-call-end-first
-    // semantics via startCall.
-    if (
-      cur.callPhase === 'stopped_waiting_outcome' ||
-      cur.callPhase === 'error_waiting_outcome'
-    ) {
-      dispatch({ type: 'SKIP_REQUESTED' });
-      // Allow the reducer transition to settle before requesting next.
-      await Promise.resolve();
-    }
-    await requestNextCall();
-  }, [requestNextCall, session]);
-
-  // ─── Public context value ───────────────────────────────────────
-  const legacyPhase = mapToLegacyPhase(callPhase);
-  // `fullScreen` mirrors `roomView !== 'open_min'` — preserves the
-  // legacy boolean for Softphone's "minimised" check while the new
-  // `roomView` API is the single source of truth.
-  const fullScreen = roomView !== 'open_min';
 
   const value = useMemo<ActiveCallCtx>(() => {
     const durationSec = call ? Math.floor((Date.now() - call.startedAt) / 1000) : 0;
 
     return {
-      // ─── Legacy (unchanged) ──────────────────────────────────────
-      phase: legacyPhase,
+      phase,
       call,
       durationSec,
       fullScreen,
-      setFullScreen: (v: boolean) => {
-        if (v) dispatch({ type: 'MAXIMISE_ROOM' });
-        else dispatch({ type: 'MINIMISE_ROOM' });
-      },
+      setFullScreen,
       previewContactId,
       openCallRoom: (contactId: string) => {
-        dispatch({ type: 'OPEN_ROOM', contactId });
+        // Preview mode: no dial, no Twilio Call, just the layout. Skip
+        // if there's already an active call — preview would race with
+        // the live transcript/coach state.
+        if (phase !== 'idle') return;
+        setPreviewContactId(contactId);
+        setFullScreen(true);
       },
       closeCallRoom: () => {
-        dispatch({ type: 'CLOSE_ROOM' });
+        setPreviewContactId(null);
       },
       lastEndedContactId,
       openPreviousCall: () => {
+        // PR 44: from PostCallPanel, pop the agent back into the just-
+        // ended call's room (preview mode). Doesn't dial. Skips if no
+        // prior call exists OR if a fresh call has already started.
         if (!lastEndedContactId) return;
-        if (callPhase === 'in_call' || callPhase === 'dialing' || callPhase === 'ringing') return;
-        dispatch({ type: 'OPEN_ROOM', contactId: lastEndedContactId });
+        if (phase === 'in_call' || phase === 'placing') return;
+        setPreviewContactId(lastEndedContactId);
+        setFullScreen(true);
       },
       muted,
       toggleMute,
       startCall,
       resumeFromBroadcast,
       enterDialingPlaceholder,
-      endCall,
-      clearCall: () => {
-        // PR 147 / PR 151: clearCall is the explicit "start over" hook —
-        // wipe the dialed-this-session set so the agent can re-dial
-        // contacts in a fresh session. PR 151: source is now
-        // useDialerSession.endSession() (was useRef.clear()).
-        session.endSession();
-        dispatch({ type: 'CLEAR' });
+      endCall: () => {
+        // PR (Hugo 2026-04-28, Bug 1): the End button used to ONLY do a
+        // WebRTC client-side disconnect. The agent's mic stopped, but the
+        // PSTN leg stayed up on Twilio's side — Hugo's complaint:
+        // "Tajul pressed End but call kept going until guest hung up".
+        // Fire wk-dialer-hangup-leg first (fire-and-forget — we don't want
+        // the agent's UI waiting on a round-trip) so Twilio gets a REST
+        // POST Calls/{sid}.json with Status=canceled|completed and the
+        // callee's leg actually drops.
+        const callIdToHangup = call?.callId ?? null;
+        if (callIdToHangup) {
+          void (async () => {
+            try {
+              const { error } = await (
+                supabase.functions as unknown as HangupInvoke
+              ).invoke('wk-dialer-hangup-leg', {
+                body: { call_id: callIdToHangup },
+              });
+              if (error) {
+                console.warn('[endCall] hangup-leg failed:', error.message);
+              }
+            } catch (e) {
+              console.warn('[endCall] hangup-leg threw:', e);
+            }
+          })();
+        }
+        // Disconnect EVERY Call on the Device — not just the active ref.
+        // The "callee still hears me" zombie Calls (see toggleMute comment)
+        // also need to be evicted so they stop streaming the mic.
+        try { disconnectAllCalls(); } catch { /* ignore */ }
+        activeTwilioCallRef.current = null;
+        setPhase('post_call');
+        setMuted(false);
       },
-      applyOutcome,
+      clearCall: () => {
+        setPhase('idle');
+        setCall(null);
+        setFullScreen(true);
+        setMuted(false);
+      },
+      applyOutcome: (columnId, note) => {
+        if (!call) {
+          setPhase('idle');
+          return;
+        }
 
-      // ─── New (PR 138) ────────────────────────────────────────────
-      callPhase,
-      roomView,
-      error,
-      dispositionSignal,
-      minimiseRoom: () => dispatch({ type: 'MINIMISE_ROOM' }),
-      maximiseRoom: () => dispatch({ type: 'MAXIMISE_ROOM' }),
-      requestNextCall,
-      // PR 151 (Hugo 2026-04-29): universal session controls.
-      requestPause,
-      requestResume,
-      requestSkip,
-      // PR 155 (Hugo 2026-04-29): countdown surface + active campaign
-      // setter.
-      pacingDeadlineMs: state.pacingDeadlineMs,
-      setActiveCampaignId,
+        // Sentinels — Skip / Next-now: no stage move, just advance.
+        // PR 46: pass call.contactId as excludeContactId so we never
+        // pop the just-finished lead even if startCall hadn't yet
+        // dispatched the queue/remove (React batching). Phone dedupe
+        // is INTENTIONALLY not applied here — Hugo's call: testing
+        // with N contacts on the same phone still works via Skip /
+        // Next-now; production safety lives in the real applyOutcome
+        // path below.
+        if (columnId === 'skipped' || columnId === 'next-now') {
+          const nextId = store.popNextFromQueue(call.contactId);
+          if (nextId) {
+            void startCall(nextId);
+          } else {
+            store.pushToast('Queue is empty — no more leads', 'info');
+            setPhase('idle');
+            setCall(null);
+          }
+          return;
+        }
+
+        // PR 26 (Hugo 2026-04-27): capture the contact's previous
+        // pipelineColumnId BEFORE the optimistic move, so we can roll
+        // back if the server-side wk-outcome-apply rejects the move.
+        // Without this, the UI lies about persisted state when RLS or
+        // FK errors fire on the server.
+        const previousColumnId =
+          store.contacts.find((c) => c.id === call.contactId)?.pipelineColumnId ?? null;
+        const previousContactId = call.contactId;
+
+        // Real outcome: write to store, surface toast, auto-advance
+        const { nextContactId, badges, columnName } = store.applyOutcome(
+          call.contactId,
+          columnId,
+          note
+        );
+        const summary =
+          badges.length > 0
+            ? `Moved to ${columnName} · ${badges.join(' · ')}`
+            : `Moved to ${columnName}`;
+        store.pushToast(summary, 'success');
+
+        // Fire the server-side automation in the background. We've already
+        // optimistically updated the local store; if the server rejects
+        // the move we ROLL BACK the contact's pipelineColumnId so the UI
+        // reflects truth (PR 26).
+        if (call.callId) {
+          void (async () => {
+            try {
+              const { data, error } = await (
+                supabase.functions as unknown as OutcomeInvoke
+              ).invoke('wk-outcome-apply', {
+                body: {
+                  call_id: call.callId,
+                  contact_id: call.contactId,
+                  column_id: columnId,
+                  agent_note: note ?? null,
+                },
+              });
+              if (error) {
+                // supabase-js wraps every non-2xx into FunctionsHttpError with
+                // the useless "Edge Function returned a non-2xx status code".
+                // Pull the actual JSON error off the captured Response so the
+                // toast tells the agent what really failed (forbidden, RLS,
+                // missing FK, etc.) instead of "non-2xx".
+                let real = error.message;
+                const ctx = (error as unknown as { context?: Response }).context;
+                if (ctx) {
+                  try {
+                    const body = await ctx.clone().text();
+                    let parsed: { error?: string } | null = null;
+                    try { parsed = body ? JSON.parse(body) : null; } catch { /* not JSON */ }
+                    real = `${ctx.status} ${parsed?.error || body || error.message}`.trim();
+                  } catch {
+                    // fall through with original message
+                  }
+                }
+                console.error('[wk-outcome-apply] failed', real);
+                // PR 26: roll back the optimistic move. The auto-advance
+                // already kicked off above, so we don't undo the queue
+                // pop — that would race with the new call. We just put
+                // the LEAD back where it was so /smsv2/pipelines /
+                // contacts shows truth.
+                store.patchContact(previousContactId, {
+                  pipelineColumnId: previousColumnId ?? undefined,
+                });
+                store.pushToast(
+                  `Server outcome failed: ${real} — restored previous stage`,
+                  'error'
+                );
+              } else if (data?.applied && data.applied.length === 0 && badges.length > 0) {
+                console.warn('outcome: server fired no automations', data);
+              }
+            } catch (e) {
+              // Same rollback path on a thrown error.
+              store.patchContact(previousContactId, {
+                pipelineColumnId: previousColumnId ?? undefined,
+              });
+              store.pushToast(
+                `Outcome did not save server-side: ${e instanceof Error ? e.message : 'unknown'} — restored previous stage`,
+                'error'
+              );
+            }
+          })();
+        }
+
+        if (nextContactId) {
+          // small delay for the agent to read the toast
+          setTimeout(() => void startCall(nextContactId), 600);
+        } else if (call?.campaignId) {
+          // PR (Hugo 2026-04-28, Bug 2): local store said empty, but the
+          // real queue lives in wk_dialer_queue (DB). Hugo's complaint:
+          // "after marking no pickup or anything then it doesn't go next
+          // call." Ask wk-leads-next for the next DB lead before we lie
+          // to the agent that the queue is empty.
+          const campaignId = call.campaignId;
+          void (async () => {
+            try {
+              const { data, error } = await (
+                supabase.functions as unknown as NextLeadInvoke
+              ).invoke('wk-leads-next', {
+                body: { campaign_id: campaignId },
+              });
+              if (error) {
+                console.warn('[applyOutcome] wk-leads-next failed:', error.message);
+              }
+              if (!error && data && !data.empty && data.contact_id) {
+                // Same 600ms delay so the success toast finishes reading
+                // before the next call screen takes over.
+                setTimeout(() => void startCall(data.contact_id!), 600);
+                return;
+              }
+              // Genuinely empty (or RPC error) — fall through to idle.
+              store.pushToast('Queue is empty — no more leads', 'info');
+              setPhase('idle');
+              setCall(null);
+            } catch (e) {
+              console.warn('[applyOutcome] wk-leads-next threw:', e);
+              store.pushToast('Queue is empty — no more leads', 'info');
+              setPhase('idle');
+              setCall(null);
+            }
+          })();
+        } else {
+          // No campaign on this call (manual dial) — original behavior.
+          store.pushToast('Queue is empty — no more leads', 'info');
+          setPhase('idle');
+          setCall(null);
+        }
+      },
     };
-  }, [
-    legacyPhase,
-    callPhase,
-    call,
-    fullScreen,
-    roomView,
-    muted,
-    error,
-    dispositionSignal,
-    previewContactId,
-    lastEndedContactId,
-    toggleMute,
-    startCall,
-    resumeFromBroadcast,
-    enterDialingPlaceholder,
-    endCall,
-    applyOutcome,
-    requestNextCall,
-    requestPause,
-    requestResume,
-    requestSkip,
-    state.pacingDeadlineMs,
-    setActiveCampaignId,
-    session,
-  ]);
+  }, [phase, call, fullScreen, muted, toggleMute, store, startCall, resumeFromBroadcast, enterDialingPlaceholder, previewContactId, lastEndedContactId]);
 
   return <Ctx.Provider value={value}>{children}</Ctx.Provider>;
 }

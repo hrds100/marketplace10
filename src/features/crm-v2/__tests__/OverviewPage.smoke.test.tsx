@@ -1,4 +1,4 @@
-import { describe, it, expect, vi } from 'vitest';
+import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen } from '@testing-library/react';
 
 // Stub auth — return a fixed agent.
@@ -56,10 +56,25 @@ vi.mock('@/integrations/supabase/client', () => {
 import DialerV2Page from '../pages/DialerV2Page';
 
 describe('crm-v2 OverviewPage — smoke', () => {
+  beforeEach(() => {
+    // Default the page to V1 (legacy reducer-driven). PR C.7 added a
+    // version dropdown defaulting to V2 imperative; this test asserts
+    // the V1 surface specifically.
+    if (typeof window !== 'undefined') {
+      window.localStorage.setItem('crm-v2.dialerVersion', 'v1');
+    }
+  });
+
   it('renders without crashing + shows the title + empty-campaign state', async () => {
     render(<DialerV2Page />);
-    expect(screen.getByText('My dialer')).toBeTruthy();
-    expect(screen.getByText(/One lead at a time/)).toBeTruthy();
+    expect(await screen.findByText('My dialer')).toBeTruthy();
+    expect(screen.getByText(/One lead at a time · agent-controlled pacing/)).toBeTruthy();
     expect(await screen.findByText(/No campaigns yet/i)).toBeTruthy();
+  });
+
+  it('renders the version switcher dropdown', () => {
+    render(<DialerV2Page />);
+    const select = screen.getByTestId('dialer-version-select');
+    expect(select).toBeTruthy();
   });
 });
