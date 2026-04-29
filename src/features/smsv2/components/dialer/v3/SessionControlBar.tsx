@@ -17,7 +17,7 @@
 //    R = resume. Shortcuts fire from anywhere (handled in this
 //    component via window keydown listener).
 
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { Phone, PhoneOff, Pause, Play, SkipForward } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useActiveCallCtx } from '../../live-call/ActiveCallContext';
@@ -28,6 +28,17 @@ export interface SessionControlBarProps {
    *  HeroCard on the overview page. */
   size?: 'md' | 'lg';
   className?: string;
+  /** PR 155 (Hugo 2026-04-29): head lead's contact id for the idle
+   *  case. From idle, Next call → startCall(headLeadId); Skip →
+   *  startCall(secondLeadId). When the bar is mounted in the
+   *  InCallRoom footer this is null because the call is live. */
+  headLeadId?: string | null;
+  /** Second-in-line lead id, used by Skip-from-idle (skip the head,
+   *  dial #2). Optional — if absent, Skip from idle just dials head. */
+  secondLeadId?: string | null;
+  /** Auto-next deadline (ms epoch). Surfaces a visible countdown next
+   *  to "Next call" while the pacing timer is armed. */
+  pacingDeadlineMs?: number | null;
 }
 
 interface VisibilityRule {
@@ -93,6 +104,9 @@ function rulesFor(args: {
 export default function SessionControlBar({
   size = 'lg',
   className,
+  headLeadId = null,
+  secondLeadId = null,
+  pacingDeadlineMs = null,
 }: SessionControlBarProps) {
   const ctx = useActiveCallCtx();
   const session = useDialerSession();
@@ -100,6 +114,45 @@ export default function SessionControlBar({
     callPhase: ctx.callPhase,
     sessionPaused: session.paused,
   });
+
+  // PR 155 (Hugo 2026-04-29): visible countdown next to "Next call"
+  // when auto-next is armed. 1Hz local tick is enough — the deadline
+  // itself is reducer-truth (state.pacingDeadlineMs). When the timer
+  // fires, requestNextCall runs and the badge clears via the deadline
+  // becoming null.
+  const [, setNow] = useState(0);
+  useEffect(() => {
+    if (pacingDeadlineMs === null) return;
+    const id = window.setInterval(() => setNow((n) => n + 1), 1000);
+    return () => window.clearInterval(id);
+  }, [pacingDeadlineMs]);
+  const remainingMs = pacingDeadlineMs !== null ? pacingDeadlineMs - Date.now() : null;
+  const remainingSec =
+    remainingMs !== null ? Math.max(0, Math.ceil(remainingMs / 1000)) : null;
+  const showCountdown =
+    rules.next && remainingSec !== null && remainingSec > 0 && !session.paused;
+
+  // PR 155 (Hugo 2026-04-29): from idle, Skip / Next call dial the
+  // head lead directly via startCall — requestNextCall needs a
+  // campaignId from a previous call, which we don't have at idle.
+  // The HeroCard passes headLeadId/secondLeadId so the buttons mean
+  // something here. Skip from idle dials secondLeadId (or head if
+  // there's no second), Next from idle dials head.
+  const onSkip = async () => {
+    if (ctx.callPhase === 'idle') {
+      const target = secondLeadId ?? headLeadId;
+      if (target) await ctx.startCall(target);
+      return;
+    }
+    await ctx.requestSkip();
+  };
+  const onNext = async () => {
+    if (ctx.callPhase === 'idle') {
+      if (headLeadId) await ctx.startCall(headLeadId);
+      return;
+    }
+    await ctx.requestNextCall();
+  };
 
   // PR 152: keyboard shortcuts. Listen at window level, but ignore
   // when an input/textarea/contenteditable has focus (so typing notes
@@ -126,14 +179,15 @@ export default function SessionControlBar({
       } else if (k === 'r' && rules.resume) {
         ctx.requestResume();
       } else if (k === 's' && rules.skip && !rules.blockSkipNext) {
-        void ctx.requestSkip();
+        void onSkip();
       } else if (k === 'n' && rules.next && !rules.blockSkipNext) {
-        void ctx.requestNextCall();
+        void onNext();
       }
     };
     window.addEventListener('keydown', handler);
     return () => window.removeEventListener('keydown', handler);
-  }, [ctx, rules]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [ctx, rules, headLeadId, secondLeadId]);
 
   const lg = size === 'lg';
   const padX = lg ? 'px-4' : 'px-3';
@@ -204,7 +258,7 @@ export default function SessionControlBar({
 
       {rules.skip && (
         <button
-          onClick={() => void ctx.requestSkip()}
+          onClick={() => void onSkip()}
           disabled={rules.blockSkipNext}
           className={cn(
             'flex items-center gap-2 rounded-[10px] font-medium',
@@ -223,7 +277,7 @@ export default function SessionControlBar({
 
       {rules.next && (
         <button
-          onClick={() => void ctx.requestNextCall()}
+          onClick={() => void onNext()}
           disabled={rules.blockSkipNext}
           className={cn(
             'flex items-center gap-2 rounded-[10px] font-semibold',
@@ -237,6 +291,15 @@ export default function SessionControlBar({
         >
           <Phone className="w-3.5 h-3.5" />
           Next call
+          {showCountdown && (
+            <span
+              className="ml-0.5 px-1.5 py-0.5 rounded-md bg-white/25 text-white text-[10px] font-bold tabular-nums"
+              data-testid="control-next-countdown"
+              title="Auto-next in seconds"
+            >
+              {remainingSec}s
+            </span>
+          )}
         </button>
       )}
     </div>

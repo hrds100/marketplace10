@@ -6,6 +6,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
 import EditContactModal from '../../contacts/EditContactModal';
+import { useActiveCallCtx } from '../../live-call/ActiveCallContext';
 import { useDialerCampaigns } from '../../../hooks/useDialerCampaigns';
 import { useNextLead } from '../../../hooks/useNextLead';
 import { useSpendLimit } from '../../../hooks/useSpendLimit';
@@ -85,6 +86,16 @@ export default function OverviewPage() {
   const queueCampaignId = isUuid(activeId) ? activeId : null;
   const queueAgentId = isEffectiveAdmin || !user ? null : user.id;
 
+  // PR 155 (Hugo 2026-04-29): stamp the agent's selected campaign on
+  // ActiveCallContext so requestNextCall (auto-next pacing + manual
+  // Next button) can reach wk-leads-next even when the prior dial's
+  // ActiveCall didn't carry a campaignId. Was the root cause of the
+  // "No new leads — N already dialed" loop on the live page.
+  const { setActiveCampaignId } = useActiveCallCtx();
+  useEffect(() => {
+    setActiveCampaignId(queueCampaignId);
+  }, [queueCampaignId, setActiveCampaignId]);
+
   const {
     next: nextLead,
     all: queueRows,
@@ -130,8 +141,19 @@ export default function OverviewPage() {
         </div>
       ) : (
         <>
+          {/* PR 155 (Hugo 2026-04-29): counters first — Hugo's brief
+              "this should be on top". The session footer is now the
+              dashboard above the dial card so leads-left / done /
+              connected / voicemail / no-answer / busy / failed are
+              the visual anchor. */}
+          <SessionFooter
+            campaignId={queueCampaignId}
+            agentId={queueAgentId}
+          />
+
           <HeroCard
             next={nextLead}
+            secondLeadId={queueRows[1]?.id ?? null}
             loading={queueLoading && !nextLead}
             disabledReason={dialerBlocked ? blockReason : null}
             onEdit={(c) => setEditing(c)}
@@ -148,11 +170,6 @@ export default function OverviewPage() {
             />
             <HistoryList />
           </div>
-
-          <SessionFooter
-            campaignId={queueCampaignId}
-            agentId={queueAgentId}
-          />
         </>
       )}
 

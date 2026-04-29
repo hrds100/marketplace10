@@ -1,8 +1,12 @@
 // PR 153 (Hugo 2026-04-29): top bar for the v3 overview page.
-// Campaign select, session timer, pacing dropdown.
+// PR 155 (Hugo 2026-04-29): simplified — the verbose CampaignList card
+// (with "Hugo / Paused / 104 left · 16 done" sub-block) was confusing
+// agents because the campaign-pause label collided with the session
+// pause concept. Replaced with a compact <select>; admin's
+// Start/Pause/Stop controls stay on the dedicated /smsv2/admin
+// dialer page where they belong.
 
 import { useEffect, useState } from 'react';
-import CampaignList from '../CampaignList';
 import { useDialerSession } from '../../../hooks/useDialerSession';
 import PacingControl from './PacingControl';
 import type { Campaign } from '../../../types';
@@ -34,8 +38,6 @@ export default function OverviewHeader({
   campaignDefaultSeconds,
 }: OverviewHeaderProps) {
   const session = useDialerSession();
-  // 1Hz tick to update the visible session timer. Only ticks once a
-  // session has started (sessionStartedAt non-null).
   const [, setTick] = useState(0);
   useEffect(() => {
     if (!session.startedAt) return;
@@ -48,27 +50,36 @@ export default function OverviewHeader({
 
   return (
     <header
-      className="bg-white border border-[#E5E7EB] rounded-2xl p-4 flex items-center gap-4 shadow-[0_1px_2px_rgba(0,0,0,0.04)]"
+      className="bg-white border border-[#E5E7EB] rounded-2xl px-4 py-3 flex flex-wrap items-center gap-x-6 gap-y-3 shadow-[0_1px_2px_rgba(0,0,0,0.04)]"
       data-testid="overview-header"
     >
-      {/* Campaign picker — reuses the existing CampaignList component
-          so the admin's Pause/Stop/Start buttons keep working. */}
-      <div className="flex-1 min-w-0">
-        <div className="text-[10px] uppercase tracking-wide text-[#9CA3AF] font-semibold mb-1">
+      <div className="flex flex-col gap-1 min-w-[200px]">
+        <span className="text-[10px] uppercase tracking-wide text-[#9CA3AF] font-semibold">
           Campaign
-        </div>
-        <CampaignList
-          activeId={activeCampaignId}
-          campaigns={campaigns}
-          onSelect={onSelectCampaign}
-        />
+        </span>
+        <select
+          value={activeCampaignId}
+          onChange={(e) => onSelectCampaign(e.target.value)}
+          className="px-2.5 py-1.5 text-[13px] font-medium bg-white border border-[#E5E7EB] rounded-[10px] cursor-pointer min-w-[180px]"
+          data-testid="overview-campaign-select"
+        >
+          {campaigns.length === 0 && <option value="">No campaigns</option>}
+          {campaigns.map((c) => (
+            <option key={c.id} value={c.id}>
+              {c.name}
+              {c.isActive === false ? ' (paused)' : ''}
+              {' · '}
+              {c.pendingLeads} left
+            </option>
+          ))}
+        </select>
       </div>
 
-      <div className="flex flex-col items-end gap-1">
-        <div className="text-[10px] uppercase tracking-wide text-[#9CA3AF] font-semibold">
+      <div className="flex flex-col gap-1">
+        <span className="text-[10px] uppercase tracking-wide text-[#9CA3AF] font-semibold">
           Session
-        </div>
-        <div
+        </span>
+        <span
           className="text-[15px] font-semibold tabular-nums text-[#1A1A1A]"
           data-testid="overview-session-timer"
           title={
@@ -78,10 +89,10 @@ export default function OverviewHeader({
           }
         >
           {elapsed}
-        </div>
+        </span>
       </div>
 
-      <div className="flex items-center gap-2">
+      <div className="ml-auto flex items-center gap-2">
         <PacingControl campaignDefaultSeconds={campaignDefaultSeconds} />
       </div>
     </header>

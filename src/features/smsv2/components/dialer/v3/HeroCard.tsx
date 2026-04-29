@@ -17,6 +17,11 @@ export interface HeroCardProps {
   loading: boolean;
   /** Disabled+hover label when dialing is gated (spend / killswitch). */
   disabledReason?: string | null;
+  /** PR 155 (Hugo 2026-04-29): id of the second lead in the queue —
+   *  fed into SessionControlBar so Skip-from-idle dials lead #2 (skip
+   *  the head). When the queue has only 1 lead, this is null and Skip
+   *  falls back to dialing the head. */
+  secondLeadId?: string | null;
   onEdit: (contact: Contact) => void;
   onChangeStage: (contactId: string, columnId: string) => void;
 }
@@ -25,12 +30,14 @@ export default function HeroCard({
   next,
   loading,
   disabledReason,
+  secondLeadId = null,
   onEdit,
   onChangeStage,
 }: HeroCardProps) {
   const ctx = useActiveCallCtx();
   const { contacts } = useSmsV2();
   const blocked = !!disabledReason;
+  const headLeadId = next?.id ?? null;
 
   const fullContact: Contact | null = next
     ? contacts.find((c) => c.id === next.id) ?? null
@@ -61,7 +68,12 @@ export default function HeroCard({
           {/* Even when the queue is empty, session controls stay
               available — Hugo's universal-control rule. */}
           <div className="flex justify-center">
-            <SessionControlBar size="md" />
+            <SessionControlBar
+              size="md"
+              headLeadId={headLeadId}
+              secondLeadId={secondLeadId}
+              pacingDeadlineMs={ctx.pacingDeadlineMs}
+            />
           </div>
         </div>
       ) : (
@@ -120,7 +132,12 @@ export default function HeroCard({
             >
               <Phone className="w-5 h-5" /> Dial
             </button>
-            <SessionControlBar size="md" />
+            <SessionControlBar
+              size="md"
+              headLeadId={headLeadId}
+              secondLeadId={secondLeadId}
+              pacingDeadlineMs={ctx.pacingDeadlineMs}
+            />
           </div>
 
           {disabledReason && (

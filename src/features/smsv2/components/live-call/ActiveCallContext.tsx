@@ -173,6 +173,18 @@ interface ActiveCallCtx {
   /** Skip the current contact: from *_waiting_outcome, transitions to
    *  outcome_done with no stage move, then fires requestNextCall. */
   requestSkip: () => Promise<void>;
+  /** PR 155 (Hugo 2026-04-29): auto-next deadline (ms epoch) when the
+   *  pacing timer is armed in outcome_done; null otherwise. UI uses
+   *  this to render a visible countdown next to the Next call button. */
+  pacingDeadlineMs: number | null;
+  /** PR 155 (Hugo 2026-04-29): the v3 OverviewPage stamps the agent's
+   *  selected campaign here so `requestNextCall` (which only sees the
+   *  ActiveCall on the prior dial, not UI campaign state) can call
+   *  wk-leads-next after a manual dial whose ActiveCall didn't carry
+   *  a campaignId. The previous behaviour fell back to a Zustand
+   *  queue mirror which Hugo flagged on the live page ("No new
+   *  leads — 20 already dialed") because the mirror was stale. */
+  setActiveCampaignId: (id: string | null) => void;
 }
 
 const Ctx = createContext<ActiveCallCtx | null>(null);
@@ -209,6 +221,14 @@ export function ActiveCallProvider({ children }: { children: ReactNode }) {
   // stamped client-side ended_at on so the persistence useEffect below
   // doesn't fire repeatedly while the agent sits in wrap-up.
   const persistedEndedRef = useRef<Set<string>>(new Set());
+
+  // PR 155 (Hugo 2026-04-29): the agent's currently-selected campaign,
+  // stamped by the v3 OverviewPage. requestNextCall reads this when
+  // the in-flight ActiveCall has no campaignId (manual dial path).
+  const activeCampaignIdRef = useRef<string | null>(null);
+  const setActiveCampaignId = useCallback((id: string | null) => {
+    activeCampaignIdRef.current = id;
+  }, []);
 
   useEffect(() => {
     if (callPhase === 'in_call') {
@@ -247,27 +267,32 @@ export function ActiveCallProvider({ children }: { children: ReactNode }) {
   // timer instantly because every action triggers a state change.
   const requestNextCallRef = useRef<() => Promise<void>>(async () => {});
   const pacingTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  // PR 155 (Hugo 2026-04-29, root-cause fix): the previous deps array
+  // included `state.pendingNextCall`, which the effect itself flips
+  // (PACING_ARMED → 'armed') after scheduling its setTimeout. The
+  // resulting re-render fires the cleanup, which `clearTimeout`s the
+  // very timer that was just armed. Auto-next never fired in production.
+  // Fix: gate solely on the *external* signals (callPhase + session
+  // pacing). Idempotency guard inside the body skips re-arming when a
+  // timer is already pending.
   useEffect(() => {
     const shouldArm =
       callPhase === 'outcome_done' &&
       !session.paused &&
-      session.pacing.mode === 'auto_next' &&
-      state.pendingNextCall === 'idle';
+      session.pacing.mode === 'auto_next';
     if (!shouldArm) {
-      // Cancel any prior timer + clear the reducer mirror.
       if (pacingTimerRef.current) {
         clearTimeout(pacingTimerRef.current);
         pacingTimerRef.current = null;
-        if (state.pendingNextCall !== 'idle' || state.pacingDeadlineMs !== null) {
-          dispatch({ type: 'PACING_CANCELLED' });
-          dialerLog('pacing.cancelled', {
-            sessionId: session.sessionId,
-            fromPhase: callPhase,
-          });
-        }
+        dispatch({ type: 'PACING_CANCELLED' });
+        dialerLog('pacing.cancelled', {
+          sessionId: session.sessionId,
+          fromPhase: callPhase,
+        });
       }
       return;
     }
+    if (pacingTimerRef.current) return; // already armed — no-op
     const delayMs = Math.max(0, session.pacing.delaySeconds) * 1000;
     const deadlineMs = Date.now() + delayMs;
     dispatch({ type: 'PACING_ARMED', deadlineMs });
@@ -288,7 +313,7 @@ export function ActiveCallProvider({ children }: { children: ReactNode }) {
       }
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [callPhase, session.paused, session.pacing.mode, session.pacing.delaySeconds, state.pendingNextCall]);
+  }, [callPhase, session.paused, session.pacing.mode, session.pacing.delaySeconds]);
 
   // PR 147 (Hugo 2026-04-29, Bug #2): when the call lands in any wrap-
   // up phase, stamp wk_calls.ended_at client-side. Twilio's
@@ -895,21 +920,25 @@ export function ActiveCallProvider({ children }: { children: ReactNode }) {
   // dispatch paths (e.g. future RecentCallsPanel "redial").
   const requestNextCall = useCallback(async (): Promise<void> => {
     const cur = stateRef.current;
-    if (cur.callPhase !== 'outcome_done') {
-      // Defensive — UI shouldn't allow this, but never advance from
-      // mid-call or pre-outcome states.
+    // PR 155 (Hugo 2026-04-29): allow Next/Skip/auto-next to advance
+    // from BOTH `outcome_done` AND `idle`. Plan §8 visibility matrix:
+    // idle (queue ready) → Next call dials the first lead. Previously
+    // `requestNextCall` early-returned on any non-`outcome_done` phase,
+    // so Pause/Skip/Next on the overview page were silent no-ops.
+    if (cur.callPhase !== 'outcome_done' && cur.callPhase !== 'idle') {
       console.info('[requestNextCall] ignored — callPhase is', cur.callPhase);
       return;
     }
 
     const prevContactId = cur.call?.contactId ?? null;
-    const campaignId = cur.call?.campaignId ?? null;
+    // PR 155: campaignId resolution order — first the in-flight call
+    // (set by ENTER_DIALING_PLACEHOLDER / WINNER_BROADCAST), then the
+    // OverviewPage-stamped active campaign (covers manual dial paths
+    // where startCall doesn't know the campaign). Falls back to null
+    // → NEXT_CALL_EMPTY when neither is set.
+    const campaignId =
+      cur.call?.campaignId ?? activeCampaignIdRef.current ?? null;
 
-    // PR 147/151: deterministic anti-loop. Pop up to N times, skipping
-    // any contact already dialed this session (set lives in
-    // useDialerSession). If every reachable lead has been dialed,
-    // dispatch NEXT_CALL_EMPTY so the reducer's sticky banner flag
-    // turns on; UI surfaces "No new leads — N already dialed".
     dialerLog('next.requested', {
       callId: cur.call?.callId ?? null,
       contactId: prevContactId,
@@ -918,22 +947,32 @@ export function ActiveCallProvider({ children }: { children: ReactNode }) {
       source: 'manual',
       fromPhase: cur.callPhase,
     });
+
+    // PR 155 (Hugo 2026-04-29): the local Zustand `state.queue` path is
+    // GONE for campaign sessions. It was the source of the "No new
+    // leads — 20 already dialed this session" bug Hugo flagged on the
+    // live page: stale CSV-imported entries kept getting popped, every
+    // one of them was in `dialedThisSession`, and the loop ran out
+    // before the real server queue (49 fresh leads in
+    // `wk_dialer_queue`) was ever consulted. Plan §1.D mandated this
+    // deletion in the v3 rebuild — leftover from before. Server
+    // `wk-leads-next` is now the SINGLE authority.
     const dialed = session.dialedThisSession;
     let nextContactId: string | null = null;
-    const skipped: string[] = [];
-    for (let i = 0; i < 20; i++) {
-      const candidate = store.popNextFromQueue(prevContactId);
-      if (!candidate) break;
-      if (dialed.has(candidate)) {
-        skipped.push(candidate);
-        continue;
-      }
-      nextContactId = candidate;
-      break;
+    let skippedAlreadyDialed = 0;
+
+    if (!campaignId) {
+      // No campaign context — UI shouldn't reach this from the v3
+      // overview page (HeroCard/PacingControl always have one), but
+      // bail safely if it does.
+      dispatch({ type: 'NEXT_CALL_EMPTY', skippedAlreadyDialed: 0 });
+      store.pushToast('No campaign selected — pick one to advance', 'info');
+      return;
     }
 
-    // 2. Campaign fallback (only if local queue produced nothing).
-    if (!nextContactId && campaignId) {
+    // Up to 5 attempts: the server can hand us an already-dialed lead
+    // when SKIP LOCKED races; loop a few times to find a fresh one.
+    for (let attempt = 0; attempt < 5; attempt++) {
       try {
         const { data, error: fnError } = await (
           supabase.functions as unknown as NextLeadInvoke
@@ -942,54 +981,41 @@ export function ActiveCallProvider({ children }: { children: ReactNode }) {
         });
         if (fnError) {
           console.warn('[requestNextCall] wk-leads-next failed:', fnError.message);
-        } else if (data && !data.empty && data.contact_id) {
-          const candidate = data.contact_id;
-          // Apply the same anti-loop guard to server-picked contacts.
-          if (!dialed.has(candidate)) {
-            nextContactId = candidate;
-            if (!store.getContact(candidate)) {
-              console.info(
-                '[requestNextCall] contact not in local mirror — startCall will use phone from server later'
-              );
-            }
-          } else {
-            console.info(
-              '[requestNextCall] wk-leads-next returned already-dialed contact, skipping',
-              candidate
-            );
-            skipped.push(candidate);
-          }
+          break;
         }
+        if (!data || data.empty || !data.contact_id) break;
+        if (dialed.has(data.contact_id)) {
+          skippedAlreadyDialed++;
+          continue;
+        }
+        nextContactId = data.contact_id;
+        break;
       } catch (e) {
         console.warn('[requestNextCall] wk-leads-next threw:', e);
+        break;
       }
     }
 
-    // 3. Empty (or only already-dialed contacts left).
     if (!nextContactId) {
-      // PR 151: dispatch NEXT_CALL_EMPTY so the reducer flips its
-      // sticky banner flag. Toast still fires for immediate feedback.
       dispatch({
         type: 'NEXT_CALL_EMPTY',
-        skippedAlreadyDialed: skipped.length,
+        skippedAlreadyDialed,
       });
       dialerLog('next.empty', {
         callId: cur.call?.callId ?? null,
         contactId: prevContactId,
         campaignId,
         sessionId: session.sessionId,
-        extra: { skipped: skipped.length },
+        extra: { skipped: skippedAlreadyDialed },
       });
       const msg =
-        skipped.length > 0
-          ? `No new leads — ${skipped.length} already dialed this session`
+        skippedAlreadyDialed > 0
+          ? `No new leads — ${skippedAlreadyDialed} already dialed this session`
           : 'Queue is empty — no more leads';
       store.pushToast(msg, 'info');
       return;
     }
 
-    // 4. Dial. startCall handles dispatch + Twilio wiring + spend gate
-    //    + listener registration. This is the SINGLE dial path.
     dialerLog('next.selected', {
       callId: cur.call?.callId ?? null,
       contactId: nextContactId,
@@ -1114,6 +1140,10 @@ export function ActiveCallProvider({ children }: { children: ReactNode }) {
       requestPause,
       requestResume,
       requestSkip,
+      // PR 155 (Hugo 2026-04-29): countdown surface + active campaign
+      // setter.
+      pacingDeadlineMs: state.pacingDeadlineMs,
+      setActiveCampaignId,
     };
   }, [
     legacyPhase,
@@ -1136,6 +1166,8 @@ export function ActiveCallProvider({ children }: { children: ReactNode }) {
     requestPause,
     requestResume,
     requestSkip,
+    state.pacingDeadlineMs,
+    setActiveCampaignId,
     session,
   ]);
 

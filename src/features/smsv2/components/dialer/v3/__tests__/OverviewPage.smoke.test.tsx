@@ -141,6 +141,8 @@ vi.mock('../../../live-call/ActiveCallContext', () => ({
     requestResume: vi.fn(),
     requestSkip: vi.fn(),
     requestNextCall: vi.fn(),
+    pacingDeadlineMs: null,
+    setActiveCampaignId: vi.fn(),
   }),
 }));
 

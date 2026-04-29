@@ -62,8 +62,12 @@ interface CallRow {
   started_at: string | null;
   ended_at: string | null;
   duration_sec: number | null;
-  // PR 154 (Hugo 2026-04-29): outcome column.
-  pipeline_column_id: string | null;
+  // PR 154 (Hugo 2026-04-29): outcome column. PR 155 (Hugo 2026-04-29):
+  // the real column on wk_calls is `disposition_column_id`, not
+  // `pipeline_column_id` — the wrong name silently broke the whole SELECT
+  // and Recent Calls showed "No calls yet today" despite live calls.
+  // Source of truth: wk_apply_outcome writes wk_calls.disposition_column_id.
+  disposition_column_id: string | null;
 }
 
 interface ContactRow {
@@ -231,13 +235,16 @@ export default function RecentCallsPanel() {
     if (!agentId) return;
     let cancelled = false;
     const reload = async () => {
-      // PR 154 (Hugo 2026-04-29): pipeline_column_id added to the
-      // SELECT so the new Outcome column can render the picked stage.
-      // Joined client-side via useSmsV2().columns (cached).
+      // PR 154/155 (Hugo 2026-04-29): disposition_column_id added to
+      // the SELECT so the new Outcome column can render the picked
+      // stage. PR 154 used the wrong name (`pipeline_column_id`) — the
+      // SELECT errored, data came back null, and Recent Calls displayed
+      // "No calls yet today" for everyone. Joined client-side via
+      // useSmsV2().columns (cached).
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const { data } = await (supabase.from('wk_calls' as any) as any)
         .select(
-          'id, contact_id, to_e164, status, started_at, ended_at, duration_sec, pipeline_column_id'
+          'id, contact_id, to_e164, status, started_at, ended_at, duration_sec, disposition_column_id'
         )
         .eq('agent_id', agentId)
         .order('started_at', { ascending: false })
@@ -437,14 +444,14 @@ export default function RecentCallsPanel() {
         const stageColumn = storeContact?.pipelineColumnId
           ? columns.find((c) => c.id === storeContact.pipelineColumnId)
           : undefined;
-        // PR 154 (Hugo 2026-04-29): outcome column = the pipeline column
-        // the agent picked when this specific call ended. Distinct from
-        // the contact's CURRENT stage (above) which may have moved on.
-        // Source of truth: wk_calls.pipeline_column_id (set by
-        // wk_apply_outcome). Joined client-side via the cached columns
-        // list. Renders `—` if null (Hugo Rule 13).
-        const outcomeColumn = r.pipeline_column_id
-          ? columns.find((c) => c.id === r.pipeline_column_id)
+        // PR 154/155 (Hugo 2026-04-29): outcome column = the pipeline
+        // column the agent picked when this specific call ended.
+        // Distinct from the contact's CURRENT stage (above) which may
+        // have moved on. Source of truth: wk_calls.disposition_column_id
+        // (set by wk_apply_outcome). Joined client-side via the cached
+        // columns list. Renders `—` if null (Hugo Rule 13).
+        const outcomeColumn = r.disposition_column_id
+          ? columns.find((c) => c.id === r.disposition_column_id)
           : undefined;
         const recording = recordingsByCall.get(r.id);
         const windowEnd = smsWindowEnd(r.started_at, r.ended_at);
