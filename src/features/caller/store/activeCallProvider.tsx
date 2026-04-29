@@ -95,6 +95,11 @@ export interface ActiveCallApi {
   /** Mute state. Toggling calls into core/integrations/twilio-voice
    *  to mute every Call on the device (not just the active ref). */
   muted: boolean;
+  /** Auto-next pacing — 'armed' when a setTimeout is pending, with the
+   *  ms-epoch deadline in pacingDeadlineMs. UI uses this to render a
+   *  countdown + "Dial now" button. */
+  pendingNextCall: 'idle' | 'armed' | 'cooling_down';
+  pacingDeadlineMs: number | null;
   /** Start an outbound call. Returns the StartCallResult union from
    *  startCallOrchestration so the caller can read failure reasons. */
   startCall: (input: {
@@ -519,6 +524,8 @@ export function ActiveCallProvider({ children }: { children: ReactNode }) {
       error: state.error,
       deviceReady,
       muted: state.muted,
+      pendingNextCall: state.pendingNextCall,
+      pacingDeadlineMs: state.pacingDeadlineMs,
       startCall,
       endCall,
       toggleMute,
@@ -530,6 +537,8 @@ export function ActiveCallProvider({ children }: { children: ReactNode }) {
       state.roomView,
       state.error,
       state.muted,
+      state.pendingNextCall,
+      state.pacingDeadlineMs,
       deviceReady,
       startCall,
       endCall,

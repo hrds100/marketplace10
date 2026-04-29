@@ -25,12 +25,15 @@ import { useMyDialerQueue, type MyQueueLead } from '../hooks/useMyDialerQueue';
 import { useSpendLimit } from '../hooks/useSpendLimit';
 import { useKillSwitch } from '../hooks/useKillSwitch';
 import { useActiveCall } from '../store/activeCallProvider';
+import { useDialerSession } from '../store/dialerSessionProvider';
+import { useCalls } from '../hooks/useCalls';
 
 export default function DialerPage() {
   const { user, isAdmin } = useAuth();
   const ctx = useActiveCall();
   const spend = useSpendLimit();
   const ks = useKillSwitch();
+  const session = useDialerSession();
 
   // Workspace-role admin check (mirrors CallerGuard / smsv2 OverviewPage).
   const [workspaceRole, setWorkspaceRole] = useState<string | null | undefined>(undefined);
@@ -113,23 +116,37 @@ export default function DialerPage() {
   // queue + pacing). The agent picks manual / auto next from there.
   const onBackToQueue = () => ctx.clearCall();
 
-  // "Dial next lead" — picks the first queue entry that ISN'T the
-  // contact we're currently/just-were on, then dials it.
-  const onDialNext = () => {
+  // Anti-loop pick: skip the current contact AND every contact we've
+  // already dialed in this session. Hugo flagged the dialer cycling
+  // between the same two numbers because a failed call's queue row
+  // wasn't transitioning out of `pending` server-side.
+  const pickNextLead = (): MyQueueLead | null => {
     const currentId = ctx.call?.contactId ?? null;
-    const next =
-      queue.find((l) => l.id !== currentId) ??
-      (queue.length > 0 ? queue[0] : null);
+    const eligible = queue.find(
+      (l) => l.id !== currentId && !session.dialedThisSession.has(l.id)
+    );
+    if (eligible) return eligible;
+    // Fall back: a different contact (even if dialed already) is
+    // preferable to dialing the same one again.
+    return queue.find((l) => l.id !== currentId) ?? null;
+  };
+
+  // "Skip & dial next" — handles every phase:
+  //   - Live  → endCall() to kill audio synchronously, then dial next
+  //   - Wrap  → clearCall + dial next
+  //   - Done  → clearCall + dial next (overrides auto-next pacing)
+  const onDialNext = async () => {
+    if (callActive) {
+      try { await ctx.endCall(); } catch { /* ignore */ }
+    }
     ctx.clearCall();
+    const next = pickNextLead();
     if (next) {
-      // Slight defer so reducer state settles before the next start.
-      setTimeout(() => onCall(next), 100);
+      setTimeout(() => onCall(next), 200);
     }
   };
 
-  const hasNextLead = queue.some(
-    (l) => l.id !== (ctx.call?.contactId ?? null)
-  );
+  const hasNextLead = !!pickNextLead();
 
   return (
     <div className="p-6 max-w-[1100px] mx-auto space-y-4">
@@ -142,24 +159,25 @@ export default function DialerPage() {
         </p>
       </div>
 
+      {dialerBlocked && blockReason && ctx.callPhase === 'idle' && (
+        <div className="bg-[#FEF3C7] border border-[#FDE68A] text-[#92400E] text-[12px] rounded-[10px] px-3 py-2">
+          {blockReason}
+        </div>
+      )}
+
+      {/* CampaignHero is now visible in EVERY phase so Hugo can see
+          pending / connected / done counts during a live call. */}
+      <CampaignHero
+        campaigns={campaigns}
+        activeCampaignId={activeId}
+        onSelectCampaign={setActiveId}
+        loading={campaignsLoading}
+      />
+
       {ctx.callPhase === 'idle' ? (
         <>
-          {dialerBlocked && blockReason && (
-            <div className="bg-[#FEF3C7] border border-[#FDE68A] text-[#92400E] text-[12px] rounded-[10px] px-3 py-2">
-              {blockReason}
-            </div>
-          )}
-
-          <CampaignHero
-            campaigns={campaigns}
-            activeCampaignId={activeId}
-            onSelectCampaign={setActiveId}
-            loading={campaignsLoading}
-          />
-
           {camp && (
             <>
-              {/* Big "Start dialing" button — auto-dials lead #1 in the queue. */}
               <button
                 type="button"
                 onClick={() => queue[0] && onCall(queue[0])}
@@ -173,28 +191,93 @@ export default function DialerPage() {
               </button>
 
               <PacingControl />
-              <QueuePreview
-                items={queue}
-                loading={queueLoading}
-                error={queueError}
-                onCall={onCall}
-                disabled={dialerBlocked || callActive}
-                disabledReason={
-                  callActive ? 'A call is already active.' : blockReason
-                }
-              />
+
+              <div className="grid grid-cols-1 lg:grid-cols-[1fr_360px] gap-4">
+                <QueuePreview
+                  items={queue}
+                  loading={queueLoading}
+                  error={queueError}
+                  onCall={onCall}
+                  disabled={dialerBlocked || callActive}
+                  disabledReason={
+                    callActive ? 'A call is already active.' : blockReason
+                  }
+                />
+                <RecentCallsPanel agentId={queueAgentId} />
+              </div>
             </>
           )}
         </>
       ) : (
-        <LiveCallScreen
-          pipelineId={camp?.pipelineId ?? null}
-          scriptMd={camp?.scriptMd ?? null}
-          onBackToQueue={onBackToQueue}
-          onDialNext={onDialNext}
-          hasNextLead={hasNextLead}
-        />
+        <>
+          <LiveCallScreen
+            pipelineId={camp?.pipelineId ?? null}
+            scriptMd={camp?.scriptMd ?? null}
+            onBackToQueue={onBackToQueue}
+            onDialNext={() => void onDialNext()}
+            hasNextLead={hasNextLead}
+          />
+
+          {/* During a call, surface the next 5 queue entries + recent
+              call history alongside, per Hugo's "I want to see the
+              queue and history while on the call" ask. */}
+          <div className="grid grid-cols-1 lg:grid-cols-[1fr_360px] gap-4">
+            <QueuePreview
+              items={queue.slice(0, 5)}
+              loading={queueLoading}
+              error={queueError}
+              onCall={onCall}
+              disabled
+              disabledReason="Hang up the current call to dial a different lead."
+            />
+            <RecentCallsPanel agentId={queueAgentId} />
+          </div>
+        </>
       )}
+    </div>
+  );
+}
+
+// Recent-calls strip — last 8 calls with status pills. Subscribed via
+// useCalls realtime so it updates as calls finish.
+function RecentCallsPanel({ agentId }: { agentId: string | null }) {
+  const { calls, loading } = useCalls({ agentId, limit: 8 });
+  return (
+    <div
+      data-feature="CALLER__RECENT_CALLS"
+      className="bg-white border border-[#E5E7EB] rounded-2xl p-4"
+    >
+      <div className="text-[12px] uppercase tracking-wide text-[#9CA3AF] font-semibold mb-2">
+        Recent calls
+      </div>
+      {loading && calls.length === 0 && (
+        <div className="text-[11px] text-[#9CA3AF] italic py-3 text-center">
+          Loading…
+        </div>
+      )}
+      {!loading && calls.length === 0 && (
+        <div className="text-[11px] text-[#9CA3AF] italic py-3 text-center">
+          No calls yet.
+        </div>
+      )}
+      <ul className="divide-y divide-[#E5E7EB]">
+        {calls.map((c) => (
+          <li
+            key={c.id}
+            className="py-2 flex items-center justify-between gap-2 text-[12px]"
+          >
+            <span className="text-[#6B7280] tabular-nums truncate">
+              {c.startedAt ? new Date(c.startedAt).toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' }) : '—'}
+            </span>
+            <span className="text-[10px] uppercase tracking-wide text-[#9CA3AF] font-semibold">
+              {c.status}
+            </span>
+            <span className="text-[#6B7280] tabular-nums truncate">
+              {c.durationSec ? `${c.durationSec}s` : '—'}
+            </span>
+          </li>
+        ))}
+      </ul>
     </div>
   );
 }

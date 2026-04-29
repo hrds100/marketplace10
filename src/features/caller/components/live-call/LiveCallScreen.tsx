@@ -6,7 +6,8 @@
 //   right  — MidCallSmsPane (SMS / WhatsApp / Email) + OutcomeSelector
 //            during wrap-up + nav buttons (Skip / Next / Back)
 
-import { PhoneOff, Mic, MicOff, ArrowLeft, SkipForward, Phone, X } from 'lucide-react';
+import { useEffect, useState } from 'react';
+import { PhoneOff, Mic, MicOff, ArrowLeft, SkipForward, Phone, X, Clock, Zap } from 'lucide-react';
 import { useActiveCall } from '../../store/activeCallProvider';
 import TimelinePane from './TimelinePane';
 import OutcomeSelector from './OutcomeSelector';
@@ -53,12 +54,14 @@ export default function LiveCallScreen({
 
   return (
     <div className="space-y-3">
-      {/* Always-visible nav row: Back to dialer + Close (X). Hugo
-          asked explicitly for an obvious way to leave the call room
-          regardless of phase. The X is hidden during a live call so
-          you can't accidentally leave a dial mid-ring; hang up first. */}
-      {onBackToQueue && (
-        <div className="flex items-center justify-between">
+      {/* Always-visible nav bar — every action visible regardless of
+          phase per Hugo's explicit ask:
+            - Back to dialer (left)
+            - Skip & dial next (always visible, hangs up live call first)
+            - Pacing countdown + "Dial now" (only when timer armed)
+            - X close (right, hidden during live call) */}
+      <div className="flex items-center gap-2 flex-wrap">
+        {onBackToQueue && (
           <button
             type="button"
             onClick={onBackToQueue}
@@ -67,18 +70,35 @@ export default function LiveCallScreen({
             <ArrowLeft className="w-3.5 h-3.5" />
             Back to dialer
           </button>
-          {!isLive && (
-            <button
-              type="button"
-              onClick={onBackToQueue}
-              title="Close call room"
-              className="inline-flex items-center justify-center w-9 h-9 rounded-[10px] border border-[#E5E7EB] bg-white text-[#6B7280] hover:bg-[#F3F3EE] hover:text-[#1A1A1A]"
-            >
-              <X className="w-4 h-4" />
-            </button>
-          )}
-        </div>
-      )}
+        )}
+        {onDialNext && (
+          <button
+            type="button"
+            onClick={onDialNext}
+            disabled={!hasNextLead}
+            className="inline-flex items-center gap-1.5 text-[13px] font-semibold text-[#1A1A1A] bg-white border border-[#E5E7EB] hover:bg-[#F3F3EE] px-3 py-1.5 rounded-[10px] disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            <SkipForward className="w-3.5 h-3.5" />
+            Skip & dial next
+          </button>
+        )}
+        {ctx.pendingNextCall === 'armed' && ctx.pacingDeadlineMs && (
+          <PacingCountdown
+            deadlineMs={ctx.pacingDeadlineMs}
+            onDialNow={onDialNext}
+          />
+        )}
+        {onBackToQueue && !isLive && (
+          <button
+            type="button"
+            onClick={onBackToQueue}
+            title="Close call room"
+            className="ml-auto inline-flex items-center justify-center w-9 h-9 rounded-[10px] border border-[#E5E7EB] bg-white text-[#6B7280] hover:bg-[#F3F3EE] hover:text-[#1A1A1A]"
+          >
+            <X className="w-4 h-4" />
+          </button>
+        )}
+      </div>
 
       <div
         data-feature="CALLER__LIVE_CALL_SCREEN"
@@ -191,6 +211,37 @@ export default function LiveCallScreen({
           )}
         </div>
       </div>
+    </div>
+  );
+}
+
+function PacingCountdown({
+  deadlineMs,
+  onDialNow,
+}: {
+  deadlineMs: number;
+  onDialNow?: () => void;
+}) {
+  const [now, setNow] = useState(Date.now());
+  useEffect(() => {
+    const id = setInterval(() => setNow(Date.now()), 250);
+    return () => clearInterval(id);
+  }, []);
+  const remainingSec = Math.max(0, Math.ceil((deadlineMs - now) / 1000));
+  return (
+    <div className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-[10px] bg-[#ECFDF5] border border-[#A7F3D0] text-[#065F46] text-[12px] font-semibold">
+      <Clock className="w-3.5 h-3.5" />
+      Next call in {remainingSec}s
+      {onDialNow && (
+        <button
+          type="button"
+          onClick={onDialNow}
+          className="inline-flex items-center gap-1 ml-1.5 px-2 py-0.5 rounded-[6px] bg-[#1E9A80] text-white hover:bg-[#1E9A80]/90 text-[11px]"
+        >
+          <Zap className="w-3 h-3" />
+          Dial now
+        </button>
+      )}
     </div>
   );
 }
