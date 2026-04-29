@@ -29,7 +29,7 @@ interface Smsv2SidebarProps {
 // admin-only at the ends. "Calls" renamed to "Call history".
 const NAV_ITEMS = [
   { label: 'Dashboard', path: '/crm/dashboard', icon: LayoutDashboard, adminOnly: true },
-  { label: 'Dialer', path: '/caller/dialer', icon: Radio },
+  { label: 'Dialer', path: '/crm/dialer', icon: Radio },
   { label: 'Inbox', path: '/crm/inbox', icon: MessageSquare },
   { label: 'Pipelines', path: '/crm/pipelines', icon: Kanban },
   { label: 'Contacts', path: '/crm/contacts', icon: Users },

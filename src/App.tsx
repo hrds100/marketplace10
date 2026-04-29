@@ -124,6 +124,7 @@ import Smsv2DashboardPage from '@/features/smsv2/pages/DashboardPage';
 import Smsv2InboxPage from '@/features/smsv2/pages/InboxPage';
 import Smsv2CallsPage from '@/features/smsv2/pages/CallsPage';
 import Smsv2PastCallScreen from '@/features/smsv2/pages/PastCallScreen';
+import Smsv2DialerPage from '@/features/smsv2/pages/DialerPage';
 import Smsv2ContactsPage from '@/features/smsv2/pages/ContactsPage';
 import Smsv2ContactDetailPage from '@/features/smsv2/pages/ContactDetailPage';
 import Smsv2PipelinesPage from '@/features/smsv2/pages/PipelinesPage';
@@ -350,7 +351,7 @@ const App = () => (
             <Route path="inbox" element={<Smsv2InboxPage />} />
             <Route path="calls" element={<Smsv2CallsPage />} />
             <Route path="calls/:callId" element={<Smsv2PastCallScreen />} />
-            <Route path="dialer" element={<Navigate to="/caller/dialer" replace />} />
+            <Route path="dialer" element={<Smsv2DialerPage />} />
             {/* crm-v2 parallel rebuild — testing route. PR B mounts
                 the new pre-call overview page; PR C adds the in-call
                 room. PR D flips /crm/dialer to this and deletes the
