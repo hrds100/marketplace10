@@ -6,7 +6,7 @@
 //   right  — MidCallSmsPane (SMS / WhatsApp / Email) + OutcomeSelector
 //            during wrap-up + nav buttons (Skip / Next / Back)
 
-import { PhoneOff, Mic, MicOff, ArrowLeft, SkipForward, Phone } from 'lucide-react';
+import { PhoneOff, Mic, MicOff, ArrowLeft, SkipForward, Phone, X } from 'lucide-react';
 import { useActiveCall } from '../../store/activeCallProvider';
 import TimelinePane from './TimelinePane';
 import OutcomeSelector from './OutcomeSelector';
@@ -53,16 +53,31 @@ export default function LiveCallScreen({
 
   return (
     <div className="space-y-3">
-      {/* Always-visible Back to dialer link — Hugo's #1 ask. */}
+      {/* Always-visible nav row: Back to dialer + Close (X). Hugo
+          asked explicitly for an obvious way to leave the call room
+          regardless of phase. The X is hidden during a live call so
+          you can't accidentally leave a dial mid-ring; hang up first. */}
       {onBackToQueue && (
-        <button
-          type="button"
-          onClick={onBackToQueue}
-          className="inline-flex items-center gap-1.5 text-[12px] font-semibold text-[#6B7280] hover:text-[#1A1A1A] px-2 py-1 rounded-lg hover:bg-black/[0.04]"
-        >
-          <ArrowLeft className="w-3.5 h-3.5" />
-          Back to dialer
-        </button>
+        <div className="flex items-center justify-between">
+          <button
+            type="button"
+            onClick={onBackToQueue}
+            className="inline-flex items-center gap-1.5 text-[13px] font-semibold text-[#1A1A1A] bg-white border border-[#E5E7EB] hover:bg-[#F3F3EE] px-3 py-1.5 rounded-[10px]"
+          >
+            <ArrowLeft className="w-3.5 h-3.5" />
+            Back to dialer
+          </button>
+          {!isLive && (
+            <button
+              type="button"
+              onClick={onBackToQueue}
+              title="Close call room"
+              className="inline-flex items-center justify-center w-9 h-9 rounded-[10px] border border-[#E5E7EB] bg-white text-[#6B7280] hover:bg-[#F3F3EE] hover:text-[#1A1A1A]"
+            >
+              <X className="w-4 h-4" />
+            </button>
+          )}
+        </div>
       )}
 
       <div
