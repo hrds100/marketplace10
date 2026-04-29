@@ -291,7 +291,11 @@ export default function DialerPage() {
       )
       .eq('campaign_id', camp.id)
       .eq('status', 'pending')
-      .lt('attempts', 3)
+      // No `attempts < N` cap here — the visible upcoming-queue panel
+      // doesn't apply one, and the contract is "picker matches panel".
+      // If we ever want a hard cap, do it as a status transition
+      // (mark row 'lost' after N) so panel and picker can never
+      // disagree on what's pickable.
       .or(`scheduled_for.is.null,scheduled_for.lte.${nowIso}`)
       .order('priority', { ascending: false })
       .order('scheduled_for', { ascending: true, nullsFirst: true })
