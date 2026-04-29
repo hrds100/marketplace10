@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Outlet, Link, useLocation } from 'react-router-dom';
+import { Outlet, Link } from 'react-router-dom';
 import { ArrowLeft } from 'lucide-react';
 import CrmGuard from '../components/CrmGuard';
 import Smsv2Sidebar from './Smsv2Sidebar';
