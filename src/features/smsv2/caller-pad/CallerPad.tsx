@@ -1885,28 +1885,30 @@ function RichEditContactBridge({ contactId, onClose, onSaved }: { contactId: str
   }
 
   return ReactDOM.createPortal(
-    <EditContactModal
-      contact={contact}
-      onClose={onClose}
-      onSave={async (updated) => {
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const { error: saveErr } = await (supabase.from('wk_contacts' as any) as any)
-          .update({
-            name: updated.name || null,
-            phone: updated.phone,
-            email: updated.email || null,
-            pipeline_column_id: updated.pipelineColumnId || null,
-            owner_agent_id: updated.ownerAgentId || null,
-            tags: updated.tags,
-            is_hot: updated.isHot,
-            deal_value_pence: updated.dealValuePence ?? null,
-            custom_fields: updated.customFields,
-          })
-          .eq('id', contactId);
-        if (!saveErr) onSaved?.();
-        onClose();
-      }}
-    />,
+    <div className="relative z-[250]">
+      <EditContactModal
+        contact={contact}
+        onClose={onClose}
+        onSave={async (updated) => {
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          const { error: saveErr } = await (supabase.from('wk_contacts' as any) as any)
+            .update({
+              name: updated.name || null,
+              phone: updated.phone,
+              email: updated.email || null,
+              pipeline_column_id: updated.pipelineColumnId || null,
+              owner_agent_id: updated.ownerAgentId || null,
+              tags: updated.tags,
+              is_hot: updated.isHot,
+              deal_value_pence: updated.dealValuePence ?? null,
+              custom_fields: updated.customFields,
+            })
+            .eq('id', contactId);
+          if (!saveErr) onSaved?.();
+          onClose();
+        }}
+      />
+    </div>,
     document.body
   );
 }
@@ -1963,7 +1965,7 @@ function EditQueueLeadModal({
   };
 
   return (
-    <div className="fixed inset-0 z-[150] bg-black/40 flex items-center justify-center p-4">
+    <div className="fixed inset-0 z-[250] bg-black/40 flex items-center justify-center p-4">
       <div className="bg-white rounded-2xl border border-[#E5E7EB] w-full max-w-[440px] overflow-hidden">
         <div className="flex items-center justify-between px-5 py-3 border-b border-[#E5E7EB]">
           <h2 className="text-[15px] font-bold text-[#1A1A1A]">Edit contact</h2>
