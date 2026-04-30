@@ -23,7 +23,7 @@
 
 import { useCallback, useEffect, useMemo, useReducer, useRef, useState } from 'react';
 import ReactDOM from 'react-dom';
-import { Link, useLocation } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import {
   Phone, PhoneOff, Mic, MicOff, Pause, Play, Square, SkipForward, Zap,
   CheckCircle2, Loader2, Clock, Radio, Pencil, X, Minus, GripVertical, PlayCircle,
@@ -39,6 +39,7 @@ import {
 } from '@/core/integrations/twilio-voice';
 import { mapTwilioError } from '../lib/twilioErrorMap';
 import { useDialerCampaigns } from '../hooks/useDialerCampaigns';
+import { useDialerKpis } from '../hooks/useDialerKpis';
 import { usePipelineColumns } from '../hooks/usePipelineColumns';
 import { useSpendLimit } from '../hooks/useSpendLimit';
 import { useKillSwitch } from '../hooks/useKillSwitch';
@@ -74,6 +75,7 @@ interface State {
   lead: Lead | null;
   callId: string | null;
   startedAt: number | null;
+  durationSec: number | null;
   error: string | null;
   endReason: string | null;
   pacingDeadlineMs: number | null;
@@ -85,6 +87,7 @@ const INITIAL: State = {
   lead: null,
   callId: null,
   startedAt: null,
+  durationSec: null,
   error: null,
   endReason: null,
   pacingDeadlineMs: null,
@@ -113,6 +116,7 @@ function reducer(s: State, a: Action): State {
         lead: a.lead,
         callId: null,
         startedAt: null,
+        durationSec: null,
         error: null,
         endReason: null,
         pacingDeadlineMs: null,
@@ -135,6 +139,7 @@ function reducer(s: State, a: Action): State {
         phase: 'wrap_up',
         endReason: a.reason,
         error: a.error ?? null,
+        durationSec: s.startedAt ? Math.floor((Date.now() - s.startedAt) / 1000) : null,
       };
     case 'OUTCOME_DONE':
       return { ...s, phase: 'idle', error: null, endReason: null };
@@ -169,6 +174,7 @@ export function CallerPad() {
   const { user, isAdmin } = useAuth();
   const toasts = useCallerToasts();
   const { pathname } = useLocation();
+  const navigate = useNavigate();
   const activeCallCtx = useActiveCallCtx();
   // The pad lives in CallerLayout, so it renders for every /caller/*
   // route. On /caller/dialer it's the full pad (current behaviour).
@@ -217,6 +223,8 @@ export function CallerPad() {
     () => campaigns.find((c) => c.id === activeCampaignId) ?? campaigns[0] ?? null,
     [campaigns, activeCampaignId]
   );
+
+  const kpis = useDialerKpis(camp, user?.id ?? null);
 
   const [pacing, setPacing] = useState<PacingMode>('auto');
   const [pacingDelaySec, setPacingDelaySec] = useState(5);
@@ -628,6 +636,40 @@ export function CallerPad() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [state.phase, state.sessionStarted, pacing, pacingDelaySec]);
 
+  // ─── Auto-route outcomes ──────────────────────────────────────────
+  useEffect(() => {
+    if (state.phase !== 'wrap_up') return;
+    if (!state.lead || !state.callId) return;
+    if (outcomeColumns.length === 0) return;
+
+    // No answer → "No Pickup"
+    if (state.endReason === 'cancel' || state.endReason === 'reject' || state.endReason === 'error') {
+      const noPickupCol = outcomeColumns.find(
+        (c) => c.name.toLowerCase().includes('no pickup') || c.name.toLowerCase() === 'no answer'
+      );
+      if (noPickupCol) {
+        void applyOutcome(noPickupCol.id);
+        return;
+      }
+    }
+
+    // Short connected call (< 10s) → "Voicemail"
+    if (
+      state.endReason === 'hangup' &&
+      state.durationSec !== null &&
+      state.durationSec > 0 &&
+      state.durationSec < 10
+    ) {
+      const vmCol = outcomeColumns.find(
+        (c) => c.name.toLowerCase().includes('voicemail')
+      );
+      if (vmCol) {
+        void applyOutcome(vmCol.id);
+        return;
+      }
+    }
+  }, [state.phase, state.endReason, state.durationSec, state.lead, state.callId, outcomeColumns, applyOutcome]);
+
   const dialNow = useCallback(async () => {
     dispatch({ type: 'PACING_CLEARED' });
     const next = await pickNextLead();
@@ -683,7 +725,7 @@ export function CallerPad() {
   // accordion queue/history. Persist position + minimize state +
   // accordion section in localStorage so the pad feels like a desktop
   // tool, not a page.
-  const PAD_W = 380;
+  const PAD_W = 323;
   const HEADER_OFFSET = 72;     // top nav height
   const RIGHT_GUTTER = 24;
   const defaultPos = (): { x: number; y: number } => {
@@ -818,33 +860,46 @@ export function CallerPad() {
     );
   }
 
-  // When minimized (only on /caller/dialer), show a draggable green
-  // floating icon that reopens the full dialer pad.
+  // When minimized on /caller/dialer, show a compact header bar.
   if (onDialerPage && minimized) {
     return (
       <div
         className="fixed z-[210] select-none"
-        style={{ left: pos.x, top: pos.y }}
+        style={{ left: pos.x, top: pos.y, width: PAD_W }}
       >
-        <button
-          type="button"
+        <div
           onPointerDown={onDragStart}
           onPointerMove={onDragMove}
           onPointerUp={onDragEnd}
           onPointerCancel={onDragEnd}
-          onClick={(e) => {
-            if (justDraggedRef.current) return;
-            e.preventDefault();
-            setMinimized(false);
-          }}
-          title="Open dialer pad"
-          className="relative inline-flex items-center justify-center w-14 h-14 rounded-[16px] shadow-[0_12px_28px_rgba(30,154,128,0.35)] cursor-grab active:cursor-grabbing bg-[#1E9A80] text-white"
+          className="flex items-center gap-2 px-2 py-1.5 bg-white border border-[#E5E7EB] rounded-[12px] shadow-[0_12px_28px_rgba(30,154,128,0.35)] cursor-grab active:cursor-grabbing"
         >
-          <Phone className="w-6 h-6" strokeWidth={2} />
+          <GripVertical className="w-3 h-3 text-[#9CA3AF] shrink-0" />
+          <span className="text-[11px] font-semibold text-[#1A1A1A] truncate flex-1">
+            {state.lead?.name ?? 'Caller'}
+          </span>
           {isLive && (
-            <span className="absolute top-1 right-1 w-2 h-2 rounded-full bg-white animate-pulse" />
+            <span className="w-2 h-2 rounded-full bg-[#1E9A80] animate-pulse shrink-0" />
           )}
-        </button>
+          <button
+            type="button"
+            onPointerDown={(e) => e.stopPropagation()}
+            onClick={() => setMinimized(false)}
+            title="Expand"
+            className="p-0.5 rounded hover:bg-[#F3F3EE] text-[#6B7280]"
+          >
+            <PlayCircle className="w-3.5 h-3.5" />
+          </button>
+          <button
+            type="button"
+            onPointerDown={(e) => e.stopPropagation()}
+            onClick={() => navigate('/crm')}
+            title="Close"
+            className="p-0.5 rounded hover:bg-[#F3F3EE] text-[#6B7280]"
+          >
+            <X className="w-3.5 h-3.5" />
+          </button>
+        </div>
       </div>
     );
   }
@@ -862,12 +917,12 @@ export function CallerPad() {
           onPointerMove={onDragMove}
           onPointerUp={onDragEnd}
           onPointerCancel={onDragEnd}
-          className="px-3 py-2 bg-white border-b border-[#E5E7EB] flex items-center gap-2 cursor-grab active:cursor-grabbing"
+          className="px-2 py-1.5 bg-white border-b border-[#E5E7EB] flex items-center gap-1.5 cursor-grab active:cursor-grabbing"
           title="Drag to move"
         >
-          <GripVertical className="w-4 h-4 text-[#9CA3AF]" />
-          <div className="flex-1 min-w-0 flex items-baseline gap-2">
-            <span className="text-[13px] font-bold text-[#1A1A1A]">Caller</span>
+          <GripVertical className="w-3 h-3 text-[#9CA3AF]" />
+          <div className="flex-1 min-w-0 flex items-baseline gap-1.5">
+            <span className="text-[11px] font-bold text-[#1A1A1A]">Caller</span>
             {camp && (
               <span className="text-[11px] text-[#6B7280] truncate">· {camp.name}</span>
             )}
@@ -875,18 +930,27 @@ export function CallerPad() {
               <span className="ml-auto w-1.5 h-1.5 rounded-full bg-[#1E9A80] animate-pulse" />
             )}
           </div>
-          {/* On /caller/dialer the header button minimizes to the chip.
-              On other /caller/* routes it closes back to the icon. */}
           {onDialerPage ? (
-            <button
-              type="button"
-              onPointerDown={(e) => e.stopPropagation()}
-              onClick={() => setMinimized(true)}
-              title="Minimize"
-              className="p-1 rounded hover:bg-[#F3F3EE] text-[#6B7280]"
-            >
-              <Minus className="w-4 h-4" />
-            </button>
+            <>
+              <button
+                type="button"
+                onPointerDown={(e) => e.stopPropagation()}
+                onClick={() => setMinimized(true)}
+                title="Minimize"
+                className="p-1 rounded hover:bg-[#F3F3EE] text-[#6B7280]"
+              >
+                <Minus className="w-3 h-3" />
+              </button>
+              <button
+                type="button"
+                onPointerDown={(e) => e.stopPropagation()}
+                onClick={() => navigate('/crm')}
+                title="Close"
+                className="p-1 rounded hover:bg-[#F3F3EE] text-[#6B7280]"
+              >
+                <X className="w-3 h-3" />
+              </button>
+            </>
           ) : (
             <button
               type="button"
@@ -895,13 +959,13 @@ export function CallerPad() {
               title="Close"
               className="p-1 rounded hover:bg-[#F3F3EE] text-[#6B7280]"
             >
-              <X className="w-4 h-4" />
+              <X className="w-3 h-3" />
             </button>
           )}
         </div>
 
         {/* Scrollable body. */}
-        <div className="flex-1 overflow-y-auto p-3 space-y-3">
+        <div className="flex-1 overflow-y-auto p-2 space-y-2">
           {/* Block reason banner. */}
           {blocked && blockReason && (
             <div className="bg-[#FEF3C7] border border-[#FDE68A] text-[#92400E] text-[11px] rounded-[10px] px-2.5 py-1.5">
@@ -916,6 +980,7 @@ export function CallerPad() {
             onSelect={setActiveCampaignId}
             loading={campaignsLoading}
             camp={camp}
+            kpis={kpis}
           />
 
           {/* Single compact control bar — pacing when idle, live-call info
@@ -967,9 +1032,9 @@ export function CallerPad() {
               type="button"
               onClick={() => void startDialer()}
               disabled={blocked || !camp}
-              className="w-full inline-flex items-center justify-center gap-2 text-[14px] font-semibold text-white bg-[#1E9A80] hover:bg-[#1E9A80]/90 px-4 py-3 rounded-2xl shadow-[0_4px_16px_rgba(30,154,128,0.35)] disabled:opacity-50 disabled:cursor-not-allowed disabled:shadow-none"
+              className="w-full inline-flex items-center justify-center gap-2 text-[12px] font-semibold text-white bg-[#1E9A80] hover:bg-[#1E9A80]/90 px-3 py-2 rounded-2xl shadow-[0_4px_16px_rgba(30,154,128,0.35)] disabled:opacity-50 disabled:cursor-not-allowed disabled:shadow-none"
             >
-              <Phone className="w-4 h-4" />
+              <Phone className="w-3 h-3" />
               Start power dialer
             </button>
           )}
@@ -978,9 +1043,9 @@ export function CallerPad() {
               type="button"
               onClick={() => void dialNow()}
               disabled={blocked}
-              className="w-full inline-flex items-center justify-center gap-2 text-[13px] font-semibold text-white bg-[#1E9A80] hover:bg-[#1E9A80]/90 px-4 py-2.5 rounded-2xl shadow-[0_4px_16px_rgba(30,154,128,0.35)] disabled:opacity-50 disabled:cursor-not-allowed"
+              className="w-full inline-flex items-center justify-center gap-2 text-[11px] font-semibold text-white bg-[#1E9A80] hover:bg-[#1E9A80]/90 px-3 py-2 rounded-2xl shadow-[0_4px_16px_rgba(30,154,128,0.35)] disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              <Phone className="w-4 h-4" />
+              <Phone className="w-3 h-3" />
               Dial next lead
             </button>
           )}
@@ -989,9 +1054,9 @@ export function CallerPad() {
               type="button"
               onClick={() => void resume()}
               disabled={blocked}
-              className="w-full inline-flex items-center justify-center gap-2 text-[13px] font-semibold text-white bg-[#1E9A80] hover:bg-[#1E9A80]/90 px-4 py-2.5 rounded-2xl disabled:opacity-50 disabled:cursor-not-allowed"
+              className="w-full inline-flex items-center justify-center gap-2 text-[11px] font-semibold text-white bg-[#1E9A80] hover:bg-[#1E9A80]/90 px-3 py-2 rounded-2xl disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              <Play className="w-4 h-4" />
+              <Play className="w-3 h-3" />
               Resume
             </button>
           )}
@@ -1041,49 +1106,49 @@ export default function DialerPage() {
 
 // ─── Sub-components ──────────────────────────────────────────────────
 
-// Compact one-row campaign + KPI strip for the floating pad. Replaces
-// the old full-bleed CampaignCard. Each KPI shows its literal status
-// count (no aggregation) so Pending + Connected + Done + others = Total.
+// Compact one-row campaign + KPI strip for the floating pad.
+// KPIs: Pending | Total | MSG Sent | Dials 24h
 function CompactCampaignStrip({
-  campaigns, activeId, onSelect, loading, camp,
+  campaigns, activeId, onSelect, loading, camp, kpis,
 }: {
   campaigns: Campaign[];
   activeId: string;
   onSelect: (id: string) => void;
   loading: boolean;
   camp: Campaign | null;
+  kpis: { pending: number; total: number; msgSent: number; dials24h: number };
 }) {
   if (loading && campaigns.length === 0) {
     return (
-      <div className="bg-white border border-[#E5E7EB] rounded-2xl p-3">
+      <div className="bg-white border border-[#E5E7EB] rounded-2xl p-2">
         <div className="h-4 w-32 bg-[#F3F3EE] rounded animate-pulse" />
       </div>
     );
   }
   if (!camp) {
     return (
-      <div className="bg-white border border-[#E5E7EB] rounded-2xl p-3 text-center">
-        <div className="text-[12px] font-semibold text-[#1A1A1A]">No campaigns yet</div>
-        <div className="text-[11px] text-[#6B7280]">Ask an admin to create one.</div>
+      <div className="bg-white border border-[#E5E7EB] rounded-2xl p-2 text-center">
+        <div className="text-[11px] font-semibold text-[#1A1A1A]">No campaigns yet</div>
+        <div className="text-[10px] text-[#6B7280]">Ask an admin to create one.</div>
       </div>
     );
   }
   return (
-    <div className="bg-white border border-[#E5E7EB] rounded-2xl p-3 space-y-2">
+    <div className="bg-white border border-[#E5E7EB] rounded-2xl p-2 space-y-1.5">
       {campaigns.length > 1 && (
         <select
           value={activeId}
           onChange={(e) => onSelect(e.target.value)}
-          className="w-full text-[12px] border border-[#E5E7EB] rounded-[8px] px-2 py-1 bg-white"
+          className="w-full text-[10px] border border-[#E5E7EB] rounded-[8px] px-1.5 py-1 bg-white"
         >
           {campaigns.map((c) => (<option key={c.id} value={c.id}>{c.name}</option>))}
         </select>
       )}
       <div className="grid grid-cols-4 gap-1.5">
-        <MiniStat label="Pending" value={camp.pendingLeads} accent />
-        <MiniStat label="Connected" value={camp.connectedLeads} />
-        <MiniStat label="Done" value={camp.doneLeads} />
-        <MiniStat label="Total" value={camp.totalLeads} />
+        <MiniStat label="Pending" value={kpis.pending} accent />
+        <MiniStat label="Total" value={kpis.total} />
+        <MiniStat label="MSG Sent" value={kpis.msgSent} />
+        <MiniStat label="Dials 24h" value={kpis.dials24h} />
       </div>
     </div>
   );
@@ -1092,14 +1157,14 @@ function CompactCampaignStrip({
 function MiniStat({ label, value, accent }: { label: string; value: number; accent?: boolean }) {
   return (
     <div className={cn(
-      'rounded-[8px] px-2 py-1.5 text-center',
+      'rounded-[8px] px-1.5 py-1 text-center',
       accent ? 'bg-[#ECFDF5]' : 'bg-[#F3F3EE]'
     )}>
-      <div className="text-[9px] uppercase tracking-wide text-[#9CA3AF] font-semibold leading-none">
+      <div className="text-[8px] uppercase tracking-wide text-[#9CA3AF] font-semibold leading-none">
         {label}
       </div>
       <div className={cn(
-        'text-[16px] font-bold tabular-nums leading-tight mt-0.5',
+        'text-[14px] font-bold tabular-nums leading-tight mt-0.5',
         accent ? 'text-[#1E9A80]' : 'text-[#1A1A1A]'
       )}>
         {value}
@@ -1221,19 +1286,19 @@ function ControlBar({
     phase === 'paused' ? 'PAUSED' : '';
 
   return (
-    <div className="bg-white border border-[#E5E7EB] rounded-2xl p-3 flex flex-wrap items-center gap-2 text-[12px]">
+    <div className="bg-white border border-[#E5E7EB] rounded-2xl p-2 flex flex-wrap items-center gap-1.5 text-[11px]">
       {/* LEFT: status + contact info during a call, pacing pills when idle. */}
       {isCallContext ? (
         <>
-          <Radio className="w-4 h-4 text-[#1E9A80] flex-shrink-0" />
-          <span className={`px-2 py-0.5 rounded-full text-[10px] font-semibold uppercase tracking-wide ${tint}`}>
+          <Radio className="w-3 h-3 text-[#1E9A80] flex-shrink-0" />
+          <span className={`px-1.5 py-0.5 rounded-full text-[9px] font-semibold uppercase tracking-wide ${tint}`}>
             {label}
           </span>
           <div className="min-w-0 flex-1">
-            <div className="text-[13px] font-semibold text-[#1A1A1A] truncate">
+            <div className="text-[11px] font-semibold text-[#1A1A1A] truncate">
               {lead?.name ?? '—'}
             </div>
-            <div className="text-[11px] text-[#6B7280] tabular-nums truncate">
+            <div className="text-[10px] text-[#6B7280] tabular-nums truncate">
               {lead?.phone ?? '—'}
               {startedAt && phase === 'connected' && <ConnectedDuration startedAt={startedAt} />}
             </div>
@@ -1241,7 +1306,7 @@ function ControlBar({
         </>
       ) : (
         <>
-          <span className="text-[11px] uppercase tracking-wide text-[#9CA3AF] font-semibold">Pacing</span>
+          <span className="text-[10px] uppercase tracking-wide text-[#9CA3AF] font-semibold">Pacing</span>
           <div className="inline-flex rounded-[10px] border border-[#E5E7EB] overflow-hidden">
             <button
               type="button"
@@ -1280,7 +1345,7 @@ function ControlBar({
       )}
 
       {/* RIGHT: action buttons. ml-auto pushes them right. */}
-      <div className="ml-auto flex items-center gap-1.5">
+      <div className="ml-auto flex items-center gap-1">
         {isLive && (
           <>
             <button
@@ -1288,16 +1353,16 @@ function ControlBar({
               onClick={onMute}
               title={muted ? 'Unmute' : 'Mute'}
               className={cn(
-                'inline-flex items-center justify-center w-8 h-8 rounded-[8px] border',
+                'inline-flex items-center justify-center w-7 h-7 rounded-[8px] border',
                 muted ? 'bg-[#FEF3C7] border-[#FDE68A] text-[#92400E]' : 'bg-white border-[#E5E7EB] text-[#1A1A1A] hover:bg-[#F3F3EE]'
               )}
             >
-              {muted ? <MicOff className="w-3.5 h-3.5" /> : <Mic className="w-3.5 h-3.5" />}
+              {muted ? <MicOff className="w-3 h-3" /> : <Mic className="w-3 h-3" />}
             </button>
             <button
               type="button"
               onClick={onHangUp}
-              className="inline-flex items-center gap-1 text-[12px] font-semibold text-white bg-[#B91C1C] px-2.5 py-1.5 rounded-[8px] hover:bg-[#991B1B]"
+              className="inline-flex items-center gap-1 text-[11px] font-semibold text-white bg-[#B91C1C] px-2 py-1.5 rounded-[8px] hover:bg-[#991B1B]"
             >
               <PhoneOff className="w-3 h-3" />
               Hang up
@@ -1309,17 +1374,17 @@ function ControlBar({
             type="button"
             onClick={onSkipNext}
             title="Skip & dial next"
-            className="inline-flex items-center gap-1 text-[12px] font-semibold text-[#1A1A1A] bg-white border border-[#E5E7EB] hover:bg-[#F3F3EE] px-2.5 py-1.5 rounded-[8px]"
+            className="inline-flex items-center gap-1 text-[11px] font-semibold text-[#1A1A1A] bg-white border border-[#E5E7EB] hover:bg-[#F3F3EE] px-2 py-1.5 rounded-[8px]"
           >
             <SkipForward className="w-3 h-3" />
-            Skip & next
+            Skip
           </button>
         )}
         {phase === 'paused' ? (
           <button
             type="button"
             onClick={onResume}
-            className="inline-flex items-center gap-1 text-[12px] font-semibold text-white bg-[#1E9A80] px-2.5 py-1.5 rounded-[8px]"
+            className="inline-flex items-center gap-1 text-[11px] font-semibold text-white bg-[#1E9A80] px-2 py-1.5 rounded-[8px]"
           >
             <Play className="w-3 h-3" />
             Resume
@@ -1330,7 +1395,7 @@ function ControlBar({
               type="button"
               onClick={onPause}
               title="Pause session"
-              className="inline-flex items-center gap-1 text-[12px] font-semibold text-[#1A1A1A] bg-white border border-[#E5E7EB] hover:bg-[#F3F3EE] px-2.5 py-1.5 rounded-[8px]"
+              className="inline-flex items-center gap-1 text-[11px] font-semibold text-[#1A1A1A] bg-white border border-[#E5E7EB] hover:bg-[#F3F3EE] px-2 py-1.5 rounded-[8px]"
             >
               <Pause className="w-3 h-3" />
               Pause
@@ -1342,7 +1407,7 @@ function ControlBar({
             type="button"
             onClick={onStop}
             title="Stop session"
-            className="inline-flex items-center gap-1 text-[12px] font-semibold text-[#B91C1C] bg-white border border-[#FECACA] hover:bg-[#FEF2F2] px-2.5 py-1.5 rounded-[8px]"
+            className="inline-flex items-center gap-1 text-[11px] font-semibold text-[#B91C1C] bg-white border border-[#FECACA] hover:bg-[#FEF2F2] px-2 py-1.5 rounded-[8px]"
           >
             <Square className="w-3 h-3" />
             Stop
@@ -1380,33 +1445,31 @@ function WrapUpCard({
   onSkip: () => void;
 }) {
   return (
-    <div className="bg-white border border-[#E5E7EB] rounded-2xl p-4 space-y-3">
-      <div className="flex items-baseline justify-between gap-3 flex-wrap">
+    <div className="bg-white border border-[#E5E7EB] rounded-2xl p-3 space-y-2">
+      <div className="flex items-baseline justify-between gap-2 flex-wrap">
         <div>
-          <div className="text-[12px] uppercase tracking-wide text-[#9CA3AF] font-semibold">
+          <div className="text-[11px] uppercase tracking-wide text-[#9CA3AF] font-semibold">
             Wrap-up · {contactName} · {contactPhone}
           </div>
-          <div className="text-[11px] text-[#6B7280]">
+          <div className="text-[10px] text-[#6B7280]">
             Call {endReason}{error ? ` — ${error}` : ''}
           </div>
         </div>
 
-        {/* Skip — no outcome on TOP per Hugo's request. */}
         <button
           type="button"
           onClick={onSkip}
           disabled={applying}
-          className="inline-flex items-center gap-1.5 text-[12px] font-semibold text-[#6B7280] hover:text-[#1A1A1A] bg-[#F3F3EE] hover:bg-[#E5E7EB] px-3 py-1.5 rounded-[10px] disabled:opacity-50"
+          className="inline-flex items-center gap-1 text-[11px] font-semibold text-[#6B7280] hover:text-[#1A1A1A] bg-[#F3F3EE] hover:bg-[#E5E7EB] px-2 py-1 rounded-[10px] disabled:opacity-50"
         >
-          <SkipForward className="w-3.5 h-3.5" />
-          Skip — no outcome
+          <SkipForward className="w-3 h-3" />
+          Skip
         </button>
       </div>
 
-      {/* Outcome buttons in the middle. */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-1.5">
         {columns.length === 0 && (
-          <div className="col-span-full text-[12px] text-[#9CA3AF] italic py-2">
+          <div className="col-span-full text-[11px] text-[#9CA3AF] italic py-1.5">
             No outcome columns. Ask admin to add stages.
           </div>
         )}
@@ -1416,21 +1479,20 @@ function WrapUpCard({
             type="button"
             disabled={applying}
             onClick={() => onApply(c.id)}
-            className="inline-flex items-center justify-between gap-2 text-[13px] font-medium text-[#1A1A1A] bg-[#F3F3EE] hover:bg-[#ECFDF5] hover:text-[#1E9A80] px-3 py-2 rounded-[10px] disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+            className="inline-flex items-center justify-between gap-1.5 text-[11px] font-medium text-[#1A1A1A] bg-[#F3F3EE] hover:bg-[#ECFDF5] hover:text-[#1E9A80] px-2 py-1.5 rounded-[10px] disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
           >
             <span className="truncate">{c.name}</span>
-            {applying ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <CheckCircle2 className="w-3.5 h-3.5 opacity-40" />}
+            {applying ? <Loader2 className="w-3 h-3 animate-spin" /> : <CheckCircle2 className="w-3 h-3 opacity-40" />}
           </button>
         ))}
       </div>
 
-      {/* Notes at the bottom. */}
       <textarea
         value={notes}
         onChange={(e) => setNotes(e.target.value)}
-        placeholder="Notes (optional) — what happened, next steps…"
+        placeholder="Notes (optional)…"
         rows={2}
-        className="w-full text-[13px] border border-[#E5E7EB] rounded-[10px] px-3 py-2 bg-white"
+        className="w-full text-[11px] border border-[#E5E7EB] rounded-[10px] px-2 py-1.5 bg-white"
       />
     </div>
   );
@@ -1450,23 +1512,23 @@ function PacingCountdownBar({
   }, []);
   const remainingSec = Math.max(0, Math.ceil((deadlineMs - now) / 1000));
   return (
-    <div className="bg-[#ECFDF5] border border-[#A7F3D0] text-[#065F46] rounded-2xl px-4 py-3 flex items-center gap-3 text-[13px] font-semibold">
-      <Clock className="w-4 h-4" />
-      Next call in {remainingSec}s
+    <div className="bg-[#ECFDF5] border border-[#A7F3D0] text-[#065F46] rounded-2xl px-3 py-2 flex items-center gap-2 text-[11px] font-semibold">
+      <Clock className="w-3 h-3" />
+      Next in {remainingSec}s
       <button
         type="button"
         onClick={onDialNow}
-        className="inline-flex items-center gap-1.5 ml-2 px-3 py-1.5 rounded-[10px] bg-[#1E9A80] text-white hover:bg-[#1E9A80]/90"
+        className="inline-flex items-center gap-1 ml-1 px-2 py-1 rounded-[10px] bg-[#1E9A80] text-white hover:bg-[#1E9A80]/90"
       >
-        <Zap className="w-3.5 h-3.5" />
+        <Zap className="w-3 h-3" />
         Dial now
       </button>
       <button
         type="button"
         onClick={onPause}
-        className="inline-flex items-center gap-1.5 ml-auto px-3 py-1.5 rounded-[10px] bg-white border border-[#A7F3D0] text-[#065F46] hover:bg-[#F0FDF4]"
+        className="inline-flex items-center gap-1 ml-auto px-2 py-1 rounded-[10px] bg-white border border-[#A7F3D0] text-[#065F46] hover:bg-[#F0FDF4]"
       >
-        <Pause className="w-3.5 h-3.5" />
+        <Pause className="w-3 h-3" />
         Pause
       </button>
     </div>
