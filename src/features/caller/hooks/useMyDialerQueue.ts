@@ -67,7 +67,7 @@ export function useMyDialerQueue(
         .eq('campaign_id', campaignId)
         .eq('status', 'pending')
         .or(`scheduled_for.is.null,scheduled_for.lte.${nowIso}`)
-        .order('priority', { ascending: false })
+        .order('priority', { ascending: false, nullsFirst: false })
         .order('scheduled_for', { ascending: true, nullsFirst: true })
         .order('attempts', { ascending: true })
         .order('created_at', { ascending: true })
