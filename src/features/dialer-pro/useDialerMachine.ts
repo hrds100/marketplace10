@@ -295,10 +295,20 @@ export function useDialerMachine({ userId, campaignId, pipelineId, onToast }: Us
     dispatch({ type: 'MUTE_TOGGLE' });
   }, [state.isMuted]);
 
-  // Hold toggle
+  // Hold toggle — Twilio hold requires server-side TwiML update which
+  // isn't wired yet, so we mute the agent's mic as a practical fallback.
   const holdToggle = useCallback(() => {
+    const newHold = !state.isOnHold;
+    const all = getDeviceCalls();
+    const truth = twilioCallRef.current ?? all[all.length - 1] ?? null;
+    if (truth || all.length > 0) {
+      muteAllCalls(newHold, truth);
+    }
     dispatch({ type: 'HOLD_TOGGLE' });
-  }, []);
+    if (!newHold && state.isMuted) {
+      dispatch({ type: 'MUTE_TOGGLE' });
+    }
+  }, [state.isOnHold, state.isMuted]);
 
   // Apply outcome
   const [applying, setApplying] = useState(false);

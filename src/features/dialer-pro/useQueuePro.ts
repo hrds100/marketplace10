@@ -36,8 +36,9 @@ function rowToLead(row: QueueRow): QueueLead | null {
   };
 }
 
-export function useQueuePro(campaignId: string | null, agentId: string | null) {
+export function useQueuePro(campaignId: string | null) {
   const [queue, setQueue] = useState<QueueLead[]>([]);
+  const [totalCount, setTotalCount] = useState(0);
   const [loading, setLoading] = useState(true);
 
   const fetchQueue = useCallback(async () => {
@@ -46,7 +47,8 @@ export function useQueuePro(campaignId: string | null, agentId: string | null) {
     let q = (supabase.from('wk_dialer_queue' as any) as any)
       .select(
         'id, contact_id, campaign_id, priority, attempts, scheduled_for, status, ' +
-        'wk_contacts:contact_id ( id, name, phone, pipeline_column_id )'
+        'wk_contacts:contact_id ( id, name, phone, pipeline_column_id )',
+        { count: 'exact' }
       )
       .eq('status', 'pending')
       .or(`scheduled_for.is.null,scheduled_for.lte.${nowIso}`)
@@ -54,15 +56,13 @@ export function useQueuePro(campaignId: string | null, agentId: string | null) {
       .order('scheduled_for', { ascending: true, nullsFirst: true })
       .order('attempts', { ascending: true })
       .order('created_at', { ascending: true })
-      .limit(100);
+      .limit(200);
 
     if (campaignId && campaignId.trim() !== '') {
       q = q.eq('campaign_id', campaignId);
     }
 
-    const { data: rows, error } = await q;
-
-    console.log('queue data:', rows, 'campaignId filter:', campaignId);
+    const { data: rows, error, count } = await q;
 
     if (error) {
       console.warn('[dialer-pro] queue fetch error', error);
@@ -75,8 +75,9 @@ export function useQueuePro(campaignId: string | null, agentId: string | null) {
       .filter((l): l is QueueLead => l !== null);
 
     setQueue(leads);
+    setTotalCount(count ?? leads.length);
     setLoading(false);
-  }, [campaignId, agentId]);
+  }, [campaignId]);
 
   useEffect(() => {
     void fetchQueue();
@@ -103,6 +104,7 @@ export function useQueuePro(campaignId: string | null, agentId: string | null) {
 
   return {
     queue,
+    totalCount,
     nextLead: queue[0] ?? null,
     refresh: fetchQueue,
     loading,

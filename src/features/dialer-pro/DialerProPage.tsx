@@ -85,7 +85,7 @@ export default function DialerProPage() {
   const { state, deviceReady } = machine;
 
   // Queue
-  const { queue, refresh: refreshQueue } = useQueuePro(camp?.id ?? null, userId);
+  const { queue, totalCount: queueTotal, refresh: refreshQueue } = useQueuePro(camp?.id ?? null);
 
   // Contact for the call room columns
   const [contact, setContact] = useState<Contact | null>(null);
@@ -170,7 +170,6 @@ export default function DialerProPage() {
   const splitContainerRef = useRef<HTMLDivElement>(null);
   const isLive = state.phase === 'dialing' || state.phase === 'ringing' || state.phase === 'connected';
   const contactFirstName = contact?.name?.trim().split(/\s+/)[0] ?? '';
-  const [bottomTab, setBottomTab] = useState<'queue' | 'history'>('queue');
 
   // ─── Floating card: drag + minimize ────────────────────────────────
   const CARD_W = 380;
@@ -364,7 +363,7 @@ export default function DialerProPage() {
                 <Phone className="w-8 h-8" />
               </div>
               <div className="text-[14px] font-medium text-[#6B7280]">
-                {queue.length > 0 ? `${queue.length} leads in queue` : 'Queue empty'}
+                {queueTotal > 0 ? `${queueTotal} leads in queue` : 'Queue empty'}
               </div>
               {queue[0] && (
                 <div className="text-[12px] text-[#9CA3AF] mt-1">
@@ -472,20 +471,26 @@ export default function DialerProPage() {
               <div className="px-3 pb-2 space-y-1.5">
                 {/* Row 1: Message | Notes | Blind Transfer | Warm Transfer */}
                 <div className="grid grid-cols-4 gap-1.5">
-                  {([
-                    { label: 'Message', icon: MessageSquare },
-                    { label: 'Notes', icon: FileText },
-                    { label: 'Blind', icon: PhoneForwarded, disabled: true },
-                    { label: 'Warm', icon: PhoneForwarded, disabled: true },
-                  ] as const).map(({ label, icon: Ic, ...rest }) => (
-                    <button key={label} disabled={'disabled' in rest}
-                      className={cn('flex flex-col items-center gap-1 py-2 rounded-lg text-[10px] font-medium transition-colors',
-                        'disabled' in rest ? 'text-[#9CA3AF] cursor-not-allowed' : 'text-[#6B7280] hover:bg-[#F3F3EE] hover:text-[#1A1A1A]',
-                      )}>
-                      <Ic className="w-4 h-4" strokeWidth={1.8} />
-                      {label}
-                    </button>
-                  ))}
+                  <button onClick={() => setMinimized(true)}
+                    className="flex flex-col items-center gap-1 py-2 rounded-lg text-[10px] font-medium text-[#6B7280] hover:bg-[#F3F3EE] hover:text-[#1A1A1A] transition-colors">
+                    <MessageSquare className="w-4 h-4" strokeWidth={1.8} />
+                    Message
+                  </button>
+                  <button onClick={() => setMinimized(true)}
+                    className="flex flex-col items-center gap-1 py-2 rounded-lg text-[10px] font-medium text-[#6B7280] hover:bg-[#F3F3EE] hover:text-[#1A1A1A] transition-colors">
+                    <FileText className="w-4 h-4" strokeWidth={1.8} />
+                    Notes
+                  </button>
+                  <button disabled
+                    className="flex flex-col items-center gap-1 py-2 rounded-lg text-[10px] font-medium text-[#9CA3AF] cursor-not-allowed transition-colors">
+                    <PhoneForwarded className="w-4 h-4" strokeWidth={1.8} />
+                    Blind
+                  </button>
+                  <button disabled
+                    className="flex flex-col items-center gap-1 py-2 rounded-lg text-[10px] font-medium text-[#9CA3AF] cursor-not-allowed transition-colors">
+                    <PhoneForwarded className="w-4 h-4" strokeWidth={1.8} />
+                    Warm
+                  </button>
                 </div>
                 {/* Row 2: Hold | Mute | Scripts | Dial (DTMF pad) */}
                 <div className="grid grid-cols-4 gap-1.5">
@@ -503,11 +508,13 @@ export default function DialerProPage() {
                     {state.isMuted ? <MicOff className="w-4 h-4" strokeWidth={1.8} /> : <Mic className="w-4 h-4" strokeWidth={1.8} />}
                     Mute
                   </button>
-                  <button className="flex flex-col items-center gap-1 py-2 rounded-lg text-[10px] font-medium text-[#6B7280] hover:bg-[#F3F3EE] hover:text-[#1A1A1A] transition-colors">
+                  <button onClick={() => setMinimized(true)}
+                    className="flex flex-col items-center gap-1 py-2 rounded-lg text-[10px] font-medium text-[#6B7280] hover:bg-[#F3F3EE] hover:text-[#1A1A1A] transition-colors">
                     <FileText className="w-4 h-4" strokeWidth={1.8} />
                     Scripts
                   </button>
-                  <button className="flex flex-col items-center gap-1 py-2 rounded-lg text-[10px] font-medium text-[#9CA3AF] cursor-not-allowed">
+                  <button disabled
+                    className="flex flex-col items-center gap-1 py-2 rounded-lg text-[10px] font-medium text-[#9CA3AF] cursor-not-allowed">
                     <Hash className="w-4 h-4" strokeWidth={1.8} />
                     Dial
                   </button>
@@ -551,7 +558,7 @@ export default function DialerProPage() {
           <div className="flex flex-col overflow-hidden" style={{ width: `${queuePct}%` }}>
             <div className="flex items-center gap-1.5 px-2.5 py-1.5 border-b border-[#E5E7EB]/60 bg-[#F3F3EE]/50">
               <span className="text-[10px] font-semibold text-[#6B7280] uppercase tracking-wide">Queue</span>
-              <span className="text-[10px] text-[#9CA3AF]">({queue.length})</span>
+              <span className="text-[10px] text-[#9CA3AF]">({queueTotal})</span>
             </div>
             <div className="overflow-y-auto" style={{ maxHeight: 200 }}>
               <QueueManagerPro queue={queue} campaignId={camp?.id ?? null} onRefresh={refreshQueue} />
@@ -761,7 +768,7 @@ function WrapUpCard({ lead, endReason, durationSec, columns, applying, onNext, o
         {/* Action buttons: Redial | Next -> | Pause */}
         <div className="flex gap-2 px-4 pb-4">
           <button onClick={() => onRedial(pickedId, notes)} disabled={applying}
-            className="flex items-center gap-1.5 border border-[#E5E7EB] rounded-lg px-4 py-2 text-[13px] font-medium text-[#6B7280] hover:bg-[#F3F3EE] disabled:opacity-50">
+            className="flex items-center gap-1.5 border border-[#FECACA] rounded-lg px-4 py-2 text-[13px] font-medium text-[#B91C1C] hover:bg-[#FEF2F2] disabled:opacity-50">
             <Phone className="w-4 h-4" /> Redial
           </button>
           <button onClick={() => onNext(pickedId, notes)} disabled={applying}
