@@ -182,7 +182,7 @@ export default function CallHistoryPro({ onCountChange, onEditContact }: CallHis
         >
           <Phone className="w-3 h-3 text-[#9CA3AF] flex-shrink-0" />
           <div className="flex-1 min-w-0">
-            <div className="font-medium text-[#1A1A1A] truncate text-[11px]">{call.contactName ?? call.contactPhone ?? 'Unknown'}</div>
+            <div className="font-medium text-[#1A1A1A] text-[11px]">{call.contactName ?? call.contactPhone ?? 'Unknown'}</div>
             <div className="text-[10px] text-[#9CA3AF] tabular-nums">{formatDuration(call.durationSec)} · {formatDate(call.startedAt)}</div>
           </div>
           <div className="flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0">
