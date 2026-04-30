@@ -636,6 +636,8 @@ export function CallerPad() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [state.phase, state.sessionStarted, pacing, pacingDelaySec]);
 
+  const { columns: outcomeColumns } = usePipelineColumns(camp?.pipelineId ?? null);
+
   // ─── Auto-route outcomes ──────────────────────────────────────────
   useEffect(() => {
     if (state.phase !== 'wrap_up') return;
@@ -716,8 +718,6 @@ export function CallerPad() {
     currentLeadRef.current = null;
     dispatch({ type: 'STOP' });
   }, []);
-
-  const { columns: outcomeColumns } = usePipelineColumns(camp?.pipelineId ?? null);
 
   // ─── Floating-pad UI state ────────────────────────────────────────
   // Hugo's brief (2026-04-29): convert the dialer page to a phone-sized
