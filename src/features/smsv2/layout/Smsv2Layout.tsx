@@ -24,7 +24,7 @@ function StoreHydrator() {
 
 export default function Smsv2Layout() {
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
-  const onDialerPage = useLocation().pathname === '/crm/dialer';
+  const onDialerPage = useLocation().pathname === '/crm/dialer-pro';
   const { isAdmin } = useAuth();
 
   return (
