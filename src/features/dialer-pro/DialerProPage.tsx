@@ -754,7 +754,7 @@ function WrapUpCard({ lead, endReason, durationSec, columns, suggestedId, applyi
   };
 
   return (
-      <div className="bg-white rounded-2xl shadow-[0_24px_64px_rgba(0,0,0,0.18)] border border-[#E5E7EB] overflow-hidden max-h-[calc(100vh-80px)] overflow-y-auto" style={{ width: 340 }}>
+      <div className="bg-white rounded-2xl shadow-[0_24px_64px_rgba(0,0,0,0.18)] border border-[#E5E7EB] overflow-hidden max-h-[calc(100vh-80px)] overflow-y-auto w-full">
         {/* Header — draggable */}
         <div
           onPointerDown={onDragStart} onPointerMove={onDragMove} onPointerUp={onDragEnd} onPointerCancel={onDragEnd}
