@@ -76,8 +76,8 @@ test.describe("Dialer Pro — 3-layer layout", () => {
     // Start dialer button visible
     await expect(page.getByRole("button", { name: /Start dialer/i })).toBeVisible();
 
-    // Add lead button visible in queue
-    await expect(page.getByRole("button", { name: /Add lead/i })).toBeVisible({ timeout: 5000 });
+    // New contact button visible in queue
+    await expect(page.getByRole("button", { name: /New contact/i })).toBeVisible({ timeout: 5000 });
 
     await page.screenshot({ path: "e2e/screenshots/dialer-pro-02-floating-panel.png" });
   });

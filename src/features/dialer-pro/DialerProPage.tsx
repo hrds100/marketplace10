@@ -126,24 +126,22 @@ export default function DialerProPage() {
   // Edit contact modal
   const [editing, setEditing] = useState<Contact | null>(null);
 
-  // Auto-route outcomes (no-answer / voicemail)
-  useEffect(() => {
-    if (state.phase !== 'wrap_up') return;
-    if (!state.currentLead || !state.currentCallId) return;
-    if (outcomeColumns.length === 0) return;
-
+  // Suggest a disposition based on how the call ended — pre-selects
+  // the button in the wrap-up card but never auto-applies it.
+  const suggestedOutcomeId = useMemo(() => {
+    if (state.phase !== 'wrap_up') return null;
     if (state.endReason === 'cancel' || state.endReason === 'reject' || state.endReason === 'error') {
       const col = outcomeColumns.find(
         (c) => c.name.toLowerCase().includes('no pickup') || c.name.toLowerCase() === 'no answer',
       );
-      if (col) { void machine.applyOutcome(col.id); return; }
+      if (col) return col.id;
     }
-
     if (state.endReason === 'hangup' && state.durationSec !== null && state.durationSec > 0 && state.durationSec < 10) {
       const col = outcomeColumns.find((c) => c.name.toLowerCase().includes('voicemail'));
-      if (col) { void machine.applyOutcome(col.id); return; }
+      if (col) return col.id;
     }
-  }, [state.phase, state.endReason, state.durationSec, state.currentLead, state.currentCallId, outcomeColumns, machine]);
+    return null;
+  }, [state.phase, state.endReason, state.durationSec, outcomeColumns]);
 
   // Start dialer
   const startDialer = useCallback(async () => {
@@ -545,6 +543,7 @@ export default function DialerProPage() {
               endReason={state.endReason}
               durationSec={state.durationSec}
               columns={outcomeColumns}
+              suggestedId={suggestedOutcomeId}
               applying={machine.applying}
               onNext={handleWrapUpNext}
               onSkip={machine.skip}
@@ -651,6 +650,7 @@ interface WrapUpCardProps {
   endReason: string | null;
   durationSec: number | null;
   columns: PipelineColumnRow[];
+  suggestedId: string | null;
   applying: boolean;
   onNext: (columnId: string | null, notes: string) => void;
   onSkip: () => void;
@@ -662,8 +662,8 @@ interface WrapUpCardProps {
   onMinimize: () => void;
 }
 
-function WrapUpCard({ lead, endReason, durationSec, columns, applying, onNext, onSkip, onRedial, onPause, onDragStart, onDragMove, onDragEnd, onMinimize }: WrapUpCardProps) {
-  const [pickedId, setPickedId] = useState<string | null>(null);
+function WrapUpCard({ lead, endReason, durationSec, columns, suggestedId, applying, onNext, onSkip, onRedial, onPause, onDragStart, onDragMove, onDragEnd, onMinimize }: WrapUpCardProps) {
+  const [pickedId, setPickedId] = useState<string | null>(suggestedId);
   const [notes, setNotes] = useState('');
   const [showMore, setShowMore] = useState(false);
 
