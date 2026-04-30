@@ -73,6 +73,8 @@ export function useCalls(opts: Opts = {}) {
   const [totalCount, setTotalCount] = useState(0);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [tick, setTick] = useState(0);
+  const refetch = () => setTick((t) => t + 1);
 
   useEffect(() => {
     let cancelled = false;
@@ -177,9 +179,9 @@ export function useCalls(opts: Opts = {}) {
       window.clearInterval(pollId);
       try { void supabase.removeChannel(ch); } catch { /* ignore */ }
     };
-  }, [agentId, contactId, limit]);
+  }, [agentId, contactId, limit, tick]);
 
-  return { calls, totalCount, loading, error };
+  return { calls, totalCount, loading, error, refetch };
 }
 
 export async function signCallRecording(path: string): Promise<string | null> {

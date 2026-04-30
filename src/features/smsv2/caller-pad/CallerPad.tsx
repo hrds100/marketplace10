@@ -49,7 +49,7 @@ import { useCallerToasts } from './store/toastsProvider';
 import { useActiveCallCtx } from '@/features/smsv2/components/live-call/ActiveCallContext';
 import EditContactModal from '@/features/smsv2/components/contacts/EditContactModal';
 import CallTranscriptModal from '@/features/smsv2/components/calls/CallTranscriptModal';
-import StageSelector from '@/features/smsv2/components/shared/StageSelector';
+
 import type { Contact } from '@/features/smsv2/types';
 import type { Campaign } from './types';
 
@@ -574,6 +574,7 @@ export function CallerPad() {
   const applyOutcome = useCallback(
     async (columnId: string) => {
       if (!state.lead || !state.callId) {
+        toasts.push('Cannot save outcome — call ID missing. Move contact to a stage manually if needed.', 'error');
         dispatch({ type: 'OUTCOME_DONE' });
         return;
       }
@@ -1827,17 +1828,18 @@ function UpcomingRow({ idx, lead }: { idx: number; lead: QueueItem }) {
           <Pencil className="w-3 h-3" />
         </button>
       </li>
-      {editing && (
+      {editing && ReactDOM.createPortal(
         <RichEditContactBridge
           contactId={lead.contactId}
           onClose={() => setEditing(false)}
-        />
+        />,
+        document.body,
       )}
     </>
   );
 }
 
-function RichEditContactBridge({ contactId, onClose }: { contactId: string; onClose: () => void }) {
+function RichEditContactBridge({ contactId, onClose, onSaved }: { contactId: string; onClose: () => void; onSaved?: () => void }) {
   const [contact, setContact] = useState<Contact | null>(null);
   const [loading, setLoading] = useState(true);
 
@@ -1888,7 +1890,7 @@ function RichEditContactBridge({ contactId, onClose }: { contactId: string; onCl
       onClose={onClose}
       onSave={async (updated) => {
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        await (supabase.from('wk_contacts' as any) as any)
+        const { error: saveErr } = await (supabase.from('wk_contacts' as any) as any)
           .update({
             name: updated.name || null,
             phone: updated.phone,
@@ -1901,6 +1903,7 @@ function RichEditContactBridge({ contactId, onClose }: { contactId: string; onCl
             custom_fields: updated.customFields,
           })
           .eq('id', contactId);
+        if (!saveErr) onSaved?.();
         onClose();
       }}
     />,
@@ -2029,7 +2032,7 @@ function CallHistoryPanel({
   onHeaderClick?: () => void;
   collapsed?: boolean;
 }) {
-  const { calls, totalCount, loading, error } = useCalls({ agentId, limit: 50 });
+  const { calls, totalCount, loading, error, refetch } = useCalls({ agentId, limit: 50 });
   const displayed = typeof maxItems === 'number' ? calls.slice(0, maxItems) : calls;
 
   const headerInner = (
@@ -2090,7 +2093,7 @@ function CallHistoryPanel({
             dense ? 'max-h-[280px]' : 'max-h-[480px]'
           )}>
         {displayed.map((c) => (
-          <CallHistoryRow key={c.id} call={c} />
+          <CallHistoryRow key={c.id} call={c} onSaved={refetch} />
         ))}
           </ul>
         </>
@@ -2099,7 +2102,7 @@ function CallHistoryPanel({
   );
 }
 
-function CallHistoryRow({ call: c }: { call: import('./hooks/useCalls').CallListRow }) {
+function CallHistoryRow({ call: c, onSaved }: { call: import('./hooks/useCalls').CallListRow; onSaved?: () => void }) {
   const [audioUrl, setAudioUrl] = useState<string | null>(null);
   const [playing, setPlaying] = useState(false);
   const audioRef = useRef<HTMLAudioElement | null>(null);
@@ -2144,33 +2147,29 @@ function CallHistoryRow({ call: c }: { call: import('./hooks/useCalls').CallList
         <div className="flex-1 min-w-0">
           <button
             type="button"
-            onClick={() => setEditing(true)}
+            onClick={() => {
+              if (!c.contactId) { console.warn('[CallHistoryRow] missing contactId', c.id); return; }
+              setEditing(true);
+            }}
             className="text-[11px] font-semibold text-[#1A1A1A] truncate block max-w-full text-left hover:text-[#1E9A80]"
           >
             {c.contactName ?? c.contactPhone ?? '—'}
           </button>
-          <div className="text-[10px] text-[#9CA3AF] tabular-nums truncate flex items-center gap-1">
-            <span>
-              {dateStr}
-              {c.durationSec ? ` · ${formatDur(c.durationSec)}` : ''}
-            </span>
-            {c.pipelineColumnId && (
-              <StageSelector
-                value={c.pipelineColumnId}
-                onChange={() => {}}
-                size="xs"
-              />
-            )}
+          <div className="text-[10px] text-[#9CA3AF] tabular-nums truncate">
+            {dateStr}
+            {c.durationSec ? ` · ${formatDur(c.durationSec)}` : ''}
           </div>
         </div>
-        <button
-          type="button"
-          onClick={() => setEditing(true)}
-          title="Edit contact"
-          className="p-1 rounded-[6px] text-[#6B7280] hover:text-[#1E9A80] hover:bg-[#ECFDF5] transition-colors flex-shrink-0 opacity-0 group-hover:opacity-100"
-        >
-          <Pencil className="w-3.5 h-3.5" />
-        </button>
+        {c.contactId && (
+          <button
+            type="button"
+            onClick={() => setEditing(true)}
+            title="Edit contact"
+            className="p-1 rounded-[6px] text-[#6B7280] hover:text-[#1E9A80] hover:bg-[#ECFDF5] transition-colors flex-shrink-0 opacity-0 group-hover:opacity-100"
+          >
+            <Pencil className="w-3.5 h-3.5" />
+          </button>
+        )}
         <button
           type="button"
           onClick={() => setTranscriptCallId(c.id)}
@@ -2200,10 +2199,11 @@ function CallHistoryRow({ call: c }: { call: import('./hooks/useCalls').CallList
         />,
         document.body,
       )}
-      {editing && ReactDOM.createPortal(
+      {editing && c.contactId && ReactDOM.createPortal(
         <RichEditContactBridge
           contactId={c.contactId}
           onClose={() => setEditing(false)}
+          onSaved={onSaved}
         />,
         document.body,
       )}
