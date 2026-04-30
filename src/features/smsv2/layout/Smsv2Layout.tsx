@@ -34,6 +34,9 @@ export default function Smsv2Layout() {
             data-feature="SMSV2__LAYOUT"
             className="h-screen flex flex-col bg-[#F3F3EE]"
           >
+            {/* Follow-up banner — above nav per Hugo */}
+            <FollowupBanner />
+
             {/* Top bar */}
             <header className="h-14 bg-white border-b border-[#E5E7EB] flex items-center px-5 z-[101] flex-shrink-0 gap-3">
               <Link
@@ -60,7 +63,6 @@ export default function Smsv2Layout() {
             <div className="flex-1 flex overflow-hidden">
               <Smsv2Sidebar collapsed={sidebarCollapsed} onCollapse={setSidebarCollapsed} />
               <main className="flex-1 overflow-auto flex flex-col">
-                <FollowupBanner />
                 <div className="flex-1 overflow-auto">
                   <Outlet />
                 </div>
