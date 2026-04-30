@@ -96,9 +96,9 @@ test.describe("Dialer Pro — 3-layer layout", () => {
 
   test("No hardcoded PIPELINE_STAGES on page", async ({ page }) => {
     const pageText = await page.textContent("body");
-    // Old hardcoded stages should NOT be present anywhere
+    // Old hardcoded stage labels (with parentheses) should NOT be present
     expect(pageText).not.toContain("Nurturing (msg sent)");
-    expect(pageText).not.toContain("New Leads");
+    expect(pageText).not.toContain("Not Interested (dead)");
   });
 
   test("No KPI bar or pacing controls", async ({ page }) => {
