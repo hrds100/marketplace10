@@ -55,13 +55,10 @@ export function rowToCampaign(row: WkCampaignRow, queue: QueueRollup | undefined
     pipelineId: row.pipeline_id ?? '',
     ownerAgentId: row.created_by ?? '',
     totalLeads: pending + dialing + connected + voicemail + missed + done + skipped,
-    // PR 126 (Hugo 2026-04-28): "Done" = every queue row that's no
-    // longer pending or actively dialing. Hugo's mental model:
-    // "I called them, that's done." Includes connected, voicemail,
-    // missed, skipped, done, and any future terminal status. Was
-    // previously done+missed+skipped only, which silently excluded
-    // every successful conversation.
-    doneLeads: connected + voicemail + missed + skipped + done,
+    // "Done" = call attempt completed without a live conversation
+    // (done + missed + skipped). connected/voicemail are kept as
+    // their own buckets because they're informative on their own.
+    doneLeads: done + missed + skipped,
     connectedLeads: connected,
     voicemailLeads: voicemail,
     pendingLeads: pending,

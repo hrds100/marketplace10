@@ -144,23 +144,8 @@ import AdminOnlyRoute from '@/features/smsv2/components/AdminOnlyRoute';
 // keeps the old smsv2 dialer until PR D flips the cutover.
 import CrmV2DialerPage from '@/features/crm-v2/pages/DialerV2Page';
 // Caller workspace — clean rebuild of the smsv2 frontend at /caller/*.
-// Both /crm and /caller share the same Supabase database; cutover
-// (Phase 6 in docs/caller/BUILD_PLAN.md) flips /crm to CallerLayout
-// after Hugo signs off.
-import CallerLayout from '@/features/caller/layout/CallerLayout';
-import CallerLoginPage from '@/features/caller/pages/CallerLoginPage';
-import CallerAdminOnlyRoute from '@/features/caller/components/AdminOnlyRoute';
-import CallerDialerPage from '@/features/caller/pages/DialerPage';
-import CallerInboxPage from '@/features/caller/pages/InboxPage';
-import CallerCallsPage from '@/features/caller/pages/CallsPage';
-import CallerPastCallScreen from '@/features/caller/pages/PastCallScreen';
-import CallerContactsPage from '@/features/caller/pages/ContactsPage';
-import CallerContactDetailPage from '@/features/caller/pages/ContactDetailPage';
-import CallerPipelinesPage from '@/features/caller/pages/PipelinesPage';
-import CallerReportsPage from '@/features/caller/pages/ReportsPage';
-import CallerLeaderboardPage from '@/features/caller/pages/LeaderboardPage';
-import CallerSettingsPage from '@/features/caller/pages/SettingsPage';
-import CallerDashboardPage from '@/features/caller/pages/DashboardPage';
+// /caller/* routes removed — /crm/* is the official surface.
+// CallerPad component is still used by Smsv2DialerPage.
 
 // One-time wipe of stale CRM localStorage keys (from before DB-backed CRM)
 if (!localStorage.getItem('crm_localStorage_v2_cleared')) {
@@ -368,25 +353,7 @@ const App = () => (
           {/* Legacy /smsv2/* redirects → /crm/* so bookmarks survive. */}
           <Route path="/smsv2" element={<Navigate to="/crm" replace />} />
           <Route path="/smsv2/*" element={<Navigate to="/crm" replace />} />
-          {/* Caller workspace — clean rebuild parallel-runs at /caller/*.
-              Same database, same edge functions; only the frontend differs.
-              Phase 6 cutover repoints /crm to CallerLayout. See
-              docs/caller/CALLER_OPERATING_SYSTEM.md. */}
-          <Route path="/caller/login" element={<CallerLoginPage />} />
-          <Route path="/caller" element={<CallerLayout />}>
-            <Route index element={<Navigate to="inbox" replace />} />
-            <Route path="dashboard" element={<CallerAdminOnlyRoute><CallerDashboardPage /></CallerAdminOnlyRoute>} />
-            <Route path="inbox" element={<CallerInboxPage />} />
-            <Route path="calls" element={<CallerCallsPage />} />
-            <Route path="calls/:callId" element={<CallerPastCallScreen />} />
-            <Route path="dialer" element={<CallerDialerPage />} />
-            <Route path="contacts" element={<CallerContactsPage />} />
-            <Route path="contacts/:id" element={<CallerContactDetailPage />} />
-            <Route path="pipelines" element={<CallerPipelinesPage />} />
-            <Route path="reports" element={<CallerReportsPage />} />
-            <Route path="leaderboard" element={<CallerLeaderboardPage />} />
-            <Route path="settings" element={<CallerAdminOnlyRoute><CallerSettingsPage /></CallerAdminOnlyRoute>} />
-          </Route>
+          {/* /caller/* removed — /crm/* is the official surface. */}
           {/* nfstay traveler-facing routes — standalone (no operator layout) */}
           <Route path="/nfstay/property/:id" element={<NfsPropertyView />} />
           <Route path="/nfstay/payment/success" element={<NfsPaymentSuccess />} />

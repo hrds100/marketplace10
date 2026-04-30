@@ -25,6 +25,7 @@ interface WkCampaignRow {
 
 interface QueueRollup {
   campaign_id: string;
+  totalRows: number;
   pending: number;
   dialing: number;
   connected: number;
@@ -32,6 +33,7 @@ interface QueueRollup {
   missed: number;
   done: number;
   skipped: number;
+  lost: number;
 }
 
 export function rowToCampaign(row: WkCampaignRow, queue: QueueRollup | undefined): Campaign {
@@ -42,13 +44,18 @@ export function rowToCampaign(row: WkCampaignRow, queue: QueueRollup | undefined
   const missed = queue?.missed ?? 0;
   const done = queue?.done ?? 0;
   const skipped = queue?.skipped ?? 0;
+  const lost = queue?.lost ?? 0;
   return {
     id: row.id,
     name: row.name,
     pipelineId: row.pipeline_id ?? '',
     ownerAgentId: row.created_by ?? '',
-    totalLeads: pending + dialing + connected + voicemail + missed + done + skipped,
-    doneLeads: connected + voicemail + missed + skipped + done,
+    // Each KPI card now shows its literal status count. Previously
+    // doneLeads aggregated connected+voicemail+missed+skipped+done
+    // which double-counted live calls into Done. 'lost' (added by the
+    // three-strikes migration) was silently dropped from totalLeads.
+    totalLeads: queue?.totalRows ?? 0,
+    doneLeads: done,
     connectedLeads: connected,
     voicemailLeads: voicemail,
     pendingLeads: pending,
@@ -127,10 +134,33 @@ export function useDialerCampaigns(
       if (allowedCampaignIds) {
         campaignsQuery = campaignsQuery.in('id', allowedCampaignIds);
       }
-      const [campaignsRes, queueRes] = await Promise.all([
+      const nowIso = new Date().toISOString();
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      let queueQuery = (supabase.from('wk_dialer_queue' as any) as any).select('campaign_id, status');
+      if (allowedCampaignIds) {
+        queueQuery = queueQuery.in('campaign_id', allowedCampaignIds);
+      }
+      if (scopedToAgentId) {
+        queueQuery = queueQuery.or(`agent_id.eq.${scopedToAgentId},agent_id.is.null`);
+      }
+      // Separate query for "ready pending" — same filters as the panel
+      // so the KPI Pending matches the Upcoming Queue count exactly.
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      let pendingQuery = (supabase.from('wk_dialer_queue' as any) as any)
+        .select('campaign_id')
+        .eq('status', 'pending')
+        .or(`scheduled_for.is.null,scheduled_for.lte.${nowIso}`);
+      if (allowedCampaignIds) {
+        pendingQuery = pendingQuery.in('campaign_id', allowedCampaignIds);
+      }
+      if (scopedToAgentId) {
+        pendingQuery = pendingQuery.or(`agent_id.eq.${scopedToAgentId},agent_id.is.null`);
+      }
+
+      const [campaignsRes, queueRes, pendingRes] = await Promise.all([
         campaignsQuery,
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        (supabase.from('wk_dialer_queue' as any) as any).select('campaign_id, status'),
+        queueQuery,
+        pendingQuery,
       ]);
 
       if (cancelled) return;
@@ -141,10 +171,18 @@ export function useDialerCampaigns(
         return;
       }
 
+      // Count ready-pending per campaign from the DB query (same filter
+      // as the panel so numbers match exactly).
+      const pendingByCampaign = new Map<string, number>();
+      for (const row of (pendingRes.data ?? []) as Array<{ campaign_id: string }>) {
+        pendingByCampaign.set(row.campaign_id, (pendingByCampaign.get(row.campaign_id) ?? 0) + 1);
+      }
+
       const rollups = new Map<string, QueueRollup>();
       for (const row of (queueRes.data ?? []) as Array<{ campaign_id: string; status: string }>) {
         const r = rollups.get(row.campaign_id) ?? {
           campaign_id: row.campaign_id,
+          totalRows: 0,
           pending: 0,
           dialing: 0,
           connected: 0,
@@ -152,15 +190,23 @@ export function useDialerCampaigns(
           missed: 0,
           done: 0,
           skipped: 0,
+          lost: 0,
         };
-        if (row.status === 'pending') r.pending += 1;
-        else if (row.status === 'dialing') r.dialing += 1;
+        r.totalRows += 1;
+        if (row.status === 'dialing') r.dialing += 1;
         else if (row.status === 'connected') r.connected += 1;
         else if (row.status === 'voicemail') r.voicemail += 1;
         else if (row.status === 'missed') r.missed += 1;
         else if (row.status === 'done') r.done += 1;
         else if (row.status === 'skipped') r.skipped += 1;
+        else if (row.status === 'lost') r.lost += 1;
         rollups.set(row.campaign_id, r);
+      }
+      // Overwrite pending from the DB-filtered query so it matches
+      // the panel's totalCount exactly (same scheduled_for filter).
+      for (const [cid, count] of pendingByCampaign) {
+        const r = rollups.get(cid);
+        if (r) r.pending = count;
       }
 
       const mapped = (campaignsRes.data ?? []).map((row: WkCampaignRow) =>

@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import {
   MicOff,
   PhoneOff,
@@ -14,8 +14,6 @@ import {
   ResizableHandle,
 } from '@/components/ui/resizable';
 import { useActiveCallCtx } from './ActiveCallContext';
-import { useActiveDialerLegs } from '../../hooks/useActiveDialerLegs';
-import { useNoAnswerHangup } from '../../hooks/useNoAnswerHangup';
 import LiveTranscriptPane from './LiveTranscriptPane';
 import CallScriptPane from './CallScriptPane';
 import TerminologyPane from './TerminologyPane';
@@ -36,7 +34,6 @@ import {
 export default function LiveCallScreen() {
   const {
     phase,
-    callPhase,
     call,
     durationSec,
     endCall,
@@ -46,61 +43,10 @@ export default function LiveCallScreen() {
     previewContactId,
     closeCallRoom,
     startCall,
-    error,
   } = useActiveCallCtx();
   const store = useSmsV2();
   const { agent: me, firstName: myFirstName, talkRatioPercent } = useCurrentAgent();
   const [editing, setEditing] = useState<Contact | null>(null);
-
-  // PR 127 (Hugo 2026-04-28): the header used to read from the
-  // placeholder contact set by enterDialingPlaceholder, but the
-  // PICKER may pick a DIFFERENT contact than the local store's
-  // queueLeads[0] (queue ordering can shift between dispatch and
-  // RPC). That caused the header to show one number and the banner
-  // to show another. Source the placing-phase contact name from the
-  // live leg instead so they always agree.
-  const { legs: activeLegs } = useActiveDialerLegs();
-  const placingDisplayName =
-    phase === 'placing'
-      ? activeLegs[0]?.contactName ?? activeLegs[0]?.phone ?? call?.contactName ?? '…'
-      : call?.contactName ?? '';
-
-  // PR 128 (Hugo 2026-04-28): we removed the dark second-banner that used
-  // to show the ringing timer. Now the top header shows "Ringing · M:SS"
-  // during placing so the agent can still see how long Twilio's been
-  // trying. 1Hz tick — only runs while in the placing phase.
-  const [, setRingingTick] = useState(0);
-  useEffect(() => {
-    if (phase !== 'placing') return;
-    const id = window.setInterval(() => setRingingTick((t) => t + 1), 1000);
-    return () => window.clearInterval(id);
-  }, [phase]);
-  const placingElapsedSec =
-    phase === 'placing' && activeLegs[0]?.startedAt
-      ? Math.max(0, Math.floor((Date.now() - activeLegs[0].startedAt) / 1000))
-      : 0;
-  // PR 129 (Hugo 2026-04-28): show the actual Twilio leg status
-  // ('Dialing' / 'Ringing') so the agent sees Twilio's reported state
-  // rather than a generic "Calling".
-  const placingLegStatus = phase === 'placing' ? activeLegs[0]?.status : null;
-  const placingStatusLabel =
-    placingLegStatus === 'ringing'
-      ? 'Ringing'
-      : placingLegStatus === 'in_progress'
-        ? 'Connecting…'
-        : 'Dialing';
-
-  // PR 138 (Hugo 2026-04-28): extracted to useNoAnswerHangup hook.
-  // Same behaviour as before — when the leg's been in 'placing' for
-  // ≥35s and is still queued/ringing (or no leg row at all), end the
-  // call. The reducer flips to stopped_waiting_outcome; the agent
-  // picks the outcome (Rules 3, 4, 5).
-  useNoAnswerHangup({
-    phase,
-    legStatus: placingLegStatus,
-    elapsedSec: placingElapsedSec,
-    endCall,
-  });
 
   // Preview mode (PR 10): no active call, but agent opened the room for
   // a specific contact from the inbox. Use that contact instead of the
@@ -110,31 +56,49 @@ export default function LiveCallScreen() {
   const contact =
     store.contacts.find((c) =>
       isPreview ? c.id === previewContactId : c.id === call?.contactId
-    ) ?? store.contacts[0];
+    ) ?? store.contacts[0] ?? null;
 
-  const contactFirstName = contact.name?.trim().split(/\s+/)[0] ?? '';
+  const contactFirstName = contact?.name?.trim().split(/\s+/)[0] ?? '';
+
+  if (!contact) {
+    return (
+      <div className="fixed inset-0 z-[200] bg-[#F3F3EE] flex flex-col">
+        <header className="h-14 flex items-center px-5 gap-3 flex-shrink-0 bg-white border-b border-[#E5E7EB]">
+          <span className="text-[14px] font-semibold text-[#1A1A1A]">Call room</span>
+          <div className="ml-auto">
+            <button onClick={closeCallRoom} className="p-2 rounded-lg hover:bg-black/[0.04]">
+              <Minimize2 className="w-4 h-4 text-[#6B7280]" />
+            </button>
+          </div>
+        </header>
+        <div className="flex-1 flex items-center justify-center">
+          <p className="text-[14px] text-[#9CA3AF]">Select a contact or start a campaign to begin</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="fixed inset-0 z-[200] bg-[#F3F3EE] flex flex-col">
-      {/* Top bar — four visual states:
-            placing  → tall black bar absorbing the design Hugo liked
-                       from the dark banner (status pill + big timer)
+      {/* Top bar — three visual states:
+            placing  → black bar with ringing dots (Hugo: no orange/red here)
             in_call  → green bar with pulsing dot + duration
-            post_call → white bar, muted
-            idle     → white bar */}
+            post_call → white bar, muted */}
       <header
         className={cn(
-          'flex items-center px-5 gap-3 flex-shrink-0 transition-colors',
-          // PR 129: taller during placing so the absorbed design from
-          // the deleted second banner has room to breathe.
-          phase === 'placing' ? 'h-[68px]' : 'h-14',
+          'h-14 flex items-center px-5 gap-3 flex-shrink-0 transition-colors',
           phase === 'in_call' && 'bg-[#1E9A80] text-white',
-          phase === 'placing' && 'bg-[#0A0A0A] text-white',
+          phase === 'placing' && 'bg-[#1A1A1A] text-white',
           phase === 'post_call' && 'bg-white border-b border-[#E5E7EB] text-[#1A1A1A]',
           phase === 'idle' && 'bg-white border-b border-[#E5E7EB] text-[#1A1A1A]'
         )}
       >
-        {phase !== 'placing' && (
+        {phase === 'placing' ? (
+          <span className="relative w-2.5 h-2.5 inline-flex">
+            <span className="absolute inset-0 rounded-full bg-white animate-ping" />
+            <span className="relative w-2.5 h-2.5 rounded-full bg-white" />
+          </span>
+        ) : (
           <span
             className={cn(
               'w-2.5 h-2.5 rounded-full',
@@ -145,37 +109,14 @@ export default function LiveCallScreen() {
         )}
         <span className="text-[14px] font-semibold flex items-center gap-2">
           {phase === 'placing' && (
-            // PR 129 (Hugo 2026-04-28): absorbed the dark banner's
-            // design — status pill + big tabular timer + ringing dot.
-            // This is the SINGLE call surface now (PR 128 killed the
-            // second banner). Layout reads: ●ringing · Hugo · DIALING · 0:14
-            <span className="flex items-center gap-3">
-              <span className="relative w-2.5 h-2.5 inline-flex">
-                <span className="absolute inset-0 rounded-full bg-[#1E9A80] animate-ping opacity-75" />
-                <span className="relative w-2.5 h-2.5 rounded-full bg-[#1E9A80]" />
+            <>
+              <span>Calling {call?.contactName}</span>
+              <span className="inline-flex gap-0.5">
+                <span className="w-1 h-1 rounded-full bg-white animate-bounce" style={{ animationDelay: '0ms' }} />
+                <span className="w-1 h-1 rounded-full bg-white animate-bounce" style={{ animationDelay: '150ms' }} />
+                <span className="w-1 h-1 rounded-full bg-white animate-bounce" style={{ animationDelay: '300ms' }} />
               </span>
-              <span className="text-[15px] font-semibold">
-                Calling {placingDisplayName}
-              </span>
-              <span
-                className={cn(
-                  'inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wide',
-                  placingLegStatus === 'ringing'
-                    ? 'bg-[#1E9A80]/20 text-[#1E9A80]'
-                    : 'bg-white/10 text-white/80'
-                )}
-                data-testid="livecall-leg-status"
-              >
-                {placingStatusLabel}
-              </span>
-              <span
-                className="text-[18px] font-bold tabular-nums tracking-tight"
-                data-testid="livecall-ringing-timer"
-              >
-                {Math.floor(placingElapsedSec / 60)}:
-                {(placingElapsedSec % 60).toString().padStart(2, '0')}
-              </span>
-            </span>
+            </>
           )}
           {phase === 'in_call' && (
             <>
@@ -187,7 +128,7 @@ export default function LiveCallScreen() {
           {phase === 'idle' && !isPreview && <span>Idle</span>}
           {isPreview && (
             <>
-              <span>Call room · {contact.name}</span>
+              <span>Call room · {contact?.name}</span>
               <span className="ml-1 text-[10px] uppercase tracking-wide font-semibold bg-[#1E9A80]/10 text-[#1E9A80] px-1.5 py-0.5 rounded">
                 Preview
               </span>
@@ -253,29 +194,25 @@ export default function LiveCallScreen() {
             )}
           </div>
 
-          {/* PR 132 (Hugo 2026-04-28, Bug 3): single Hang up button for
-              ANY non-idle, non-post_call, non-preview phase. Hugo:
-              "on the voicemail there is no option to hang up". When AMD
-              flips wk_calls.status to 'voicemail' the FRONTEND phase may
-              stay in 'placing' (no winner-broadcast fires for a non-
-              in_progress mapped status) — neither the old End nor Cancel
-              button rendered, so the agent was stuck. This consolidates
-              the two and renders for every transitional state. The label
-              changes for clarity but the handler is the same. */}
-          {phase !== 'idle' && phase !== 'post_call' && !isPreview && (
+          {phase === 'in_call' && (
             <button
-              onClick={async () => {
-                await endCall();
-              }}
+              onClick={endCall}
               className="flex items-center gap-1.5 bg-[#EF4444] hover:bg-[#DC2626] text-white px-3 py-1.5 rounded-[10px] text-[12px] font-semibold"
-              data-testid={
-                phase === 'placing'
-                  ? 'livecall-cancel-placing'
-                  : 'livecall-end-call'
-              }
             >
-              <PhoneOff className="w-3.5 h-3.5" />
-              {phase === 'placing' ? ' Cancel' : ' Hang up'}
+              <PhoneOff className="w-3.5 h-3.5" /> End call
+            </button>
+          )}
+
+          {/* PR 107 (Hugo 2026-04-28): cancel a call mid-ring. Without
+              this the only way out of the placing phase was waiting for
+              Twilio to time out. Same endCall handler as in_call. */}
+          {phase === 'placing' && (
+            <button
+              onClick={endCall}
+              className="flex items-center gap-1.5 bg-[#EF4444] hover:bg-[#DC2626] text-white px-3 py-1.5 rounded-[10px] text-[12px] font-semibold"
+              data-testid="livecall-cancel-placing"
+            >
+              <PhoneOff className="w-3.5 h-3.5" /> Cancel
             </button>
           )}
 
@@ -291,74 +228,48 @@ export default function LiveCallScreen() {
             </button>
           )}
 
-          {/* PR 138 (Hugo 2026-04-28, Rules 6, 7): the room ALWAYS has
-              a Minimise button. The Close button is visible only when
-              the call isn't live (idle / preview / *_waiting_outcome /
-              outcome_done) — you can't close a live call's room
-              without hanging up first. */}
           <button
-            onClick={() => setFullScreen(false)}
+            onClick={() => (isPreview ? closeCallRoom() : setFullScreen(false))}
             className={cn(
               'p-1.5 rounded-lg',
               phase === 'in_call' ? 'hover:bg-white/15' : 'hover:bg-black/[0.04]'
             )}
-            title="Minimise (call continues — maximise from the floating bar)"
-            data-testid="livecall-minimise"
+            title={isPreview ? 'Close call room' : 'Minimise (call continues)'}
           >
             <Minimize2 className="w-4 h-4" />
           </button>
-          {/* Close: hidden during dialing / ringing / in_call. Once
-              the call has ended (any *_waiting_outcome) or we're in
-              preview, the agent can close out cleanly. */}
-          {callPhase !== 'dialing' &&
-            callPhase !== 'ringing' &&
-            callPhase !== 'in_call' && (
-              <button
-                onClick={() => closeCallRoom()}
-                className={cn(
-                  'p-1.5 rounded-lg',
-                  phase === 'in_call' ? 'hover:bg-white/15' : 'hover:bg-black/[0.04]'
-                )}
-                title={
-                  isPreview
-                    ? 'Close call room'
-                    : 'Close call room (outcome saved)'
-                }
-                data-testid={
-                  isPreview ? 'livecall-close-preview' : 'livecall-close'
-                }
-              >
-                <X className="w-4 h-4" />
-              </button>
+          {/* PR 114 (Hugo 2026-04-28): explicit Close button. Hugo:
+              "I should be able to close the call room altogether — I
+              can minimize but I want a way to fully close." Behaviour:
+                preview → closeCallRoom (exit preview)
+                in_call / post_call → setFullScreen(false) AND
+                  closeCallRoom (collapses to softphone bar; active
+                  call NOT ended — the End button is for that)
+              X icon makes the close intent visually obvious vs the
+              minimize icon next to it. */}
+          <button
+            onClick={() => {
+              if (isPreview) closeCallRoom();
+              else {
+                setFullScreen(false);
+                closeCallRoom();
+              }
+            }}
+            className={cn(
+              'p-1.5 rounded-lg',
+              phase === 'in_call' ? 'hover:bg-white/15' : 'hover:bg-black/[0.04]'
             )}
+            title={
+              phase === 'in_call'
+                ? 'Close (call continues in background — use End to hang up)'
+                : 'Close call room'
+            }
+            data-testid="livecall-close"
+          >
+            <X className="w-4 h-4" />
+          </button>
         </div>
       </header>
-
-      {/* PR 128 (Hugo 2026-04-28): removed the second "Calling now"
-          banner entirely. Power-dialer-only since PR 126 means there's
-          only ever one leg, and the top header above already shows
-          "Calling +447…" with a Cancel button + ringing timer. The
-          dark banner was pure duplication that confused agents. */}
-
-      {/* PR 138 (Hugo 2026-04-28): Twilio fatal-error banner. Shows
-          above the outcome picker when the call ended via an error
-          (13224 invalid number, 31000 dropped, etc.). Friendly text
-          comes from lib/twilioErrorMap.ts. The agent still picks an
-          outcome — the banner just explains WHY the call ended. */}
-      {callPhase === 'error_waiting_outcome' && error && (
-        <div
-          className="px-5 py-2 bg-[#FEF2F2] border-b border-[#FCA5A5] text-[12px] text-[#B91C1C] flex items-center gap-2"
-          data-testid="livecall-error-banner"
-        >
-          <span className="font-semibold">Call error:</span>
-          <span>{error.friendlyMessage}</span>
-          {error.code ? (
-            <span className="ml-auto text-[10px] text-[#B91C1C]/70 tabular-nums">
-              code {error.code}
-            </span>
-          ) : null}
-        </div>
-      )}
 
       {/* Resizable 4-column body (Hugo 2026-04-26):
             COL 1 — contact context (name, stage, KV, sticky notes)

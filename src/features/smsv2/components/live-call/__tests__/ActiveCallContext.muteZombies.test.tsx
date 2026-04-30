@@ -14,7 +14,6 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, act, waitFor } from '@testing-library/react';
 import { useEffect } from 'react';
 import { ActiveCallProvider, useActiveCallCtx } from '../ActiveCallContext';
-import { DialerSessionProvider } from '../../../hooks/useDialerSession';
 import { SmsV2Provider, useSmsV2 } from '../../../store/SmsV2Store';
 
 interface FakeCall {
@@ -61,11 +60,6 @@ const fakeDeviceCalls: FakeCall[] = [];
 
 vi.mock('@/core/integrations/twilio-voice', () => ({
   addIncomingCallListener: vi.fn(() => () => {}),
-  // PR 132: ActiveCallContext now imports these too.
-  addTokenRefreshFailListener: vi.fn(() => () => {}),
-  disconnectAllCallsAndWait: vi.fn(async () => {
-    for (const c of [...fakeDeviceCalls]) c.disconnect();
-  }),
   getDeviceCalls: () => [...fakeDeviceCalls],
   muteAllCalls: (shouldMute: boolean) => {
     for (const c of fakeDeviceCalls) c.mute(shouldMute);
@@ -156,11 +150,9 @@ function renderProvider() {
   return render(
     <SmsV2Provider>
       <ProbeWithSeed />
-      <DialerSessionProvider>
-        <ActiveCallProvider>
-          <Probe />
-        </ActiveCallProvider>
-      </DialerSessionProvider>
+      <ActiveCallProvider>
+        <Probe />
+      </ActiveCallProvider>
     </SmsV2Provider>
   );
 }
@@ -318,9 +310,7 @@ describe('ActiveCallProvider toggleMute — multi-Call zombies', () => {
     fakeDeviceCalls.push(second); // sneaks in mid-call
 
     await act(async () => {
-      // PR 132 (Hugo 2026-04-28, Bug 1): endCall is async — auto-hangup
-      // and manual End must AWAIT it before the next dial fires.
-      await snapshot!.endCall();
+      snapshot!.endCall();
     });
 
     expect(live.disconnect).toHaveBeenCalled();

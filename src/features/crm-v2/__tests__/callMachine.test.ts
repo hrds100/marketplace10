@@ -347,6 +347,91 @@ describe('callMachine — room visibility orthogonality', () => {
   });
 });
 
+describe('callMachine — ADVANCE flow (PR C.5)', () => {
+  it('ADVANCE_REQUESTED from idle sets advanceIntent=pending', () => {
+    const s = callMachine(INITIAL_STATE, { type: 'ADVANCE_REQUESTED' });
+    expect(s.advanceIntent).toBe('pending');
+    expect(s.callPhase).toBe('idle');
+  });
+
+  it('ADVANCE_REQUESTED from outcome_done sets pending; phase unchanged', () => {
+    const s = callMachine(
+      { ...INITIAL_STATE, callPhase: 'outcome_done' },
+      { type: 'ADVANCE_REQUESTED' }
+    );
+    expect(s.advanceIntent).toBe('pending');
+    expect(s.callPhase).toBe('outcome_done');
+  });
+
+  it('ADVANCE_REQUESTED from stopped_waiting_outcome flips ATOMICALLY through outcome_done + pending', () => {
+    const s = callMachine(
+      {
+        ...INITIAL_STATE,
+        callPhase: 'stopped_waiting_outcome',
+        call: FAKE_CALL,
+      },
+      { type: 'ADVANCE_REQUESTED' }
+    );
+    expect(s.callPhase).toBe('outcome_done');
+    expect(s.advanceIntent).toBe('pending');
+  });
+
+  it('ADVANCE_REQUESTED from error_waiting_outcome flips through outcome_done + pending', () => {
+    const s = callMachine(
+      {
+        ...INITIAL_STATE,
+        callPhase: 'error_waiting_outcome',
+        call: FAKE_CALL,
+      },
+      { type: 'ADVANCE_REQUESTED' }
+    );
+    expect(s.callPhase).toBe('outcome_done');
+    expect(s.advanceIntent).toBe('pending');
+  });
+
+  it('ADVANCE_REQUESTED is a no-op while live', () => {
+    for (const phase of ['dialing', 'ringing', 'in_call'] as const) {
+      const before = { ...INITIAL_STATE, callPhase: phase, call: FAKE_CALL };
+      const after = callMachine(before, { type: 'ADVANCE_REQUESTED' });
+      expect(after).toBe(before);
+    }
+  });
+
+  it('ADVANCE_FETCHING flips intent pending → fetching', () => {
+    const s = callMachine(
+      { ...INITIAL_STATE, advanceIntent: 'pending' },
+      { type: 'ADVANCE_FETCHING' }
+    );
+    expect(s.advanceIntent).toBe('fetching');
+  });
+
+  it('ADVANCE_RESOLVED clears intent', () => {
+    const s = callMachine(
+      { ...INITIAL_STATE, advanceIntent: 'fetching' },
+      { type: 'ADVANCE_RESOLVED' }
+    );
+    expect(s.advanceIntent).toBe('idle');
+  });
+
+  it('NEXT_CALL_EMPTY clears advanceIntent and sets banner', () => {
+    const s = callMachine(
+      { ...INITIAL_STATE, advanceIntent: 'fetching' },
+      { type: 'NEXT_CALL_EMPTY', skippedAlreadyDialed: 2 }
+    );
+    expect(s.advanceIntent).toBe('idle');
+    expect(s.noNewLeadsBanner).toEqual({ skippedAlreadyDialed: 2 });
+  });
+
+  it('START_CALL clears advanceIntent (intent fulfilled)', () => {
+    const s = callMachine(
+      { ...INITIAL_STATE, advanceIntent: 'fetching' },
+      { type: 'START_CALL', call: FAKE_CALL }
+    );
+    expect(s.advanceIntent).toBe('idle');
+    expect(s.callPhase).toBe('dialing');
+  });
+});
+
 describe('callMachine — misc', () => {
   it('NEXT_CALL_EMPTY sets banner + clears deadline', () => {
     const s = callMachine(

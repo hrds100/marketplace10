@@ -18,6 +18,7 @@ import CallerGuard from '../components/CallerGuard';
 import CallerSidebar from './CallerSidebar';
 import CallerStatusBar from './CallerStatusBar';
 import CallerStateProvider from '../store/CallerStateProvider';
+import { CallerPad } from '../pages/DialerPage';
 
 export default function CallerLayout() {
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
@@ -58,6 +59,13 @@ export default function CallerLayout() {
               </div>
             </main>
           </div>
+
+          {/* Global floating pad. Mounted at layout level so the Twilio
+              Device, dialer reducer and queue subscriptions persist
+              across route navigation. The pad self-renders as either
+              the full pad (on /caller/dialer) or an Intercom-style
+              icon (on every other /caller/* route). */}
+          <CallerPad />
         </div>
       </CallerStateProvider>
     </CallerGuard>

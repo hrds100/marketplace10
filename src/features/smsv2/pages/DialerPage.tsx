@@ -1,11 +1,29 @@
-// PR 140 → PR 153 (Hugo 2026-04-29): DialerPage now mounts the v3
-// OverviewPage. The v2 PreCallRoom is kept as a compat re-export
-// pointing at the same v3 component for one cycle (PR 154 deletes it).
-//
-// The four-column InCallRoom UI is unchanged across this rebuild.
+import { useEffect } from 'react';
+import { CallerToastsProvider } from '@/features/caller/store/toastsProvider';
+import { CallerPad } from '@/features/caller/pages/DialerPage';
+import LiveCallScreen from '../components/live-call/LiveCallScreen';
+import { useActiveCallCtx } from '../components/live-call/ActiveCallContext';
 
-import OverviewPage from '../components/dialer/v3/OverviewPage';
+function DialerInner() {
+  const { setFullScreen } = useActiveCallCtx();
+
+  useEffect(() => {
+    setFullScreen(true);
+    return () => setFullScreen(false);
+  }, [setFullScreen]);
+
+  return (
+    <>
+      <LiveCallScreen />
+      <CallerPad />
+    </>
+  );
+}
 
 export default function DialerPage() {
-  return <OverviewPage />;
+  return (
+    <CallerToastsProvider>
+      <DialerInner />
+    </CallerToastsProvider>
+  );
 }
