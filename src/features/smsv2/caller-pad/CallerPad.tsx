@@ -282,6 +282,35 @@ export function CallerPad() {
 
   const [notes, setNotes] = useState('');
 
+  // ─── Edit contact modal (lifted to pad level) ────────────────────
+  const [editContact, setEditContact] = useState<Contact | null>(null);
+  const [editContactLoading, setEditContactLoading] = useState(false);
+  const openEditContact = useCallback(async (contactId: string) => {
+    setEditContactLoading(true);
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { data } = await (supabase.from('wk_contacts' as any) as any)
+      .select('id, name, phone, email, owner_agent_id, pipeline_column_id, tags, is_hot, deal_value_pence, custom_fields, created_at, last_contact_at')
+      .eq('id', contactId)
+      .maybeSingle();
+    setEditContactLoading(false);
+    if (data) {
+      setEditContact({
+        id: data.id,
+        name: data.name ?? '',
+        phone: data.phone ?? '',
+        email: data.email ?? undefined,
+        ownerAgentId: data.owner_agent_id ?? undefined,
+        pipelineColumnId: data.pipeline_column_id ?? undefined,
+        tags: data.tags ?? [],
+        isHot: data.is_hot ?? false,
+        dealValuePence: data.deal_value_pence ?? undefined,
+        customFields: data.custom_fields ?? {},
+        createdAt: data.created_at ?? new Date().toISOString(),
+        lastContactAt: data.last_contact_at ?? undefined,
+      });
+    }
+  }, []);
+
   // ─── Queue status writer ─────────────────────────────────────────
   const updateQueueStatus = useCallback(
     async (
@@ -1070,8 +1099,6 @@ export function CallerPad() {
               to return both to peek mode (3 items each). */}
           <UpcomingQueuePanel
             campaignId={camp?.id ?? null}
-            // Keep panel scope identical to wk_pick_next_lead so "Skip & next"
-            // always dials what the operator can see in this list.
             agentId={user ? user.id : null}
             dialed={dialed}
             currentLead={state.lead}
@@ -1082,6 +1109,7 @@ export function CallerPad() {
             onHeaderClick={() =>
               setAccordion((prev) => (prev === 'queue' ? 'peek' : 'queue'))
             }
+            onEditContact={openEditContact}
           />
           <CallHistoryPanel
             agentId={user ? user.id : null}
@@ -1091,9 +1119,44 @@ export function CallerPad() {
             onHeaderClick={() =>
               setAccordion((prev) => (prev === 'history' ? 'peek' : 'history'))
             }
+            onEditContact={openEditContact}
           />
         </div>
       </div>
+      {editContactLoading && ReactDOM.createPortal(
+        <div className="fixed inset-0 z-[9999] bg-black/40 flex items-center justify-center">
+          <div className="bg-white rounded-2xl p-8">
+            <Loader2 className="w-5 h-5 animate-spin text-[#9CA3AF]" />
+          </div>
+        </div>,
+        document.body,
+      )}
+      {editContact && ReactDOM.createPortal(
+        <div className="fixed inset-0 z-[9999]">
+          <EditContactModal
+            contact={editContact}
+            onClose={() => setEditContact(null)}
+            onSave={async (updated) => {
+              // eslint-disable-next-line @typescript-eslint/no-explicit-any
+              await (supabase.from('wk_contacts' as any) as any)
+                .update({
+                  name: updated.name || null,
+                  phone: updated.phone,
+                  email: updated.email || null,
+                  pipeline_column_id: updated.pipelineColumnId || null,
+                  owner_agent_id: updated.ownerAgentId || null,
+                  tags: updated.tags,
+                  is_hot: updated.isHot,
+                  deal_value_pence: updated.dealValuePence ?? null,
+                  custom_fields: updated.customFields,
+                })
+                .eq('id', updated.id);
+              setEditContact(null);
+            }}
+          />
+        </div>,
+        document.body,
+      )}
     </div>
   );
 }
@@ -1574,20 +1637,18 @@ function UpcomingQueuePanel({
   dense,
   onHeaderClick,
   collapsed,
+  onEditContact,
 }: {
   campaignId: string | null;
   agentId: string | null;
   dialed: ReadonlySet<string>;
   currentLead: Lead | null;
   currentPhase: Phase;
-  /** Cap visible rows. Use small (3) for peek mode, larger (8+) when expanded. */
   maxItems?: number;
-  /** Tighter padding for the floating dialer pad. */
   dense?: boolean;
-  /** Click handler on the section header (toggles accordion). */
   onHeaderClick?: () => void;
-  /** When collapsed, only render the header. */
   collapsed?: boolean;
+  onEditContact?: (contactId: string) => void;
 }) {
   const [items, setItems] = useState<QueueItem[]>([]);
   const [totalCount, setTotalCount] = useState(0);
@@ -1788,7 +1849,7 @@ function UpcomingQueuePanel({
             dense ? 'max-h-[280px]' : 'max-h-[480px]'
           )}>
             {displayed.map((lead, idx) => (
-              <UpcomingRow key={lead.queueId} idx={idx + 1} lead={lead} />
+              <UpcomingRow key={lead.queueId} idx={idx + 1} lead={lead} onEditContact={onEditContact} />
             ))}
           </ul>
         </>
@@ -1797,225 +1858,35 @@ function UpcomingQueuePanel({
   );
 }
 
-function UpcomingRow({ idx, lead }: { idx: number; lead: QueueItem }) {
-  const [editing, setEditing] = useState(false);
+function UpcomingRow({ idx, lead, onEditContact }: { idx: number; lead: QueueItem; onEditContact?: (contactId: string) => void }) {
   return (
-    <>
-      <li className="px-4 py-2 flex items-center gap-3 hover:bg-[#F3F3EE]/30 group">
-        <div className="w-6 h-6 flex items-center justify-center rounded-full bg-[#F3F3EE] text-[10px] font-bold text-[#6B7280] tabular-nums flex-shrink-0">
-          {idx}
-        </div>
-        <button
-          type="button"
-          onClick={() => setEditing(true)}
-          className="flex-1 min-w-0 text-left"
-        >
-          <div className="text-[12px] font-semibold text-[#1A1A1A] truncate hover:text-[#1E9A80]">{lead.name}</div>
-          <div className="text-[11px] text-[#6B7280] tabular-nums truncate">{lead.phone}</div>
-        </button>
-        {lead.attempts > 0 && (
-          <span className="text-[10px] text-[#9CA3AF] tabular-nums">{lead.attempts}× tried</span>
-        )}
-        {lead.priority > 0 && (
-          <span className="text-[10px] font-bold text-[#1E9A80] tabular-nums">p{lead.priority}</span>
-        )}
-        <button
-          type="button"
-          onClick={() => setEditing(true)}
-          title="Edit contact"
-          className="opacity-0 group-hover:opacity-100 transition-opacity p-1.5 rounded-[8px] text-[#6B7280] hover:bg-[#F3F3EE] hover:text-[#1A1A1A]"
-        >
-          <Pencil className="w-3 h-3" />
-        </button>
-      </li>
-      {editing && ReactDOM.createPortal(
-        <RichEditContactBridge
-          contactId={lead.contactId}
-          onClose={() => setEditing(false)}
-        />,
-        document.body,
-      )}
-    </>
-  );
-}
-
-function RichEditContactBridge({ contactId, onClose, onSaved }: { contactId: string; onClose: () => void; onSaved?: () => void }) {
-  const [contact, setContact] = useState<Contact | null>(null);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    let cancelled = false;
-    void (async () => {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const { data } = await (supabase.from('wk_contacts' as any) as any)
-        .select('id, name, phone, email, owner_agent_id, pipeline_column_id, tags, is_hot, deal_value_pence, custom_fields, created_at, last_contact_at')
-        .eq('id', contactId)
-        .maybeSingle();
-      if (cancelled) return;
-      if (data) {
-        setContact({
-          id: data.id,
-          name: data.name ?? '',
-          phone: data.phone ?? '',
-          email: data.email ?? undefined,
-          ownerAgentId: data.owner_agent_id ?? undefined,
-          pipelineColumnId: data.pipeline_column_id ?? undefined,
-          tags: data.tags ?? [],
-          isHot: data.is_hot ?? false,
-          dealValuePence: data.deal_value_pence ?? undefined,
-          customFields: data.custom_fields ?? {},
-          createdAt: data.created_at ?? new Date().toISOString(),
-          lastContactAt: data.last_contact_at ?? undefined,
-        });
-      }
-      setLoading(false);
-    })();
-    return () => { cancelled = true; };
-  }, [contactId]);
-
-  if (loading) {
-    return ReactDOM.createPortal(
-      <div className="fixed inset-0 z-[250] bg-black/40 flex items-center justify-center">
-        <div className="bg-white rounded-2xl p-8">
-          <Loader2 className="w-5 h-5 animate-spin text-[#9CA3AF]" />
-        </div>
-      </div>,
-      document.body
-    );
-  }
-
-  return ReactDOM.createPortal(
-    <div className="relative z-[250]">
-      <EditContactModal
-        contact={contact}
-        onClose={onClose}
-        onSave={async (updated) => {
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          const { error: saveErr } = await (supabase.from('wk_contacts' as any) as any)
-            .update({
-              name: updated.name || null,
-              phone: updated.phone,
-              email: updated.email || null,
-              pipeline_column_id: updated.pipelineColumnId || null,
-              owner_agent_id: updated.ownerAgentId || null,
-              tags: updated.tags,
-              is_hot: updated.isHot,
-              deal_value_pence: updated.dealValuePence ?? null,
-              custom_fields: updated.customFields,
-            })
-            .eq('id', contactId);
-          if (!saveErr) onSaved?.();
-          onClose();
-        }}
-      />
-    </div>,
-    document.body
-  );
-}
-
-function EditQueueLeadModal({
-  contactId,
-  onClose,
-}: {
-  contactId: string;
-  onClose: () => void;
-}) {
-  const toasts = useCallerToasts();
-  const [loading, setLoading] = useState(true);
-  const [saving, setSaving] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [name, setName] = useState('');
-  const [phone, setPhone] = useState('');
-  const [email, setEmail] = useState('');
-
-  useEffect(() => {
-    let cancelled = false;
-    void (async () => {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const { data, error: e } = await (supabase.from('wk_contacts' as any) as any)
-        .select('name, phone, email')
-        .eq('id', contactId)
-        .maybeSingle();
-      if (cancelled) return;
-      if (e) setError(e.message);
-      else if (data) {
-        setName(data.name ?? '');
-        setPhone(data.phone ?? '');
-        setEmail(data.email ?? '');
-      }
-      setLoading(false);
-    })();
-    return () => { cancelled = true; };
-  }, [contactId]);
-
-  const onSave = async () => {
-    setSaving(true);
-    setError(null);
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const { error: e } = await (supabase.from('wk_contacts' as any) as any)
-      .update({ name: name.trim() || null, phone: phone.trim(), email: email.trim() || null })
-      .eq('id', contactId);
-    setSaving(false);
-    if (e) {
-      setError(e.message);
-      return;
-    }
-    toasts.push('Contact updated', 'success');
-    onClose();
-  };
-
-  return (
-    <div className="fixed inset-0 z-[250] bg-black/40 flex items-center justify-center p-4">
-      <div className="bg-white rounded-2xl border border-[#E5E7EB] w-full max-w-[440px] overflow-hidden">
-        <div className="flex items-center justify-between px-5 py-3 border-b border-[#E5E7EB]">
-          <h2 className="text-[15px] font-bold text-[#1A1A1A]">Edit contact</h2>
-          <button type="button" onClick={onClose} className="text-[#9CA3AF] hover:text-[#1A1A1A] p-1">
-            <X className="w-4 h-4" />
-          </button>
-        </div>
-        <div className="p-5 space-y-3">
-          {error && (
-            <div className="text-[12px] text-[#B91C1C] bg-[#FEF2F2] border border-[#FECACA] rounded-[8px] px-3 py-2">{error}</div>
-          )}
-          {loading ? (
-            <div className="text-[12px] text-[#9CA3AF] italic py-4 text-center">Loading…</div>
-          ) : (
-            <>
-              <ContactField label="Name">
-                <input value={name} onChange={(e) => setName(e.target.value)}
-                  className="w-full text-[13px] border border-[#E5E7EB] rounded-[10px] px-3 py-2 bg-white" />
-              </ContactField>
-              <ContactField label="Phone (E.164)">
-                <input value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="+447..."
-                  className="w-full text-[13px] tabular-nums border border-[#E5E7EB] rounded-[10px] px-3 py-2 bg-white" />
-              </ContactField>
-              <ContactField label="Email">
-                <input type="email" value={email} onChange={(e) => setEmail(e.target.value)}
-                  className="w-full text-[13px] border border-[#E5E7EB] rounded-[10px] px-3 py-2 bg-white" />
-              </ContactField>
-            </>
-          )}
-        </div>
-        <div className="flex items-center justify-end gap-2 px-5 py-3 border-t border-[#E5E7EB]">
-          <button type="button" onClick={onClose}
-            className="text-[12px] font-semibold text-[#6B7280] px-3 py-1.5 hover:text-[#1A1A1A]">Cancel</button>
-          <button type="button" onClick={() => void onSave()} disabled={saving || loading}
-            className="inline-flex items-center gap-2 text-[12px] font-semibold text-white bg-[#1E9A80] px-3 py-1.5 rounded-[10px] disabled:opacity-50">
-            {saving && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
-            Save
-          </button>
-        </div>
+    <li className="px-4 py-2 flex items-center gap-3 hover:bg-[#F3F3EE]/30 group">
+      <div className="w-6 h-6 flex items-center justify-center rounded-full bg-[#F3F3EE] text-[10px] font-bold text-[#6B7280] tabular-nums flex-shrink-0">
+        {idx}
       </div>
-    </div>
-  );
-}
-
-function ContactField({ label, children }: { label: string; children: React.ReactNode }) {
-  return (
-    <label className="block">
-      <div className="text-[11px] uppercase tracking-wide text-[#9CA3AF] font-semibold mb-1">{label}</div>
-      {children}
-    </label>
+      <button
+        type="button"
+        onClick={() => onEditContact?.(lead.contactId)}
+        className="flex-1 min-w-0 text-left"
+      >
+        <div className="text-[12px] font-semibold text-[#1A1A1A] truncate hover:text-[#1E9A80]">{lead.name}</div>
+        <div className="text-[11px] text-[#6B7280] tabular-nums truncate">{lead.phone}</div>
+      </button>
+      {lead.attempts > 0 && (
+        <span className="text-[10px] text-[#9CA3AF] tabular-nums">{lead.attempts}× tried</span>
+      )}
+      {lead.priority > 0 && (
+        <span className="text-[10px] font-bold text-[#1E9A80] tabular-nums">p{lead.priority}</span>
+      )}
+      <button
+        type="button"
+        onClick={() => onEditContact?.(lead.contactId)}
+        title="Edit contact"
+        className="opacity-0 group-hover:opacity-100 transition-opacity p-1.5 rounded-[8px] text-[#6B7280] hover:bg-[#F3F3EE] hover:text-[#1A1A1A]"
+      >
+        <Pencil className="w-3 h-3" />
+      </button>
+    </li>
   );
 }
 
@@ -2027,12 +1898,14 @@ function CallHistoryPanel({
   dense,
   onHeaderClick,
   collapsed,
+  onEditContact,
 }: {
   agentId: string | null;
   maxItems?: number;
   dense?: boolean;
   onHeaderClick?: () => void;
   collapsed?: boolean;
+  onEditContact?: (contactId: string) => void;
 }) {
   const { calls, totalCount, loading, error, refetch } = useCalls({ agentId, limit: 50 });
   const displayed = typeof maxItems === 'number' ? calls.slice(0, maxItems) : calls;
@@ -2095,7 +1968,7 @@ function CallHistoryPanel({
             dense ? 'max-h-[280px]' : 'max-h-[480px]'
           )}>
         {displayed.map((c) => (
-          <CallHistoryRow key={c.id} call={c} onSaved={refetch} />
+          <CallHistoryRow key={c.id} call={c} onSaved={refetch} onEditContact={onEditContact} />
         ))}
           </ul>
         </>
@@ -2104,12 +1977,11 @@ function CallHistoryPanel({
   );
 }
 
-function CallHistoryRow({ call: c, onSaved }: { call: import('./hooks/useCalls').CallListRow; onSaved?: () => void }) {
+function CallHistoryRow({ call: c, onSaved, onEditContact }: { call: import('./hooks/useCalls').CallListRow; onSaved?: () => void; onEditContact?: (contactId: string) => void }) {
   const [audioUrl, setAudioUrl] = useState<string | null>(null);
   const [playing, setPlaying] = useState(false);
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const [transcriptCallId, setTranscriptCallId] = useState<string | null>(null);
-  const [editing, setEditing] = useState(false);
 
   const handlePlay = async (e: React.MouseEvent) => {
     e.preventDefault();
@@ -2151,7 +2023,7 @@ function CallHistoryRow({ call: c, onSaved }: { call: import('./hooks/useCalls')
             type="button"
             onClick={() => {
               if (!c.contactId) { console.warn('[CallHistoryRow] missing contactId', c.id); return; }
-              setEditing(true);
+              onEditContact?.(c.contactId);
             }}
             className="text-[11px] font-semibold text-[#1A1A1A] truncate block max-w-full text-left hover:text-[#1E9A80]"
           >
@@ -2165,7 +2037,7 @@ function CallHistoryRow({ call: c, onSaved }: { call: import('./hooks/useCalls')
         {c.contactId && (
           <button
             type="button"
-            onClick={() => setEditing(true)}
+            onClick={() => onEditContact?.(c.contactId)}
             title="Edit contact"
             className="p-1 rounded-[6px] text-[#6B7280] hover:text-[#1E9A80] hover:bg-[#ECFDF5] transition-colors flex-shrink-0 opacity-0 group-hover:opacity-100"
           >
@@ -2198,14 +2070,6 @@ function CallHistoryRow({ call: c, onSaved }: { call: import('./hooks/useCalls')
           callId={transcriptCallId}
           callerLabel={c.contactName ?? c.contactPhone ?? '—'}
           onClose={() => setTranscriptCallId(null)}
-        />,
-        document.body,
-      )}
-      {editing && c.contactId && ReactDOM.createPortal(
-        <RichEditContactBridge
-          contactId={c.contactId}
-          onClose={() => setEditing(false)}
-          onSaved={onSaved}
         />,
         document.body,
       )}
