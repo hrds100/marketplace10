@@ -2,9 +2,9 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import ReactDOM from 'react-dom';
 import {
   Phone, PhoneOff, Mic, MicOff, Pause as PauseIcon, Play, Square,
-  SkipForward, Zap, CheckCircle2, Loader2, Clock, Radio, Pencil, X,
-  Minus, GripVertical, PlayCircle, Flame, Minimize2,
-  MessageSquare, FileText, PhoneForwarded, Hash,
+  SkipForward, Pencil, Flame, Maximize2, Minus,
+  MessageSquare, FileText, PhoneForwarded, Hash, Circle,
+  ChevronDown,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useAuth } from '@/hooks/useAuth';
@@ -15,8 +15,8 @@ import {
   ResizableHandle,
 } from '@/components/ui/resizable';
 import { useDialerCampaigns } from '@/features/smsv2/caller-pad/hooks/useDialerCampaigns';
-import { useDialerKpis } from '@/features/smsv2/caller-pad/hooks/useDialerKpis';
 import { usePipelineColumns } from '@/features/smsv2/caller-pad/hooks/usePipelineColumns';
+import type { PipelineColumnRow } from '@/features/smsv2/caller-pad/hooks/usePipelineColumns';
 import { useSpendLimit } from '@/features/smsv2/caller-pad/hooks/useSpendLimit';
 import { useKillSwitch } from '@/features/smsv2/caller-pad/hooks/useKillSwitch';
 import type { Campaign } from '@/features/smsv2/caller-pad/types';
@@ -36,25 +36,16 @@ import type { QueueLead } from './types';
 import CallHistoryPro from './history/CallHistoryPro';
 import QueueManagerPro from './history/QueueManagerPro';
 
-type PacingMode = 'manual' | 'auto';
-
-function formatDurationPro(sec: number): string {
-  const m = Math.floor(sec / 60);
+function formatDuration(sec: number): string {
+  const h = Math.floor(sec / 3600);
+  const m = Math.floor((sec % 3600) / 60);
   const s = sec % 60;
-  return `${m}:${String(s).padStart(2, '0')}`;
-}
-
-function formatRelativeTimePro(iso: string): string {
-  const diff = Date.now() - new Date(iso).getTime();
-  const hours = Math.floor(diff / 3600000);
-  if (hours < 1) return 'just now';
-  if (hours < 24) return `${hours}h ago`;
-  const days = Math.floor(hours / 24);
-  return `${days}d ago`;
+  if (h > 0) return `${h}:${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
+  return `${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
 }
 
 export default function DialerProPage() {
-  const { user, isAdmin } = useAuth();
+  const { user } = useAuth();
   const userId = user?.id ?? null;
   const agentFirstName = (user?.user_metadata?.first_name as string) ?? 'Agent';
 
@@ -66,31 +57,23 @@ export default function DialerProPage() {
     setTimeout(() => setToasts((prev) => prev.filter((t) => t.id !== id)), 4000);
   }, []);
 
-  // Campaign
-  const { campaigns, loading: campaignsLoading } = useDialerCampaigns({
-    scopedToAgentId: userId,
-    includeInactive: true,
-  });
+  // Campaign (auto-select first)
+  const { campaigns } = useDialerCampaigns({ scopedToAgentId: userId, includeInactive: true });
   const [activeCampaignId, setActiveCampaignId] = useState<string>('');
   useEffect(() => {
-    if (campaigns.length === 0) return;
-    if (!campaigns.some((c) => c.id === activeCampaignId)) {
+    if (campaigns.length > 0 && !campaigns.some((c) => c.id === activeCampaignId)) {
       setActiveCampaignId(campaigns[0].id);
     }
   }, [campaigns, activeCampaignId]);
   const camp: Campaign | null = useMemo(
     () => campaigns.find((c) => c.id === activeCampaignId) ?? campaigns[0] ?? null,
-    [campaigns, activeCampaignId]
+    [campaigns, activeCampaignId],
   );
 
-  const kpis = useDialerKpis(camp, userId);
+  // Pipeline columns for disposition (wired to /crm/pipelines)
   const { columns: outcomeColumns } = usePipelineColumns(camp?.pipelineId ?? null);
   const spend = useSpendLimit();
   const ks = useKillSwitch();
-
-  const [pacing, setPacing] = useState<PacingMode>('auto');
-  const [pacingDelaySec, setPacingDelaySec] = useState(5);
-  const [notes, setNotes] = useState('');
 
   // State machine
   const machine = useDialerMachine({
@@ -104,7 +87,7 @@ export default function DialerProPage() {
   // Queue
   const { queue, refresh: refreshQueue } = useQueuePro(camp?.id ?? null, userId);
 
-  // Contact for the LiveCallScreen left column
+  // Contact for the call room columns
   const [contact, setContact] = useState<Contact | null>(null);
   useEffect(() => {
     if (!state.currentLead) { setContact(null); return; }
@@ -135,35 +118,12 @@ export default function DialerProPage() {
       });
     })();
     return () => { cancelled = true; };
-  }, [state.currentLead?.contactId, state.currentLead]);
+  }, [state.currentLead?.contactId]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Edit contact modal
   const [editing, setEditing] = useState<Contact | null>(null);
 
-  // Auto-pacing effect
-  useEffect(() => {
-    if (state.phase !== 'idle') return;
-    if (!state.sessionStarted) return;
-    if (pacing !== 'auto') return;
-
-    const delayMs = Math.max(0, pacingDelaySec) * 1000;
-    const deadlineMs = Date.now() + delayMs;
-    machine.dispatch({ type: 'PACING_ARMED', deadlineMs });
-    const t = setTimeout(() => {
-      void (async () => {
-        const next = await machine.pickNextLead(queue);
-        if (next) void machine.dialLead(next);
-        else onToast('Queue empty', 'info');
-      })();
-    }, delayMs);
-    return () => {
-      clearTimeout(t);
-      machine.dispatch({ type: 'PACING_CLEARED' });
-    };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [state.phase, state.sessionStarted, pacing, pacingDelaySec]);
-
-  // Auto-route outcomes
+  // Auto-route outcomes (no-answer / voicemail)
   useEffect(() => {
     if (state.phase !== 'wrap_up') return;
     if (!state.currentLead || !state.currentCallId) return;
@@ -171,7 +131,7 @@ export default function DialerProPage() {
 
     if (state.endReason === 'cancel' || state.endReason === 'reject' || state.endReason === 'error') {
       const col = outcomeColumns.find(
-        (c) => c.name.toLowerCase().includes('no pickup') || c.name.toLowerCase() === 'no answer'
+        (c) => c.name.toLowerCase().includes('no pickup') || c.name.toLowerCase() === 'no answer',
       );
       if (col) { void machine.applyOutcome(col.id); return; }
     }
@@ -192,46 +152,7 @@ export default function DialerProPage() {
     void machine.dialLead(next);
   }, [camp, deviceReady, spend.isLimitReached, ks.allDialers, machine, queue, onToast]);
 
-  const dialNow = useCallback(async () => {
-    machine.dispatch({ type: 'PACING_CLEARED' });
-    const next = await machine.pickNextLead(queue);
-    if (next) void machine.dialLead(next);
-    else onToast('Queue empty', 'info');
-  }, [machine, queue, onToast]);
-
-  const dialNextManual = useCallback(async () => {
-    if (state.currentLead) {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      try { await (supabase as any).rpc('wk_update_queue_status', { p_queue_id: state.currentLead.queueRowId, p_status: 'skipped' }); } catch { /* ignore */ }
-    }
-    if (state.phase === 'connected' || state.phase === 'ringing' || state.phase === 'dialing') {
-      await machine.hangUp();
-    }
-    machine.dispatch({ type: 'OUTCOME_DONE' });
-    setTimeout(async () => {
-      const next = await machine.pickNextLead(queue);
-      if (next) void machine.dialLead(next);
-      else onToast('Queue empty', 'info');
-    }, 200);
-  }, [state.phase, state.currentLead, machine, queue, onToast]);
-
-  const resumeDialer = useCallback(async () => {
-    machine.resume();
-    const next = await machine.pickNextLead(queue);
-    if (next) void machine.dialLead(next);
-    else onToast('Queue empty', 'info');
-  }, [machine, queue, onToast]);
-
-  // Computed
-  const blocked = spend.isLimitReached || ks.allDialers || !deviceReady;
-  const blockReason = ks.allDialers ? 'All dialers paused (kill switch)'
-    : spend.isLimitReached ? 'Daily spend limit reached'
-    : !deviceReady ? 'Phone is starting up…' : null;
-  const isLive = state.phase === 'dialing' || state.phase === 'ringing' || state.phase === 'connected';
-  const isCallContext = state.phase !== 'idle';
-  const contactFirstName = contact?.name?.trim().split(/\s+/)[0] ?? '';
-
-  // Call duration for transcript
+  // Live call timer
   const [liveDuration, setLiveDuration] = useState(0);
   useEffect(() => {
     if (!state.startedAt || state.phase !== 'connected') { setLiveDuration(0); return; }
@@ -241,57 +162,81 @@ export default function DialerProPage() {
     return () => clearInterval(iv);
   }, [state.startedAt, state.phase]);
 
-  // ─── Floating pad state ───────────────────────────────────────────
-  const PAD_W = 323;
-  const [pos, setPos] = useState<{ x: number; y: number }>(() => {
+  const blocked = spend.isLimitReached || ks.allDialers || !deviceReady;
+  const isLive = state.phase === 'dialing' || state.phase === 'ringing' || state.phase === 'connected';
+  const contactFirstName = contact?.name?.trim().split(/\s+/)[0] ?? '';
+  const [bottomTab, setBottomTab] = useState<'queue' | 'history'>('queue');
+
+  // ─── Floating card: drag + minimize ────────────────────────────────
+  const CARD_W = 320;
+  const [cardPos, setCardPos] = useState<{ x: number; y: number }>(() => {
     try {
-      const raw = localStorage.getItem('dialer_pro_pos_v1');
+      const raw = localStorage.getItem('dialer_pro_card_pos_v2');
       if (raw) { const p = JSON.parse(raw); if (typeof p?.x === 'number') return p; }
     } catch { /* ignore */ }
-    return { x: Math.max(0, window.innerWidth - PAD_W - 24), y: 72 };
+    return { x: Math.max(0, Math.floor((window.innerWidth - CARD_W) / 2)), y: 80 };
   });
-  useEffect(() => { try { localStorage.setItem('dialer_pro_pos_v1', JSON.stringify(pos)); } catch { /* ignore */ } }, [pos]);
+  useEffect(() => { try { localStorage.setItem('dialer_pro_card_pos_v2', JSON.stringify(cardPos)); } catch { /* ignore */ } }, [cardPos]);
 
   const [minimized, setMinimized] = useState(false);
-  const [accordion, setAccordion] = useState<'peek' | 'queue' | 'history'>('peek');
-
-  // Drag
   const dragRef = useRef<{ offX: number; offY: number; moved: boolean } | null>(null);
-  const justDraggedRef = useRef(false);
+
   const onDragStart = (e: React.PointerEvent) => {
     (e.currentTarget as Element).setPointerCapture(e.pointerId);
-    dragRef.current = { offX: e.clientX - pos.x, offY: e.clientY - pos.y, moved: false };
-    justDraggedRef.current = false;
+    dragRef.current = { offX: e.clientX - cardPos.x, offY: e.clientY - cardPos.y, moved: false };
   };
   const onDragMove = (e: React.PointerEvent) => {
     if (!dragRef.current) return;
-    const dx = e.clientX - (pos.x + dragRef.current.offX);
-    const dy = e.clientY - (pos.y + dragRef.current.offY);
+    const dx = e.clientX - (cardPos.x + dragRef.current.offX);
+    const dy = e.clientY - (cardPos.y + dragRef.current.offY);
     if (Math.abs(dx) > 2 || Math.abs(dy) > 2) dragRef.current.moved = true;
-    setPos({
-      x: Math.min(Math.max(e.clientX - dragRef.current.offX, 0), Math.max(0, window.innerWidth - PAD_W)),
+    setCardPos({
+      x: Math.min(Math.max(e.clientX - dragRef.current.offX, 0), Math.max(0, window.innerWidth - CARD_W)),
       y: Math.min(Math.max(e.clientY - dragRef.current.offY, 56), Math.max(0, window.innerHeight - 80)),
     });
   };
   const onDragEnd = (e: React.PointerEvent) => {
     if (dragRef.current) {
-      justDraggedRef.current = dragRef.current.moved;
       try { (e.currentTarget as Element).releasePointerCapture(e.pointerId); } catch { /* ignore */ }
       dragRef.current = null;
-      window.setTimeout(() => { justDraggedRef.current = false; }, 0);
     }
   };
 
-  // ─── LiveCallScreen visible only during active call (NOT wrap_up) ──
-  const showCallScreen = state.currentLead !== null && isLive;
+  // ─── Wrap-up action handlers ───────────────────────────────────────
+  const handleWrapUpNext = useCallback(async (colId: string | null, notes: string) => {
+    if (colId) {
+      await machine.applyOutcome(colId, notes.trim() || undefined);
+    } else {
+      machine.skip();
+    }
+    setTimeout(async () => {
+      const next = await machine.pickNextLead(queue);
+      if (next) void machine.dialLead(next);
+      else onToast('Queue empty', 'info');
+    }, 200);
+  }, [machine, queue, onToast]);
 
-  // Phase labels for header
-  const headerBg = state.phase === 'connected' ? 'bg-[#1E9A80] text-white'
-    : (state.phase === 'dialing' || state.phase === 'ringing') ? 'bg-[#1A1A1A] text-white'
-    : 'bg-white border-b border-[#E5E7EB] text-[#1A1A1A]';
+  const handleWrapUpRedial = useCallback(async (colId: string | null, notes: string) => {
+    const lead = state.currentLead;
+    if (colId) {
+      await machine.applyOutcome(colId, notes.trim() || undefined);
+    } else {
+      machine.skip();
+    }
+    if (lead) setTimeout(() => void machine.dialLead(lead), 200);
+  }, [machine, state.currentLead]);
+
+  const handleWrapUpPause = useCallback(async (colId: string | null, notes: string) => {
+    if (colId) {
+      await machine.applyOutcome(colId, notes.trim() || undefined);
+    } else {
+      machine.skip();
+    }
+    setTimeout(() => machine.pause(), 200);
+  }, [machine]);
 
   return (
-    <div className="relative h-full bg-[#F3F3EE]">
+    <div className="relative h-full flex flex-col bg-[#F3F3EE]">
       {/* Toast stack */}
       {toasts.length > 0 && (
         <div className="fixed top-16 right-4 z-[250] space-y-1">
@@ -300,428 +245,310 @@ export default function DialerProPage() {
               'px-3 py-1.5 rounded-lg text-xs font-medium shadow-md',
               t.type === 'error' && 'bg-red-50 text-red-700 border border-red-200',
               t.type === 'success' && 'bg-[#ECFDF5] text-[#1E9A80] border border-[#1E9A80]/20',
-              t.type === 'info' && 'bg-white text-[#6B7280] border border-[#E5E7EB]'
+              t.type === 'info' && 'bg-white text-[#6B7280] border border-[#E5E7EB]',
             )}>{t.msg}</div>
           ))}
         </div>
       )}
 
-      {/* ─── LIVE CALL SCREEN (4-column) ─── */}
-      {showCallScreen && contact && (
-        <div className="fixed inset-0 z-[200] bg-[#F3F3EE] flex flex-col">
-          {/* Top bar — matches LiveCallScreen exactly */}
-          <header className={cn('h-14 flex items-center px-5 gap-3 flex-shrink-0 transition-colors', headerBg)}>
-            {(state.phase === 'dialing' || state.phase === 'ringing') ? (
-              <span className="relative w-2.5 h-2.5 inline-flex">
-                <span className="absolute inset-0 rounded-full bg-white animate-ping" />
-                <span className="relative w-2.5 h-2.5 rounded-full bg-white" />
-              </span>
-            ) : (
-              <span className={cn('w-2.5 h-2.5 rounded-full',
-                state.phase === 'connected' && 'bg-white animate-pulse',
-                state.phase === 'wrap_up' && 'bg-[#1E9A80]'
-              )} />
-            )}
-            <span className="text-[14px] font-semibold flex items-center gap-2">
-              {(state.phase === 'dialing' || state.phase === 'ringing') && (
-                <>
-                  <span>Calling {state.currentLead?.name}</span>
-                  <span className="inline-flex gap-0.5">
-                    <span className="w-1 h-1 rounded-full bg-white animate-bounce" style={{ animationDelay: '0ms' }} />
-                    <span className="w-1 h-1 rounded-full bg-white animate-bounce" style={{ animationDelay: '150ms' }} />
-                    <span className="w-1 h-1 rounded-full bg-white animate-bounce" style={{ animationDelay: '300ms' }} />
-                  </span>
-                </>
-              )}
-              {state.phase === 'connected' && (
-                <>
-                  <span>In call · {state.currentLead?.name}</span>
-                  <span className="ml-2 tabular-nums opacity-90">{formatDurationPro(liveDuration)}</span>
-                </>
-              )}
-              {state.phase === 'wrap_up' && <span>Call ended · {state.currentLead?.name}</span>}
-            </span>
-
-            {state.phase === 'connected' && (
-              <div className="ml-6 flex items-center gap-1">
-                <button
-                  onClick={machine.muteToggle}
-                  className={cn(
-                    'flex items-center gap-1.5 px-2 py-1 rounded-lg text-[12px] font-medium',
-                    state.isMuted ? 'bg-white/20 text-white' : 'hover:bg-white/10 text-white/80'
-                  )}
-                >
-                  {state.isMuted ? <MicOff className="w-4 h-4" /> : <Mic className="w-4 h-4" />}
-                  {state.isMuted ? 'Unmute' : 'Mute'}
-                </button>
-              </div>
-            )}
-
-            <div className="ml-auto flex items-center gap-2">
-              {/* KPI pills */}
-              <div className={cn(
-                'hidden md:flex items-center gap-3 text-[11px] px-3 py-1 rounded-full',
-                state.phase === 'connected' ? 'bg-white/15 text-white' : 'bg-[#F3F3EE] border border-[#E5E7EB] text-[#6B7280]'
-              )}>
-                <span>Calls <span className="font-semibold tabular-nums">{kpis.dials24h}</span></span>
-              </div>
-
-              {isLive && (
-                <button
-                  onClick={() => void machine.hangUp()}
-                  className="flex items-center gap-1.5 bg-[#EF4444] hover:bg-[#DC2626] text-white px-3 py-1.5 rounded-[10px] text-[12px] font-semibold"
-                >
-                  <PhoneOff className="w-3.5 h-3.5" /> End call
-                </button>
-              )}
-            </div>
-          </header>
-
-          {/* 4-column body — exact clone of LiveCallScreen */}
-          <ResizablePanelGroup
-            direction="horizontal"
-            autoSaveId="dialer-pro-call-layout-v1"
-            className="flex-1 overflow-hidden"
-          >
-            {/* COL 1 — Contact context */}
-            <ResizablePanel defaultSize={20} minSize={14} className="bg-white border-r border-[#E5E7EB] flex flex-col overflow-hidden">
-              <div className="px-4 py-3 border-b border-[#E5E7EB]">
-                <div className="flex items-center gap-2">
-                  <div className="text-[16px] font-bold text-[#1A1A1A]">{contact.name}</div>
-                  {contact.isHot && (
-                    <span className="flex items-center gap-1 text-[10px] font-bold px-1.5 py-0.5 rounded-full" style={{ background: '#FEF2F2', color: '#EF4444' }}>
-                      <Flame className="w-3 h-3" /> HOT
-                    </span>
-                  )}
-                  <button onClick={() => setEditing(contact)} className="ml-auto p-1 rounded hover:bg-[#F3F3EE] text-[#6B7280] hover:text-[#1A1A1A]" title="Edit lead">
-                    <Pencil className="w-3.5 h-3.5" />
-                  </button>
+      {/* ─── BACKGROUND: 4-column call room (always mounted, sticky) ─── */}
+      <div className="flex-1 overflow-hidden">
+        <ResizablePanelGroup
+          direction="horizontal"
+          autoSaveId="dialer-pro-call-layout-v2"
+          className="h-full"
+        >
+          {/* COL 1 — Contact + SMS / WhatsApp */}
+          <ResizablePanel defaultSize={20} minSize={14} className="bg-white border-r border-[#E5E7EB] flex flex-col overflow-hidden">
+            {contact ? (
+              <>
+                <div className="px-4 py-3 border-b border-[#E5E7EB]">
+                  <div className="flex items-center gap-2">
+                    <div className="text-[16px] font-bold text-[#1A1A1A]">{contact.name}</div>
+                    {contact.isHot && (
+                      <span className="flex items-center gap-1 text-[10px] font-bold px-1.5 py-0.5 rounded-full" style={{ background: '#FEF2F2', color: '#EF4444' }}>
+                        <Flame className="w-3 h-3" /> HOT
+                      </span>
+                    )}
+                    <button onClick={() => setEditing(contact)} className="ml-auto p-1 rounded hover:bg-[#F3F3EE] text-[#6B7280] hover:text-[#1A1A1A]" title="Edit lead">
+                      <Pencil className="w-3.5 h-3.5" />
+                    </button>
+                  </div>
+                  <div className="text-[12px] text-[#6B7280] tabular-nums mt-0.5">{contact.phone}</div>
+                  <div className="mt-2"><ContactMetaCompact contact={contact} /></div>
                 </div>
-                <div className="text-[12px] text-[#6B7280] tabular-nums mt-0.5">{contact.phone}</div>
-                <div className="text-[11px] text-[#9CA3AF] mt-0.5">Added {formatRelativeTimePro(contact.createdAt)}</div>
-                <div className="mt-2"><ContactMetaCompact contact={contact} /></div>
+                <div className="flex-1 overflow-y-auto px-4 py-3 space-y-3 text-[12px]">
+                  <MidCallSmsSender
+                    contactId={contact.id}
+                    contactName={contact.name}
+                    contactPhone={contact.phone}
+                    contactEmail={contact.email}
+                    agentFirstName={agentFirstName}
+                    campaignId={camp?.id ?? null}
+                  />
+                  <CallTimeline callId={state.currentCallId} />
+                </div>
+              </>
+            ) : (
+              <div className="flex-1 flex items-center justify-center text-sm text-[#9CA3AF]">
+                No active contact
               </div>
-              <div className="flex-1 overflow-y-auto px-4 py-3 space-y-3 text-[12px]">
-                <MidCallSmsSender
-                  contactId={contact.id}
-                  contactName={contact.name}
-                  contactPhone={contact.phone}
-                  contactEmail={contact.email}
-                  agentFirstName={agentFirstName}
-                  campaignId={camp?.id ?? null}
-                />
-                <CallTimeline callId={state.currentCallId} />
-              </div>
-            </ResizablePanel>
+            )}
+          </ResizablePanel>
 
-            <ResizableHandle withHandle />
+          <ResizableHandle withHandle />
 
-            {/* COL 2 — Live transcript */}
-            <ResizablePanel defaultSize={38} minSize={26} className="bg-white border-r border-[#E5E7EB] overflow-hidden">
+          {/* COL 2 — Live transcript + AI coach */}
+          <ResizablePanel defaultSize={38} minSize={26} className="bg-white border-r border-[#E5E7EB] overflow-hidden">
+            {(isLive || state.phase === 'wrap_up') && contact ? (
               <LiveTranscriptPane
                 durationSec={liveDuration}
                 contactId={contact.id}
                 callId={state.currentCallId}
                 agentFirstName={agentFirstName}
               />
-            </ResizablePanel>
-
-            <ResizableHandle withHandle />
-
-            {/* COL 3 — Call script */}
-            <ResizablePanel defaultSize={22} minSize={14} className="border-r border-[#E5E7EB] overflow-hidden">
-              <CallScriptPane
-                callId={state.currentCallId}
-                contactFirstName={contactFirstName}
-                agentFirstName={agentFirstName}
-              />
-            </ResizablePanel>
-
-            <ResizableHandle withHandle />
-
-            {/* COL 4 — Glossary */}
-            <ResizablePanel defaultSize={20} minSize={14} className="overflow-hidden">
-              <TerminologyPane />
-            </ResizablePanel>
-          </ResizablePanelGroup>
-        </div>
-      )}
-
-      {/* ─── FLOATING PAD (always visible, z-[210]) ─── */}
-      <div className="fixed z-[210] select-text" style={{ left: pos.x, top: pos.y, width: PAD_W }}>
-        {minimized ? (
-          // Minimized header bar
-          <div
-            onPointerDown={onDragStart} onPointerMove={onDragMove} onPointerUp={onDragEnd} onPointerCancel={onDragEnd}
-            className="flex items-center gap-2 px-2 py-1.5 bg-white border border-[#E5E7EB] rounded-[12px] shadow-[0_12px_28px_rgba(30,154,128,0.35)] cursor-grab active:cursor-grabbing"
-          >
-            <GripVertical className="w-3 h-3 text-[#9CA3AF] shrink-0" />
-            <span className="text-[11px] font-semibold text-[#1A1A1A] truncate flex-1">
-              {state.currentLead?.name ?? 'Dialer Pro'}
-            </span>
-            {isLive && <span className="w-2 h-2 rounded-full bg-[#1E9A80] animate-pulse shrink-0" />}
-            <button type="button" onPointerDown={(e) => e.stopPropagation()} onClick={() => setMinimized(false)} className="p-0.5 rounded hover:bg-[#F3F3EE] text-[#6B7280]">
-              <PlayCircle className="w-3.5 h-3.5" />
-            </button>
-          </div>
-        ) : isLive && state.currentLead ? (
-          // ─── CARD 1 — GHL-style calling card (during live call) ───
-          <div className="bg-white border border-[#E5E7EB] rounded-2xl shadow-[0_24px_64px_rgba(0,0,0,0.18)] overflow-hidden" style={{ width: 320 }}>
-            {/* Header — outgoing call */}
-            <div className="flex items-center gap-2 px-4 py-2.5 bg-[#F3F3EE] border-b border-[#E5E7EB]">
-              <Phone className="w-4 h-4 text-[#1E9A80]" />
-              <span className="text-[12px] font-semibold text-[#6B7280]">
-                {state.phase === 'connected' ? 'Connected' : 'Outgoing Call'}
-              </span>
-              {camp && <span className="text-[11px] text-[#9CA3AF] truncate ml-auto">{camp.name}</span>}
-            </div>
-
-            {/* Avatar + lead info + timer */}
-            <div className="flex flex-col items-center py-5 px-4">
-              <div className="w-20 h-20 rounded-full bg-[#1E9A80] flex items-center justify-center text-white text-[28px] font-bold mb-3">
-                {(state.currentLead.name ?? '?').split(/\s+/).map(w => w[0]).join('').slice(0, 2).toUpperCase()}
+            ) : (
+              <div className="flex-1 flex items-center justify-center h-full text-sm text-[#9CA3AF]">
+                Transcript appears during calls
               </div>
-              <div className="text-[15px] font-semibold text-[#1A1A1A] truncate max-w-full">{state.currentLead.name}</div>
-              <div className="text-[13px] text-[#6B7280] tabular-nums mt-0.5">{state.currentLead.phone}</div>
-              <div className="text-[18px] font-semibold text-[#1A1A1A] tabular-nums mt-2">
-                {state.phase === 'connected' ? formatDurationPro(liveDuration) : (
-                  <span className="inline-flex gap-0.5">
-                    <span className="w-1.5 h-1.5 rounded-full bg-[#1A1A1A] animate-bounce" style={{ animationDelay: '0ms' }} />
-                    <span className="w-1.5 h-1.5 rounded-full bg-[#1A1A1A] animate-bounce" style={{ animationDelay: '150ms' }} />
-                    <span className="w-1.5 h-1.5 rounded-full bg-[#1A1A1A] animate-bounce" style={{ animationDelay: '300ms' }} />
-                  </span>
-                )}
-              </div>
-            </div>
+            )}
+          </ResizablePanel>
 
-            {/* Action button rows */}
-            <div className="px-3 pb-2 space-y-1.5">
-              {/* Row 1: Message, Notes, Blind, Warm */}
-              <div className="grid grid-cols-4 gap-1.5">
-                {[
-                  { label: 'Message', icon: MessageSquare, onClick: () => {/* MidCallSmsSender in LiveCallScreen COL1 */} },
-                  { label: 'Notes', icon: FileText, onClick: () => {/* Notes available in LiveCallScreen */} },
-                  { label: 'Blind', icon: PhoneForwarded, disabled: true },
-                  { label: 'Warm', icon: PhoneForwarded, disabled: true },
-                ].map(({ label, icon: Ic, onClick, disabled: dis }) => (
-                  <button key={label} onClick={onClick} disabled={dis}
-                    className={cn('flex flex-col items-center gap-1 py-2 rounded-lg text-[10px] font-medium transition-colors',
-                      dis ? 'text-[#9CA3AF] cursor-not-allowed' : 'text-[#6B7280] hover:bg-[#F3F3EE] hover:text-[#1A1A1A]'
-                    )}>
-                    <Ic className="w-4 h-4" strokeWidth={1.8} />
-                    {label}
-                  </button>
-                ))}
-              </div>
-              {/* Row 2: Hold, Mute, Scripts, Dial */}
-              <div className="grid grid-cols-4 gap-1.5">
-                <button onClick={machine.holdToggle}
-                  className={cn('flex flex-col items-center gap-1 py-2 rounded-lg text-[10px] font-medium transition-colors',
-                    state.isOnHold ? 'bg-[#FEF3C7] text-[#92400E]' : 'text-[#6B7280] hover:bg-[#F3F3EE] hover:text-[#1A1A1A]'
-                  )}>
-                  <PauseIcon className="w-4 h-4" strokeWidth={1.8} />
-                  Hold
-                </button>
-                <button onClick={machine.muteToggle}
-                  className={cn('flex flex-col items-center gap-1 py-2 rounded-lg text-[10px] font-medium transition-colors',
-                    state.isMuted ? 'bg-[#FEF3C7] text-[#92400E]' : 'text-[#6B7280] hover:bg-[#F3F3EE] hover:text-[#1A1A1A]'
-                  )}>
-                  {state.isMuted ? <MicOff className="w-4 h-4" strokeWidth={1.8} /> : <Mic className="w-4 h-4" strokeWidth={1.8} />}
-                  Mute
-                </button>
-                <button className="flex flex-col items-center gap-1 py-2 rounded-lg text-[10px] font-medium text-[#6B7280] hover:bg-[#F3F3EE] hover:text-[#1A1A1A] transition-colors">
-                  <FileText className="w-4 h-4" strokeWidth={1.8} />
-                  Scripts
-                </button>
-                <button className="flex flex-col items-center gap-1 py-2 rounded-lg text-[10px] font-medium text-[#9CA3AF] cursor-not-allowed">
-                  <Hash className="w-4 h-4" strokeWidth={1.8} />
-                  Dial
-                </button>
-              </div>
-            </div>
+          <ResizableHandle withHandle />
 
-            {/* End Call button */}
-            <div className="px-3 pb-3">
-              <button onClick={() => void machine.hangUp()}
-                className="w-full flex items-center justify-center gap-2 bg-[#B91C1C] hover:bg-[#991B1B] text-white text-[14px] font-semibold py-3 rounded-xl transition-colors">
-                <PhoneOff className="w-4 h-4" /> End Call
-              </button>
-            </div>
-          </div>
-        ) : (
-          // ─── DEFAULT PAD — idle / paused / campaign + queue + history ───
-          <div className="bg-[#F3F3EE] border border-[#E5E7EB] rounded-[20px] shadow-[0_24px_64px_rgba(0,0,0,0.18)] overflow-hidden flex flex-col max-h-[calc(100vh-96px)]">
-            {/* Header */}
-            <div
-              onPointerDown={onDragStart} onPointerMove={onDragMove} onPointerUp={onDragEnd} onPointerCancel={onDragEnd}
-              className="px-2 py-1.5 bg-white border-b border-[#E5E7EB] flex items-center gap-1.5 cursor-grab active:cursor-grabbing"
-            >
-              <GripVertical className="w-3 h-3 text-[#9CA3AF]" />
-              <div className="flex-1 min-w-0 flex items-baseline gap-1.5">
-                <span className="text-[11px] font-bold text-[#1A1A1A]">Dialer Pro</span>
-                {camp && <span className="text-[11px] text-[#6B7280] truncate">· {camp.name}</span>}
-              </div>
-              <button type="button" onPointerDown={(e) => e.stopPropagation()} onClick={() => setMinimized(true)} className="p-1 rounded hover:bg-[#F3F3EE] text-[#6B7280]">
-                <Minus className="w-3 h-3" />
-              </button>
-            </div>
+          {/* COL 3 — Call script (teleprompter) */}
+          <ResizablePanel defaultSize={22} minSize={14} className="border-r border-[#E5E7EB] overflow-hidden">
+            <CallScriptPane
+              callId={state.currentCallId}
+              contactFirstName={contactFirstName}
+              agentFirstName={agentFirstName}
+            />
+          </ResizablePanel>
 
-            {/* Body */}
-            <div className="flex-1 overflow-y-auto p-2 space-y-2">
-              {/* Block banner */}
-              {blocked && blockReason && (
-                <div className="bg-[#FEF3C7] border border-[#FDE68A] text-[#92400E] text-[11px] rounded-[10px] px-2.5 py-1.5">{blockReason}</div>
-              )}
+          <ResizableHandle withHandle />
 
-              {/* Campaign + KPI strip */}
-              <div className="bg-white border border-[#E5E7EB] rounded-2xl p-2 space-y-1.5">
-                {campaigns.length > 1 && (
-                  <select value={activeCampaignId} onChange={(e) => setActiveCampaignId(e.target.value)}
-                    className="w-full text-[10px] border border-[#E5E7EB] rounded-[8px] px-1.5 py-1 bg-white"
-                  >
-                    {campaigns.map((c) => (<option key={c.id} value={c.id}>{c.name}</option>))}
-                  </select>
-                )}
-                <div className="grid grid-cols-4 gap-1.5">
-                  {[
-                    { label: 'Pending', value: kpis.pending, accent: true },
-                    { label: 'Total', value: kpis.total },
-                    { label: 'MSG Sent', value: kpis.msgSent },
-                    { label: 'Dials 24h', value: kpis.dials24h },
-                  ].map((s) => (
-                    <div key={s.label} className={cn('rounded-[8px] px-1.5 py-1 text-center', s.accent ? 'bg-[#ECFDF5]' : 'bg-[#F3F3EE]')}>
-                      <div className="text-[8px] uppercase tracking-wide text-[#9CA3AF] font-semibold leading-none">{s.label}</div>
-                      <div className={cn('text-[14px] font-bold tabular-nums leading-tight mt-0.5', s.accent ? 'text-[#1E9A80]' : 'text-[#1A1A1A]')}>{s.value}</div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-
-              {/* Pacing controls — only when idle */}
-              {!isCallContext && (
-                <div className="bg-white border border-[#E5E7EB] rounded-2xl p-2 flex flex-wrap items-center gap-1.5 text-[11px]">
-                  <span className="text-[10px] uppercase tracking-wide text-[#9CA3AF] font-semibold">Pacing</span>
-                  <div className="inline-flex rounded-[10px] border border-[#E5E7EB] overflow-hidden">
-                    <button onClick={() => setPacing('manual')} className={cn('px-3 py-1', pacing === 'manual' ? 'bg-[#1E9A80] text-white' : 'bg-white hover:bg-[#F3F3EE]')}>Manual</button>
-                    <button onClick={() => setPacing('auto')} className={cn('px-3 py-1', pacing === 'auto' ? 'bg-[#1E9A80] text-white' : 'bg-white hover:bg-[#F3F3EE]')}>Auto</button>
-                  </div>
-                  {pacing === 'auto' && (
-                    <div className="flex items-center gap-1.5">
-                      <span className="text-[#6B7280]">delay</span>
-                      {[0, 5, 10, 30].map((s) => (
-                        <button key={s} onClick={() => setPacingDelaySec(s)}
-                          className={cn('px-2 py-0.5 rounded-full font-semibold', pacingDelaySec === s ? 'bg-[#ECFDF5] text-[#1E9A80]' : 'text-[#6B7280] hover:bg-[#F3F3EE]')}
-                        >{s}s</button>
-                      ))}
-                    </div>
-                  )}
-                  {state.phase === 'paused' && (
-                    <div className="ml-auto flex items-center gap-1">
-                      <button onClick={() => void resumeDialer()}
-                        className="inline-flex items-center gap-1 text-[11px] font-semibold text-white bg-[#1E9A80] px-2 py-1.5 rounded-[8px]">
-                        <Play className="w-3 h-3" /> Resume
-                      </button>
-                      <button onClick={() => void machine.stop()}
-                        className="inline-flex items-center gap-1 text-[11px] font-semibold text-[#B91C1C] bg-white border border-[#FECACA] hover:bg-[#FEF2F2] px-2 py-1.5 rounded-[8px]">
-                        <Square className="w-3 h-3" /> Stop
-                      </button>
-                    </div>
-                  )}
-                </div>
-              )}
-
-              {/* Pacing countdown */}
-              {state.pacingDeadlineMs !== null && state.phase === 'idle' && (
-                <PacingCountdown deadlineMs={state.pacingDeadlineMs} onDialNow={() => void dialNow()} onPause={machine.pause} />
-              )}
-
-              {/* Start / Resume / Dial buttons */}
-              {!state.sessionStarted && state.phase === 'idle' && (
-                <button onClick={() => void startDialer()} disabled={blocked || !camp}
-                  className="w-full inline-flex items-center justify-center gap-2 text-[12px] font-semibold text-white bg-[#1E9A80] hover:bg-[#1E9A80]/90 px-3 py-2 rounded-2xl shadow-[0_4px_16px_rgba(30,154,128,0.35)] disabled:opacity-50 disabled:cursor-not-allowed disabled:shadow-none">
-                  <Phone className="w-3 h-3" /> Start power dialer
-                </button>
-              )}
-              {state.sessionStarted && state.phase === 'idle' && state.pacingDeadlineMs === null && (
-                <button onClick={() => void dialNow()} disabled={blocked}
-                  className="w-full inline-flex items-center justify-center gap-2 text-[11px] font-semibold text-white bg-[#1E9A80] hover:bg-[#1E9A80]/90 px-3 py-2 rounded-2xl shadow-[0_4px_16px_rgba(30,154,128,0.35)] disabled:opacity-50 disabled:cursor-not-allowed">
-                  <Phone className="w-3 h-3" /> Dial next lead
-                </button>
-              )}
-              {state.phase === 'paused' && (
-                <button onClick={() => void resumeDialer()} disabled={blocked}
-                  className="w-full inline-flex items-center justify-center gap-2 text-[11px] font-semibold text-white bg-[#1E9A80] hover:bg-[#1E9A80]/90 px-3 py-2 rounded-2xl disabled:opacity-50 disabled:cursor-not-allowed">
-                  <Play className="w-3 h-3" /> Resume
-                </button>
-              )}
-
-              {/* Queue accordion */}
-              <div className="bg-white border border-[#E5E7EB] rounded-2xl overflow-hidden">
-                <button
-                  onClick={() => setAccordion((p) => p === 'queue' ? 'peek' : 'queue')}
-                  className="w-full flex items-center justify-between px-3 py-2 hover:bg-[#F3F3EE]/50"
-                >
-                  <span className="text-[11px] uppercase tracking-wide text-[#9CA3AF] font-semibold">Queue</span>
-                  <span className="text-[10px] text-[#6B7280] tabular-nums">{queue.length}</span>
-                </button>
-                {accordion !== 'history' && (
-                  <div className="border-t border-[#E5E7EB]">
-                    <QueueManagerPro
-                      queue={queue}
-                      campaignId={camp?.id ?? null}
-                      onRefresh={refreshQueue}
-                    />
-                  </div>
-                )}
-              </div>
-
-              {/* Call history accordion */}
-              <div className="bg-white border border-[#E5E7EB] rounded-2xl overflow-hidden">
-                <button
-                  onClick={() => setAccordion((p) => p === 'history' ? 'peek' : 'history')}
-                  className="w-full flex items-center justify-between px-3 py-2 hover:bg-[#F3F3EE]/50"
-                >
-                  <span className="text-[11px] uppercase tracking-wide text-[#9CA3AF] font-semibold">Call history</span>
-                </button>
-                {accordion !== 'queue' && (
-                  <div className="border-t border-[#E5E7EB]">
-                    <CallHistoryPro />
-                  </div>
-                )}
-              </div>
-            </div>
-          </div>
-        )}
+          {/* COL 4 — Glossary / terminology */}
+          <ResizablePanel defaultSize={20} minSize={14} className="overflow-hidden">
+            <TerminologyPane />
+          </ResizablePanel>
+        </ResizablePanelGroup>
       </div>
 
-      {/* ─── GHL-STYLE WRAP-UP FLOATING CARD (Card 2) ─── */}
-      {state.phase === 'wrap_up' && state.currentLead && (
-        <WrapUpCard
-          lead={state.currentLead}
-          callId={state.currentCallId}
-          endReason={state.endReason}
-          durationSec={state.durationSec}
-          notes={notes}
-          setNotes={setNotes}
-          onSkip={() => {
-            if (state.currentLead) {
-              // eslint-disable-next-line @typescript-eslint/no-explicit-any
-              void (supabase.from('wk_dialer_queue' as any) as any).update({ status: 'skipped' }).eq('id', state.currentLead.queueRowId);
-            }
-            machine.dispatch({ type: 'OUTCOME_DONE' });
-          }}
-          onRedial={() => { if (state.currentLead) void machine.dialLead(state.currentLead); }}
-          onNext={() => {
-            machine.dispatch({ type: 'OUTCOME_DONE' });
-            setTimeout(async () => {
-              const next = await machine.pickNextLead(queue);
-              if (next) void machine.dialLead(next);
-              else onToast('Queue empty', 'info');
-            }, 200);
-          }}
-          onPause={machine.pause}
-          onToast={onToast}
-        />
+      {/* ─── BOTTOM STRIP: Controls + Queue / History ─── */}
+      <div className="h-[260px] flex-shrink-0 border-t border-[#E5E7EB] bg-white flex flex-col">
+        {/* Controls bar */}
+        <div className="flex items-center gap-2 px-3 py-2 border-b border-[#E5E7EB]/60">
+          {/* Start / Resume / Status */}
+          {state.phase === 'idle' && !state.sessionStarted && (
+            <button onClick={() => void startDialer()} disabled={blocked || !camp}
+              className="flex items-center gap-1.5 px-4 py-1.5 rounded-lg text-xs font-semibold text-white bg-[#1E9A80] hover:bg-[#1E9A80]/90 shadow-[0_4px_12px_rgba(30,154,128,0.35)] disabled:opacity-50 disabled:cursor-not-allowed">
+              <Phone className="w-3.5 h-3.5" /> Start dialer
+            </button>
+          )}
+          {state.phase === 'idle' && state.sessionStarted && (
+            <button onClick={() => void startDialer()} disabled={blocked}
+              className="flex items-center gap-1.5 px-4 py-1.5 rounded-lg text-xs font-semibold text-white bg-[#1E9A80] hover:bg-[#1E9A80]/90 disabled:opacity-50">
+              <Phone className="w-3.5 h-3.5" /> Dial next
+            </button>
+          )}
+          {state.phase === 'paused' && (
+            <>
+              <button onClick={() => { machine.resume(); void startDialer(); }} disabled={blocked}
+                className="flex items-center gap-1.5 px-4 py-1.5 rounded-lg text-xs font-semibold text-white bg-[#1E9A80] hover:bg-[#1E9A80]/90 disabled:opacity-50">
+                <Play className="w-3.5 h-3.5" /> Resume
+              </button>
+              <button onClick={() => void machine.stop()}
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold text-[#B91C1C] border border-[#FECACA] hover:bg-[#FEF2F2]">
+                <Square className="w-3.5 h-3.5" /> Stop
+              </button>
+            </>
+          )}
+          {isLive && (
+            <span className="flex items-center gap-1.5 text-xs font-medium text-[#1E9A80]">
+              <span className="relative flex h-2 w-2">
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#1E9A80] opacity-75" />
+                <span className="relative inline-flex rounded-full h-2 w-2 bg-[#1E9A80]" />
+              </span>
+              {state.phase === 'connected' ? `Connected · ${formatDuration(liveDuration)}` : 'Calling\u2026'}
+            </span>
+          )}
+          {state.phase === 'wrap_up' && (
+            <span className="text-xs font-medium text-[#6B7280]">Wrap-up</span>
+          )}
+
+          {/* Campaign selector (minimal, only if >1 campaign) */}
+          {campaigns.length > 1 && (
+            <select value={activeCampaignId} onChange={(e) => setActiveCampaignId(e.target.value)}
+              className="ml-2 text-[11px] border border-[#E5E7EB] rounded-lg px-2 py-1 bg-white text-[#6B7280]">
+              {campaigns.map((c) => (<option key={c.id} value={c.id}>{c.name}</option>))}
+            </select>
+          )}
+
+          {/* Tab switcher */}
+          <div className="ml-auto flex items-center gap-0.5 bg-[#F3F3EE] rounded-lg p-0.5">
+            <button onClick={() => setBottomTab('queue')}
+              className={cn('px-3 py-1 rounded-md text-[11px] font-medium transition-colors',
+                bottomTab === 'queue' ? 'bg-white text-[#1A1A1A] shadow-sm' : 'text-[#6B7280]')}>
+              Queue ({queue.length})
+            </button>
+            <button onClick={() => setBottomTab('history')}
+              className={cn('px-3 py-1 rounded-md text-[11px] font-medium transition-colors',
+                bottomTab === 'history' ? 'bg-white text-[#1A1A1A] shadow-sm' : 'text-[#6B7280]')}>
+              History
+            </button>
+          </div>
+        </div>
+
+        {/* Tab content — compact scrollable with infinite scroll */}
+        <div className="flex-1 overflow-y-auto">
+          {bottomTab === 'queue' ? (
+            <QueueManagerPro queue={queue} campaignId={camp?.id ?? null} onRefresh={refreshQueue} />
+          ) : (
+            <CallHistoryPro />
+          )}
+        </div>
+      </div>
+
+      {/* ─── FLOATING CARD: Draggable + Minimizable (GHL clone) ─── */}
+      {(isLive || state.phase === 'wrap_up') && state.currentLead && (
+        <div className="fixed z-[210] select-text" style={{ left: cardPos.x, top: cardPos.y, width: CARD_W }}>
+          {minimized ? (
+            /* ── Minimized bar: name + timer + quick controls ── */
+            <div
+              onPointerDown={onDragStart} onPointerMove={onDragMove} onPointerUp={onDragEnd} onPointerCancel={onDragEnd}
+              className="flex items-center gap-2 px-3 py-2 bg-white border border-[#E5E7EB] rounded-xl shadow-[0_12px_28px_rgba(0,0,0,0.15)] cursor-grab active:cursor-grabbing"
+            >
+              <span className="w-2 h-2 rounded-full bg-[#B91C1C] flex-shrink-0" />
+              <span className="text-[12px] font-semibold text-[#1A1A1A] truncate flex-1">
+                {state.currentLead.name}
+              </span>
+              {state.phase === 'connected' && (
+                <span className="text-[11px] font-mono text-[#6B7280] tabular-nums flex-shrink-0">
+                  {formatDuration(liveDuration)}
+                </span>
+              )}
+              {isLive && (
+                <button onPointerDown={(e) => e.stopPropagation()} onClick={machine.muteToggle}
+                  className={cn('px-2 py-0.5 rounded-md text-[10px] font-medium flex-shrink-0',
+                    state.isMuted ? 'bg-[#FEF3C7] text-[#92400E]' : 'bg-[#F3F3EE] text-[#6B7280] hover:bg-[#E5E7EB]')}>
+                  {state.isMuted ? 'Unmute' : 'Mute'}
+                </button>
+              )}
+              <button onPointerDown={(e) => e.stopPropagation()} onClick={() => setMinimized(false)}
+                className="p-1 rounded-md hover:bg-[#F3F3EE] text-[#6B7280] flex-shrink-0">
+                <Maximize2 className="w-3.5 h-3.5" />
+              </button>
+            </div>
+          ) : isLive ? (
+            /* ── Card A: Outgoing Call ── */
+            <div className="bg-white border border-[#E5E7EB] rounded-2xl shadow-[0_24px_64px_rgba(0,0,0,0.18)] overflow-hidden">
+              {/* Header — draggable */}
+              <div
+                onPointerDown={onDragStart} onPointerMove={onDragMove} onPointerUp={onDragEnd} onPointerCancel={onDragEnd}
+                className="flex items-center gap-2 px-4 py-2.5 bg-[#F3F3EE] border-b border-[#E5E7EB] cursor-grab active:cursor-grabbing"
+              >
+                <Phone className="w-4 h-4 text-[#1E9A80]" />
+                <span className="text-[12px] font-semibold text-[#6B7280]">
+                  {state.phase === 'connected' ? 'Connected' : 'Outgoing Call'}
+                </span>
+                <span className="text-[11px] text-[#9CA3AF] truncate ml-auto">{agentFirstName}</span>
+                <button onPointerDown={(e) => e.stopPropagation()} onClick={() => setMinimized(true)}
+                  className="p-0.5 rounded hover:bg-white/60 text-[#6B7280]">
+                  <Minus className="w-3.5 h-3.5" />
+                </button>
+              </div>
+
+              {/* Avatar + lead info + timer */}
+              <div className="flex flex-col items-center py-5 px-4">
+                <div className="w-20 h-20 rounded-full bg-[#1E9A80] flex items-center justify-center text-white text-[28px] font-bold mb-3">
+                  {(state.currentLead.name ?? '?').split(/\s+/).map(w => w[0]).join('').slice(0, 2).toUpperCase()}
+                </div>
+                <div className="text-[15px] font-semibold text-[#1A1A1A] truncate max-w-full">{state.currentLead.name}</div>
+                <div className="text-[13px] text-[#6B7280] tabular-nums mt-0.5">{state.currentLead.phone}</div>
+                <div className="text-[18px] font-semibold text-[#1A1A1A] tabular-nums mt-2">
+                  {state.phase === 'connected' ? formatDuration(liveDuration) : (
+                    <span className="inline-flex gap-1">
+                      <span className="w-1.5 h-1.5 rounded-full bg-[#1A1A1A] animate-bounce" style={{ animationDelay: '0ms' }} />
+                      <span className="w-1.5 h-1.5 rounded-full bg-[#1A1A1A] animate-bounce" style={{ animationDelay: '150ms' }} />
+                      <span className="w-1.5 h-1.5 rounded-full bg-[#1A1A1A] animate-bounce" style={{ animationDelay: '300ms' }} />
+                    </span>
+                  )}
+                </div>
+              </div>
+
+              {/* 2x4 action buttons — GHL layout */}
+              <div className="px-3 pb-2 space-y-1.5">
+                {/* Row 1: Message | Notes | Blind Transfer | Warm Transfer */}
+                <div className="grid grid-cols-4 gap-1.5">
+                  {([
+                    { label: 'Message', icon: MessageSquare },
+                    { label: 'Notes', icon: FileText },
+                    { label: 'Blind', icon: PhoneForwarded, disabled: true },
+                    { label: 'Warm', icon: PhoneForwarded, disabled: true },
+                  ] as const).map(({ label, icon: Ic, ...rest }) => (
+                    <button key={label} disabled={'disabled' in rest}
+                      className={cn('flex flex-col items-center gap-1 py-2 rounded-lg text-[10px] font-medium transition-colors',
+                        'disabled' in rest ? 'text-[#9CA3AF] cursor-not-allowed' : 'text-[#6B7280] hover:bg-[#F3F3EE] hover:text-[#1A1A1A]',
+                      )}>
+                      <Ic className="w-4 h-4" strokeWidth={1.8} />
+                      {label}
+                    </button>
+                  ))}
+                </div>
+                {/* Row 2: Hold | Mute | Scripts | Dial (DTMF pad) */}
+                <div className="grid grid-cols-4 gap-1.5">
+                  <button onClick={machine.holdToggle}
+                    className={cn('flex flex-col items-center gap-1 py-2 rounded-lg text-[10px] font-medium transition-colors',
+                      state.isOnHold ? 'bg-[#FEF3C7] text-[#92400E]' : 'text-[#6B7280] hover:bg-[#F3F3EE] hover:text-[#1A1A1A]',
+                    )}>
+                    <PauseIcon className="w-4 h-4" strokeWidth={1.8} />
+                    Hold
+                  </button>
+                  <button onClick={machine.muteToggle}
+                    className={cn('flex flex-col items-center gap-1 py-2 rounded-lg text-[10px] font-medium transition-colors',
+                      state.isMuted ? 'bg-[#FEF3C7] text-[#92400E]' : 'text-[#6B7280] hover:bg-[#F3F3EE] hover:text-[#1A1A1A]',
+                    )}>
+                    {state.isMuted ? <MicOff className="w-4 h-4" strokeWidth={1.8} /> : <Mic className="w-4 h-4" strokeWidth={1.8} />}
+                    Mute
+                  </button>
+                  <button className="flex flex-col items-center gap-1 py-2 rounded-lg text-[10px] font-medium text-[#6B7280] hover:bg-[#F3F3EE] hover:text-[#1A1A1A] transition-colors">
+                    <FileText className="w-4 h-4" strokeWidth={1.8} />
+                    Scripts
+                  </button>
+                  <button className="flex flex-col items-center gap-1 py-2 rounded-lg text-[10px] font-medium text-[#9CA3AF] cursor-not-allowed">
+                    <Hash className="w-4 h-4" strokeWidth={1.8} />
+                    Dial
+                  </button>
+                </div>
+              </div>
+
+              {/* End Call button */}
+              <div className="px-3 pb-3">
+                <button onClick={() => void machine.hangUp()}
+                  className="w-full flex items-center justify-center gap-2 bg-[#B91C1C] hover:bg-[#991B1B] text-white text-[14px] font-semibold py-3 rounded-xl transition-colors">
+                  <PhoneOff className="w-4 h-4" /> End Call
+                </button>
+              </div>
+            </div>
+          ) : (
+            /* ── Card B: Call Summary / Wrap-up ── */
+            <WrapUpCard
+              lead={state.currentLead}
+              endReason={state.endReason}
+              durationSec={state.durationSec}
+              columns={outcomeColumns}
+              applying={machine.applying}
+              onNext={handleWrapUpNext}
+              onSkip={machine.skip}
+              onRedial={handleWrapUpRedial}
+              onPause={handleWrapUpPause}
+              onDragStart={onDragStart}
+              onDragMove={onDragMove}
+              onDragEnd={onDragEnd}
+              onMinimize={() => setMinimized(true)}
+            />
+          )}
+        </div>
       )}
 
       {/* Edit contact modal */}
@@ -757,55 +584,35 @@ export default function DialerProPage() {
   );
 }
 
-// ─── PacingCountdown ─────────────────────────────────────────────────
-
-function PacingCountdown({ deadlineMs, onDialNow, onPause }: { deadlineMs: number; onDialNow: () => void; onPause: () => void }) {
-  const [now, setNow] = useState(Date.now());
-  useEffect(() => { const id = setInterval(() => setNow(Date.now()), 250); return () => clearInterval(id); }, []);
-  const remainingSec = Math.max(0, Math.ceil((deadlineMs - now) / 1000));
-  return (
-    <div className="bg-[#ECFDF5] border border-[#A7F3D0] text-[#065F46] rounded-2xl px-3 py-2 flex items-center gap-2 text-[11px] font-semibold">
-      <Clock className="w-3 h-3" /> Next in {remainingSec}s
-      <button onClick={onDialNow} className="inline-flex items-center gap-1 ml-1 px-2 py-1 rounded-[10px] bg-[#1E9A80] text-white hover:bg-[#1E9A80]/90">
-        <Zap className="w-3 h-3" /> Dial now
-      </button>
-      <button onClick={onPause} className="inline-flex items-center gap-1 ml-auto px-2 py-1 rounded-[10px] bg-white border border-[#A7F3D0] text-[#065F46] hover:bg-[#F0FDF4]">
-        <PauseIcon className="w-3 h-3" /> Pause
-      </button>
-    </div>
-  );
-}
-
-// ─── WrapUpCard — GHL-style floating card (Card 2) ──────────────────
-
-import { Circle } from 'lucide-react';
-
-const PIPELINE_STAGES = [
-  'New Leads',
-  'Voicemail',
-  'No pickup',
-  'Not interested',
-  'Nurturing (msg sent)',
-  'Closed',
-] as const;
+// ─── WrapUpCard ─────────────────────────────────────────────────────
+// Dispositions from wk_pipeline_columns (wired to /crm/pipelines).
+// Does NOT write to Supabase directly — passes column_id (UUID) to
+// parent, which calls machine.applyOutcome → wk-outcome-apply edge fn.
 
 interface WrapUpCardProps {
   lead: QueueLead;
-  callId: string | null;
   endReason: string | null;
   durationSec: number | null;
-  notes: string;
-  setNotes: (v: string) => void;
+  columns: PipelineColumnRow[];
+  applying: boolean;
+  onNext: (columnId: string | null, notes: string) => void;
   onSkip: () => void;
-  onRedial: () => void;
-  onNext: () => void;
-  onPause: () => void;
-  onToast: (msg: string, type: 'success' | 'error' | 'info') => void;
+  onRedial: (columnId: string | null, notes: string) => void;
+  onPause: (columnId: string | null, notes: string) => void;
+  onDragStart: (e: React.PointerEvent) => void;
+  onDragMove: (e: React.PointerEvent) => void;
+  onDragEnd: (e: React.PointerEvent) => void;
+  onMinimize: () => void;
 }
 
-function WrapUpCard({ lead, callId, endReason, durationSec, notes, setNotes, onSkip, onRedial, onNext, onPause, onToast }: WrapUpCardProps) {
-  const [picked, setPicked] = useState<string | null>(null);
-  const [submitting, setSubmitting] = useState(false);
+function WrapUpCard({ lead, endReason, durationSec, columns, applying, onNext, onSkip, onRedial, onPause, onDragStart, onDragMove, onDragEnd, onMinimize }: WrapUpCardProps) {
+  const [pickedId, setPickedId] = useState<string | null>(null);
+  const [notes, setNotes] = useState('');
+  const [showMore, setShowMore] = useState(false);
+
+  const VISIBLE_COUNT = 6;
+  const visibleCols = columns.slice(0, VISIBLE_COUNT);
+  const moreCols = columns.slice(VISIBLE_COUNT);
 
   const formatMin = (sec: number | null) => {
     if (sec === null || sec <= 0) return '00 Min 00 Sec';
@@ -814,132 +621,117 @@ function WrapUpCard({ lead, callId, endReason, durationSec, notes, setNotes, onS
     return `${String(m).padStart(2, '0')} Min ${String(s).padStart(2, '0')} Sec`;
   };
 
-  const submitOutcome = async (outcome: string) => {
-    if (submitting || picked) return;
-    setPicked(outcome);
-    setSubmitting(true);
-    try {
-      await Promise.all([
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        callId ? (supabase.from('wk_calls' as any) as any).update({ disposition: outcome, agent_note: notes.trim() || null }).eq('id', callId) : Promise.resolve(),
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        (supabase.from('wk_contacts' as any) as any).update({ pipeline_stage: outcome }).eq('id', lead.contactId),
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        (supabase.from('wk_dialer_queue' as any) as any).update({ status: 'done' }).eq('id', lead.queueRowId),
-      ]);
-      onToast('Outcome saved', 'success');
-    } catch (e) {
-      onToast(`Outcome failed: ${e instanceof Error ? e.message : 'unknown'}`, 'error');
-    } finally {
-      setSubmitting(false);
-    }
+  const renderButton = (col: PipelineColumnRow) => {
+    const isPicked = pickedId === col.id;
+    return (
+      <button key={col.id} onClick={() => setPickedId(isPicked ? null : col.id)} disabled={applying}
+        className={cn(
+          'flex items-center justify-between rounded-lg px-3 py-2.5 text-[13px] font-medium text-left transition-all',
+          isPicked
+            ? 'bg-[#1A1A1A] text-white'
+            : pickedId !== null
+              ? 'bg-[#F3F3EE] text-[#9CA3AF]'
+              : 'bg-[#F3F3EE] text-[#1A1A1A] hover:bg-[#E5E7EB]',
+        )}>
+        <span className="truncate">{col.name}</span>
+        <Circle className={cn('w-4 h-4 flex-shrink-0', isPicked ? 'text-white fill-white' : 'text-[#9CA3AF]')} strokeWidth={isPicked ? 0 : 1.5} />
+      </button>
+    );
   };
 
   return (
-    <div className="fixed bottom-6 right-6 w-[340px] bg-white rounded-2xl shadow-[0_24px_64px_rgba(0,0,0,0.18)] border border-[#E5E7EB] z-[220] overflow-hidden">
-      {/* Header */}
-      <div className="flex items-center gap-2 px-4 py-3 border-b border-[#E5E7EB]/60">
-        <Phone className="text-[#1E9A80] w-5 h-5" />
-        <span className="font-semibold text-[#1A1A1A]">Call Summary</span>
-      </div>
-
-      {/* Lead info + status badges + duration */}
-      <div className="px-4 py-3 border-b border-[#E5E7EB]/60">
-        <div className="flex items-center justify-between">
-          <span className="font-medium text-[#1A1A1A] truncate">{lead.name}</span>
-          <span className="text-[#9CA3AF] text-sm tabular-nums">{lead.phone}</span>
+      <div className="bg-white rounded-2xl shadow-[0_24px_64px_rgba(0,0,0,0.18)] border border-[#E5E7EB] overflow-hidden max-h-[calc(100vh-80px)] overflow-y-auto" style={{ width: 340 }}>
+        {/* Header — draggable */}
+        <div
+          onPointerDown={onDragStart} onPointerMove={onDragMove} onPointerUp={onDragEnd} onPointerCancel={onDragEnd}
+          className="flex items-center gap-2 px-4 py-3 border-b border-[#E5E7EB]/60 cursor-grab active:cursor-grabbing"
+        >
+          <Phone className="text-[#1E9A80] w-5 h-5" />
+          <span className="font-semibold text-[#1A1A1A]">Call Summary</span>
+          <button onPointerDown={(e) => e.stopPropagation()} onClick={onMinimize}
+            className="ml-auto p-0.5 rounded hover:bg-[#F3F3EE] text-[#6B7280]">
+            <Minus className="w-3.5 h-3.5" />
+          </button>
         </div>
-        <div className="flex items-center gap-3 mt-1.5">
-          <span className="flex items-center gap-1 text-[#B91C1C] text-[12px]">
-            <PhoneOff className="w-3.5 h-3.5" /> Call Ended
-          </span>
-          {endReason && (
-            <span className="flex items-center gap-1 text-[#6B7280] text-[11px] bg-[#F3F3EE] rounded-full px-2 py-0.5">
-              {endReason === 'hangup' ? 'Hangup' : endReason === 'cancel' || endReason === 'reject' ? 'No-answer' : endReason}
+
+        {/* Lead info + badges + duration */}
+        <div className="px-4 py-3 border-b border-[#E5E7EB]/60">
+          <div className="flex items-center justify-between">
+            <span className="font-medium text-[#1A1A1A] truncate">{lead.name}</span>
+            <span className="text-[#9CA3AF] text-sm tabular-nums">{lead.phone}</span>
+          </div>
+          <div className="flex items-center gap-3 mt-1.5">
+            <span className="flex items-center gap-1 text-[#B91C1C] text-[12px]">
+              <PhoneOff className="w-3.5 h-3.5" /> Call Ended
             </span>
+            {endReason && (
+              <span className="text-[#6B7280] text-[11px] bg-[#F3F3EE] rounded-full px-2 py-0.5">
+                {endReason === 'hangup' ? 'Hangup' : endReason === 'cancel' || endReason === 'reject' ? 'No-answer' : endReason}
+              </span>
+            )}
+          </div>
+          <div className="text-center mt-2">
+            <span className="inline-block bg-[#F3F3EE] text-[#6B7280] text-[13px] font-medium px-4 py-1 rounded-full">
+              {formatMin(durationSec)}
+            </span>
+          </div>
+        </div>
+
+        {/* Skip (no disposition) */}
+        <div className="px-4 pt-3 pb-1">
+          <button onClick={onSkip} disabled={applying}
+            className="flex items-center gap-1.5 text-[12px] font-medium text-[#6B7280] hover:text-[#1A1A1A] disabled:opacity-50">
+            <SkipForward className="w-3.5 h-3.5" /> Skip (no disposition)
+          </button>
+        </div>
+
+        {/* Disposition grid — from pipeline columns (wk_pipeline_columns) */}
+        <div className="px-4 py-2">
+          <p className="text-[10px] font-semibold text-[#9CA3AF] uppercase tracking-wide mb-2">Custom Disposition</p>
+          <div className="grid grid-cols-2 gap-2">
+            {visibleCols.map(renderButton)}
+          </div>
+
+          {/* More Dispositions — inline expand */}
+          {moreCols.length > 0 && (
+            <>
+              <button onClick={() => setShowMore(!showMore)}
+                className="flex items-center gap-1.5 mt-2 text-[12px] font-medium text-[#6B7280] hover:text-[#1A1A1A]">
+                <ChevronDown className={cn('w-3.5 h-3.5 transition-transform', showMore && 'rotate-180')} />
+                {showMore ? 'Less' : 'More Dispositions'}
+              </button>
+              {showMore && (
+                <div className="grid grid-cols-2 gap-2 mt-2">
+                  {moreCols.map(renderButton)}
+                </div>
+              )}
+            </>
           )}
         </div>
-        <div className="text-center mt-2">
-          <span className="inline-block bg-[#F3F3EE] text-[#6B7280] text-[13px] font-medium px-4 py-1 rounded-full">
-            {formatMin(durationSec)}
-          </span>
+
+        {/* Notes textarea */}
+        <div className="px-4 pb-3">
+          <textarea value={notes} onChange={(e) => setNotes(e.target.value)}
+            placeholder="Notes (optional)\u2026"
+            className="w-full text-[13px] border border-[#E5E7EB] rounded-lg px-3 py-2 resize-none focus:outline-none focus:ring-1 focus:ring-[#1E9A80]/30 focus:border-[#1E9A80]"
+            rows={2} />
+        </div>
+
+        {/* Action buttons: Redial | Next -> | Pause */}
+        <div className="flex gap-2 px-4 pb-4">
+          <button onClick={() => onRedial(pickedId, notes)} disabled={applying}
+            className="flex items-center gap-1.5 border border-[#E5E7EB] rounded-lg px-4 py-2 text-[13px] font-medium text-[#6B7280] hover:bg-[#F3F3EE] disabled:opacity-50">
+            <Phone className="w-4 h-4" /> Redial
+          </button>
+          <button onClick={() => onNext(pickedId, notes)} disabled={applying}
+            className="flex-1 flex items-center justify-center gap-1.5 bg-[#1E9A80] text-white rounded-lg px-4 py-2 text-[13px] font-semibold hover:bg-[#1E9A80]/90 shadow-[0_4px_12px_rgba(30,154,128,0.35)] disabled:opacity-50">
+            Next call &rarr;
+          </button>
+          <button onClick={() => onPause(pickedId, notes)} disabled={applying}
+            className="border border-[#FECACA] text-[#B91C1C] rounded-lg px-3 py-2 hover:bg-[#FEF2F2] disabled:opacity-50">
+            <PauseIcon className="w-4 h-4" />
+          </button>
         </div>
       </div>
-
-      {/* Skip button */}
-      <div className="px-4 pt-3 pb-1">
-        <button
-          onClick={onSkip}
-          disabled={submitting}
-          className="flex items-center gap-1.5 text-[12px] font-medium text-[#6B7280] hover:text-[#1A1A1A] disabled:opacity-50"
-        >
-          <SkipForward className="w-3.5 h-3.5" /> Skip (no disposition)
-        </button>
-      </div>
-
-      {/* Disposition grid */}
-      <div className="px-4 py-2">
-        <p className="text-[10px] font-semibold text-[#9CA3AF] uppercase tracking-wide mb-2">Custom Disposition</p>
-        <div className="grid grid-cols-2 gap-2">
-          {PIPELINE_STAGES.map((stage) => {
-            const isPicked = picked === stage;
-            return (
-              <button
-                key={stage}
-                onClick={() => void submitOutcome(stage)}
-                disabled={submitting || (picked !== null && !isPicked)}
-                className={cn(
-                  'flex items-center justify-between rounded-lg px-3 py-2.5 text-[13px] font-medium text-left transition-all',
-                  isPicked
-                    ? 'bg-[#1A1A1A] text-white'
-                    : picked !== null
-                      ? 'bg-[#F3F3EE] text-[#9CA3AF] cursor-not-allowed'
-                      : 'bg-[#F3F3EE] text-[#1A1A1A] hover:bg-[#E5E7EB]'
-                )}
-              >
-                <span className="truncate">{stage}</span>
-                <Circle className={cn('w-4 h-4 flex-shrink-0', isPicked ? 'text-white fill-white' : 'text-[#9CA3AF]')} strokeWidth={isPicked ? 0 : 1.5} />
-              </button>
-            );
-          })}
-        </div>
-      </div>
-
-      {/* Notes */}
-      <div className="px-4 pb-3">
-        <textarea
-          value={notes}
-          onChange={(e) => setNotes(e.target.value)}
-          placeholder="Notes (optional)…"
-          className="w-full text-[13px] border border-[#E5E7EB] rounded-lg px-3 py-2 resize-none focus:outline-none focus:ring-1 focus:ring-[#1E9A80]/30 focus:border-[#1E9A80]"
-          rows={2}
-        />
-      </div>
-
-      {/* Action buttons: Redial / Next → / Pause */}
-      <div className="flex gap-2 px-4 pb-4">
-        <button
-          onClick={onRedial}
-          className="flex items-center gap-1.5 border border-[#E5E7EB] rounded-lg px-4 py-2 text-[13px] font-medium text-[#6B7280] hover:bg-[#F3F3EE]"
-        >
-          <Phone className="w-4 h-4" /> Redial
-        </button>
-        <button
-          onClick={() => {
-            if (picked) onNext();
-            else { onSkip(); setTimeout(onNext, 100); }
-          }}
-          className="flex-1 flex items-center justify-center gap-1.5 bg-[#1E9A80] text-white rounded-lg px-4 py-2 text-[13px] font-semibold hover:bg-[#1E9A80]/90 shadow-[0_4px_12px_rgba(30,154,128,0.35)]"
-        >
-          Next call →
-        </button>
-        <button
-          onClick={onPause}
-          className="border border-[#FECACA] text-[#B91C1C] rounded-lg px-3 py-2 hover:bg-[#FEF2F2]"
-        >
-          <PauseIcon className="w-4 h-4" />
-        </button>
-      </div>
-    </div>
   );
 }
