@@ -286,30 +286,39 @@ export function CallerPad() {
   const [editContact, setEditContact] = useState<Contact | null>(null);
   const [editContactLoading, setEditContactLoading] = useState(false);
   const openEditContact = useCallback(async (contactId: string) => {
+    console.log('[CallerPad] openEditContact called with', contactId);
     setEditContactLoading(true);
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const { data } = await (supabase.from('wk_contacts' as any) as any)
+    const { data, error: fetchErr } = await (supabase.from('wk_contacts' as any) as any)
       .select('id, name, phone, email, owner_agent_id, pipeline_column_id, tags, is_hot, deal_value_pence, custom_fields, created_at, last_contact_at')
       .eq('id', contactId)
       .maybeSingle();
     setEditContactLoading(false);
-    if (data) {
-      setEditContact({
-        id: data.id,
-        name: data.name ?? '',
-        phone: data.phone ?? '',
-        email: data.email ?? undefined,
-        ownerAgentId: data.owner_agent_id ?? undefined,
-        pipelineColumnId: data.pipeline_column_id ?? undefined,
-        tags: data.tags ?? [],
-        isHot: data.is_hot ?? false,
-        dealValuePence: data.deal_value_pence ?? undefined,
-        customFields: data.custom_fields ?? {},
-        createdAt: data.created_at ?? new Date().toISOString(),
-        lastContactAt: data.last_contact_at ?? undefined,
-      });
+    if (fetchErr) {
+      console.error('[CallerPad] openEditContact fetch error', fetchErr);
+      toasts.push(`Could not load contact: ${fetchErr.message}`, 'error');
+      return;
     }
-  }, []);
+    if (!data) {
+      console.error('[CallerPad] openEditContact: no contact found for id', contactId);
+      toasts.push('Contact not found', 'error');
+      return;
+    }
+    setEditContact({
+      id: data.id,
+      name: data.name ?? '',
+      phone: data.phone ?? '',
+      email: data.email ?? undefined,
+      ownerAgentId: data.owner_agent_id ?? undefined,
+      pipelineColumnId: data.pipeline_column_id ?? undefined,
+      tags: data.tags ?? [],
+      isHot: data.is_hot ?? false,
+      dealValuePence: data.deal_value_pence ?? undefined,
+      customFields: data.custom_fields ?? {},
+      createdAt: data.created_at ?? new Date().toISOString(),
+      lastContactAt: data.last_contact_at ?? undefined,
+    });
+  }, [toasts]);
 
   // ─── Queue status writer ─────────────────────────────────────────
   const updateQueueStatus = useCallback(
