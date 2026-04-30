@@ -1638,6 +1638,88 @@
     </div>
   </section>
 
+  <!-- ========== INTRO VIDEO (poster + modal) ========== -->
+  <section class="nfs-vid-section" data-feature="SHARED__LANDING_VIDEO">
+    <div class="nfs-vid-wrap">
+      <button type="button" class="nfs-vid-poster" aria-label="Play video">
+        <img src="/Bnum185DF7WQdbcM8rQdLenB7UU.png" alt="Watch the nfstay story" loading="lazy">
+        <span class="nfs-vid-play" aria-hidden="true">
+          <svg viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>
+        </span>
+      </button>
+    </div>
+  </section>
+  <div class="nfs-vid-modal" role="dialog" aria-modal="true" aria-label="Video" hidden>
+    <button type="button" class="nfs-vid-close" aria-label="Close video">&times;</button>
+    <div class="nfs-vid-modal-inner">
+      <div class="nfs-vid-modal-frame">
+        <iframe class="nfs-vid-iframe" src="" title="nfstay - watch the story" allow="autoplay; fullscreen; encrypted-media; picture-in-picture" allowfullscreen></iframe>
+      </div>
+    </div>
+  </div>
+  <style>
+    .nfs-vid-section { padding: 64px 16px; background: #fff; }
+    .nfs-vid-wrap { max-width: 1060px; margin: 0 auto; }
+    .nfs-vid-poster {
+      position: relative; display: block;
+      width: 100%; aspect-ratio: 16/9;
+      border: 0; padding: 0; margin: 0;
+      border-radius: 20px; overflow: hidden;
+      cursor: pointer; background: #000;
+      box-shadow: rgba(0,0,0,0.12) 0 12px 40px -8px;
+    }
+    .nfs-vid-poster img { width: 100%; height: 100%; object-fit: cover; display: block; transition: transform 0.4s ease; }
+    .nfs-vid-poster:hover img { transform: scale(1.02); }
+    .nfs-vid-play {
+      position: absolute; top: 50%; left: 50%;
+      transform: translate(-50%, -50%);
+      width: 84px; height: 84px;
+      background: rgba(255,255,255,0.92);
+      border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      color: #1A1A1A;
+      box-shadow: rgba(0,0,0,0.2) 0 8px 24px;
+      transition: transform 0.2s ease, background 0.2s ease;
+    }
+    .nfs-vid-poster:hover .nfs-vid-play { background: #fff; transform: translate(-50%, -50%) scale(1.06); }
+    .nfs-vid-play svg { width: 36px; height: 36px; margin-left: 4px; }
+    .nfs-vid-modal { position: fixed; inset: 0; background: rgba(0,0,0,0.85); z-index: 9999; display: flex; align-items: center; justify-content: center; padding: 24px; }
+    .nfs-vid-modal[hidden] { display: none; }
+    .nfs-vid-modal-inner { width: 100%; max-width: 1100px; }
+    .nfs-vid-modal-frame { position: relative; width: 100%; aspect-ratio: 16/9; background: #000; border-radius: 16px; overflow: hidden; }
+    .nfs-vid-modal-frame iframe { position: absolute; inset: 0; width: 100%; height: 100%; border: 0; }
+    .nfs-vid-close {
+      position: absolute; top: 20px; right: 24px;
+      width: 44px; height: 44px; border: 0;
+      background: rgba(255,255,255,0.15); color: #fff;
+      font-size: 32px; line-height: 1; border-radius: 50%;
+      cursor: pointer; display: flex; align-items: center; justify-content: center;
+    }
+    .nfs-vid-close:hover { background: rgba(255,255,255,0.28); }
+    @media (max-width: 768px) {
+      .nfs-vid-section { padding: 40px 12px; }
+      .nfs-vid-poster { border-radius: 14px; }
+      .nfs-vid-play { width: 64px; height: 64px; }
+      .nfs-vid-play svg { width: 28px; height: 28px; }
+    }
+  </style>
+  <script>
+    (function(){
+      var poster = document.querySelector('.nfs-vid-poster');
+      var modal = document.querySelector('.nfs-vid-modal');
+      var iframe = modal && modal.querySelector('.nfs-vid-iframe');
+      var closeBtn = modal && modal.querySelector('.nfs-vid-close');
+      if (!poster || !modal || !iframe) return;
+      var src = 'https://www.youtube-nocookie.com/embed/ldtEs9dm-C4?autoplay=1&rel=0&modestbranding=1';
+      function openVid(){ iframe.src = src; modal.hidden = false; document.body.style.overflow = 'hidden'; }
+      function closeVid(){ iframe.src = ''; modal.hidden = true; document.body.style.overflow = ''; }
+      poster.addEventListener('click', openVid);
+      closeBtn.addEventListener('click', closeVid);
+      modal.addEventListener('click', function(e){ if (e.target === modal) closeVid(); });
+      document.addEventListener('keydown', function(e){ if (e.key === 'Escape' && !modal.hidden) closeVid(); });
+    })();
+  </script>
+
   <!-- ── 3. Problem Section ── -->
   <section class="section">
     <div class="section-narrow">
@@ -2433,6 +2515,269 @@
       </div>
     </div>
   </section>
+
+  <!-- ========== MEET OUR TEAM (slider) ========== -->
+  <section class="nfs-team-section" data-feature="SHARED__LANDING_TEAM">
+    <div class="nfs-team-wrap">
+      <div class="nfs-team-head">
+        <h2>Meet Our Team</h2>
+        <p>The people behind nfstay - operators, builders and advisors making landlord-approved rent-to-rent simpler for UK operators.</p>
+      </div>
+      <div class="nfs-team-slider">
+        <button type="button" class="nfs-team-nav nfs-team-prev" aria-label="Previous team members" data-nfs-team-dir="-1">&lsaquo;</button>
+        <div class="nfs-team-track">
+          <figure class="nfs-team-card">
+            <div class="nfs-team-photo">
+              <img src="/landing/team/chris-germano.png" alt="Chris Germano" loading="lazy">
+              <div class="nfs-team-actions">
+                <button type="button" class="nfs-team-plus" aria-label="Show social links"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg></button>
+                <div class="nfs-team-socials">
+                  <button type="button" class="nfs-team-soc nfs-team-soc-close" aria-label="Close"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M18 6L6 18M6 6l12 12"/></svg></button>
+                  <a class="nfs-team-soc nfs-team-soc-li" href="https://www.linkedin.com/in/chris-germano-5aab5711a/" target="_blank" rel="noopener" aria-label="LinkedIn"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M20.45 20.45h-3.56v-5.57c0-1.33-.02-3.04-1.85-3.04-1.85 0-2.14 1.44-2.14 2.94v5.67H9.35V9h3.41v1.56h.05c.48-.9 1.64-1.85 3.37-1.85 3.6 0 4.27 2.37 4.27 5.45v6.29zM5.34 7.43a2.06 2.06 0 110-4.13 2.06 2.06 0 010 4.13zm1.78 13.02H3.55V9h3.57v11.45zM22.22 0H1.77C.79 0 0 .77 0 1.73v20.54C0 23.23.79 24 1.77 24h20.45c.98 0 1.78-.77 1.78-1.73V1.73C24 .77 23.2 0 22.22 0z"/></svg></a>
+                  <a class="nfs-team-soc nfs-team-soc-ig" href="#" target="_blank" rel="noopener" aria-label="Instagram"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zM12 0C8.741 0 8.333.014 7.053.072 2.695.272.273 2.69.073 7.052.014 8.333 0 8.741 0 12c0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98C8.333 23.986 8.741 24 12 24c3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98C15.668.014 15.259 0 12 0zm0 5.838a6.162 6.162 0 100 12.324 6.162 6.162 0 000-12.324zM12 16a4 4 0 110-8 4 4 0 010 8zm6.406-11.845a1.44 1.44 0 100 2.881 1.44 1.44 0 000-2.881z"/></svg></a>
+                </div>
+              </div>
+            </div>
+            <figcaption><span class="nfs-team-name">Chris Germano</span><span class="nfs-team-role">Co-Founder</span></figcaption>
+          </figure>
+          <figure class="nfs-team-card">
+            <div class="nfs-team-photo">
+              <img src="/landing/team/Hugo_Souza.png" alt="Hugo Souza" loading="lazy">
+              <div class="nfs-team-actions">
+                <button type="button" class="nfs-team-plus" aria-label="Show social links"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg></button>
+                <div class="nfs-team-socials">
+                  <button type="button" class="nfs-team-soc nfs-team-soc-close" aria-label="Close"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M18 6L6 18M6 6l12 12"/></svg></button>
+                  <a class="nfs-team-soc nfs-team-soc-li" href="https://www.linkedin.com/in/hugorsunico/" target="_blank" rel="noopener" aria-label="LinkedIn"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M20.45 20.45h-3.56v-5.57c0-1.33-.02-3.04-1.85-3.04-1.85 0-2.14 1.44-2.14 2.94v5.67H9.35V9h3.41v1.56h.05c.48-.9 1.64-1.85 3.37-1.85 3.6 0 4.27 2.37 4.27 5.45v6.29zM5.34 7.43a2.06 2.06 0 110-4.13 2.06 2.06 0 010 4.13zm1.78 13.02H3.55V9h3.57v11.45zM22.22 0H1.77C.79 0 0 .77 0 1.73v20.54C0 23.23.79 24 1.77 24h20.45c.98 0 1.78-.77 1.78-1.73V1.73C24 .77 23.2 0 22.22 0z"/></svg></a>
+                  <a class="nfs-team-soc nfs-team-soc-ig" href="#" target="_blank" rel="noopener" aria-label="Instagram"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zM12 0C8.741 0 8.333.014 7.053.072 2.695.272.273 2.69.073 7.052.014 8.333 0 8.741 0 12c0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98C8.333 23.986 8.741 24 12 24c3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98C15.668.014 15.259 0 12 0zm0 5.838a6.162 6.162 0 100 12.324 6.162 6.162 0 000-12.324zM12 16a4 4 0 110-8 4 4 0 010 8zm6.406-11.845a1.44 1.44 0 100 2.881 1.44 1.44 0 000-2.881z"/></svg></a>
+                </div>
+              </div>
+            </div>
+            <figcaption><span class="nfs-team-name">Hugo Souza</span><span class="nfs-team-role">Co-Founder</span></figcaption>
+          </figure>
+          <figure class="nfs-team-card">
+            <div class="nfs-team-photo">
+              <img src="/landing/team/Valeria_Germano.png" alt="Valeria Germano" loading="lazy">
+              <div class="nfs-team-actions">
+                <button type="button" class="nfs-team-plus" aria-label="Show social links"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg></button>
+                <div class="nfs-team-socials">
+                  <button type="button" class="nfs-team-soc nfs-team-soc-close" aria-label="Close"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M18 6L6 18M6 6l12 12"/></svg></button>
+                  <a class="nfs-team-soc nfs-team-soc-li" href="https://www.linkedin.com/in/val%C3%A9riaalvesgermano/" target="_blank" rel="noopener" aria-label="LinkedIn"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M20.45 20.45h-3.56v-5.57c0-1.33-.02-3.04-1.85-3.04-1.85 0-2.14 1.44-2.14 2.94v5.67H9.35V9h3.41v1.56h.05c.48-.9 1.64-1.85 3.37-1.85 3.6 0 4.27 2.37 4.27 5.45v6.29zM5.34 7.43a2.06 2.06 0 110-4.13 2.06 2.06 0 010 4.13zm1.78 13.02H3.55V9h3.57v11.45zM22.22 0H1.77C.79 0 0 .77 0 1.73v20.54C0 23.23.79 24 1.77 24h20.45c.98 0 1.78-.77 1.78-1.73V1.73C24 .77 23.2 0 22.22 0z"/></svg></a>
+                  <a class="nfs-team-soc nfs-team-soc-ig" href="#" target="_blank" rel="noopener" aria-label="Instagram"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zM12 0C8.741 0 8.333.014 7.053.072 2.695.272.273 2.69.073 7.052.014 8.333 0 8.741 0 12c0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98C8.333 23.986 8.741 24 12 24c3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98C15.668.014 15.259 0 12 0zm0 5.838a6.162 6.162 0 100 12.324 6.162 6.162 0 000-12.324zM12 16a4 4 0 110-8 4 4 0 010 8zm6.406-11.845a1.44 1.44 0 100 2.881 1.44 1.44 0 000-2.881z"/></svg></a>
+                </div>
+              </div>
+            </div>
+            <figcaption><span class="nfs-team-name">Valeria Germano</span><span class="nfs-team-role">General Manager</span></figcaption>
+          </figure>
+          <figure class="nfs-team-card">
+            <div class="nfs-team-photo">
+              <img src="/landing/team/Emile_Florence.png" alt="Emile Florence" loading="lazy">
+              <div class="nfs-team-actions">
+                <button type="button" class="nfs-team-plus" aria-label="Show social links"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg></button>
+                <div class="nfs-team-socials">
+                  <button type="button" class="nfs-team-soc nfs-team-soc-close" aria-label="Close"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M18 6L6 18M6 6l12 12"/></svg></button>
+                  <a class="nfs-team-soc nfs-team-soc-li" href="https://www.linkedin.com/in/emilieclarke/" target="_blank" rel="noopener" aria-label="LinkedIn"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M20.45 20.45h-3.56v-5.57c0-1.33-.02-3.04-1.85-3.04-1.85 0-2.14 1.44-2.14 2.94v5.67H9.35V9h3.41v1.56h.05c.48-.9 1.64-1.85 3.37-1.85 3.6 0 4.27 2.37 4.27 5.45v6.29zM5.34 7.43a2.06 2.06 0 110-4.13 2.06 2.06 0 010 4.13zm1.78 13.02H3.55V9h3.57v11.45zM22.22 0H1.77C.79 0 0 .77 0 1.73v20.54C0 23.23.79 24 1.77 24h20.45c.98 0 1.78-.77 1.78-1.73V1.73C24 .77 23.2 0 22.22 0z"/></svg></a>
+                  <a class="nfs-team-soc nfs-team-soc-ig" href="#" target="_blank" rel="noopener" aria-label="Instagram"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zM12 0C8.741 0 8.333.014 7.053.072 2.695.272.273 2.69.073 7.052.014 8.333 0 8.741 0 12c0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98C8.333 23.986 8.741 24 12 24c3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98C15.668.014 15.259 0 12 0zm0 5.838a6.162 6.162 0 100 12.324 6.162 6.162 0 000-12.324zM12 16a4 4 0 110-8 4 4 0 010 8zm6.406-11.845a1.44 1.44 0 100 2.881 1.44 1.44 0 000-2.881z"/></svg></a>
+                </div>
+              </div>
+            </div>
+            <figcaption><span class="nfs-team-name">Emile Florence</span><span class="nfs-team-role">Senior Consultant</span></figcaption>
+          </figure>
+          <figure class="nfs-team-card">
+            <div class="nfs-team-photo">
+              <img src="/landing/team/Pierre_Bisen.png" alt="Pierre Bisen" loading="lazy">
+              <div class="nfs-team-actions">
+                <button type="button" class="nfs-team-plus" aria-label="Show social links"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg></button>
+                <div class="nfs-team-socials">
+                  <button type="button" class="nfs-team-soc nfs-team-soc-close" aria-label="Close"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M18 6L6 18M6 6l12 12"/></svg></button>
+                  <a class="nfs-team-soc nfs-team-soc-li" href="https://www.linkedin.com/in/pierre-pravin-bisen-09b31a261/" target="_blank" rel="noopener" aria-label="LinkedIn"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M20.45 20.45h-3.56v-5.57c0-1.33-.02-3.04-1.85-3.04-1.85 0-2.14 1.44-2.14 2.94v5.67H9.35V9h3.41v1.56h.05c.48-.9 1.64-1.85 3.37-1.85 3.6 0 4.27 2.37 4.27 5.45v6.29zM5.34 7.43a2.06 2.06 0 110-4.13 2.06 2.06 0 010 4.13zm1.78 13.02H3.55V9h3.57v11.45zM22.22 0H1.77C.79 0 0 .77 0 1.73v20.54C0 23.23.79 24 1.77 24h20.45c.98 0 1.78-.77 1.78-1.73V1.73C24 .77 23.2 0 22.22 0z"/></svg></a>
+                  <a class="nfs-team-soc nfs-team-soc-ig" href="#" target="_blank" rel="noopener" aria-label="Instagram"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zM12 0C8.741 0 8.333.014 7.053.072 2.695.272.273 2.69.073 7.052.014 8.333 0 8.741 0 12c0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98C8.333 23.986 8.741 24 12 24c3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98C15.668.014 15.259 0 12 0zm0 5.838a6.162 6.162 0 100 12.324 6.162 6.162 0 000-12.324zM12 16a4 4 0 110-8 4 4 0 010 8zm6.406-11.845a1.44 1.44 0 100 2.881 1.44 1.44 0 000-2.881z"/></svg></a>
+                </div>
+              </div>
+            </div>
+            <figcaption><span class="nfs-team-name">Pierre Bisen</span><span class="nfs-team-role">Account Executive</span></figcaption>
+          </figure>
+          <figure class="nfs-team-card">
+            <div class="nfs-team-photo">
+              <img src="/landing/team/Ismar_Zembo.png" alt="Ismar Zembo" loading="lazy">
+              <div class="nfs-team-actions">
+                <button type="button" class="nfs-team-plus" aria-label="Show social links"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg></button>
+                <div class="nfs-team-socials">
+                  <button type="button" class="nfs-team-soc nfs-team-soc-close" aria-label="Close"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M18 6L6 18M6 6l12 12"/></svg></button>
+                  <a class="nfs-team-soc nfs-team-soc-li" href="https://www.linkedin.com/in/ismarzemboassetmanagmentblockhaintradingforex/" target="_blank" rel="noopener" aria-label="LinkedIn"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M20.45 20.45h-3.56v-5.57c0-1.33-.02-3.04-1.85-3.04-1.85 0-2.14 1.44-2.14 2.94v5.67H9.35V9h3.41v1.56h.05c.48-.9 1.64-1.85 3.37-1.85 3.6 0 4.27 2.37 4.27 5.45v6.29zM5.34 7.43a2.06 2.06 0 110-4.13 2.06 2.06 0 010 4.13zm1.78 13.02H3.55V9h3.57v11.45zM22.22 0H1.77C.79 0 0 .77 0 1.73v20.54C0 23.23.79 24 1.77 24h20.45c.98 0 1.78-.77 1.78-1.73V1.73C24 .77 23.2 0 22.22 0z"/></svg></a>
+                  <a class="nfs-team-soc nfs-team-soc-ig" href="#" target="_blank" rel="noopener" aria-label="Instagram"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zM12 0C8.741 0 8.333.014 7.053.072 2.695.272.273 2.69.073 7.052.014 8.333 0 8.741 0 12c0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98C8.333 23.986 8.741 24 12 24c3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98C15.668.014 15.259 0 12 0zm0 5.838a6.162 6.162 0 100 12.324 6.162 6.162 0 000-12.324zM12 16a4 4 0 110-8 4 4 0 010 8zm6.406-11.845a1.44 1.44 0 100 2.881 1.44 1.44 0 000-2.881z"/></svg></a>
+                </div>
+              </div>
+            </div>
+            <figcaption><span class="nfs-team-name">Ismar Zembo</span><span class="nfs-team-role">Advisor</span></figcaption>
+          </figure>
+          <figure class="nfs-team-card">
+            <div class="nfs-team-photo">
+              <img src="/landing/team/Abduljah_Bahatti.png" alt="Abduljah Bahatti" loading="lazy">
+              <div class="nfs-team-actions">
+                <button type="button" class="nfs-team-plus" aria-label="Show social links"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg></button>
+                <div class="nfs-team-socials">
+                  <button type="button" class="nfs-team-soc nfs-team-soc-close" aria-label="Close"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M18 6L6 18M6 6l12 12"/></svg></button>
+                  <a class="nfs-team-soc nfs-team-soc-li" href="https://www.linkedin.com/in/abhatti47/" target="_blank" rel="noopener" aria-label="LinkedIn"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M20.45 20.45h-3.56v-5.57c0-1.33-.02-3.04-1.85-3.04-1.85 0-2.14 1.44-2.14 2.94v5.67H9.35V9h3.41v1.56h.05c.48-.9 1.64-1.85 3.37-1.85 3.6 0 4.27 2.37 4.27 5.45v6.29zM5.34 7.43a2.06 2.06 0 110-4.13 2.06 2.06 0 010 4.13zm1.78 13.02H3.55V9h3.57v11.45zM22.22 0H1.77C.79 0 0 .77 0 1.73v20.54C0 23.23.79 24 1.77 24h20.45c.98 0 1.78-.77 1.78-1.73V1.73C24 .77 23.2 0 22.22 0z"/></svg></a>
+                  <a class="nfs-team-soc nfs-team-soc-ig" href="#" target="_blank" rel="noopener" aria-label="Instagram"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zM12 0C8.741 0 8.333.014 7.053.072 2.695.272.273 2.69.073 7.052.014 8.333 0 8.741 0 12c0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98C8.333 23.986 8.741 24 12 24c3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98C15.668.014 15.259 0 12 0zm0 5.838a6.162 6.162 0 100 12.324 6.162 6.162 0 000-12.324zM12 16a4 4 0 110-8 4 4 0 010 8zm6.406-11.845a1.44 1.44 0 100 2.881 1.44 1.44 0 000-2.881z"/></svg></a>
+                </div>
+              </div>
+            </div>
+            <figcaption><span class="nfs-team-name">Abduljah Bahatti</span><span class="nfs-team-role">Web Developer</span></figcaption>
+          </figure>
+          <figure class="nfs-team-card">
+            <div class="nfs-team-photo">
+              <img src="/landing/team/Frederik_Lund.png" alt="Frederik Lund" loading="lazy">
+              <div class="nfs-team-actions">
+                <button type="button" class="nfs-team-plus" aria-label="Show social links"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg></button>
+                <div class="nfs-team-socials">
+                  <button type="button" class="nfs-team-soc nfs-team-soc-close" aria-label="Close"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M18 6L6 18M6 6l12 12"/></svg></button>
+                  <a class="nfs-team-soc nfs-team-soc-li" href="https://www.linkedin.com/in/lundfrederik/" target="_blank" rel="noopener" aria-label="LinkedIn"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M20.45 20.45h-3.56v-5.57c0-1.33-.02-3.04-1.85-3.04-1.85 0-2.14 1.44-2.14 2.94v5.67H9.35V9h3.41v1.56h.05c.48-.9 1.64-1.85 3.37-1.85 3.6 0 4.27 2.37 4.27 5.45v6.29zM5.34 7.43a2.06 2.06 0 110-4.13 2.06 2.06 0 010 4.13zm1.78 13.02H3.55V9h3.57v11.45zM22.22 0H1.77C.79 0 0 .77 0 1.73v20.54C0 23.23.79 24 1.77 24h20.45c.98 0 1.78-.77 1.78-1.73V1.73C24 .77 23.2 0 22.22 0z"/></svg></a>
+                  <a class="nfs-team-soc nfs-team-soc-ig" href="#" target="_blank" rel="noopener" aria-label="Instagram"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zM12 0C8.741 0 8.333.014 7.053.072 2.695.272.273 2.69.073 7.052.014 8.333 0 8.741 0 12c0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98C8.333 23.986 8.741 24 12 24c3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98C15.668.014 15.259 0 12 0zm0 5.838a6.162 6.162 0 100 12.324 6.162 6.162 0 000-12.324zM12 16a4 4 0 110-8 4 4 0 010 8zm6.406-11.845a1.44 1.44 0 100 2.881 1.44 1.44 0 000-2.881z"/></svg></a>
+                </div>
+              </div>
+            </div>
+            <figcaption><span class="nfs-team-name">Frederik Lund</span><span class="nfs-team-role">Legal Advisor</span></figcaption>
+          </figure>
+          <figure class="nfs-team-card">
+            <div class="nfs-team-photo">
+              <img src="/landing/team/Anna_Dani.png" alt="Anna Dani" loading="lazy">
+              <div class="nfs-team-actions">
+                <button type="button" class="nfs-team-plus" aria-label="Show social links"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg></button>
+                <div class="nfs-team-socials">
+                  <button type="button" class="nfs-team-soc nfs-team-soc-close" aria-label="Close"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M18 6L6 18M6 6l12 12"/></svg></button>
+                  <a class="nfs-team-soc nfs-team-soc-li" href="https://www.linkedin.com/in/annaversati/" target="_blank" rel="noopener" aria-label="LinkedIn"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M20.45 20.45h-3.56v-5.57c0-1.33-.02-3.04-1.85-3.04-1.85 0-2.14 1.44-2.14 2.94v5.67H9.35V9h3.41v1.56h.05c.48-.9 1.64-1.85 3.37-1.85 3.6 0 4.27 2.37 4.27 5.45v6.29zM5.34 7.43a2.06 2.06 0 110-4.13 2.06 2.06 0 010 4.13zm1.78 13.02H3.55V9h3.57v11.45zM22.22 0H1.77C.79 0 0 .77 0 1.73v20.54C0 23.23.79 24 1.77 24h20.45c.98 0 1.78-.77 1.78-1.73V1.73C24 .77 23.2 0 22.22 0z"/></svg></a>
+                  <a class="nfs-team-soc nfs-team-soc-ig" href="#" target="_blank" rel="noopener" aria-label="Instagram"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zM12 0C8.741 0 8.333.014 7.053.072 2.695.272.273 2.69.073 7.052.014 8.333 0 8.741 0 12c0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98C8.333 23.986 8.741 24 12 24c3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98C15.668.014 15.259 0 12 0zm0 5.838a6.162 6.162 0 100 12.324 6.162 6.162 0 000-12.324zM12 16a4 4 0 110-8 4 4 0 010 8zm6.406-11.845a1.44 1.44 0 100 2.881 1.44 1.44 0 000-2.881z"/></svg></a>
+                </div>
+              </div>
+            </div>
+            <figcaption><span class="nfs-team-name">Anna Dani</span><span class="nfs-team-role">External Affairs</span></figcaption>
+          </figure>
+        </div>
+        <button type="button" class="nfs-team-nav nfs-team-next" aria-label="Next team members" data-nfs-team-dir="1">&rsaquo;</button>
+      </div>
+    </div>
+  </section>
+  <style>
+    .nfs-team-section { padding: 96px 16px; background: #fff; font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif; }
+    .nfs-team-wrap { max-width: 1200px; margin: 0 auto; }
+    .nfs-team-head { text-align: center; margin-bottom: 56px; }
+    .nfs-team-head h2 {
+      font-family: inherit;
+      font-size: 48px; font-weight: 700;
+      letter-spacing: -1px; line-height: 1.1;
+      color: #1A1A1A;
+      margin: 0 0 20px;
+    }
+    .nfs-team-head p {
+      font-size: 17px; line-height: 1.6;
+      color: #6B7280;
+      max-width: 580px; margin: 0 auto;
+    }
+    .nfs-team-slider { position: relative; }
+    .nfs-team-track {
+      display: grid;
+      grid-auto-flow: column;
+      grid-auto-columns: calc((100% - 64px) / 3);
+      gap: 32px;
+      overflow-x: auto;
+      scroll-snap-type: x mandatory;
+      scroll-behavior: smooth;
+      padding: 4px 4px 16px;
+      scrollbar-width: none;
+      -ms-overflow-style: none;
+    }
+    .nfs-team-track::-webkit-scrollbar { display: none; }
+    .nfs-team-card {
+      margin: 0; text-align: center;
+      scroll-snap-align: start;
+      display: flex; flex-direction: column; align-items: center;
+    }
+    .nfs-team-photo { position: relative; width: 100%; }
+    .nfs-team-photo img {
+      display: block;
+      width: 100%; aspect-ratio: 1 / 1;
+      object-fit: cover; object-position: top center;
+      border-radius: 16px;
+      filter: grayscale(100%);
+      transition: filter 0.3s ease;
+      background: #F3F3EE;
+    }
+    .nfs-team-card:hover .nfs-team-photo img { filter: grayscale(0%); }
+    .nfs-team-actions { position: absolute; left: 50%; bottom: 16px; transform: translateX(-50%); display: flex; align-items: center; z-index: 2; }
+    .nfs-team-plus, .nfs-team-soc {
+      width: 40px; height: 40px;
+      border: 0; border-radius: 12px;
+      background: rgba(255,255,255,0.95);
+      color: #1A1A1A;
+      display: inline-flex; align-items: center; justify-content: center;
+      cursor: pointer; text-decoration: none;
+      box-shadow: rgba(0,0,0,0.12) 0 4px 12px;
+      transition: transform 0.2s ease, background 0.2s ease;
+    }
+    .nfs-team-plus:hover, .nfs-team-soc:hover { transform: translateY(-2px); background: #fff; }
+    .nfs-team-plus svg, .nfs-team-soc svg { width: 18px; height: 18px; }
+    .nfs-team-socials { display: none; gap: 8px; align-items: center; }
+    .nfs-team-card[data-open="true"] .nfs-team-plus { display: none; }
+    .nfs-team-card[data-open="true"] .nfs-team-socials { display: inline-flex; }
+    .nfs-team-soc-li { color: #0A66C2; }
+    .nfs-team-soc-ig { color: #E4405F; }
+    .nfs-team-card figcaption { margin-top: 20px; display: flex; flex-direction: column; gap: 4px; }
+    .nfs-team-name { font-size: 20px; font-weight: 700; color: #1A1A1A; letter-spacing: -0.2px; }
+    .nfs-team-role { font-size: 14px; font-weight: 400; color: #6B7280; }
+    .nfs-team-nav {
+      position: absolute; top: 40%;
+      transform: translateY(-50%);
+      width: 48px; height: 48px;
+      border: 0; border-radius: 50%;
+      background: rgba(0,0,0,0.55);
+      color: #fff; font-size: 28px; line-height: 1;
+      cursor: pointer; z-index: 2;
+      display: flex; align-items: center; justify-content: center;
+      transition: background 0.2s ease, transform 0.2s ease;
+    }
+    .nfs-team-nav:hover { background: rgba(0,0,0,0.78); transform: translateY(-50%) scale(1.05); }
+    .nfs-team-prev { left: -8px; }
+    .nfs-team-next { right: -8px; }
+    @media (max-width: 1024px) {
+      .nfs-team-track { grid-auto-columns: calc((100% - 24px) / 2); gap: 24px; }
+      .nfs-team-head h2 { font-size: 40px; }
+    }
+    @media (max-width: 640px) {
+      .nfs-team-section { padding: 64px 16px; }
+      .nfs-team-track { grid-auto-columns: 100%; gap: 16px; }
+      .nfs-team-head { margin-bottom: 40px; }
+      .nfs-team-head h2 { font-size: 32px; }
+      .nfs-team-head p { font-size: 15px; }
+      .nfs-team-nav { display: none; }
+    }
+  </style>
+  <script>
+    (function(){
+      var track = document.querySelector('.nfs-team-track');
+      if (track) {
+        document.querySelectorAll('[data-nfs-team-dir]').forEach(function(btn){
+          btn.addEventListener('click', function(){
+            var dir = parseInt(btn.getAttribute('data-nfs-team-dir'), 10);
+            var card = track.querySelector('.nfs-team-card');
+            var step = card ? card.getBoundingClientRect().width + 32 : 320;
+            track.scrollBy({ left: dir * step, behavior: 'smooth' });
+          });
+        });
+      }
+      document.querySelectorAll('.nfs-team-plus').forEach(function(btn){
+        btn.addEventListener('click', function(){
+          var card = btn.closest('.nfs-team-card');
+          if (card) card.setAttribute('data-open', 'true');
+        });
+      });
+      document.querySelectorAll('.nfs-team-soc-close').forEach(function(btn){
+        btn.addEventListener('click', function(){
+          var card = btn.closest('.nfs-team-card');
+          if (card) card.setAttribute('data-open', 'false');
+        });
+      });
+    })();
+  </script>
 
   <!-- ── 13. Final Urgency ── -->
   <section class="section urgency-section">
