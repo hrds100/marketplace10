@@ -1,7 +1,10 @@
-import { useCallback, useState } from 'react';
-import { GripVertical, Trash2, Plus, Search, Loader2 } from 'lucide-react';
+import { useCallback, useEffect, useState } from 'react';
+import ReactDOM from 'react-dom';
+import { GripVertical, Trash2, Plus, Search, Loader2, Pencil } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { supabase } from '@/integrations/supabase/client';
+import EditContactModal from '@/features/smsv2/components/contacts/EditContactModal';
+import type { Contact } from '@/features/smsv2/types';
 import type { QueueLead } from '../types';
 
 interface Props {
@@ -17,6 +20,39 @@ export default function QueueManagerPro({ queue, campaignId, onRefresh }: Props)
   const [removing, setRemoving] = useState<string | null>(null);
   const [adding, setAdding] = useState(false);
   const [showSearch, setShowSearch] = useState(false);
+  const [editingContactId, setEditingContactId] = useState<string | null>(null);
+  const [editingContact, setEditingContact] = useState<Contact | null>(null);
+
+  useEffect(() => {
+    if (!editingContactId) { setEditingContact(null); return; }
+    let cancelled = false;
+    void (async () => {
+      const [contactRes, tagsRes] = await Promise.all([
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        (supabase.from('wk_contacts' as any) as any)
+          .select('id, name, phone, email, owner_agent_id, pipeline_column_id, is_hot, deal_value_pence, custom_fields, created_at, last_contact_at')
+          .eq('id', editingContactId)
+          .maybeSingle(),
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        (supabase.from('wk_contact_tags' as any) as any)
+          .select('tag')
+          .eq('contact_id', editingContactId),
+      ]);
+      if (cancelled) return;
+      if (contactRes.error || !contactRes.data) return;
+      const d = contactRes.data;
+      const tags = ((tagsRes.data ?? []) as { tag: string }[]).map((r) => r.tag);
+      setEditingContact({
+        id: d.id, name: d.name ?? '', phone: d.phone ?? '',
+        email: d.email ?? undefined, ownerAgentId: d.owner_agent_id ?? undefined,
+        pipelineColumnId: d.pipeline_column_id ?? undefined, tags,
+        isHot: d.is_hot ?? false, dealValuePence: d.deal_value_pence ?? undefined,
+        customFields: d.custom_fields ?? {}, createdAt: d.created_at ?? new Date().toISOString(),
+        lastContactAt: d.last_contact_at ?? undefined,
+      });
+    })();
+    return () => { cancelled = true; };
+  }, [editingContactId]);
 
   const handleSearch = useCallback(async () => {
     if (!searchQuery.trim() || !campaignId) return;
@@ -166,6 +202,13 @@ export default function QueueManagerPro({ queue, campaignId, onRefresh }: Props)
                 </button>
               )}
               <button
+                onClick={() => setEditingContactId(lead.contactId)}
+                className="p-0.5 rounded text-[#6B7280] hover:text-[#1E9A80]"
+                title="Edit contact"
+              >
+                <Pencil className="w-3 h-3" />
+              </button>
+              <button
                 onClick={() => void removeFromQueue(lead.queueRowId)}
                 disabled={removing === lead.queueRowId}
                 className={cn(
@@ -179,6 +222,36 @@ export default function QueueManagerPro({ queue, campaignId, onRefresh }: Props)
           </div>
         ))}
       </div>
+
+      {editingContact && ReactDOM.createPortal(
+        <div className="fixed inset-0 z-[9999]">
+          <EditContactModal
+            contact={editingContact}
+            onClose={() => { setEditingContactId(null); setEditingContact(null); }}
+            onSave={async (updated) => {
+              // eslint-disable-next-line @typescript-eslint/no-explicit-any
+              await (supabase.from('wk_contacts' as any) as any)
+                .update({
+                  name: updated.name || null, phone: updated.phone,
+                  email: updated.email || null, pipeline_column_id: updated.pipelineColumnId || null,
+                  owner_agent_id: updated.ownerAgentId || null, is_hot: updated.isHot,
+                  deal_value_pence: updated.dealValuePence ?? null, custom_fields: updated.customFields,
+                }).eq('id', updated.id);
+              // eslint-disable-next-line @typescript-eslint/no-explicit-any
+              await (supabase.from('wk_contact_tags' as any) as any).delete().eq('contact_id', updated.id);
+              if (updated.tags.length > 0) {
+                // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                await (supabase.from('wk_contact_tags' as any) as any)
+                  .insert(updated.tags.map((t) => ({ contact_id: updated.id, tag: t })));
+              }
+              setEditingContactId(null);
+              setEditingContact(null);
+              onRefresh();
+            }}
+          />
+        </div>,
+        document.body,
+      )}
     </div>
   );
 }
