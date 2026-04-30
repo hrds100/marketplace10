@@ -23,6 +23,7 @@ import CallTimeline from './CallTimeline';
 import PostCallPanel from './PostCallPanel';
 import EditContactModal from '../contacts/EditContactModal';
 import type { Contact } from '../../types';
+import { supabase } from '@/integrations/supabase/client';
 import { useSmsV2 } from '../../store/SmsV2Store';
 import { useCurrentAgent } from '../../hooks/useCurrentAgent';
 import {
@@ -383,7 +384,23 @@ export default function LiveCallScreen() {
       <EditContactModal
         contact={editing}
         onClose={() => setEditing(null)}
-        onSave={(updated) => store.upsertContact(updated)}
+        onSave={async (updated) => {
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          await (supabase.from('wk_contacts' as any) as any)
+            .update({
+              name: updated.name || null,
+              phone: updated.phone,
+              email: updated.email || null,
+              pipeline_column_id: updated.pipelineColumnId || null,
+              owner_agent_id: updated.ownerAgentId || null,
+              tags: updated.tags,
+              is_hot: updated.isHot,
+              deal_value_pence: updated.dealValuePence ?? null,
+              custom_fields: updated.customFields,
+            })
+            .eq('id', updated.id);
+          store.upsertContact(updated);
+        }}
       />
     </div>
   );
