@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Outlet, Link, useLocation } from 'react-router-dom';
 import { ArrowLeft } from 'lucide-react';
+import { useAuth } from '@/hooks/useAuth';
 import CrmGuard from '../components/CrmGuard';
 import Smsv2Sidebar from './Smsv2Sidebar';
 import Smsv2StatusBar from './Smsv2StatusBar';
@@ -24,6 +25,7 @@ function StoreHydrator() {
 export default function Smsv2Layout() {
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const onDialerPage = useLocation().pathname === '/crm/dialer';
+  const { isAdmin } = useAuth();
 
   return (
     <CrmGuard>
@@ -49,13 +51,15 @@ export default function Smsv2Layout() {
 
               <div className="ml-auto flex items-center gap-3">
                 <Smsv2StatusBar />
-                <Link
-                  to="/admin"
-                  className="flex items-center gap-1.5 text-sm text-[#6B7280] hover:text-[#1A1A1A] transition-colors px-3 py-1.5 rounded-lg hover:bg-black/[0.04]"
-                >
-                  <ArrowLeft className="w-4 h-4" strokeWidth={1.8} />
-                  <span className="hidden sm:inline">Admin</span>
-                </Link>
+                {isAdmin && (
+                  <Link
+                    to="/admin"
+                    className="flex items-center gap-1.5 text-sm text-[#6B7280] hover:text-[#1A1A1A] transition-colors px-3 py-1.5 rounded-lg hover:bg-black/[0.04]"
+                  >
+                    <ArrowLeft className="w-4 h-4" strokeWidth={1.8} />
+                    <span className="hidden sm:inline">Admin</span>
+                  </Link>
+                )}
               </div>
             </header>
 

@@ -87,22 +87,25 @@ export default function DialerProPage() {
   // Queue
   const { queue, totalCount: queueTotal, refresh: refreshQueue } = useQueuePro(camp?.id ?? null);
 
-  // Contact for the call room columns
+  // Contact for the call room columns — during a call use currentLead,
+  // when idle fall back to the next lead in queue so COL 1 (SMS/WA/Email)
+  // is always populated and ready to send.
+  const activeContactId = state.currentLead?.contactId ?? queue[0]?.contactId ?? null;
   const [contact, setContact] = useState<Contact | null>(null);
   useEffect(() => {
-    if (!state.currentLead) { setContact(null); return; }
+    if (!activeContactId) { setContact(null); return; }
     let cancelled = false;
     void (async () => {
       const [contactRes, tagsRes] = await Promise.all([
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         (supabase.from('wk_contacts' as any) as any)
           .select('id, name, phone, email, owner_agent_id, pipeline_column_id, is_hot, deal_value_pence, custom_fields, created_at, last_contact_at')
-          .eq('id', state.currentLead!.contactId)
+          .eq('id', activeContactId)
           .maybeSingle(),
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         (supabase.from('wk_contact_tags' as any) as any)
           .select('tag')
-          .eq('contact_id', state.currentLead!.contactId),
+          .eq('contact_id', activeContactId),
       ]);
       if (cancelled) return;
       if (contactRes.error || !contactRes.data) return;
@@ -118,7 +121,7 @@ export default function DialerProPage() {
       });
     })();
     return () => { cancelled = true; };
-  }, [state.currentLead?.contactId]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [activeContactId]);
 
   // Edit contact modal
   const [editing, setEditing] = useState<Contact | null>(null);
@@ -183,6 +186,9 @@ export default function DialerProPage() {
   useEffect(() => { try { localStorage.setItem('dialer_pro_card_pos_v2', JSON.stringify(cardPos)); } catch { /* ignore */ } }, [cardPos]);
 
   const [minimized, setMinimized] = useState(false);
+  useEffect(() => {
+    if (state.phase === 'dialing') setMinimized(false);
+  }, [state.phase]);
   const dragRef = useRef<{ offX: number; offY: number; moved: boolean } | null>(null);
 
   const onDragStart = (e: React.PointerEvent) => {
@@ -279,6 +285,9 @@ export default function DialerProPage() {
                     </button>
                   </div>
                   <div className="text-[12px] text-[#6B7280] tabular-nums mt-0.5">{contact.phone}</div>
+                  {!isLive && !state.currentLead && (
+                    <div className="text-[10px] text-[#9CA3AF] mt-1">Next in queue</div>
+                  )}
                   <div className="mt-2"><ContactMetaCompact contact={contact} /></div>
                 </div>
                 <div className="flex-1 overflow-y-auto px-4 py-3 space-y-3 text-[12px]">
@@ -297,7 +306,7 @@ export default function DialerProPage() {
               <div className="flex-1 flex flex-col items-center justify-center gap-3 text-center px-6">
                 <MessageSquare className="w-8 h-8 text-[#E5E7EB]" />
                 <div className="text-sm font-medium text-[#9CA3AF]">SMS / WhatsApp / Email</div>
-                <div className="text-xs text-[#9CA3AF]">Start a call to send messages to the contact</div>
+                <div className="text-xs text-[#9CA3AF]">No leads in queue</div>
               </div>
             )}
           </ResizablePanel>

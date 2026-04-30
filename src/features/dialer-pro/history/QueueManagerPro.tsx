@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import ReactDOM from 'react-dom';
-import { GripVertical, Trash2, Plus, Search, Loader2, Pencil } from 'lucide-react';
+import { Trash2, Plus, Pencil } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { supabase } from '@/integrations/supabase/client';
 import EditContactModal from '@/features/smsv2/components/contacts/EditContactModal';
@@ -14,12 +14,8 @@ interface Props {
 }
 
 export default function QueueManagerPro({ queue, campaignId, onRefresh }: Props) {
-  const [searchQuery, setSearchQuery] = useState('');
-  const [searchResults, setSearchResults] = useState<Array<{ id: string; name: string; phone: string }>>([]);
-  const [searching, setSearching] = useState(false);
   const [removing, setRemoving] = useState<string | null>(null);
   const [adding, setAdding] = useState(false);
-  const [showSearch, setShowSearch] = useState(false);
   const [creatingNew, setCreatingNew] = useState<Contact | null>(null);
   const [visibleCount, setVisibleCount] = useState(25);
   const sentinelRef = useRef<HTMLDivElement>(null);
@@ -75,24 +71,6 @@ export default function QueueManagerPro({ queue, campaignId, onRefresh }: Props)
     return () => { cancelled = true; };
   }, [editingContactId]);
 
-  const handleSearch = useCallback(async () => {
-    if (!searchQuery.trim() || !campaignId) return;
-    setSearching(true);
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const { data, error } = await (supabase.from('wk_contacts' as any) as any)
-      .select('id, name, phone')
-      .or(`name.ilike.%${searchQuery}%,phone.ilike.%${searchQuery}%`)
-      .limit(10);
-    setSearching(false);
-    if (error) return;
-    const existing = new Set(queue.map((q) => q.contactId));
-    setSearchResults(
-      ((data ?? []) as Array<{ id: string; name: string | null; phone: string | null }>)
-        .filter((c) => c.phone && !existing.has(c.id))
-        .map((c) => ({ id: c.id, name: c.name ?? c.phone!, phone: c.phone! }))
-    );
-  }, [searchQuery, campaignId, queue]);
-
   const addToQueue = useCallback(
     async (contactId: string) => {
       if (!campaignId) return;
@@ -143,63 +121,17 @@ export default function QueueManagerPro({ queue, campaignId, onRefresh }: Props)
     <div className="p-2 space-y-2">
       <div className="flex items-center gap-2">
         <button
-          onClick={() => setShowSearch(!showSearch)}
-          className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium bg-[#1E9A80] text-white hover:bg-[#1E9A80]/90 transition-colors"
+          onClick={() => setCreatingNew({
+            id: `new-${Date.now()}`, name: '', phone: '', email: undefined,
+            tags: [], isHot: false, customFields: {}, createdAt: new Date().toISOString(),
+          })}
+          className="flex items-center gap-1 px-2.5 py-1 rounded-lg text-[11px] font-medium bg-[#1E9A80] text-white hover:bg-[#1E9A80]/90 transition-colors"
         >
-          <Plus className="w-3.5 h-3.5" />
-          Add lead
+          <Plus className="w-3 h-3" />
+          New contact
         </button>
-        <span className="text-xs text-[#9CA3AF]">{queue.length} pending</span>
+        <span className="text-[10px] text-[#9CA3AF]">{queue.length} pending</span>
       </div>
-
-      {showSearch && (
-        <div className="bg-white border border-[#E5E7EB] rounded-lg p-2 space-y-2">
-          <div className="flex items-center gap-2">
-            <input
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              onKeyDown={(e) => e.key === 'Enter' && void handleSearch()}
-              placeholder="Search or create new…"
-              className="flex-1 px-3 py-1.5 rounded-lg border border-[#E5E5E5] text-xs focus:outline-none focus:ring-1 focus:ring-[#1E9A80]"
-            />
-            <button
-              onClick={() => void handleSearch()}
-              disabled={searching}
-              className="p-1.5 rounded-lg bg-[#1E9A80] text-white hover:bg-[#1E9A80]/90"
-            >
-              {searching ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Search className="w-3.5 h-3.5" />}
-            </button>
-          </div>
-          <button
-            onClick={() => setCreatingNew({
-              id: `new-${Date.now()}`, name: '', phone: '', email: undefined,
-              tags: [], isHot: false, customFields: {}, createdAt: new Date().toISOString(),
-            })}
-            className="flex items-center gap-1.5 w-full px-2 py-1.5 rounded-lg text-xs font-medium text-[#1E9A80] hover:bg-[#ECFDF5] transition-colors"
-          >
-            <Plus className="w-3.5 h-3.5" /> New contact
-          </button>
-          {searchResults.length > 0 && (
-            <div className="space-y-1 max-h-40 overflow-y-auto">
-              {searchResults.map((c) => (
-                <div key={c.id} className="flex items-center justify-between px-2 py-1.5 rounded hover:bg-black/[0.02] text-xs">
-                  <div>
-                    <span className="font-medium text-[#1A1A1A]">{c.name}</span>
-                    <span className="ml-2 text-[#9CA3AF]">{c.phone}</span>
-                  </div>
-                  <button
-                    onClick={() => void addToQueue(c.id)}
-                    disabled={adding}
-                    className="text-[#1E9A80] hover:text-[#1E9A80]/80 font-medium"
-                  >
-                    + Add
-                  </button>
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
-      )}
 
       <div className="space-y-1">
         {visibleQueue.map((lead, i) => (
@@ -209,8 +141,8 @@ export default function QueueManagerPro({ queue, campaignId, onRefresh }: Props)
           >
             <span className="font-mono text-[10px] text-[#9CA3AF] w-4 flex-shrink-0">{i + 1}</span>
             <div className="flex-1 min-w-0">
-              <div className="font-medium text-[#1A1A1A] truncate text-[11px]">{lead.name}</div>
-              <div className="text-[10px] text-[#9CA3AF] truncate">{lead.phone}</div>
+              <div className="font-medium text-[#1A1A1A] text-[11px]">{lead.name}</div>
+              <div className="text-[10px] text-[#9CA3AF] font-mono">{lead.phone}</div>
             </div>
             {lead.attempts > 0 && (
               <span className="text-[10px] text-[#9CA3AF]">×{lead.attempts}</span>
@@ -318,7 +250,6 @@ export default function QueueManagerPro({ queue, campaignId, onRefresh }: Props)
               }
               await addToQueue(data.id);
               setCreatingNew(null);
-              setShowSearch(false);
             }}
           />
         </div>,

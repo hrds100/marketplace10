@@ -57,9 +57,8 @@ test.describe("Dialer Pro — 3-layer layout", () => {
   test("Layer 1 — 4-column call room renders on load", async ({ page }) => {
     await page.screenshot({ path: "e2e/screenshots/dialer-pro-01-load.png", fullPage: true });
 
-    // Empty states show when no call active
-    await expect(page.getByText("SMS / WhatsApp / Email")).toBeVisible({ timeout: 10000 });
-    await expect(page.getByText("Transcript appears during calls")).toBeVisible({ timeout: 5000 });
+    // Col 2 shows transcript placeholder when no call active
+    await expect(page.getByText("Transcript appears during calls")).toBeVisible({ timeout: 10000 });
 
     // Resize handles present (3 between 4 columns)
     const handles = page.locator('[data-resize-handle-active]').or(page.locator('[data-panel-resize-handle-id]'));
