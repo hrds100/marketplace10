@@ -426,7 +426,7 @@ export default function DialerProPage() {
                 <Phone className="w-8 h-8" />
               </div>
               <div className="text-[14px] font-medium text-[#6B7280]">
-                {queueTotal > 0 ? `${queueTotal} leads in queue` : 'Queue empty'}
+                {queue.length > 0 ? `${queue.length} leads in queue` : 'Queue empty'}
               </div>
               {queue[0] && (
                 <div className="text-[12px] text-[#9CA3AF] mt-1">
