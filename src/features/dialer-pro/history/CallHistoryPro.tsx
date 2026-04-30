@@ -1,9 +1,11 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
+import { useInfiniteQuery, useQueryClient } from '@tanstack/react-query';
 import { Phone, Play, FileText, Clock } from 'lucide-react';
-import { cn } from '@/lib/utils';
 import { supabase } from '@/integrations/supabase/client';
 import { signCallRecording } from '@/features/smsv2/caller-pad/hooks/useCalls';
 import CallTranscriptModal from '@/features/smsv2/components/calls/CallTranscriptModal';
+
+const PAGE_SIZE = 25;
 
 interface CallRow {
   id: string;
@@ -13,96 +15,97 @@ interface CallRow {
   status: string;
   startedAt: string | null;
   durationSec: number | null;
-  dispositionColumnName: string | null;
   recordingUrl: string | null;
-  campaignName: string | null;
   agentNote: string | null;
 }
 
-interface Props {
-  campaignId: string | null;
-  agentId: string | null;
+async function fetchPage(pageParam: number): Promise<CallRow[]> {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { data: rows, error } = await (supabase.from('wk_calls' as any) as any)
+    .select(
+      'id, direction, status, started_at, duration_sec, recording_url, agent_note, ' +
+      'wk_contacts:contact_id ( name, phone )'
+    )
+    .order('created_at', { ascending: false })
+    .range(pageParam * PAGE_SIZE, (pageParam + 1) * PAGE_SIZE - 1);
+
+  console.log('call history data:', rows, 'error:', error);
+
+  if (error) { console.warn('[dialer-pro] history fetch error', error); return []; }
+
+  return ((rows ?? []) as Array<{
+    id: string; direction: string; status: string;
+    started_at: string | null; duration_sec: number | null;
+    recording_url: string | null; agent_note: string | null;
+    wk_contacts: { name: string | null; phone: string | null } | null;
+  }>).map((r) => ({
+    id: r.id,
+    contactName: r.wk_contacts?.name ?? null,
+    contactPhone: r.wk_contacts?.phone ?? null,
+    direction: r.direction,
+    status: r.status,
+    startedAt: r.started_at,
+    durationSec: r.duration_sec,
+    recordingUrl: r.recording_url,
+    agentNote: r.agent_note,
+  }));
 }
 
-export default function CallHistoryPro({ campaignId, agentId }: Props) {
-  const [calls, setCalls] = useState<CallRow[]>([]);
-  const [loading, setLoading] = useState(true);
+export default function CallHistoryPro() {
+  const queryClient = useQueryClient();
   const [playingUrl, setPlayingUrl] = useState<string | null>(null);
   const [transcriptCallId, setTranscriptCallId] = useState<string | null>(null);
+  const sentinelRef = useRef<HTMLDivElement>(null);
 
-  const fetchCalls = useCallback(async () => {
-    if (!agentId) return;
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    let q = (supabase.from('wk_calls' as any) as any)
-      .select(
-        'id, direction, status, started_at, duration_sec, disposition_column_id, recording_url, agent_note, campaign_id, ' +
-        'wk_contacts:contact_id ( name, phone )'
-      )
-      .eq('agent_id', agentId)
-      .order('created_at', { ascending: false })
-      .limit(25);
+  const {
+    data,
+    isLoading,
+    fetchNextPage,
+    hasNextPage,
+    isFetchingNextPage,
+  } = useInfiniteQuery({
+    queryKey: ['dialer-pro-call-history'],
+    queryFn: ({ pageParam }) => fetchPage(pageParam),
+    initialPageParam: 0,
+    getNextPageParam: (lastPage, _allPages, lastPageParam) =>
+      lastPage.length === PAGE_SIZE ? lastPageParam + 1 : undefined,
+  });
 
-    if (campaignId) {
-      q = q.eq('campaign_id', campaignId);
-    }
-
-    const { data: rows, error } = await q;
-    if (error) { console.warn('[dialer-pro] history fetch error', error); return; }
-
-    const mapped = ((rows ?? []) as Array<{
-      id: string;
-      direction: string;
-      status: string;
-      started_at: string | null;
-      duration_sec: number | null;
-      disposition_column_id: string | null;
-      recording_url: string | null;
-      agent_note: string | null;
-      campaign_id: string | null;
-      wk_contacts: { name: string | null; phone: string | null } | null;
-    }>).map((r) => ({
-      id: r.id,
-      contactName: r.wk_contacts?.name ?? null,
-      contactPhone: r.wk_contacts?.phone ?? null,
-      direction: r.direction,
-      status: r.status,
-      startedAt: r.started_at,
-      durationSec: r.duration_sec,
-      dispositionColumnName: null,
-      recordingUrl: r.recording_url,
-      campaignName: null,
-      agentNote: r.agent_note,
-    }));
-
-    setCalls(mapped);
-    setLoading(false);
-  }, [campaignId, agentId]);
-
+  // Realtime — re-fetch first page when wk_calls changes
   useEffect(() => {
-    if (!agentId) return;
-    setLoading(true);
-    void fetchCalls();
-  }, [agentId, fetchCalls]);
-
-  // Realtime: re-fetch when new calls are inserted or updated
-  useEffect(() => {
-    if (!agentId) return;
     const channel = supabase
-      .channel(`dialer-pro-history-${agentId}`)
+      .channel('call-history-realtime')
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       .on('postgres_changes' as any, {
         event: '*',
         schema: 'public',
         table: 'wk_calls',
-        filter: `agent_id=eq.${agentId}`,
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       } as any, () => {
-        void fetchCalls();
+        void queryClient.invalidateQueries({ queryKey: ['dialer-pro-call-history'] });
       })
       .subscribe();
 
     return () => { void supabase.removeChannel(channel); };
-  }, [agentId, fetchCalls]);
+  }, [queryClient]);
+
+  // IntersectionObserver — load next page when sentinel is visible
+  useEffect(() => {
+    const el = sentinelRef.current;
+    if (!el) return;
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries[0]?.isIntersecting && hasNextPage && !isFetchingNextPage) {
+          void fetchNextPage();
+        }
+      },
+      { threshold: 0.1 }
+    );
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, [hasNextPage, isFetchingNextPage, fetchNextPage]);
+
+  const calls = data?.pages.flat() ?? [];
 
   const handlePlay = async (url: string) => {
     const signed = await signCallRecording(url);
@@ -122,7 +125,7 @@ export default function CallHistoryPro({ campaignId, agentId }: Props) {
     return d.toLocaleString('en-GB', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' });
   };
 
-  if (loading) {
+  if (isLoading) {
     return <div className="flex items-center justify-center py-8 text-sm text-[#9CA3AF]">Loading history…</div>;
   }
 
@@ -173,6 +176,12 @@ export default function CallHistoryPro({ campaignId, agentId }: Props) {
           </div>
         </div>
       ))}
+
+      {/* Sentinel for infinite scroll */}
+      <div ref={sentinelRef} className="h-4" />
+      {isFetchingNextPage && (
+        <div className="flex items-center justify-center py-2 text-[11px] text-[#9CA3AF]">Loading more…</div>
+      )}
 
       {transcriptCallId && (
         <CallTranscriptModal

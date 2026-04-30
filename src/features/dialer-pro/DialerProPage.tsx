@@ -4,6 +4,7 @@ import {
   Phone, PhoneOff, Mic, MicOff, Pause as PauseIcon, Play, Square,
   SkipForward, Zap, CheckCircle2, Loader2, Clock, Radio, Pencil, X,
   Minus, GripVertical, PlayCircle, Flame, Minimize2,
+  MessageSquare, FileText, PhoneForwarded, Hash,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useAuth } from '@/hooks/useAuth';
@@ -31,6 +32,7 @@ import type { Contact } from '@/features/smsv2/types';
 
 import { useDialerMachine } from './useDialerMachine';
 import { useQueuePro } from './useQueuePro';
+import type { QueueLead } from './types';
 import CallHistoryPro from './history/CallHistoryPro';
 import QueueManagerPro from './history/QueueManagerPro';
 
@@ -280,8 +282,8 @@ export default function DialerProPage() {
     }
   };
 
-  // ─── LiveCallScreen visible when we have a lead ────────────────────
-  const showCallScreen = state.currentLead !== null && (isLive || state.phase === 'wrap_up');
+  // ─── LiveCallScreen visible only during active call (NOT wrap_up) ──
+  const showCallScreen = state.currentLead !== null && isLive;
 
   // Phase labels for header
   const headerBg = state.phase === 'connected' ? 'bg-[#1E9A80] text-white'
@@ -414,84 +416,14 @@ export default function DialerProPage() {
 
             <ResizableHandle withHandle />
 
-            {/* COL 2 — Transcript (live) or PostCall (wrap_up) */}
+            {/* COL 2 — Live transcript */}
             <ResizablePanel defaultSize={38} minSize={26} className="bg-white border-r border-[#E5E7EB] overflow-hidden">
-              {(state.phase === 'dialing' || state.phase === 'ringing' || state.phase === 'connected') ? (
-                <LiveTranscriptPane
-                  durationSec={liveDuration}
-                  contactId={contact.id}
-                  callId={state.currentCallId}
-                  agentFirstName={agentFirstName}
-                />
-              ) : (
-                // Wrap-up: outcome grid in COL 2 (clone of PostCallPanel)
-                <div className="flex flex-col h-full">
-                  <div className="px-5 py-3 border-b border-[#E5E7EB] flex items-center gap-2">
-                    <span className="w-2 h-2 rounded-full bg-[#1E9A80]" />
-                    <span className="text-[13px] font-semibold text-[#1A1A1A]">
-                      Call ended · {state.currentLead?.name} · Recording saved
-                    </span>
-                  </div>
-                  <div className="flex-1 overflow-y-auto px-5 py-4">
-                    <div className="text-[11px] uppercase tracking-wide text-[#9CA3AF] font-semibold mb-3">
-                      Pick an outcome — pipeline columns
-                    </div>
-                    <PostCallGrid
-                      columns={outcomeColumns}
-                      applying={machine.applying}
-                      onApply={(id) => void machine.applyOutcome(id, notes.trim() || undefined)}
-                    />
-                    <div className="mt-5">
-                      <div className="text-[11px] uppercase tracking-wide text-[#9CA3AF] font-semibold mb-1.5">Quick note</div>
-                      <input
-                        value={notes}
-                        onChange={(e) => setNotes(e.target.value)}
-                        placeholder="Add a note (optional)…"
-                        className="w-full px-3 py-2 text-[13px] bg-white border border-[#E5E5E5] rounded-[10px] focus:outline-none focus:ring-1 focus:ring-[#1E9A80]/30 focus:border-[#1E9A80]"
-                      />
-                    </div>
-                  </div>
-                  {/* Footer with Redial / Next / Pause */}
-                  <div className="px-5 py-3 border-t border-[#E5E7EB] bg-[#F3F3EE]/50 flex items-center gap-3">
-                    <div className="flex-1 text-[10px] text-[#9CA3AF]">
-                      ⌨ 1–9 · S skip · P pause · N next call
-                    </div>
-                    <button
-                      onClick={() => {
-                        if (state.currentLead) void machine.dialLead(state.currentLead);
-                      }}
-                      className="flex items-center gap-1.5 px-3 py-1.5 rounded-[10px] border border-[#E5E7EB] text-[12px] font-medium text-[#6B7280] hover:bg-white"
-                    >
-                      <Phone className="w-3.5 h-3.5" /> Redial
-                    </button>
-                    <button
-                      onClick={machine.skip}
-                      className="flex items-center gap-1.5 px-3 py-1.5 rounded-[10px] border border-[#E5E7EB] text-[12px] font-medium text-[#6B7280] hover:bg-white"
-                    >
-                      <SkipForward className="w-3.5 h-3.5" /> Skip
-                    </button>
-                    <button
-                      onClick={() => {
-                        machine.skip();
-                        setTimeout(async () => {
-                          const next = await machine.pickNextLead(queue);
-                          if (next) void machine.dialLead(next);
-                          else onToast('Queue empty', 'info');
-                        }, 200);
-                      }}
-                      className="flex items-center gap-1.5 px-3 py-1.5 rounded-[10px] bg-[#1E9A80] text-white text-[12px] font-semibold hover:bg-[#1E9A80]/90 shadow-[0_4px_12px_rgba(30,154,128,0.35)]"
-                    >
-                      <Phone className="w-3.5 h-3.5" /> Next call
-                    </button>
-                    <button
-                      onClick={machine.pause}
-                      className="flex items-center gap-1.5 px-3 py-1.5 rounded-[10px] border border-[#E5E7EB] text-[12px] font-medium text-[#6B7280] hover:bg-white"
-                    >
-                      <PauseIcon className="w-3.5 h-3.5" /> Pause
-                    </button>
-                  </div>
-                </div>
-              )}
+              <LiveTranscriptPane
+                durationSec={liveDuration}
+                contactId={contact.id}
+                callId={state.currentCallId}
+                agentFirstName={agentFirstName}
+              />
             </ResizablePanel>
 
             <ResizableHandle withHandle />
@@ -532,8 +464,92 @@ export default function DialerProPage() {
               <PlayCircle className="w-3.5 h-3.5" />
             </button>
           </div>
+        ) : isLive && state.currentLead ? (
+          // ─── CARD 1 — GHL-style calling card (during live call) ───
+          <div className="bg-white border border-[#E5E7EB] rounded-2xl shadow-[0_24px_64px_rgba(0,0,0,0.18)] overflow-hidden" style={{ width: 320 }}>
+            {/* Header — outgoing call */}
+            <div className="flex items-center gap-2 px-4 py-2.5 bg-[#F3F3EE] border-b border-[#E5E7EB]">
+              <Phone className="w-4 h-4 text-[#1E9A80]" />
+              <span className="text-[12px] font-semibold text-[#6B7280]">
+                {state.phase === 'connected' ? 'Connected' : 'Outgoing Call'}
+              </span>
+              {camp && <span className="text-[11px] text-[#9CA3AF] truncate ml-auto">{camp.name}</span>}
+            </div>
+
+            {/* Avatar + lead info + timer */}
+            <div className="flex flex-col items-center py-5 px-4">
+              <div className="w-20 h-20 rounded-full bg-[#1E9A80] flex items-center justify-center text-white text-[28px] font-bold mb-3">
+                {(state.currentLead.name ?? '?').split(/\s+/).map(w => w[0]).join('').slice(0, 2).toUpperCase()}
+              </div>
+              <div className="text-[15px] font-semibold text-[#1A1A1A] truncate max-w-full">{state.currentLead.name}</div>
+              <div className="text-[13px] text-[#6B7280] tabular-nums mt-0.5">{state.currentLead.phone}</div>
+              <div className="text-[18px] font-semibold text-[#1A1A1A] tabular-nums mt-2">
+                {state.phase === 'connected' ? formatDurationPro(liveDuration) : (
+                  <span className="inline-flex gap-0.5">
+                    <span className="w-1.5 h-1.5 rounded-full bg-[#1A1A1A] animate-bounce" style={{ animationDelay: '0ms' }} />
+                    <span className="w-1.5 h-1.5 rounded-full bg-[#1A1A1A] animate-bounce" style={{ animationDelay: '150ms' }} />
+                    <span className="w-1.5 h-1.5 rounded-full bg-[#1A1A1A] animate-bounce" style={{ animationDelay: '300ms' }} />
+                  </span>
+                )}
+              </div>
+            </div>
+
+            {/* Action button rows */}
+            <div className="px-3 pb-2 space-y-1.5">
+              {/* Row 1: Message, Notes, Blind, Warm */}
+              <div className="grid grid-cols-4 gap-1.5">
+                {[
+                  { label: 'Message', icon: MessageSquare, onClick: () => {/* MidCallSmsSender in LiveCallScreen COL1 */} },
+                  { label: 'Notes', icon: FileText, onClick: () => {/* Notes available in LiveCallScreen */} },
+                  { label: 'Blind', icon: PhoneForwarded, disabled: true },
+                  { label: 'Warm', icon: PhoneForwarded, disabled: true },
+                ].map(({ label, icon: Ic, onClick, disabled: dis }) => (
+                  <button key={label} onClick={onClick} disabled={dis}
+                    className={cn('flex flex-col items-center gap-1 py-2 rounded-lg text-[10px] font-medium transition-colors',
+                      dis ? 'text-[#9CA3AF] cursor-not-allowed' : 'text-[#6B7280] hover:bg-[#F3F3EE] hover:text-[#1A1A1A]'
+                    )}>
+                    <Ic className="w-4 h-4" strokeWidth={1.8} />
+                    {label}
+                  </button>
+                ))}
+              </div>
+              {/* Row 2: Hold, Mute, Scripts, Dial */}
+              <div className="grid grid-cols-4 gap-1.5">
+                <button onClick={machine.holdToggle}
+                  className={cn('flex flex-col items-center gap-1 py-2 rounded-lg text-[10px] font-medium transition-colors',
+                    state.isOnHold ? 'bg-[#FEF3C7] text-[#92400E]' : 'text-[#6B7280] hover:bg-[#F3F3EE] hover:text-[#1A1A1A]'
+                  )}>
+                  <PauseIcon className="w-4 h-4" strokeWidth={1.8} />
+                  Hold
+                </button>
+                <button onClick={machine.muteToggle}
+                  className={cn('flex flex-col items-center gap-1 py-2 rounded-lg text-[10px] font-medium transition-colors',
+                    state.isMuted ? 'bg-[#FEF3C7] text-[#92400E]' : 'text-[#6B7280] hover:bg-[#F3F3EE] hover:text-[#1A1A1A]'
+                  )}>
+                  {state.isMuted ? <MicOff className="w-4 h-4" strokeWidth={1.8} /> : <Mic className="w-4 h-4" strokeWidth={1.8} />}
+                  Mute
+                </button>
+                <button className="flex flex-col items-center gap-1 py-2 rounded-lg text-[10px] font-medium text-[#6B7280] hover:bg-[#F3F3EE] hover:text-[#1A1A1A] transition-colors">
+                  <FileText className="w-4 h-4" strokeWidth={1.8} />
+                  Scripts
+                </button>
+                <button className="flex flex-col items-center gap-1 py-2 rounded-lg text-[10px] font-medium text-[#9CA3AF] cursor-not-allowed">
+                  <Hash className="w-4 h-4" strokeWidth={1.8} />
+                  Dial
+                </button>
+              </div>
+            </div>
+
+            {/* End Call button */}
+            <div className="px-3 pb-3">
+              <button onClick={() => void machine.hangUp()}
+                className="w-full flex items-center justify-center gap-2 bg-[#B91C1C] hover:bg-[#991B1B] text-white text-[14px] font-semibold py-3 rounded-xl transition-colors">
+                <PhoneOff className="w-4 h-4" /> End Call
+              </button>
+            </div>
+          </div>
         ) : (
-          // Expanded floating pad
+          // ─── DEFAULT PAD — idle / paused / campaign + queue + history ───
           <div className="bg-[#F3F3EE] border border-[#E5E7EB] rounded-[20px] shadow-[0_24px_64px_rgba(0,0,0,0.18)] overflow-hidden flex flex-col max-h-[calc(100vh-96px)]">
             {/* Header */}
             <div
@@ -544,7 +560,6 @@ export default function DialerProPage() {
               <div className="flex-1 min-w-0 flex items-baseline gap-1.5">
                 <span className="text-[11px] font-bold text-[#1A1A1A]">Dialer Pro</span>
                 {camp && <span className="text-[11px] text-[#6B7280] truncate">· {camp.name}</span>}
-                {isLive && <span className="ml-auto w-1.5 h-1.5 rounded-full bg-[#1E9A80] animate-pulse" />}
               </div>
               <button type="button" onPointerDown={(e) => e.stopPropagation()} onClick={() => setMinimized(true)} className="p-1 rounded hover:bg-[#F3F3EE] text-[#6B7280]">
                 <Minus className="w-3 h-3" />
@@ -582,118 +597,36 @@ export default function DialerProPage() {
                 </div>
               </div>
 
-              {/* Control bar */}
-              <div className="bg-white border border-[#E5E7EB] rounded-2xl p-2 flex flex-wrap items-center gap-1.5 text-[11px]">
-                {isCallContext ? (
-                  <>
-                    <Radio className="w-3 h-3 text-[#1E9A80] flex-shrink-0" />
-                    <span className={cn('px-1.5 py-0.5 rounded-full text-[9px] font-semibold uppercase tracking-wide',
-                      state.phase === 'connected' ? 'bg-[#ECFDF5] text-[#1E9A80]' :
-                      state.phase === 'wrap_up' ? 'bg-[#F3F3EE] text-[#6B7280]' :
-                      state.phase === 'paused' ? 'bg-[#F3F3EE] text-[#6B7280]' :
-                      'bg-[#FEF3C7] text-[#92400E]'
-                    )}>
-                      {state.phase === 'dialing' ? 'DIALING' : state.phase === 'ringing' ? 'RINGING' : state.phase === 'connected' ? 'CONNECTED' : state.phase === 'wrap_up' ? 'WRAP-UP' : 'PAUSED'}
-                    </span>
-                    <div className="min-w-0 flex-1">
-                      <div className="text-[11px] font-semibold text-[#1A1A1A] truncate">{state.currentLead?.name ?? '—'}</div>
-                      <div className="text-[10px] text-[#6B7280] tabular-nums truncate">
-                        {state.currentLead?.phone ?? '—'}
-                        {state.startedAt && state.phase === 'connected' && <span> · {formatDurationPro(liveDuration)}</span>}
-                      </div>
-                    </div>
-                  </>
-                ) : (
-                  <>
-                    <span className="text-[10px] uppercase tracking-wide text-[#9CA3AF] font-semibold">Pacing</span>
-                    <div className="inline-flex rounded-[10px] border border-[#E5E7EB] overflow-hidden">
-                      <button onClick={() => setPacing('manual')} className={cn('px-3 py-1', pacing === 'manual' ? 'bg-[#1E9A80] text-white' : 'bg-white hover:bg-[#F3F3EE]')}>Manual</button>
-                      <button onClick={() => setPacing('auto')} className={cn('px-3 py-1', pacing === 'auto' ? 'bg-[#1E9A80] text-white' : 'bg-white hover:bg-[#F3F3EE]')}>Auto</button>
-                    </div>
-                    {pacing === 'auto' && (
-                      <div className="flex items-center gap-1.5">
-                        <span className="text-[#6B7280]">delay</span>
-                        {[0, 5, 10, 30].map((s) => (
-                          <button key={s} onClick={() => setPacingDelaySec(s)}
-                            className={cn('px-2 py-0.5 rounded-full font-semibold', pacingDelaySec === s ? 'bg-[#ECFDF5] text-[#1E9A80]' : 'text-[#6B7280] hover:bg-[#F3F3EE]')}
-                          >{s}s</button>
-                        ))}
-                      </div>
-                    )}
-                  </>
-                )}
-                <div className="ml-auto flex items-center gap-1">
-                  {isLive && (
-                    <>
-                      <button onClick={machine.muteToggle} title={state.isMuted ? 'Unmute' : 'Mute'}
-                        className={cn('inline-flex items-center justify-center w-7 h-7 rounded-[8px] border',
-                          state.isMuted ? 'bg-[#FEF3C7] border-[#FDE68A] text-[#92400E]' : 'bg-white border-[#E5E7EB] text-[#1A1A1A] hover:bg-[#F3F3EE]'
-                        )}>
-                        {state.isMuted ? <MicOff className="w-3 h-3" /> : <Mic className="w-3 h-3" />}
-                      </button>
-                      <button onClick={() => void machine.hangUp()}
-                        className="inline-flex items-center gap-1 text-[11px] font-semibold text-white bg-[#B91C1C] px-2 py-1.5 rounded-[8px] hover:bg-[#991B1B]">
-                        <PhoneOff className="w-3 h-3" /> Hang up
-                      </button>
-                    </>
-                  )}
-                  {isCallContext && state.phase !== 'paused' && (
-                    <button onClick={() => void dialNextManual()}
-                      className="inline-flex items-center gap-1 text-[11px] font-semibold text-[#1A1A1A] bg-white border border-[#E5E7EB] hover:bg-[#F3F3EE] px-2 py-1.5 rounded-[8px]">
-                      <SkipForward className="w-3 h-3" /> Skip
-                    </button>
-                  )}
-                  {state.phase === 'paused' ? (
-                    <button onClick={() => void resumeDialer()}
-                      className="inline-flex items-center gap-1 text-[11px] font-semibold text-white bg-[#1E9A80] px-2 py-1.5 rounded-[8px]">
-                      <Play className="w-3 h-3" /> Resume
-                    </button>
-                  ) : isCallContext && (
-                    <button onClick={machine.pause}
-                      className="inline-flex items-center gap-1 text-[11px] font-semibold text-[#1A1A1A] bg-white border border-[#E5E7EB] hover:bg-[#F3F3EE] px-2 py-1.5 rounded-[8px]">
-                      <PauseIcon className="w-3 h-3" /> Pause
-                    </button>
-                  )}
-                  {(state.sessionStarted || isCallContext) && (
-                    <button onClick={() => void machine.stop()}
-                      className="inline-flex items-center gap-1 text-[11px] font-semibold text-[#B91C1C] bg-white border border-[#FECACA] hover:bg-[#FEF2F2] px-2 py-1.5 rounded-[8px]">
-                      <Square className="w-3 h-3" /> Stop
-                    </button>
-                  )}
-                </div>
-              </div>
-
-              {/* Wrap-up card (in the pad, compact outcome buttons) */}
-              {state.phase === 'wrap_up' && state.currentLead && (
-                <div className="bg-white border border-[#E5E7EB] rounded-2xl p-3 space-y-2">
-                  <div className="flex items-baseline justify-between gap-2 flex-wrap">
-                    <div>
-                      <div className="text-[11px] uppercase tracking-wide text-[#9CA3AF] font-semibold">
-                        Wrap-up · {state.currentLead.name} · {state.currentLead.phone}
-                      </div>
-                      <div className="text-[10px] text-[#6B7280]">
-                        Call {state.endReason}{state.error ? ` — ${state.error}` : ''}
-                      </div>
-                    </div>
-                    <button onClick={machine.skip} disabled={machine.applying}
-                      className="inline-flex items-center gap-1 text-[11px] font-semibold text-[#6B7280] hover:text-[#1A1A1A] bg-[#F3F3EE] hover:bg-[#E5E7EB] px-2 py-1 rounded-[10px] disabled:opacity-50">
-                      <SkipForward className="w-3 h-3" /> Skip
-                    </button>
+              {/* Pacing controls — only when idle */}
+              {!isCallContext && (
+                <div className="bg-white border border-[#E5E7EB] rounded-2xl p-2 flex flex-wrap items-center gap-1.5 text-[11px]">
+                  <span className="text-[10px] uppercase tracking-wide text-[#9CA3AF] font-semibold">Pacing</span>
+                  <div className="inline-flex rounded-[10px] border border-[#E5E7EB] overflow-hidden">
+                    <button onClick={() => setPacing('manual')} className={cn('px-3 py-1', pacing === 'manual' ? 'bg-[#1E9A80] text-white' : 'bg-white hover:bg-[#F3F3EE]')}>Manual</button>
+                    <button onClick={() => setPacing('auto')} className={cn('px-3 py-1', pacing === 'auto' ? 'bg-[#1E9A80] text-white' : 'bg-white hover:bg-[#F3F3EE]')}>Auto</button>
                   </div>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-1.5">
-                    {outcomeColumns.length === 0 && (
-                      <div className="col-span-full text-[11px] text-[#9CA3AF] italic py-1.5">No outcome columns. Ask admin to add stages.</div>
-                    )}
-                    {outcomeColumns.map((c) => (
-                      <button key={c.id} disabled={machine.applying} onClick={() => void machine.applyOutcome(c.id, notes.trim() || undefined)}
-                        className="inline-flex items-center justify-between gap-1.5 text-[11px] font-medium text-[#1A1A1A] bg-[#F3F3EE] hover:bg-[#ECFDF5] hover:text-[#1E9A80] px-2 py-1.5 rounded-[10px] disabled:opacity-50 disabled:cursor-not-allowed transition-colors">
-                        <span className="truncate">{c.name}</span>
-                        {machine.applying ? <Loader2 className="w-3 h-3 animate-spin" /> : <CheckCircle2 className="w-3 h-3 opacity-40" />}
+                  {pacing === 'auto' && (
+                    <div className="flex items-center gap-1.5">
+                      <span className="text-[#6B7280]">delay</span>
+                      {[0, 5, 10, 30].map((s) => (
+                        <button key={s} onClick={() => setPacingDelaySec(s)}
+                          className={cn('px-2 py-0.5 rounded-full font-semibold', pacingDelaySec === s ? 'bg-[#ECFDF5] text-[#1E9A80]' : 'text-[#6B7280] hover:bg-[#F3F3EE]')}
+                        >{s}s</button>
+                      ))}
+                    </div>
+                  )}
+                  {state.phase === 'paused' && (
+                    <div className="ml-auto flex items-center gap-1">
+                      <button onClick={() => void resumeDialer()}
+                        className="inline-flex items-center gap-1 text-[11px] font-semibold text-white bg-[#1E9A80] px-2 py-1.5 rounded-[8px]">
+                        <Play className="w-3 h-3" /> Resume
                       </button>
-                    ))}
-                  </div>
-                  <textarea value={notes} onChange={(e) => setNotes(e.target.value)} placeholder="Notes (optional)…" rows={2}
-                    className="w-full text-[11px] border border-[#E5E7EB] rounded-[10px] px-2 py-1.5 bg-white" />
+                      <button onClick={() => void machine.stop()}
+                        className="inline-flex items-center gap-1 text-[11px] font-semibold text-[#B91C1C] bg-white border border-[#FECACA] hover:bg-[#FEF2F2] px-2 py-1.5 rounded-[8px]">
+                        <Square className="w-3 h-3" /> Stop
+                      </button>
+                    </div>
+                  )}
                 </div>
               )}
 
@@ -734,7 +667,7 @@ export default function DialerProPage() {
                 {accordion !== 'history' && (
                   <div className="border-t border-[#E5E7EB]">
                     <QueueManagerPro
-                      queue={accordion === 'queue' ? queue : queue.slice(0, 3)}
+                      queue={queue}
                       campaignId={camp?.id ?? null}
                       onRefresh={refreshQueue}
                     />
@@ -752,7 +685,7 @@ export default function DialerProPage() {
                 </button>
                 {accordion !== 'queue' && (
                   <div className="border-t border-[#E5E7EB]">
-                    <CallHistoryPro campaignId={null} agentId={userId} />
+                    <CallHistoryPro />
                   </div>
                 )}
               </div>
@@ -760,6 +693,36 @@ export default function DialerProPage() {
           </div>
         )}
       </div>
+
+      {/* ─── GHL-STYLE WRAP-UP FLOATING CARD (Card 2) ─── */}
+      {state.phase === 'wrap_up' && state.currentLead && (
+        <WrapUpCard
+          lead={state.currentLead}
+          callId={state.currentCallId}
+          endReason={state.endReason}
+          durationSec={state.durationSec}
+          notes={notes}
+          setNotes={setNotes}
+          onSkip={() => {
+            if (state.currentLead) {
+              // eslint-disable-next-line @typescript-eslint/no-explicit-any
+              void (supabase.from('wk_dialer_queue' as any) as any).update({ status: 'skipped' }).eq('id', state.currentLead.queueRowId);
+            }
+            machine.dispatch({ type: 'OUTCOME_DONE' });
+          }}
+          onRedial={() => { if (state.currentLead) void machine.dialLead(state.currentLead); }}
+          onNext={() => {
+            machine.dispatch({ type: 'OUTCOME_DONE' });
+            setTimeout(async () => {
+              const next = await machine.pickNextLead(queue);
+              if (next) void machine.dialLead(next);
+              else onToast('Queue empty', 'info');
+            }, 200);
+          }}
+          onPause={machine.pause}
+          onToast={onToast}
+        />
+      )}
 
       {/* Edit contact modal */}
       {editing && ReactDOM.createPortal(
@@ -794,89 +757,6 @@ export default function DialerProPage() {
   );
 }
 
-// ─── PostCallGrid (COL 2 outcome buttons — clone of PostCallPanel) ──────
-
-import { Sparkles, type LucideIcon } from 'lucide-react';
-
-const ICON_MAP: Record<string, LucideIcon> = {
-  Sparkles, Clock, PhoneMissed: Phone, X, Voicemail: Phone, Ban: X,
-};
-
-function PostCallGrid({
-  columns, applying, onApply,
-}: {
-  columns: { id: string; name: string; position: number; colour: string | null; icon: string | null }[];
-  applying: boolean;
-  onApply: (columnId: string) => void;
-}) {
-  const [pickedId, setPickedId] = useState<string | null>(null);
-  const [submitted, setSubmitted] = useState(false);
-
-  const handleClick = (colId: string) => {
-    if (submitted) return;
-    setPickedId(colId);
-    setSubmitted(true);
-    setTimeout(() => onApply(colId), 200);
-  };
-
-  // Keyboard shortcuts 1-9
-  useEffect(() => {
-    const handler = (e: KeyboardEvent) => {
-      if (submitted) return;
-      if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) return;
-      const num = parseInt(e.key, 10);
-      if (num >= 1 && num <= 9 && num <= columns.length) {
-        const col = columns.find((c) => c.position === num);
-        if (col) handleClick(col.id);
-      }
-    };
-    window.addEventListener('keydown', handler);
-    return () => window.removeEventListener('keydown', handler);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [submitted, columns]);
-
-  return (
-    <div className="grid grid-cols-2 gap-3">
-      {columns.map((col) => {
-        const isPicked = submitted && pickedId === col.id;
-        const isDimmed = submitted && pickedId !== col.id;
-        return (
-          <button
-            key={col.id}
-            onClick={() => handleClick(col.id)}
-            disabled={submitted}
-            className={cn(
-              'relative group p-3 rounded-2xl border-2 text-left bg-white transition-all',
-              isPicked
-                ? 'border-[#1E9A80] border-[3px] bg-[#ECFDF5] shadow-[0_8px_28px_rgba(30,154,128,0.45)] cursor-default ring-2 ring-[#1E9A80]/20'
-                : isDimmed
-                  ? 'border-[#E5E7EB] opacity-25 grayscale cursor-not-allowed'
-                  : 'border-[#E5E7EB] hover:border-[#1E9A80]/50 hover:shadow-[0_8px_24px_rgba(0,0,0,0.08)]'
-            )}
-          >
-            {isPicked && (
-              <>
-                <span className="absolute -top-2 -right-2 inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-[#F59E0B] text-white text-[10px] font-bold uppercase tracking-wide shadow-md">✓ DONE</span>
-                <span className="absolute bottom-2 right-2 inline-flex items-center justify-center w-7 h-7 rounded-full bg-[#1E9A80] text-white text-[16px] font-bold shadow-md">✓</span>
-              </>
-            )}
-            <div className="flex items-center gap-2.5">
-              <div className="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0"
-                style={{ background: `${col.colour ?? '#9CA3AF'}1A`, color: col.colour ?? '#9CA3AF' }}>
-                <Sparkles className="w-4 h-4" strokeWidth={2} />
-              </div>
-              <div className="flex-1 min-w-0 flex items-center gap-1.5">
-                <span className="text-[10px] font-bold text-[#9CA3AF] tabular-nums">{col.position}.</span>
-                <span className={cn('text-[14px] font-semibold truncate', isPicked ? 'text-[#1E9A80]' : 'text-[#1A1A1A]')}>{col.name}</span>
-              </div>
-            </div>
-          </button>
-        );
-      })}
-    </div>
-  );
-}
-
 // ─── PacingCountdown ─────────────────────────────────────────────────
 
 function PacingCountdown({ deadlineMs, onDialNow, onPause }: { deadlineMs: number; onDialNow: () => void; onPause: () => void }) {
@@ -892,6 +772,174 @@ function PacingCountdown({ deadlineMs, onDialNow, onPause }: { deadlineMs: numbe
       <button onClick={onPause} className="inline-flex items-center gap-1 ml-auto px-2 py-1 rounded-[10px] bg-white border border-[#A7F3D0] text-[#065F46] hover:bg-[#F0FDF4]">
         <PauseIcon className="w-3 h-3" /> Pause
       </button>
+    </div>
+  );
+}
+
+// ─── WrapUpCard — GHL-style floating card (Card 2) ──────────────────
+
+import { Circle } from 'lucide-react';
+
+const PIPELINE_STAGES = [
+  'New Leads',
+  'Voicemail',
+  'No pickup',
+  'Not interested',
+  'Nurturing (msg sent)',
+  'Closed',
+] as const;
+
+interface WrapUpCardProps {
+  lead: QueueLead;
+  callId: string | null;
+  endReason: string | null;
+  durationSec: number | null;
+  notes: string;
+  setNotes: (v: string) => void;
+  onSkip: () => void;
+  onRedial: () => void;
+  onNext: () => void;
+  onPause: () => void;
+  onToast: (msg: string, type: 'success' | 'error' | 'info') => void;
+}
+
+function WrapUpCard({ lead, callId, endReason, durationSec, notes, setNotes, onSkip, onRedial, onNext, onPause, onToast }: WrapUpCardProps) {
+  const [picked, setPicked] = useState<string | null>(null);
+  const [submitting, setSubmitting] = useState(false);
+
+  const formatMin = (sec: number | null) => {
+    if (sec === null || sec <= 0) return '00 Min 00 Sec';
+    const m = Math.floor(sec / 60);
+    const s = sec % 60;
+    return `${String(m).padStart(2, '0')} Min ${String(s).padStart(2, '0')} Sec`;
+  };
+
+  const submitOutcome = async (outcome: string) => {
+    if (submitting || picked) return;
+    setPicked(outcome);
+    setSubmitting(true);
+    try {
+      await Promise.all([
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        callId ? (supabase.from('wk_calls' as any) as any).update({ disposition: outcome, agent_note: notes.trim() || null }).eq('id', callId) : Promise.resolve(),
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        (supabase.from('wk_contacts' as any) as any).update({ pipeline_stage: outcome }).eq('id', lead.contactId),
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        (supabase.from('wk_dialer_queue' as any) as any).update({ status: 'done' }).eq('id', lead.queueRowId),
+      ]);
+      onToast('Outcome saved', 'success');
+    } catch (e) {
+      onToast(`Outcome failed: ${e instanceof Error ? e.message : 'unknown'}`, 'error');
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  return (
+    <div className="fixed bottom-6 right-6 w-[340px] bg-white rounded-2xl shadow-[0_24px_64px_rgba(0,0,0,0.18)] border border-[#E5E7EB] z-[220] overflow-hidden">
+      {/* Header */}
+      <div className="flex items-center gap-2 px-4 py-3 border-b border-[#E5E7EB]/60">
+        <Phone className="text-[#1E9A80] w-5 h-5" />
+        <span className="font-semibold text-[#1A1A1A]">Call Summary</span>
+      </div>
+
+      {/* Lead info + status badges + duration */}
+      <div className="px-4 py-3 border-b border-[#E5E7EB]/60">
+        <div className="flex items-center justify-between">
+          <span className="font-medium text-[#1A1A1A] truncate">{lead.name}</span>
+          <span className="text-[#9CA3AF] text-sm tabular-nums">{lead.phone}</span>
+        </div>
+        <div className="flex items-center gap-3 mt-1.5">
+          <span className="flex items-center gap-1 text-[#B91C1C] text-[12px]">
+            <PhoneOff className="w-3.5 h-3.5" /> Call Ended
+          </span>
+          {endReason && (
+            <span className="flex items-center gap-1 text-[#6B7280] text-[11px] bg-[#F3F3EE] rounded-full px-2 py-0.5">
+              {endReason === 'hangup' ? 'Hangup' : endReason === 'cancel' || endReason === 'reject' ? 'No-answer' : endReason}
+            </span>
+          )}
+        </div>
+        <div className="text-center mt-2">
+          <span className="inline-block bg-[#F3F3EE] text-[#6B7280] text-[13px] font-medium px-4 py-1 rounded-full">
+            {formatMin(durationSec)}
+          </span>
+        </div>
+      </div>
+
+      {/* Skip button */}
+      <div className="px-4 pt-3 pb-1">
+        <button
+          onClick={onSkip}
+          disabled={submitting}
+          className="flex items-center gap-1.5 text-[12px] font-medium text-[#6B7280] hover:text-[#1A1A1A] disabled:opacity-50"
+        >
+          <SkipForward className="w-3.5 h-3.5" /> Skip (no disposition)
+        </button>
+      </div>
+
+      {/* Disposition grid */}
+      <div className="px-4 py-2">
+        <p className="text-[10px] font-semibold text-[#9CA3AF] uppercase tracking-wide mb-2">Custom Disposition</p>
+        <div className="grid grid-cols-2 gap-2">
+          {PIPELINE_STAGES.map((stage) => {
+            const isPicked = picked === stage;
+            return (
+              <button
+                key={stage}
+                onClick={() => void submitOutcome(stage)}
+                disabled={submitting || (picked !== null && !isPicked)}
+                className={cn(
+                  'flex items-center justify-between rounded-lg px-3 py-2.5 text-[13px] font-medium text-left transition-all',
+                  isPicked
+                    ? 'bg-[#1A1A1A] text-white'
+                    : picked !== null
+                      ? 'bg-[#F3F3EE] text-[#9CA3AF] cursor-not-allowed'
+                      : 'bg-[#F3F3EE] text-[#1A1A1A] hover:bg-[#E5E7EB]'
+                )}
+              >
+                <span className="truncate">{stage}</span>
+                <Circle className={cn('w-4 h-4 flex-shrink-0', isPicked ? 'text-white fill-white' : 'text-[#9CA3AF]')} strokeWidth={isPicked ? 0 : 1.5} />
+              </button>
+            );
+          })}
+        </div>
+      </div>
+
+      {/* Notes */}
+      <div className="px-4 pb-3">
+        <textarea
+          value={notes}
+          onChange={(e) => setNotes(e.target.value)}
+          placeholder="Notes (optional)…"
+          className="w-full text-[13px] border border-[#E5E7EB] rounded-lg px-3 py-2 resize-none focus:outline-none focus:ring-1 focus:ring-[#1E9A80]/30 focus:border-[#1E9A80]"
+          rows={2}
+        />
+      </div>
+
+      {/* Action buttons: Redial / Next → / Pause */}
+      <div className="flex gap-2 px-4 pb-4">
+        <button
+          onClick={onRedial}
+          className="flex items-center gap-1.5 border border-[#E5E7EB] rounded-lg px-4 py-2 text-[13px] font-medium text-[#6B7280] hover:bg-[#F3F3EE]"
+        >
+          <Phone className="w-4 h-4" /> Redial
+        </button>
+        <button
+          onClick={() => {
+            if (picked) onNext();
+            else { onSkip(); setTimeout(onNext, 100); }
+          }}
+          className="flex-1 flex items-center justify-center gap-1.5 bg-[#1E9A80] text-white rounded-lg px-4 py-2 text-[13px] font-semibold hover:bg-[#1E9A80]/90 shadow-[0_4px_12px_rgba(30,154,128,0.35)]"
+        >
+          Next call →
+        </button>
+        <button
+          onClick={onPause}
+          className="border border-[#FECACA] text-[#B91C1C] rounded-lg px-3 py-2 hover:bg-[#FEF2F2]"
+        >
+          <PauseIcon className="w-4 h-4" />
+        </button>
+      </div>
     </div>
   );
 }
