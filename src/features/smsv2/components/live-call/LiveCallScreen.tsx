@@ -38,6 +38,7 @@ export default function LiveCallScreen() {
     call,
     durationSec,
     endCall,
+    fullScreen,
     setFullScreen,
     muted,
     toggleMute,
@@ -60,6 +61,8 @@ export default function LiveCallScreen() {
     ) ?? store.contacts[0] ?? null;
 
   const contactFirstName = contact?.name?.trim().split(/\s+/)[0] ?? '';
+
+  if (!fullScreen) return null;
 
   if (!contact) {
     return (
@@ -282,6 +285,7 @@ export default function LiveCallScreen() {
         direction="horizontal"
         autoSaveId="smsv2-live-call-layout-v2"
         className="flex-1 overflow-hidden"
+        style={{ paddingTop: 'var(--followup-banner-h, 0px)' }}
       >
         {/* COL 1 — lead context */}
         <ResizablePanel defaultSize={20} minSize={14} className="bg-white border-r border-[#E5E7EB] flex flex-col overflow-hidden">

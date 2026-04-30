@@ -30,6 +30,7 @@ interface Smsv2SidebarProps {
 const NAV_ITEMS = [
   { label: 'Dashboard', path: '/crm/dashboard', icon: LayoutDashboard, adminOnly: true },
   { label: 'Dialer', path: '/crm/dialer', icon: Radio },
+  { label: 'Dialer Pro', path: '/crm/dialer-pro', icon: Radio },
   { label: 'Inbox', path: '/crm/inbox', icon: MessageSquare },
   { label: 'Pipelines', path: '/crm/pipelines', icon: Kanban },
   { label: 'Contacts', path: '/crm/contacts', icon: Users },

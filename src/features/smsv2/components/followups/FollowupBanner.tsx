@@ -14,7 +14,6 @@
 // due yet?" state. The hook drives the data + realtime channel.
 
 import { useEffect, useMemo, useState } from 'react';
-import ReactDOM from 'react-dom';
 import {
   Bell,
   ChevronDown,
@@ -56,6 +55,11 @@ export default function FollowupBanner() {
       .sort((a, b) => +new Date(a.due_at) - +new Date(b.due_at));
   }, [items]);
 
+  useEffect(() => {
+    document.body.style.setProperty('--followup-banner-h', due.length > 0 ? '40px' : '0px');
+    return () => { document.body.style.setProperty('--followup-banner-h', '0px'); };
+  }, [due.length]);
+
   if (due.length === 0) return null;
 
   const next = due[0];
@@ -64,8 +68,8 @@ export default function FollowupBanner() {
     ? columns.find((c) => c.id === next.column_id)
     : undefined;
 
-  return ReactDOM.createPortal(
-    <div className="bg-[#FFFBEB] border-b border-[#F59E0B]/40 px-4 py-1.5 z-[201] fixed top-14 left-0 right-0">
+  return (
+    <div className="bg-[#FFFBEB] border-b border-[#F59E0B]/40 px-4 py-1.5 flex-shrink-0">
       <div className="flex items-center gap-2 max-w-[1280px] mx-auto">
         <Bell className="w-3.5 h-3.5 text-[#B45309] flex-shrink-0" strokeWidth={2.4} />
         <span className="text-[11px] font-bold uppercase tracking-wide text-[#B45309]">
@@ -182,8 +186,7 @@ export default function FollowupBanner() {
           })}
         </div>
       )}
-    </div>,
-    document.body,
+    </div>
   );
 }
 

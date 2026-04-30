@@ -125,6 +125,7 @@ import Smsv2InboxPage from '@/features/smsv2/pages/InboxPage';
 import Smsv2CallsPage from '@/features/smsv2/pages/CallsPage';
 import Smsv2PastCallScreen from '@/features/smsv2/pages/PastCallScreen';
 import Smsv2DialerPage from '@/features/smsv2/pages/DialerPage';
+import DialerProPage from '@/features/dialer-pro/DialerProPage';
 import Smsv2ContactsPage from '@/features/smsv2/pages/ContactsPage';
 import Smsv2ContactDetailPage from '@/features/smsv2/pages/ContactDetailPage';
 import Smsv2PipelinesPage from '@/features/smsv2/pages/PipelinesPage';
@@ -334,6 +335,7 @@ const App = () => (
             <Route path="calls" element={<Smsv2CallsPage />} />
             <Route path="calls/:callId" element={<Smsv2PastCallScreen />} />
             <Route path="dialer" element={<Smsv2DialerPage />} />
+            <Route path="dialer-pro" element={<DialerProPage />} />
 
             <Route path="contacts" element={<Smsv2ContactsPage />} />
             <Route path="contacts/:id" element={<Smsv2ContactDetailPage />} />

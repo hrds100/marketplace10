@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 import { CallerToastsProvider } from '../caller-pad/store/toastsProvider';
 import { CallerPad } from '../caller-pad/CallerPad';
 import LiveCallScreen from '../components/live-call/LiveCallScreen';
@@ -6,11 +6,16 @@ import { useActiveCallCtx } from '../components/live-call/ActiveCallContext';
 
 function DialerInner() {
   const { setFullScreen } = useActiveCallCtx();
+  const didMount = useRef(false);
 
   useEffect(() => {
-    setFullScreen(true);
+    if (!didMount.current) {
+      didMount.current = true;
+      setFullScreen(true);
+    }
     return () => setFullScreen(false);
-  }, [setFullScreen]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   return (
     <>

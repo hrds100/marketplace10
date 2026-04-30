@@ -391,7 +391,7 @@ export function CallerPad() {
         void updateQueueStatus(row.id, 'missed');
         continue;
       }
-      if (dialed.has(contact.id)) continue;
+      if (dialed.has(row.id)) continue;
 
       // Claim the row atomically via SECURITY DEFINER RPC.
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -454,7 +454,7 @@ export function CallerPad() {
       currentLeadRef.current = lead;
       setDialed((prev) => {
         const next = new Set(prev);
-        next.add(lead.id);
+        next.add(lead.queueId);
         return next;
       });
       // Note: the queue row is already at status='dialing' — the
@@ -1773,7 +1773,7 @@ function UpcomingQueuePanel({
   }, [campaignId, agentId]);
 
   const visible = items.filter(
-    (i) => !dialed.has(i.contactId) && i.contactId !== (currentLead?.id ?? null)
+    (i) => !dialed.has(i.queueId) && i.contactId !== (currentLead?.id ?? null)
   );
   // Use the actual session set, not items.length-visible.length — leads
   // that transitioned out of `pending` (status='dialing'/'connected'/done)
