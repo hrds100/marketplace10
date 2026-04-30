@@ -58,7 +58,7 @@ test.describe("Dialer Pro — 3-layer layout", () => {
     await page.screenshot({ path: "e2e/screenshots/dialer-pro-01-load.png", fullPage: true });
 
     // Empty states show when no call active
-    await expect(page.getByText("No active contact")).toBeVisible({ timeout: 10000 });
+    await expect(page.getByText("SMS / WhatsApp / Email")).toBeVisible({ timeout: 10000 });
     await expect(page.getByText("Transcript appears during calls")).toBeVisible({ timeout: 5000 });
 
     // Resize handles present (3 between 4 columns)
@@ -67,31 +67,20 @@ test.describe("Dialer Pro — 3-layer layout", () => {
     expect(handleCount).toBeGreaterThanOrEqual(3);
   });
 
-  test("Layer 3 — Bottom strip with Queue/History tabs + Start button", async ({ page }) => {
-    // Queue tab visible by default
-    await expect(page.getByRole("button", { name: /Queue/i })).toBeVisible({ timeout: 10000 });
+  test("Floating panel — Queue + History side-by-side + Start button", async ({ page }) => {
+    // Queue header visible
+    await expect(page.getByText("Queue", { exact: false }).first()).toBeVisible({ timeout: 10000 });
 
-    // History tab available
-    await expect(page.getByRole("button", { name: /History/i })).toBeVisible();
+    // History header visible
+    await expect(page.getByText("History", { exact: false }).first()).toBeVisible();
 
     // Start dialer button visible
     await expect(page.getByRole("button", { name: /Start dialer/i })).toBeVisible();
 
-    await page.screenshot({ path: "e2e/screenshots/dialer-pro-02-bottom-strip.png" });
-  });
-
-  test("Layer 3 — Tab switching Queue <> History works", async ({ page }) => {
-    // Click History tab
-    await page.getByRole("button", { name: /History/i }).click();
-    await page.waitForTimeout(1000);
-    await page.screenshot({ path: "e2e/screenshots/dialer-pro-03-history-tab.png" });
-
-    // Click back to Queue tab
-    await page.getByRole("button", { name: /Queue/i }).click();
-    await page.waitForTimeout(1000);
-
-    // Add lead button should be visible in queue view
+    // Add lead button visible in queue
     await expect(page.getByRole("button", { name: /Add lead/i })).toBeVisible({ timeout: 5000 });
+
+    await page.screenshot({ path: "e2e/screenshots/dialer-pro-02-floating-panel.png" });
   });
 
   test("No hardcoded PIPELINE_STAGES on page", async ({ page }) => {

@@ -195,12 +195,13 @@ export default function QueueManagerPro({ queue, campaignId, onRefresh }: Props)
         {visibleQueue.map((lead, i) => (
           <div
             key={lead.queueRowId}
-            className="flex items-center gap-2 px-2 py-1.5 rounded-lg bg-white border border-[#E5E7EB] text-xs group"
+            className="flex items-center gap-1.5 px-2 py-1.5 rounded-lg hover:bg-[#F3F3EE]/50 text-xs group"
           >
-            <GripVertical className="w-3.5 h-3.5 text-[#9CA3AF] cursor-grab flex-shrink-0" />
-            <span className="font-mono text-[10px] text-[#9CA3AF] w-4">{i + 1}</span>
-            <span className="font-medium text-[#1A1A1A] truncate flex-1">{lead.name}</span>
-            <span className="text-[#9CA3AF] truncate max-w-[100px]">{lead.phone}</span>
+            <span className="font-mono text-[10px] text-[#9CA3AF] w-4 flex-shrink-0">{i + 1}</span>
+            <div className="flex-1 min-w-0">
+              <div className="font-medium text-[#1A1A1A] truncate text-[11px]">{lead.name}</div>
+              <div className="text-[10px] text-[#9CA3AF] truncate">{lead.phone}</div>
+            </div>
             {lead.attempts > 0 && (
               <span className="text-[10px] text-[#9CA3AF]">×{lead.attempts}</span>
             )}

@@ -168,7 +168,7 @@ export default function DialerProPage() {
   const [bottomTab, setBottomTab] = useState<'queue' | 'history'>('queue');
 
   // ─── Floating card: drag + minimize ────────────────────────────────
-  const CARD_W = 320;
+  const CARD_W = 380;
   const [cardPos, setCardPos] = useState<{ x: number; y: number }>(() => {
     try {
       const raw = localStorage.getItem('dialer_pro_card_pos_v2');
@@ -258,7 +258,7 @@ export default function DialerProPage() {
           autoSaveId="dialer-pro-call-layout-v2"
           className="h-full"
         >
-          {/* COL 1 — Contact + SMS / WhatsApp */}
+          {/* COL 1 — Contact + SMS / WhatsApp (always visible) */}
           <ResizablePanel defaultSize={20} minSize={14} className="bg-white border-r border-[#E5E7EB] flex flex-col overflow-hidden">
             {contact ? (
               <>
@@ -290,8 +290,10 @@ export default function DialerProPage() {
                 </div>
               </>
             ) : (
-              <div className="flex-1 flex items-center justify-center text-sm text-[#9CA3AF]">
-                No active contact
+              <div className="flex-1 flex flex-col items-center justify-center gap-3 text-center px-6">
+                <MessageSquare className="w-8 h-8 text-[#E5E7EB]" />
+                <div className="text-sm font-medium text-[#9CA3AF]">SMS / WhatsApp / Email</div>
+                <div className="text-xs text-[#9CA3AF]">Start a call to send messages to the contact</div>
               </div>
             )}
           </ResizablePanel>
@@ -334,85 +336,50 @@ export default function DialerProPage() {
         </ResizablePanelGroup>
       </div>
 
-      {/* ─── BOTTOM STRIP: Controls + Queue / History ─── */}
-      <div className="h-[260px] flex-shrink-0 border-t border-[#E5E7EB] bg-white flex flex-col">
-        {/* Controls bar */}
-        <div className="flex items-center gap-2 px-3 py-2 border-b border-[#E5E7EB]/60">
-          {/* Start / Resume / Status */}
-          {state.phase === 'idle' && !state.sessionStarted && (
-            <button onClick={() => void startDialer()} disabled={blocked || !camp}
-              className="flex items-center gap-1.5 px-4 py-1.5 rounded-lg text-xs font-semibold text-white bg-[#1E9A80] hover:bg-[#1E9A80]/90 shadow-[0_4px_12px_rgba(30,154,128,0.35)] disabled:opacity-50 disabled:cursor-not-allowed">
-              <Phone className="w-3.5 h-3.5" /> Start dialer
-            </button>
-          )}
-          {state.phase === 'idle' && state.sessionStarted && (
-            <button onClick={() => void startDialer()} disabled={blocked}
-              className="flex items-center gap-1.5 px-4 py-1.5 rounded-lg text-xs font-semibold text-white bg-[#1E9A80] hover:bg-[#1E9A80]/90 disabled:opacity-50">
-              <Phone className="w-3.5 h-3.5" /> Dial next
-            </button>
-          )}
-          {state.phase === 'paused' && (
-            <>
-              <button onClick={() => { machine.resume(); void startDialer(); }} disabled={blocked}
+      {/* ─── FLOATING CARD + Queue/History (always visible, draggable) ─── */}
+      <div className="fixed z-[210] select-text" style={{ left: cardPos.x, top: cardPos.y, width: CARD_W }}>
+        {/* Controls bar — Start / Resume / Status */}
+        {!(isLive || state.phase === 'wrap_up') && (
+          <div
+            onPointerDown={onDragStart} onPointerMove={onDragMove} onPointerUp={onDragEnd} onPointerCancel={onDragEnd}
+            className="flex items-center gap-2 px-3 py-2 bg-white border border-[#E5E7EB] rounded-t-2xl cursor-grab active:cursor-grabbing"
+          >
+            {state.phase === 'idle' && !state.sessionStarted && (
+              <button onPointerDown={(e) => e.stopPropagation()} onClick={() => void startDialer()} disabled={blocked || !camp}
+                className="flex items-center gap-1.5 px-4 py-1.5 rounded-lg text-xs font-semibold text-white bg-[#1E9A80] hover:bg-[#1E9A80]/90 shadow-[0_4px_12px_rgba(30,154,128,0.35)] disabled:opacity-50 disabled:cursor-not-allowed">
+                <Phone className="w-3.5 h-3.5" /> Start dialer
+              </button>
+            )}
+            {state.phase === 'idle' && state.sessionStarted && (
+              <button onPointerDown={(e) => e.stopPropagation()} onClick={() => void startDialer()} disabled={blocked}
                 className="flex items-center gap-1.5 px-4 py-1.5 rounded-lg text-xs font-semibold text-white bg-[#1E9A80] hover:bg-[#1E9A80]/90 disabled:opacity-50">
-                <Play className="w-3.5 h-3.5" /> Resume
+                <Phone className="w-3.5 h-3.5" /> Dial next
               </button>
-              <button onClick={() => void machine.stop()}
-                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold text-[#B91C1C] border border-[#FECACA] hover:bg-[#FEF2F2]">
-                <Square className="w-3.5 h-3.5" /> Stop
-              </button>
-            </>
-          )}
-          {isLive && (
-            <span className="flex items-center gap-1.5 text-xs font-medium text-[#1E9A80]">
-              <span className="relative flex h-2 w-2">
-                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#1E9A80] opacity-75" />
-                <span className="relative inline-flex rounded-full h-2 w-2 bg-[#1E9A80]" />
-              </span>
-              {state.phase === 'connected' ? `Connected · ${formatDuration(liveDuration)}` : 'Calling\u2026'}
-            </span>
-          )}
-          {state.phase === 'wrap_up' && (
-            <span className="text-xs font-medium text-[#6B7280]">Wrap-up</span>
-          )}
-
-          {/* Campaign selector (minimal, only if >1 campaign) */}
-          {campaigns.length > 1 && (
-            <select value={activeCampaignId} onChange={(e) => setActiveCampaignId(e.target.value)}
-              className="ml-2 text-[11px] border border-[#E5E7EB] rounded-lg px-2 py-1 bg-white text-[#6B7280]">
-              {campaigns.map((c) => (<option key={c.id} value={c.id}>{c.name}</option>))}
-            </select>
-          )}
-
-          {/* Tab switcher */}
-          <div className="ml-auto flex items-center gap-0.5 bg-[#F3F3EE] rounded-lg p-0.5">
-            <button onClick={() => setBottomTab('queue')}
-              className={cn('px-3 py-1 rounded-md text-[11px] font-medium transition-colors',
-                bottomTab === 'queue' ? 'bg-white text-[#1A1A1A] shadow-sm' : 'text-[#6B7280]')}>
-              Queue ({queue.length})
-            </button>
-            <button onClick={() => setBottomTab('history')}
-              className={cn('px-3 py-1 rounded-md text-[11px] font-medium transition-colors',
-                bottomTab === 'history' ? 'bg-white text-[#1A1A1A] shadow-sm' : 'text-[#6B7280]')}>
-              History
-            </button>
+            )}
+            {state.phase === 'paused' && (
+              <>
+                <button onPointerDown={(e) => e.stopPropagation()} onClick={() => { machine.resume(); void startDialer(); }} disabled={blocked}
+                  className="flex items-center gap-1.5 px-4 py-1.5 rounded-lg text-xs font-semibold text-white bg-[#1E9A80] hover:bg-[#1E9A80]/90 disabled:opacity-50">
+                  <Play className="w-3.5 h-3.5" /> Resume
+                </button>
+                <button onPointerDown={(e) => e.stopPropagation()} onClick={() => void machine.stop()}
+                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold text-[#B91C1C] border border-[#FECACA] hover:bg-[#FEF2F2]">
+                  <Square className="w-3.5 h-3.5" /> Stop
+                </button>
+              </>
+            )}
+            {/* Campaign selector */}
+            {campaigns.length > 1 && (
+              <select onPointerDown={(e) => e.stopPropagation()} value={activeCampaignId} onChange={(e) => setActiveCampaignId(e.target.value)}
+                className="ml-auto text-[11px] border border-[#E5E7EB] rounded-lg px-2 py-1 bg-white text-[#6B7280]">
+                {campaigns.map((c) => (<option key={c.id} value={c.id}>{c.name}</option>))}
+              </select>
+            )}
           </div>
-        </div>
-
-        {/* Tab content — compact scrollable with infinite scroll */}
-        <div className="flex-1 overflow-y-auto">
-          {bottomTab === 'queue' ? (
-            <QueueManagerPro queue={queue} campaignId={camp?.id ?? null} onRefresh={refreshQueue} />
-          ) : (
-            <CallHistoryPro />
-          )}
-        </div>
-      </div>
-
-      {/* ─── FLOATING CARD: Draggable + Minimizable (GHL clone) ─── */}
-      {(isLive || state.phase === 'wrap_up') && state.currentLead && (
-        <div className="fixed z-[210] select-text" style={{ left: cardPos.x, top: cardPos.y, width: CARD_W }}>
-          {minimized ? (
+        )}
+        {/* Call card — only when live or wrap-up */}
+        {(isLive || state.phase === 'wrap_up') && state.currentLead && (
+          minimized ? (
             /* ── Minimized bar: name + timer + quick controls ── */
             <div
               onPointerDown={onDragStart} onPointerMove={onDragMove} onPointerUp={onDragEnd} onPointerCancel={onDragEnd}
@@ -547,9 +514,36 @@ export default function DialerProPage() {
               onDragEnd={onDragEnd}
               onMinimize={() => setMinimized(true)}
             />
-          )}
+          )
+        )}
+
+        {/* ─── Queue + History: side-by-side below card ─── */}
+        <div className={cn(
+          'flex gap-0 bg-white border border-[#E5E7EB] border-t-0 rounded-b-2xl shadow-[0_12px_28px_rgba(0,0,0,0.1)] overflow-hidden',
+          !(isLive || state.phase === 'wrap_up') && 'rounded-t-none',
+          !(isLive || state.phase === 'wrap_up') && !state.sessionStarted && !state.paused && 'border-t-0',
+        )}>
+          {/* Queue column */}
+          <div className="flex-1 flex flex-col border-r border-[#E5E7EB]/60">
+            <div className="flex items-center gap-1.5 px-2.5 py-1.5 border-b border-[#E5E7EB]/60 bg-[#F3F3EE]/50">
+              <span className="text-[10px] font-semibold text-[#6B7280] uppercase tracking-wide">Queue</span>
+              <span className="text-[10px] text-[#9CA3AF]">({queue.length})</span>
+            </div>
+            <div className="overflow-y-auto" style={{ maxHeight: 180 }}>
+              <QueueManagerPro queue={queue} campaignId={camp?.id ?? null} onRefresh={refreshQueue} />
+            </div>
+          </div>
+          {/* History column */}
+          <div className="flex-1 flex flex-col">
+            <div className="flex items-center gap-1.5 px-2.5 py-1.5 border-b border-[#E5E7EB]/60 bg-[#F3F3EE]/50">
+              <span className="text-[10px] font-semibold text-[#6B7280] uppercase tracking-wide">History</span>
+            </div>
+            <div className="overflow-y-auto" style={{ maxHeight: 180 }}>
+              <CallHistoryPro />
+            </div>
+          </div>
         </div>
-      )}
+      </div>
 
       {/* Edit contact modal */}
       {editing && ReactDOM.createPortal(
