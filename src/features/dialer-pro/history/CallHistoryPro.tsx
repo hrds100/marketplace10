@@ -1,11 +1,16 @@
 import { useEffect, useRef, useState } from 'react';
 import { useInfiniteQuery, useQueryClient } from '@tanstack/react-query';
-import { Phone, Play, FileText, Clock } from 'lucide-react';
+import { Phone, Play, FileText, Clock, X, Pencil } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { signCallRecording } from '@/features/smsv2/hooks/useCalls';
 import CallTranscriptModal from '@/features/smsv2/components/calls/CallTranscriptModal';
 
 const PAGE_SIZE = 25;
+
+interface CallHistoryProProps {
+  onCountChange?: (count: number) => void;
+  onEditContact?: (contactId: string) => void;
+}
 
 interface CallRow {
   id: string;
@@ -75,7 +80,7 @@ async function fetchPage(pageParam: number): Promise<CallRow[]> {
   });
 }
 
-export default function CallHistoryPro() {
+export default function CallHistoryPro({ onCountChange, onEditContact }: CallHistoryProProps = {}) {
   const queryClient = useQueryClient();
   const [playingUrl, setPlayingUrl] = useState<string | null>(null);
   const [transcriptCallId, setTranscriptCallId] = useState<string | null>(null);
@@ -129,6 +134,10 @@ export default function CallHistoryPro() {
 
   const calls = data?.pages.flat() ?? [];
 
+  useEffect(() => {
+    onCountChange?.(calls.length);
+  }, [calls.length, onCountChange]);
+
   const handlePlay = async (path: string) => {
     const signed = await signCallRecording(path);
     if (signed) setPlayingUrl(signed);
@@ -158,8 +167,11 @@ export default function CallHistoryPro() {
   return (
     <div className="space-y-0.5 p-1.5">
       {playingUrl && (
-        <div className="p-1.5 bg-[#F3F3EE] rounded-lg mb-1">
-          <audio src={playingUrl} controls autoPlay className="w-full h-7" onEnded={() => setPlayingUrl(null)} />
+        <div className="p-1.5 bg-[#F3F3EE] rounded-lg mb-1 flex items-center gap-1">
+          <audio src={playingUrl} controls autoPlay className="flex-1 h-7" onEnded={() => setPlayingUrl(null)} />
+          <button onClick={() => setPlayingUrl(null)} className="p-0.5 rounded hover:bg-black/[0.06] text-[#6B7280] flex-shrink-0">
+            <X className="w-3 h-3" />
+          </button>
         </div>
       )}
 
@@ -174,6 +186,15 @@ export default function CallHistoryPro() {
             <div className="text-[10px] text-[#9CA3AF] tabular-nums">{formatDuration(call.durationSec)} · {formatDate(call.startedAt)}</div>
           </div>
           <div className="flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0">
+            {call.contactId && onEditContact && (
+              <button
+                onClick={() => onEditContact(call.contactId!)}
+                className="p-0.5 rounded hover:bg-black/[0.04] text-[#6B7280] hover:text-[#1E9A80]"
+                title="Edit contact"
+              >
+                <Pencil className="w-3 h-3" />
+              </button>
+            )}
             {call.recordingPath && (
               <button
                 onClick={() => void handlePlay(call.recordingPath!)}

@@ -155,6 +155,20 @@ export default function EditContactModal({ contact, onClose, onSave, agents }: P
             </Field>
           </div>
 
+          {/* Notes — top-level, always visible */}
+          <div>
+            <Label>Notes</Label>
+            <textarea
+              value={draft.customFields.notes ?? ''}
+              onChange={(e) =>
+                set('customFields', { ...draft.customFields, notes: e.target.value })
+              }
+              placeholder="Add notes…"
+              rows={3}
+              className="w-full px-3 py-2 text-[13px] border border-[#E5E7EB] rounded-[10px] resize-none focus:outline-none focus:ring-1 focus:ring-[#1E9A80]/30 focus:border-[#1E9A80]"
+            />
+          </div>
+
           {/* PR 110 + 114: schedule / edit a follow-up. PR 114 (Hugo
               2026-04-28): if NO follow-up exists yet, allow creating
               one right here. Default time = tomorrow 10:00 local. */}

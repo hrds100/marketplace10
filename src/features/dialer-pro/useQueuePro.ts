@@ -102,11 +102,17 @@ export function useQueuePro(campaignId: string | null) {
     return () => { void supabase.removeChannel(channel); };
   }, [campaignId, fetchQueue]);
 
+  const removeLocal = useCallback((contactId: string) => {
+    setQueue((prev) => prev.filter((l) => l.contactId !== contactId));
+    setTotalCount((prev) => Math.max(0, prev - 1));
+  }, []);
+
   return {
     queue,
     totalCount,
     nextLead: queue[0] ?? null,
     refresh: fetchQueue,
+    removeLocal,
     loading,
   };
 }

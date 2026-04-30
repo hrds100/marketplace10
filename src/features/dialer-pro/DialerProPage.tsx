@@ -85,7 +85,7 @@ export default function DialerProPage() {
   const { state, deviceReady } = machine;
 
   // Queue
-  const { queue, totalCount: queueTotal, refresh: refreshQueue } = useQueuePro(camp?.id ?? null);
+  const { queue, refresh: refreshQueue, removeLocal: removeFromQueue } = useQueuePro(camp?.id ?? null);
 
   // Contact for the call room columns — during a call use currentLead,
   // when idle fall back to the next lead in queue so COL 1 (SMS/WA/Email)
@@ -125,6 +125,31 @@ export default function DialerProPage() {
 
   // Edit contact modal
   const [editing, setEditing] = useState<Contact | null>(null);
+
+  const openEditContactById = useCallback(async (contactId: string) => {
+    const [contactRes, tagsRes] = await Promise.all([
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      (supabase.from('wk_contacts' as any) as any)
+        .select('id, name, phone, email, owner_agent_id, pipeline_column_id, is_hot, deal_value_pence, custom_fields, created_at, last_contact_at')
+        .eq('id', contactId)
+        .maybeSingle(),
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      (supabase.from('wk_contact_tags' as any) as any)
+        .select('tag')
+        .eq('contact_id', contactId),
+    ]);
+    if (contactRes.error || !contactRes.data) return;
+    const d = contactRes.data;
+    const tags = ((tagsRes.data ?? []) as { tag: string }[]).map((r) => r.tag);
+    setEditing({
+      id: d.id, name: d.name ?? '', phone: d.phone ?? '',
+      email: d.email ?? undefined, ownerAgentId: d.owner_agent_id ?? undefined,
+      pipelineColumnId: d.pipeline_column_id ?? undefined, tags,
+      isHot: d.is_hot ?? false, dealValuePence: d.deal_value_pence ?? undefined,
+      customFields: d.custom_fields ?? {}, createdAt: d.created_at ?? new Date().toISOString(),
+      lastContactAt: d.last_contact_at ?? undefined,
+    });
+  }, []);
 
   // Suggest a disposition based on how the call ended — pre-selects
   // the button in the wrap-up card but never auto-applies it.
@@ -183,6 +208,7 @@ export default function DialerProPage() {
   });
   useEffect(() => { try { localStorage.setItem('dialer_pro_card_pos_v2', JSON.stringify(cardPos)); } catch { /* ignore */ } }, [cardPos]);
 
+  const [historyCount, setHistoryCount] = useState(0);
   const [minimized, setMinimized] = useState(false);
   useEffect(() => {
     if (state.phase === 'dialing') setMinimized(false);
@@ -211,18 +237,40 @@ export default function DialerProPage() {
   };
 
   // ─── Wrap-up action handlers ───────────────────────────────────────
+  const saveNotesToContact = useCallback(async (contactId: string, notes: string) => {
+    if (!notes.trim()) return;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { data } = await (supabase.from('wk_contacts' as any) as any)
+      .select('custom_fields')
+      .eq('id', contactId)
+      .maybeSingle();
+    const existing = (data?.custom_fields as Record<string, string>) ?? {};
+    const prev = existing.notes ?? '';
+    const stamp = new Date().toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: '2-digit' });
+    const updated = prev ? `${notes.trim()} [${stamp}]\n${prev}` : `${notes.trim()} [${stamp}]`;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    await (supabase.from('wk_contacts' as any) as any)
+      .update({ custom_fields: { ...existing, notes: updated } })
+      .eq('id', contactId);
+  }, []);
+
   const handleWrapUpNext = useCallback(async (colId: string | null, notes: string) => {
+    const lead = state.currentLead;
     if (colId) {
       await machine.applyOutcome(colId, notes.trim() || undefined);
     } else {
       machine.skip();
+    }
+    if (lead) {
+      void saveNotesToContact(lead.contactId, notes);
+      removeFromQueue(lead.contactId);
     }
     setTimeout(async () => {
       const next = await machine.pickNextLead(queue);
       if (next) void machine.dialLead(next);
       else onToast('Queue empty', 'info');
     }, 200);
-  }, [machine, queue, onToast]);
+  }, [machine, queue, onToast, state.currentLead, saveNotesToContact, removeFromQueue]);
 
   const handleWrapUpRedial = useCallback(async (colId: string | null, notes: string) => {
     const lead = state.currentLead;
@@ -231,17 +279,25 @@ export default function DialerProPage() {
     } else {
       machine.skip();
     }
-    if (lead) setTimeout(() => void machine.dialLead(lead), 200);
-  }, [machine, state.currentLead]);
+    if (lead) {
+      void saveNotesToContact(lead.contactId, notes);
+      setTimeout(() => void machine.dialLead(lead), 200);
+    }
+  }, [machine, state.currentLead, saveNotesToContact]);
 
   const handleWrapUpPause = useCallback(async (colId: string | null, notes: string) => {
+    const lead = state.currentLead;
     if (colId) {
       await machine.applyOutcome(colId, notes.trim() || undefined);
     } else {
       machine.skip();
     }
+    if (lead) {
+      void saveNotesToContact(lead.contactId, notes);
+      removeFromQueue(lead.contactId);
+    }
     setTimeout(() => machine.pause(), 200);
-  }, [machine]);
+  }, [machine, state.currentLead, saveNotesToContact, removeFromQueue]);
 
   return (
     <div className="relative h-full flex flex-col bg-[#F3F3EE]">
@@ -566,7 +622,7 @@ export default function DialerProPage() {
           <div className="flex flex-col overflow-hidden" style={{ width: `${queuePct}%` }}>
             <div className="flex items-center gap-1.5 px-2.5 py-1.5 border-b border-[#E5E7EB]/60 bg-[#F3F3EE]/50">
               <span className="text-[10px] font-semibold text-[#6B7280] uppercase tracking-wide">Queue</span>
-              <span className="text-[10px] text-[#9CA3AF]">({queueTotal})</span>
+              <span className="text-[10px] text-[#9CA3AF]">({queue.length})</span>
             </div>
             <div className="overflow-y-auto" style={{ maxHeight: 200 }}>
               <QueueManagerPro queue={queue} campaignId={camp?.id ?? null} onRefresh={refreshQueue} />
@@ -599,9 +655,10 @@ export default function DialerProPage() {
           <div className="flex-1 flex flex-col overflow-hidden">
             <div className="flex items-center gap-1.5 px-2.5 py-1.5 border-b border-[#E5E7EB]/60 bg-[#F3F3EE]/50">
               <span className="text-[10px] font-semibold text-[#6B7280] uppercase tracking-wide">History</span>
+              <span className="text-[10px] text-[#9CA3AF]">({historyCount})</span>
             </div>
             <div className="overflow-y-auto" style={{ maxHeight: 200 }}>
-              <CallHistoryPro />
+              <CallHistoryPro onCountChange={setHistoryCount} onEditContact={openEditContactById} />
             </div>
           </div>
         </div>
