@@ -27,6 +27,7 @@ import { Link, useLocation, useNavigate } from 'react-router-dom';
 import {
   Phone, PhoneOff, Mic, MicOff, Pause, Play, Square, SkipForward, Zap,
   CheckCircle2, Loader2, Clock, Radio, Pencil, X, Minus, GripVertical, PlayCircle,
+  MessageSquare,
 } from 'lucide-react';
 import type { Call as TwilioCall } from '@twilio/voice-sdk';
 import { useAuth } from '@/hooks/useAuth';
@@ -37,18 +38,20 @@ import {
   disconnectAllCallsAndWait, muteAllCalls, getDeviceCalls,
   addTokenRefreshFailListener,
 } from '@/core/integrations/twilio-voice';
-import { mapTwilioError } from '../lib/twilioErrorMap';
-import { useDialerCampaigns } from '../hooks/useDialerCampaigns';
-import { useDialerKpis } from '../hooks/useDialerKpis';
-import { usePipelineColumns } from '../hooks/usePipelineColumns';
-import { useSpendLimit } from '../hooks/useSpendLimit';
-import { useKillSwitch } from '../hooks/useKillSwitch';
-import { useCalls, signCallRecording } from '../hooks/useCalls';
-import { useCallerToasts } from '../store/toastsProvider';
+import { mapTwilioError } from './lib/twilioErrorMap';
+import { useDialerCampaigns } from './hooks/useDialerCampaigns';
+import { useDialerKpis } from './hooks/useDialerKpis';
+import { usePipelineColumns } from './hooks/usePipelineColumns';
+import { useSpendLimit } from './hooks/useSpendLimit';
+import { useKillSwitch } from './hooks/useKillSwitch';
+import { useCalls, signCallRecording } from './hooks/useCalls';
+import { useCallerToasts } from './store/toastsProvider';
 import { useActiveCallCtx } from '@/features/smsv2/components/live-call/ActiveCallContext';
 import EditContactModal from '@/features/smsv2/components/contacts/EditContactModal';
+import CallTranscriptModal from '@/features/smsv2/components/calls/CallTranscriptModal';
+import StageSelector from '@/features/smsv2/components/shared/StageSelector';
 import type { Contact } from '@/features/smsv2/types';
-import type { Campaign } from '../types';
+import type { Campaign } from './types';
 
 // ─── Types ──────────────────────────────────────────────────────────
 
@@ -2100,6 +2103,8 @@ function CallHistoryRow({ call: c }: { call: import('../hooks/useCalls').CallLis
   const [audioUrl, setAudioUrl] = useState<string | null>(null);
   const [playing, setPlaying] = useState(false);
   const audioRef = useRef<HTMLAudioElement | null>(null);
+  const [transcriptCallId, setTranscriptCallId] = useState<string | null>(null);
+  const [editing, setEditing] = useState(false);
 
   const handlePlay = async (e: React.MouseEvent) => {
     e.preventDefault();
@@ -2133,30 +2138,67 @@ function CallHistoryRow({ call: c }: { call: import('../hooks/useCalls').CallLis
     : '';
 
   return (
-    <li className="px-3 py-1.5 flex items-center gap-2 hover:bg-[#F3F3EE]/30 group">
-      <CallStatusIndicator status={c.status} />
-      <div className="flex-1 min-w-0">
-        <div className="text-[11px] font-semibold text-[#1A1A1A] truncate">
-          {c.contactName ?? c.contactPhone ?? '—'}
+    <>
+      <li className="px-3 py-1.5 flex items-center gap-1.5 hover:bg-[#F3F3EE]/30 group">
+        <CallStatusIndicator status={c.status} />
+        <div className="flex-1 min-w-0">
+          <button
+            type="button"
+            onClick={() => setEditing(true)}
+            className="text-[11px] font-semibold text-[#1A1A1A] truncate block max-w-full text-left hover:text-[#1E9A80]"
+          >
+            {c.contactName ?? c.contactPhone ?? '—'}
+          </button>
+          <div className="text-[10px] text-[#9CA3AF] tabular-nums truncate flex items-center gap-1">
+            <span>
+              {dateStr}
+              {c.durationSec ? ` · ${formatDur(c.durationSec)}` : ''}
+            </span>
+            {c.pipelineColumnId && (
+              <StageSelector
+                value={c.pipelineColumnId}
+                onChange={() => {}}
+                size="xs"
+              />
+            )}
+          </div>
         </div>
-        <div className="text-[10px] text-[#9CA3AF] tabular-nums truncate">
-          {dateStr}
-          {c.durationSec ? ` · ${formatDur(c.durationSec)}` : ''}
-        </div>
-      </div>
-      {c.recordingUrl && (
         <button
           type="button"
-          onClick={handlePlay}
-          title={playing ? 'Pause' : 'Play recording'}
-          className="p-1 rounded-[6px] text-[#6B7280] hover:text-[#1E9A80] hover:bg-[#ECFDF5] transition-colors flex-shrink-0"
+          onClick={() => setTranscriptCallId(c.id)}
+          title="View transcript"
+          className="p-1 rounded-[6px] text-[#6B7280] hover:text-[#1E9A80] hover:bg-[#ECFDF5] transition-colors flex-shrink-0 opacity-0 group-hover:opacity-100"
         >
-          {playing
-            ? <Pause className="w-3.5 h-3.5" />
-            : <PlayCircle className="w-3.5 h-3.5" />}
+          <MessageSquare className="w-3.5 h-3.5" />
         </button>
+        {c.recordingUrl && (
+          <button
+            type="button"
+            onClick={handlePlay}
+            title={playing ? 'Pause' : 'Play recording'}
+            className="p-1 rounded-[6px] text-[#6B7280] hover:text-[#1E9A80] hover:bg-[#ECFDF5] transition-colors flex-shrink-0"
+          >
+            {playing
+              ? <Pause className="w-3.5 h-3.5" />
+              : <PlayCircle className="w-3.5 h-3.5" />}
+          </button>
+        )}
+      </li>
+      {transcriptCallId && ReactDOM.createPortal(
+        <CallTranscriptModal
+          callId={transcriptCallId}
+          callerLabel={c.contactName ?? c.contactPhone ?? '—'}
+          onClose={() => setTranscriptCallId(null)}
+        />,
+        document.body,
       )}
-    </li>
+      {editing && (
+        <RichEditContactBridge
+          contactId={c.contactId}
+          onClose={() => setEditing(false)}
+        />
+      )}
+    </>
   );
 }
 

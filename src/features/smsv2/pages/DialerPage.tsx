@@ -1,6 +1,6 @@
 import { useEffect } from 'react';
-import { CallerToastsProvider } from '@/features/caller/store/toastsProvider';
-import { CallerPad } from '@/features/caller/pages/DialerPage';
+import { CallerToastsProvider } from '../caller-pad/store/toastsProvider';
+import { CallerPad } from '../caller-pad/CallerPad';
 import LiveCallScreen from '../components/live-call/LiveCallScreen';
 import { useActiveCallCtx } from '../components/live-call/ActiveCallContext';
 
