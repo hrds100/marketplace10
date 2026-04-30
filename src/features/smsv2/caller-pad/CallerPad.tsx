@@ -2099,7 +2099,7 @@ function CallHistoryPanel({
   );
 }
 
-function CallHistoryRow({ call: c }: { call: import('../hooks/useCalls').CallListRow }) {
+function CallHistoryRow({ call: c }: { call: import('./hooks/useCalls').CallListRow }) {
   const [audioUrl, setAudioUrl] = useState<string | null>(null);
   const [playing, setPlaying] = useState(false);
   const audioRef = useRef<HTMLAudioElement | null>(null);
@@ -2165,6 +2165,14 @@ function CallHistoryRow({ call: c }: { call: import('../hooks/useCalls').CallLis
         </div>
         <button
           type="button"
+          onClick={() => setEditing(true)}
+          title="Edit contact"
+          className="p-1 rounded-[6px] text-[#6B7280] hover:text-[#1E9A80] hover:bg-[#ECFDF5] transition-colors flex-shrink-0 opacity-0 group-hover:opacity-100"
+        >
+          <Pencil className="w-3.5 h-3.5" />
+        </button>
+        <button
+          type="button"
           onClick={() => setTranscriptCallId(c.id)}
           title="View transcript"
           className="p-1 rounded-[6px] text-[#6B7280] hover:text-[#1E9A80] hover:bg-[#ECFDF5] transition-colors flex-shrink-0 opacity-0 group-hover:opacity-100"
@@ -2192,11 +2200,12 @@ function CallHistoryRow({ call: c }: { call: import('../hooks/useCalls').CallLis
         />,
         document.body,
       )}
-      {editing && (
+      {editing && ReactDOM.createPortal(
         <RichEditContactBridge
           contactId={c.contactId}
           onClose={() => setEditing(false)}
-        />
+        />,
+        document.body,
       )}
     </>
   );
