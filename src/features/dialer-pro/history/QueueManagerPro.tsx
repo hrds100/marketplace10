@@ -20,6 +20,7 @@ export default function QueueManagerPro({ queue, campaignId, onRefresh }: Props)
   const [removing, setRemoving] = useState<string | null>(null);
   const [adding, setAdding] = useState(false);
   const [showSearch, setShowSearch] = useState(false);
+  const [creatingNew, setCreatingNew] = useState<Contact | null>(null);
   const [visibleCount, setVisibleCount] = useState(25);
   const sentinelRef = useRef<HTMLDivElement>(null);
 
@@ -158,7 +159,7 @@ export default function QueueManagerPro({ queue, campaignId, onRefresh }: Props)
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               onKeyDown={(e) => e.key === 'Enter' && void handleSearch()}
-              placeholder="Search contacts by name or phone…"
+              placeholder="Search or create new…"
               className="flex-1 px-3 py-1.5 rounded-lg border border-[#E5E5E5] text-xs focus:outline-none focus:ring-1 focus:ring-[#1E9A80]"
             />
             <button
@@ -169,6 +170,15 @@ export default function QueueManagerPro({ queue, campaignId, onRefresh }: Props)
               {searching ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Search className="w-3.5 h-3.5" />}
             </button>
           </div>
+          <button
+            onClick={() => setCreatingNew({
+              id: `new-${Date.now()}`, name: '', phone: '', email: undefined,
+              tags: [], isHot: false, customFields: {}, createdAt: new Date().toISOString(),
+            })}
+            className="flex items-center gap-1.5 w-full px-2 py-1.5 rounded-lg text-xs font-medium text-[#1E9A80] hover:bg-[#ECFDF5] transition-colors"
+          >
+            <Plus className="w-3.5 h-3.5" /> New contact
+          </button>
           {searchResults.length > 0 && (
             <div className="space-y-1 max-h-40 overflow-y-auto">
               {searchResults.map((c) => (
@@ -275,6 +285,40 @@ export default function QueueManagerPro({ queue, campaignId, onRefresh }: Props)
               setEditingContactId(null);
               setEditingContact(null);
               onRefresh();
+            }}
+          />
+        </div>,
+        document.body,
+      )}
+
+      {creatingNew && ReactDOM.createPortal(
+        <div className="fixed inset-0 z-[9999]">
+          <EditContactModal
+            contact={creatingNew}
+            onClose={() => setCreatingNew(null)}
+            onSave={async (draft) => {
+              if (!draft.phone.trim()) return;
+              // eslint-disable-next-line @typescript-eslint/no-explicit-any
+              const { data, error } = await (supabase.from('wk_contacts' as any) as any)
+                .insert({
+                  name: draft.name.trim() || null,
+                  phone: draft.phone.trim(),
+                  email: draft.email || null,
+                  pipeline_column_id: draft.pipelineColumnId || null,
+                  is_hot: draft.isHot,
+                  custom_fields: draft.customFields,
+                })
+                .select('id')
+                .single();
+              if (error || !data) return;
+              if (draft.tags.length > 0) {
+                // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                await (supabase.from('wk_contact_tags' as any) as any)
+                  .insert(draft.tags.map((t) => ({ contact_id: data.id, tag: t })));
+              }
+              await addToQueue(data.id);
+              setCreatingNew(null);
+              setShowSearch(false);
             }}
           />
         </div>,

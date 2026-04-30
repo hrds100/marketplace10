@@ -163,6 +163,11 @@ export default function DialerProPage() {
   }, [state.startedAt, state.phase]);
 
   const blocked = spend.isLimitReached || ks.allDialers || !deviceReady;
+
+  // Queue/History split ratio (percentage for queue width)
+  const [queuePct, setQueuePct] = useState(50);
+  const splitDragRef = useRef<{ startX: number; startPct: number } | null>(null);
+  const splitContainerRef = useRef<HTMLDivElement>(null);
   const isLive = state.phase === 'dialing' || state.phase === 'ringing' || state.phase === 'connected';
   const contactFirstName = contact?.name?.trim().split(/\s+/)[0] ?? '';
   const [bottomTab, setBottomTab] = useState<'queue' | 'history'>('queue');
@@ -338,43 +343,63 @@ export default function DialerProPage() {
 
       {/* ─── FLOATING CARD + Queue/History (always visible, draggable) ─── */}
       <div className="fixed z-[210] select-text" style={{ left: cardPos.x, top: cardPos.y, width: CARD_W }}>
-        {/* Controls bar — Start / Resume / Status */}
+        {/* Idle card — same card shape as Outgoing Call, with Start button instead of End Call */}
         {!(isLive || state.phase === 'wrap_up') && (
-          <div
-            onPointerDown={onDragStart} onPointerMove={onDragMove} onPointerUp={onDragEnd} onPointerCancel={onDragEnd}
-            className="flex items-center gap-2 px-3 py-2 bg-white border border-[#E5E7EB] rounded-t-2xl cursor-grab active:cursor-grabbing"
-          >
-            {state.phase === 'idle' && !state.sessionStarted && (
-              <button onPointerDown={(e) => e.stopPropagation()} onClick={() => void startDialer()} disabled={blocked || !camp}
-                className="flex items-center gap-1.5 px-4 py-1.5 rounded-lg text-xs font-semibold text-white bg-[#1E9A80] hover:bg-[#1E9A80]/90 shadow-[0_4px_12px_rgba(30,154,128,0.35)] disabled:opacity-50 disabled:cursor-not-allowed">
-                <Phone className="w-3.5 h-3.5" /> Start dialer
-              </button>
-            )}
-            {state.phase === 'idle' && state.sessionStarted && (
-              <button onPointerDown={(e) => e.stopPropagation()} onClick={() => void startDialer()} disabled={blocked}
-                className="flex items-center gap-1.5 px-4 py-1.5 rounded-lg text-xs font-semibold text-white bg-[#1E9A80] hover:bg-[#1E9A80]/90 disabled:opacity-50">
-                <Phone className="w-3.5 h-3.5" /> Dial next
-              </button>
-            )}
-            {state.phase === 'paused' && (
-              <>
-                <button onPointerDown={(e) => e.stopPropagation()} onClick={() => { machine.resume(); void startDialer(); }} disabled={blocked}
-                  className="flex items-center gap-1.5 px-4 py-1.5 rounded-lg text-xs font-semibold text-white bg-[#1E9A80] hover:bg-[#1E9A80]/90 disabled:opacity-50">
-                  <Play className="w-3.5 h-3.5" /> Resume
+          <div className="bg-white border border-[#E5E7EB] rounded-2xl shadow-[0_24px_64px_rgba(0,0,0,0.18)] overflow-hidden">
+            {/* Header — draggable */}
+            <div
+              onPointerDown={onDragStart} onPointerMove={onDragMove} onPointerUp={onDragEnd} onPointerCancel={onDragEnd}
+              className="flex items-center gap-2 px-4 py-2.5 bg-[#F3F3EE] border-b border-[#E5E7EB] cursor-grab active:cursor-grabbing"
+            >
+              <Phone className="w-4 h-4 text-[#1E9A80]" />
+              <span className="text-[12px] font-semibold text-[#6B7280]">
+                {state.phase === 'paused' ? 'Paused' : 'Power Dialer'}
+              </span>
+              <span className="text-[11px] text-[#9CA3AF] truncate ml-auto">{agentFirstName}</span>
+            </div>
+
+            {/* Avatar area */}
+            <div className="flex flex-col items-center py-5 px-4">
+              <div className="w-20 h-20 rounded-full bg-[#E5E7EB] flex items-center justify-center text-[#9CA3AF] text-[28px] font-bold mb-3">
+                <Phone className="w-8 h-8" />
+              </div>
+              <div className="text-[14px] font-medium text-[#6B7280]">
+                {queue.length > 0 ? `${queue.length} leads in queue` : 'Queue empty'}
+              </div>
+              {queue[0] && (
+                <div className="text-[12px] text-[#9CA3AF] mt-1">
+                  Next: {queue[0].name}
+                </div>
+              )}
+              {/* Campaign selector */}
+              {campaigns.length > 1 && (
+                <select value={activeCampaignId} onChange={(e) => setActiveCampaignId(e.target.value)}
+                  className="mt-2 text-[11px] border border-[#E5E7EB] rounded-lg px-2 py-1 bg-white text-[#6B7280]">
+                  {campaigns.map((c) => (<option key={c.id} value={c.id}>{c.name}</option>))}
+                </select>
+              )}
+            </div>
+
+            {/* Start / Resume / Dial next button */}
+            <div className="px-3 pb-3">
+              {state.phase === 'paused' ? (
+                <div className="flex gap-2">
+                  <button onClick={() => { machine.resume(); void startDialer(); }} disabled={blocked}
+                    className="flex-1 flex items-center justify-center gap-2 bg-[#1E9A80] hover:bg-[#1E9A80]/90 text-white text-[14px] font-semibold py-3 rounded-xl transition-colors shadow-[0_4px_12px_rgba(30,154,128,0.35)] disabled:opacity-50">
+                    <Play className="w-4 h-4" /> Resume
+                  </button>
+                  <button onClick={() => void machine.stop()}
+                    className="flex items-center justify-center gap-2 border border-[#FECACA] text-[#B91C1C] text-[14px] font-semibold py-3 px-4 rounded-xl hover:bg-[#FEF2F2]">
+                    <Square className="w-4 h-4" />
+                  </button>
+                </div>
+              ) : (
+                <button onClick={() => void startDialer()} disabled={blocked || !camp || queue.length === 0}
+                  className="w-full flex items-center justify-center gap-2 bg-[#1E9A80] hover:bg-[#1E9A80]/90 text-white text-[14px] font-semibold py-3 rounded-xl transition-colors shadow-[0_4px_12px_rgba(30,154,128,0.35)] disabled:opacity-50 disabled:cursor-not-allowed">
+                  <Phone className="w-4 h-4" /> {state.sessionStarted ? 'Dial next' : 'Start dialer'}
                 </button>
-                <button onPointerDown={(e) => e.stopPropagation()} onClick={() => void machine.stop()}
-                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold text-[#B91C1C] border border-[#FECACA] hover:bg-[#FEF2F2]">
-                  <Square className="w-3.5 h-3.5" /> Stop
-                </button>
-              </>
-            )}
-            {/* Campaign selector */}
-            {campaigns.length > 1 && (
-              <select onPointerDown={(e) => e.stopPropagation()} value={activeCampaignId} onChange={(e) => setActiveCampaignId(e.target.value)}
-                className="ml-auto text-[11px] border border-[#E5E7EB] rounded-lg px-2 py-1 bg-white text-[#6B7280]">
-                {campaigns.map((c) => (<option key={c.id} value={c.id}>{c.name}</option>))}
-              </select>
-            )}
+              )}
+            </div>
           </div>
         )}
         {/* Call card — only when live or wrap-up */}
@@ -517,28 +542,50 @@ export default function DialerProPage() {
           )
         )}
 
-        {/* ─── Queue + History: side-by-side below card ─── */}
-        <div className={cn(
-          'flex gap-0 bg-white border border-[#E5E7EB] border-t-0 rounded-b-2xl shadow-[0_12px_28px_rgba(0,0,0,0.1)] overflow-hidden',
-          !(isLive || state.phase === 'wrap_up') && 'rounded-t-none',
-          !(isLive || state.phase === 'wrap_up') && !state.sessionStarted && !state.paused && 'border-t-0',
-        )}>
+        {/* ─── Queue + History: side-by-side, resizable ─── */}
+        <div
+          ref={splitContainerRef}
+          className="flex bg-white border border-[#E5E7EB] border-t-0 rounded-b-2xl shadow-[0_12px_28px_rgba(0,0,0,0.1)] overflow-hidden"
+        >
           {/* Queue column */}
-          <div className="flex-1 flex flex-col border-r border-[#E5E7EB]/60">
+          <div className="flex flex-col overflow-hidden" style={{ width: `${queuePct}%` }}>
             <div className="flex items-center gap-1.5 px-2.5 py-1.5 border-b border-[#E5E7EB]/60 bg-[#F3F3EE]/50">
               <span className="text-[10px] font-semibold text-[#6B7280] uppercase tracking-wide">Queue</span>
               <span className="text-[10px] text-[#9CA3AF]">({queue.length})</span>
             </div>
-            <div className="overflow-y-auto" style={{ maxHeight: 180 }}>
+            <div className="overflow-y-auto" style={{ maxHeight: 200 }}>
               <QueueManagerPro queue={queue} campaignId={camp?.id ?? null} onRefresh={refreshQueue} />
             </div>
           </div>
+          {/* Resize handle */}
+          <div
+            className="w-1 bg-[#E5E7EB] hover:bg-[#1E9A80]/40 cursor-col-resize flex-shrink-0 transition-colors"
+            onPointerDown={(e) => {
+              (e.currentTarget as Element).setPointerCapture(e.pointerId);
+              splitDragRef.current = { startX: e.clientX, startPct: queuePct };
+            }}
+            onPointerMove={(e) => {
+              if (!splitDragRef.current || !splitContainerRef.current) return;
+              const containerW = splitContainerRef.current.offsetWidth;
+              const dx = e.clientX - splitDragRef.current.startX;
+              const newPct = splitDragRef.current.startPct + (dx / containerW) * 100;
+              setQueuePct(Math.min(80, Math.max(20, newPct)));
+            }}
+            onPointerUp={(e) => {
+              try { (e.currentTarget as Element).releasePointerCapture(e.pointerId); } catch { /* ignore */ }
+              splitDragRef.current = null;
+            }}
+            onPointerCancel={(e) => {
+              try { (e.currentTarget as Element).releasePointerCapture(e.pointerId); } catch { /* ignore */ }
+              splitDragRef.current = null;
+            }}
+          />
           {/* History column */}
-          <div className="flex-1 flex flex-col">
+          <div className="flex-1 flex flex-col overflow-hidden">
             <div className="flex items-center gap-1.5 px-2.5 py-1.5 border-b border-[#E5E7EB]/60 bg-[#F3F3EE]/50">
               <span className="text-[10px] font-semibold text-[#6B7280] uppercase tracking-wide">History</span>
             </div>
-            <div className="overflow-y-auto" style={{ maxHeight: 180 }}>
+            <div className="overflow-y-auto" style={{ maxHeight: 200 }}>
               <CallHistoryPro />
             </div>
           </div>

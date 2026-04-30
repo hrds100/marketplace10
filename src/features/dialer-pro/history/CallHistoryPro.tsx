@@ -2,53 +2,77 @@ import { useEffect, useRef, useState } from 'react';
 import { useInfiniteQuery, useQueryClient } from '@tanstack/react-query';
 import { Phone, Play, FileText, Clock } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
-import { signCallRecording } from '@/features/smsv2/caller-pad/hooks/useCalls';
+import { signCallRecording } from '@/features/smsv2/hooks/useCalls';
 import CallTranscriptModal from '@/features/smsv2/components/calls/CallTranscriptModal';
 
 const PAGE_SIZE = 25;
 
 interface CallRow {
   id: string;
+  contactId: string | null;
   contactName: string | null;
   contactPhone: string | null;
   direction: string;
   status: string;
   startedAt: string | null;
   durationSec: number | null;
-  recordingUrl: string | null;
+  recordingPath: string | null;
   agentNote: string | null;
 }
 
 async function fetchPage(pageParam: number): Promise<CallRow[]> {
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const { data: rows, error } = await (supabase.from('wk_calls' as any) as any)
-    .select(
-      'id, direction, status, started_at, duration_sec, recording_url, agent_note, ' +
-      'wk_contacts:contact_id ( name, phone )'
-    )
-    .order('created_at', { ascending: false })
-    .range(pageParam * PAGE_SIZE, (pageParam + 1) * PAGE_SIZE - 1);
+  const [callsRes, recRes] = await Promise.all([
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    (supabase.from('wk_calls' as any) as any)
+      .select(
+        'id, contact_id, direction, status, started_at, duration_sec, agent_note'
+      )
+      .order('started_at', { ascending: false })
+      .range(pageParam * PAGE_SIZE, (pageParam + 1) * PAGE_SIZE - 1),
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    (supabase.from('wk_recordings' as any) as any)
+      .select('call_id, storage_path, status'),
+  ]);
 
-  console.log('call history data:', rows, 'error:', error);
+  if (callsRes.error) { console.warn('[dialer-pro] history fetch error', callsRes.error); return []; }
 
-  if (error) { console.warn('[dialer-pro] history fetch error', error); return []; }
+  const recByCallId = new Map<string, string>();
+  for (const r of (recRes.data ?? []) as Array<{ call_id: string; storage_path: string; status: string }>) {
+    recByCallId.set(r.call_id, r.storage_path);
+  }
 
-  return ((rows ?? []) as Array<{
-    id: string; direction: string; status: string;
-    started_at: string | null; duration_sec: number | null;
-    recording_url: string | null; agent_note: string | null;
-    wk_contacts: { name: string | null; phone: string | null } | null;
-  }>).map((r) => ({
-    id: r.id,
-    contactName: r.wk_contacts?.name ?? null,
-    contactPhone: r.wk_contacts?.phone ?? null,
-    direction: r.direction,
-    status: r.status,
-    startedAt: r.started_at,
-    durationSec: r.duration_sec,
-    recordingUrl: r.recording_url,
-    agentNote: r.agent_note,
-  }));
+  const callIds = ((callsRes.data ?? []) as Array<{ id: string; contact_id: string | null }>);
+  const contactIds = [...new Set(callIds.map((c) => c.contact_id).filter(Boolean))] as string[];
+
+  let contactMap = new Map<string, { name: string | null; phone: string | null }>();
+  if (contactIds.length > 0) {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { data: contacts } = await (supabase.from('wk_contacts' as any) as any)
+      .select('id, name, phone')
+      .in('id', contactIds);
+    for (const c of (contacts ?? []) as Array<{ id: string; name: string | null; phone: string | null }>) {
+      contactMap.set(c.id, { name: c.name, phone: c.phone });
+    }
+  }
+
+  return ((callsRes.data ?? []) as Array<{
+    id: string; contact_id: string | null; direction: string; status: string;
+    started_at: string | null; duration_sec: number | null; agent_note: string | null;
+  }>).map((r) => {
+    const contact = r.contact_id ? contactMap.get(r.contact_id) : null;
+    return {
+      id: r.id,
+      contactId: r.contact_id,
+      contactName: contact?.name ?? null,
+      contactPhone: contact?.phone ?? null,
+      direction: r.direction,
+      status: r.status,
+      startedAt: r.started_at,
+      durationSec: r.duration_sec,
+      recordingPath: recByCallId.get(r.id) ?? null,
+      agentNote: r.agent_note,
+    };
+  });
 }
 
 export default function CallHistoryPro() {
@@ -71,7 +95,6 @@ export default function CallHistoryPro() {
       lastPage.length === PAGE_SIZE ? lastPageParam + 1 : undefined,
   });
 
-  // Realtime — re-fetch first page when wk_calls changes
   useEffect(() => {
     const channel = supabase
       .channel('call-history-realtime')
@@ -89,7 +112,6 @@ export default function CallHistoryPro() {
     return () => { void supabase.removeChannel(channel); };
   }, [queryClient]);
 
-  // IntersectionObserver — load next page when sentinel is visible
   useEffect(() => {
     const el = sentinelRef.current;
     if (!el) return;
@@ -107,8 +129,8 @@ export default function CallHistoryPro() {
 
   const calls = data?.pages.flat() ?? [];
 
-  const handlePlay = async (url: string) => {
-    const signed = await signCallRecording(url);
+  const handlePlay = async (path: string) => {
+    const signed = await signCallRecording(path);
     if (signed) setPlayingUrl(signed);
   };
 
@@ -126,40 +148,37 @@ export default function CallHistoryPro() {
   };
 
   if (isLoading) {
-    return <div className="flex items-center justify-center py-8 text-sm text-[#9CA3AF]">Loading history…</div>;
+    return <div className="flex items-center justify-center py-4 text-[11px] text-[#9CA3AF]">Loading…</div>;
   }
 
   if (calls.length === 0) {
-    return <div className="flex items-center justify-center py-8 text-sm text-[#9CA3AF]">No calls yet</div>;
+    return <div className="flex items-center justify-center py-4 text-[11px] text-[#9CA3AF]">No calls yet</div>;
   }
 
   return (
-    <div className="space-y-1 p-2">
+    <div className="space-y-0.5 p-1.5">
       {playingUrl && (
-        <div className="p-2 bg-white border border-[#E5E7EB] rounded-lg mb-2">
-          <audio src={playingUrl} controls autoPlay className="w-full h-8" onEnded={() => setPlayingUrl(null)} />
+        <div className="p-1.5 bg-[#F3F3EE] rounded-lg mb-1">
+          <audio src={playingUrl} controls autoPlay className="w-full h-7" onEnded={() => setPlayingUrl(null)} />
         </div>
       )}
 
       {calls.map((call) => (
         <div
           key={call.id}
-          className="flex items-center gap-2 px-2 py-1.5 rounded-lg hover:bg-[#F3F3EE]/50 transition-colors text-xs group"
+          className="flex items-center gap-1.5 px-1.5 py-1 rounded-lg hover:bg-[#F3F3EE]/50 transition-colors text-xs group"
         >
           <Phone className="w-3 h-3 text-[#9CA3AF] flex-shrink-0" />
           <div className="flex-1 min-w-0">
-            <div className="font-medium text-[#1A1A1A] truncate text-[11px]">{call.contactName ?? 'Unknown'}</div>
-            <div className="text-[10px] text-[#9CA3AF] truncate">{call.contactPhone}</div>
-          </div>
-          <div className="text-right flex-shrink-0">
-            <div className="text-[10px] text-[#6B7280] tabular-nums">{formatDuration(call.durationSec)}</div>
-            <div className="text-[9px] text-[#9CA3AF]">{formatDate(call.startedAt)}</div>
+            <div className="font-medium text-[#1A1A1A] truncate text-[11px]">{call.contactName ?? call.contactPhone ?? 'Unknown'}</div>
+            <div className="text-[10px] text-[#9CA3AF] tabular-nums">{formatDuration(call.durationSec)} · {formatDate(call.startedAt)}</div>
           </div>
           <div className="flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0">
-            {call.recordingUrl && (
+            {call.recordingPath && (
               <button
-                onClick={() => void handlePlay(call.recordingUrl!)}
+                onClick={() => void handlePlay(call.recordingPath!)}
                 className="p-0.5 rounded hover:bg-black/[0.04] text-[#6B7280]"
+                title="Play recording"
               >
                 <Play className="w-3 h-3" />
               </button>
@@ -167,6 +186,7 @@ export default function CallHistoryPro() {
             <button
               onClick={() => setTranscriptCallId(call.id)}
               className="p-0.5 rounded hover:bg-black/[0.04] text-[#6B7280]"
+              title="View transcript"
             >
               <FileText className="w-3 h-3" />
             </button>
@@ -174,10 +194,9 @@ export default function CallHistoryPro() {
         </div>
       ))}
 
-      {/* Sentinel for infinite scroll */}
-      <div ref={sentinelRef} className="h-4" />
+      <div ref={sentinelRef} className="h-2" />
       {isFetchingNextPage && (
-        <div className="flex items-center justify-center py-2 text-[11px] text-[#9CA3AF]">Loading more…</div>
+        <div className="flex items-center justify-center py-1 text-[10px] text-[#9CA3AF]">Loading…</div>
       )}
 
       {transcriptCallId && (
