@@ -2,7 +2,7 @@
 // Renders the agent's actual queue from useMyDialerQueue (priority,
 // scheduled_for, attempts ordering). Each row exposes a Call button.
 
-import { Phone } from 'lucide-react';
+import { Phone, Pencil } from 'lucide-react';
 import type { MyQueueLead } from '../../hooks/useMyDialerQueue';
 
 interface Props {
@@ -10,6 +10,7 @@ interface Props {
   loading: boolean;
   error: string | null;
   onCall: (lead: MyQueueLead) => void;
+  onEdit?: (lead: MyQueueLead) => void;
   disabled?: boolean;
   disabledReason?: string | null;
 }
@@ -19,6 +20,7 @@ export default function QueuePreview({
   loading,
   error,
   onCall,
+  onEdit,
   disabled,
   disabledReason,
 }: Props) {
@@ -68,6 +70,16 @@ export default function QueuePreview({
                 {lead.phone || '— no phone —'}
               </div>
             </div>
+            {onEdit && (
+              <button
+                type="button"
+                onClick={(e) => { e.stopPropagation(); onEdit(lead); }}
+                title="Edit contact"
+                className="p-1.5 rounded-lg text-[#6B7280] hover:text-[#1E9A80] hover:bg-[#F3F3EE] transition-colors"
+              >
+                <Pencil className="w-3.5 h-3.5" />
+              </button>
+            )}
             <button
               type="button"
               onClick={() => onCall(lead)}
