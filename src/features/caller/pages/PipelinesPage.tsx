@@ -79,7 +79,7 @@ export default function PipelinesPage() {
       if (target?.requires_followup) {
         const lc = (target.name ?? '').toLowerCase();
         const suggested =
-          lc.includes('callback') ? 24 :
+          lc.includes('voicemail') ? 24 :
           lc.includes('nurtur') ? 24 * 7 :
           lc.includes('interest') ? 48 : 24;
         setFollowup({
