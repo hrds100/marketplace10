@@ -50,7 +50,13 @@ export function NfsMainFooter() {
           </div>
         </div>
 
-        <div className="mt-10 pt-6 border-t border-border text-center">
+        <div className="mt-10 pt-6 border-t border-border text-center space-y-1">
+          <p className="text-xs text-muted-foreground">
+            <a href="https://find-and-update.company-information.service.gov.uk/company/13806307" target="_blank" rel="noopener noreferrer" className="hover:text-foreground transition-colors">Airbrick Finance Ltd</a> · Company No. 13806307 · Trading as nfstay
+          </p>
+          <p className="text-xs text-muted-foreground">
+            Nfstay Holdings FZE LLC · Ajman NuVentures Centre Free Zone, UAE
+          </p>
           <p className="text-xs text-muted-foreground">&copy; 2026 nfstay. All rights reserved.</p>
         </div>
       </div>
