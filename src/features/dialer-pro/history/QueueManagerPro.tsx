@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import ReactDOM from 'react-dom';
 import { GripVertical, Trash2, Plus, Search, Loader2, Pencil } from 'lucide-react';
 import { cn } from '@/lib/utils';
@@ -20,6 +20,26 @@ export default function QueueManagerPro({ queue, campaignId, onRefresh }: Props)
   const [removing, setRemoving] = useState<string | null>(null);
   const [adding, setAdding] = useState(false);
   const [showSearch, setShowSearch] = useState(false);
+  const [visibleCount, setVisibleCount] = useState(25);
+  const sentinelRef = useRef<HTMLDivElement>(null);
+
+  // IntersectionObserver — reveal more queue items on scroll
+  useEffect(() => {
+    const el = sentinelRef.current;
+    if (!el) return;
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries[0]?.isIntersecting && visibleCount < queue.length) {
+          setVisibleCount((prev) => Math.min(prev + 25, queue.length));
+        }
+      },
+      { threshold: 0.1 }
+    );
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, [visibleCount, queue.length]);
+
+  const visibleQueue = queue.slice(0, visibleCount);
   const [editingContactId, setEditingContactId] = useState<string | null>(null);
   const [editingContact, setEditingContact] = useState<Contact | null>(null);
 
@@ -172,7 +192,7 @@ export default function QueueManagerPro({ queue, campaignId, onRefresh }: Props)
       )}
 
       <div className="space-y-1">
-        {queue.map((lead, i) => (
+        {visibleQueue.map((lead, i) => (
           <div
             key={lead.queueRowId}
             className="flex items-center gap-2 px-2 py-1.5 rounded-lg bg-white border border-[#E5E7EB] text-xs group"
@@ -193,7 +213,7 @@ export default function QueueManagerPro({ queue, campaignId, onRefresh }: Props)
                   ↑
                 </button>
               )}
-              {i < queue.length - 1 && (
+              {i < visibleQueue.length - 1 && (
                 <button
                   onClick={() => void movePriority(lead.queueRowId, Math.max(0, lead.priority - 1))}
                   className="p-0.5 rounded text-[#6B7280] hover:text-[#1A1A1A] text-[10px]"
@@ -221,6 +241,13 @@ export default function QueueManagerPro({ queue, campaignId, onRefresh }: Props)
             </div>
           </div>
         ))}
+        {/* Sentinel for infinite scroll */}
+        <div ref={sentinelRef} className="h-2" />
+        {visibleCount < queue.length && (
+          <div className="flex items-center justify-center py-1 text-[10px] text-[#9CA3AF]">
+            Showing {visibleCount} of {queue.length}…
+          </div>
+        )}
       </div>
 
       {editingContact && ReactDOM.createPortal(

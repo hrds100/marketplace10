@@ -41,27 +41,28 @@ export function useQueuePro(campaignId: string | null, agentId: string | null) {
   const [loading, setLoading] = useState(true);
 
   const fetchQueue = useCallback(async () => {
-    if (!campaignId) {
-      setQueue([]);
-      setLoading(false);
-      return;
-    }
     const nowIso = new Date().toISOString();
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const { data: rows, error } = await (supabase.from('wk_dialer_queue' as any) as any)
+    let q = (supabase.from('wk_dialer_queue' as any) as any)
       .select(
         'id, contact_id, campaign_id, priority, attempts, scheduled_for, status, ' +
         'wk_contacts:contact_id ( id, name, phone, pipeline_column_id )'
       )
-      .eq('campaign_id', campaignId)
       .eq('status', 'pending')
       .or(`scheduled_for.is.null,scheduled_for.lte.${nowIso}`)
-      .or(agentId ? `agent_id.eq.${agentId},agent_id.is.null` : 'agent_id.is.null')
       .order('priority', { ascending: false, nullsFirst: false })
       .order('scheduled_for', { ascending: true, nullsFirst: true })
       .order('attempts', { ascending: true })
       .order('created_at', { ascending: true })
       .limit(100);
+
+    if (campaignId && campaignId.trim() !== '') {
+      q = q.eq('campaign_id', campaignId);
+    }
+
+    const { data: rows, error } = await q;
+
+    console.log('queue data:', rows, 'campaignId filter:', campaignId);
 
     if (error) {
       console.warn('[dialer-pro] queue fetch error', error);
@@ -81,17 +82,16 @@ export function useQueuePro(campaignId: string | null, agentId: string | null) {
     void fetchQueue();
   }, [fetchQueue]);
 
-  // Realtime subscription
+  // Realtime subscription — no campaign filter so we catch all queue changes
   useEffect(() => {
-    if (!campaignId) return;
+    const channelName = campaignId ? `dialer-pro-queue-${campaignId}` : 'dialer-pro-queue-all';
     const channel = supabase
-      .channel(`dialer-pro-queue-${campaignId}`)
+      .channel(channelName)
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       .on('postgres_changes' as any, {
         event: '*',
         schema: 'public',
         table: 'wk_dialer_queue',
-        filter: `campaign_id=eq.${campaignId}`,
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       } as any, () => {
         void fetchQueue();
