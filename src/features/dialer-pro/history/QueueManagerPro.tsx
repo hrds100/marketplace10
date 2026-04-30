@@ -80,11 +80,10 @@ export default function QueueManagerPro({ queue, campaignId, onRefresh }: Props)
         contact_id: contactId,
         campaign_id: campaignId,
         status: 'pending',
-        priority: 0,
+        priority: 999,
         attempts: 0,
       });
       setAdding(false);
-      setSearchResults((prev) => prev.filter((c) => c.id !== contactId));
       onRefresh();
     },
     [campaignId, onRefresh]
