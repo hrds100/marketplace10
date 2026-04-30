@@ -14,6 +14,7 @@
 // due yet?" state. The hook drives the data + realtime channel.
 
 import { useEffect, useMemo, useState } from 'react';
+import ReactDOM from 'react-dom';
 import {
   Bell,
   ChevronDown,
@@ -63,8 +64,8 @@ export default function FollowupBanner() {
     ? columns.find((c) => c.id === next.column_id)
     : undefined;
 
-  return (
-    <div className="bg-[#FFFBEB] border-b border-[#F59E0B]/40 px-4 py-1.5 z-[110] sticky top-0 flex-shrink-0">
+  return ReactDOM.createPortal(
+    <div className="bg-[#FFFBEB] border-b border-[#F59E0B]/40 px-4 py-1.5 z-[201] fixed top-14 left-0 right-0">
       <div className="flex items-center gap-2 max-w-[1280px] mx-auto">
         <Bell className="w-3.5 h-3.5 text-[#B45309] flex-shrink-0" strokeWidth={2.4} />
         <span className="text-[11px] font-bold uppercase tracking-wide text-[#B45309]">
@@ -181,7 +182,8 @@ export default function FollowupBanner() {
           })}
         </div>
       )}
-    </div>
+    </div>,
+    document.body,
   );
 }
 
