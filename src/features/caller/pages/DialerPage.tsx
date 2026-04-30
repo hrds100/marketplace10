@@ -893,7 +893,7 @@ export function CallerPad() {
           <button
             type="button"
             onPointerDown={(e) => e.stopPropagation()}
-            onClick={() => navigate('/crm')}
+            onClick={() => { void stop(); navigate('/crm'); }}
             title="Close"
             className="p-0.5 rounded hover:bg-[#F3F3EE] text-[#6B7280]"
           >
@@ -944,7 +944,7 @@ export function CallerPad() {
               <button
                 type="button"
                 onPointerDown={(e) => e.stopPropagation()}
-                onClick={() => navigate('/crm')}
+                onClick={() => { void stop(); navigate('/crm'); }}
                 title="Close"
                 className="p-1 rounded hover:bg-[#F3F3EE] text-[#6B7280]"
               >

@@ -18,6 +18,7 @@ export interface CallListRow {
   agentNote: string | null;
   contactName: string | null;
   contactPhone: string | null;
+  pipelineColumnId: string | null;
   recordingUrl: string | null;
 }
 
@@ -37,6 +38,7 @@ interface ContactNamePhone {
   id: string;
   name: string | null;
   phone: string | null;
+  pipeline_column_id: string | null;
 }
 
 function rowToCall(r: WkCallRow, contact?: ContactNamePhone, recordingUrl?: string | null): CallListRow {
@@ -52,6 +54,7 @@ function rowToCall(r: WkCallRow, contact?: ContactNamePhone, recordingUrl?: stri
     agentNote: r.agent_note,
     contactName: contact?.name ?? null,
     contactPhone: contact?.phone ?? null,
+    pipelineColumnId: contact?.pipeline_column_id ?? null,
     recordingUrl: recordingUrl ?? null,
   };
 }
@@ -117,7 +120,7 @@ export function useCalls(opts: Opts = {}) {
       if (contactIds.length > 0) {
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const { data: cs } = await (supabase.from('wk_contacts' as any) as any)
-          .select('id, name, phone')
+          .select('id, name, phone, pipeline_column_id')
           .in('id', contactIds);
         if (cancelled) return;
         contactsById = new Map(
