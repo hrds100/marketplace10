@@ -393,12 +393,21 @@ export default function LiveCallScreen() {
               email: updated.email || null,
               pipeline_column_id: updated.pipelineColumnId || null,
               owner_agent_id: updated.ownerAgentId || null,
-              tags: updated.tags,
               is_hot: updated.isHot,
               deal_value_pence: updated.dealValuePence ?? null,
               custom_fields: updated.customFields,
             })
             .eq('id', updated.id);
+          // Tags live in wk_contact_tags, not wk_contacts.
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          await (supabase.from('wk_contact_tags' as any) as any)
+            .delete()
+            .eq('contact_id', updated.id);
+          if (updated.tags.length > 0) {
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            await (supabase.from('wk_contact_tags' as any) as any)
+              .insert(updated.tags.map((t) => ({ contact_id: updated.id, tag: t })));
+          }
           store.upsertContact(updated);
         }}
       />

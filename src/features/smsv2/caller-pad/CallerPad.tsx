@@ -288,22 +288,30 @@ export function CallerPad() {
   const openEditContact = useCallback(async (contactId: string) => {
     console.log('[CallerPad] openEditContact called with', contactId);
     setEditContactLoading(true);
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const { data, error: fetchErr } = await (supabase.from('wk_contacts' as any) as any)
-      .select('id, name, phone, email, owner_agent_id, pipeline_column_id, tags, is_hot, deal_value_pence, custom_fields, created_at, last_contact_at')
-      .eq('id', contactId)
-      .maybeSingle();
+    const [contactRes, tagsRes] = await Promise.all([
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      (supabase.from('wk_contacts' as any) as any)
+        .select('id, name, phone, email, owner_agent_id, pipeline_column_id, is_hot, deal_value_pence, custom_fields, created_at, last_contact_at')
+        .eq('id', contactId)
+        .maybeSingle(),
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      (supabase.from('wk_contact_tags' as any) as any)
+        .select('tag')
+        .eq('contact_id', contactId),
+    ]);
     setEditContactLoading(false);
-    if (fetchErr) {
-      console.error('[CallerPad] openEditContact fetch error', fetchErr);
-      toasts.push(`Could not load contact: ${fetchErr.message}`, 'error');
+    if (contactRes.error) {
+      console.error('[CallerPad] openEditContact fetch error', contactRes.error);
+      toasts.push(`Could not load contact: ${contactRes.error.message}`, 'error');
       return;
     }
+    const data = contactRes.data;
     if (!data) {
       console.error('[CallerPad] openEditContact: no contact found for id', contactId);
       toasts.push('Contact not found', 'error');
       return;
     }
+    const tags = ((tagsRes.data ?? []) as { tag: string }[]).map((r) => r.tag);
     setEditContact({
       id: data.id,
       name: data.name ?? '',
@@ -311,7 +319,7 @@ export function CallerPad() {
       email: data.email ?? undefined,
       ownerAgentId: data.owner_agent_id ?? undefined,
       pipelineColumnId: data.pipeline_column_id ?? undefined,
-      tags: data.tags ?? [],
+      tags,
       isHot: data.is_hot ?? false,
       dealValuePence: data.deal_value_pence ?? undefined,
       customFields: data.custom_fields ?? {},
@@ -1154,12 +1162,22 @@ export function CallerPad() {
                   email: updated.email || null,
                   pipeline_column_id: updated.pipelineColumnId || null,
                   owner_agent_id: updated.ownerAgentId || null,
-                  tags: updated.tags,
                   is_hot: updated.isHot,
                   deal_value_pence: updated.dealValuePence ?? null,
                   custom_fields: updated.customFields,
                 })
                 .eq('id', updated.id);
+              // Tags live in wk_contact_tags, not wk_contacts.
+              // Delete-then-insert is safe (unique on contact_id+tag).
+              // eslint-disable-next-line @typescript-eslint/no-explicit-any
+              await (supabase.from('wk_contact_tags' as any) as any)
+                .delete()
+                .eq('contact_id', updated.id);
+              if (updated.tags.length > 0) {
+                // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                await (supabase.from('wk_contact_tags' as any) as any)
+                  .insert(updated.tags.map((t) => ({ contact_id: updated.id, tag: t })));
+              }
               setEditContact(null);
             }}
           />
