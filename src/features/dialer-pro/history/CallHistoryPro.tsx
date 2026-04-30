@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { Phone, Play, FileText, Clock } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { supabase } from '@/integrations/supabase/client';
@@ -30,59 +30,79 @@ export default function CallHistoryPro({ campaignId, agentId }: Props) {
   const [playingUrl, setPlayingUrl] = useState<string | null>(null);
   const [transcriptCallId, setTranscriptCallId] = useState<string | null>(null);
 
+  const fetchCalls = useCallback(async () => {
+    if (!agentId) return;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    let q = (supabase.from('wk_calls' as any) as any)
+      .select(
+        'id, direction, status, started_at, duration_sec, disposition_column_id, recording_url, agent_note, campaign_id, ' +
+        'wk_contacts:contact_id ( name, phone )'
+      )
+      .eq('agent_id', agentId)
+      .order('created_at', { ascending: false })
+      .limit(25);
+
+    if (campaignId) {
+      q = q.eq('campaign_id', campaignId);
+    }
+
+    const { data: rows, error } = await q;
+    if (error) { console.warn('[dialer-pro] history fetch error', error); return; }
+
+    const mapped = ((rows ?? []) as Array<{
+      id: string;
+      direction: string;
+      status: string;
+      started_at: string | null;
+      duration_sec: number | null;
+      disposition_column_id: string | null;
+      recording_url: string | null;
+      agent_note: string | null;
+      campaign_id: string | null;
+      wk_contacts: { name: string | null; phone: string | null } | null;
+    }>).map((r) => ({
+      id: r.id,
+      contactName: r.wk_contacts?.name ?? null,
+      contactPhone: r.wk_contacts?.phone ?? null,
+      direction: r.direction,
+      status: r.status,
+      startedAt: r.started_at,
+      durationSec: r.duration_sec,
+      dispositionColumnName: null,
+      recordingUrl: r.recording_url,
+      campaignName: null,
+      agentNote: r.agent_note,
+    }));
+
+    setCalls(mapped);
+    setLoading(false);
+  }, [campaignId, agentId]);
+
   useEffect(() => {
     if (!agentId) return;
-    let cancelled = false;
     setLoading(true);
-    void (async () => {
+    void fetchCalls();
+  }, [agentId, fetchCalls]);
+
+  // Realtime: re-fetch when new calls are inserted or updated
+  useEffect(() => {
+    if (!agentId) return;
+    const channel = supabase
+      .channel(`dialer-pro-history-${agentId}`)
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      let q = (supabase.from('wk_calls' as any) as any)
-        .select(
-          'id, direction, status, started_at, duration_sec, disposition_column_id, recording_url, agent_note, campaign_id, ' +
-          'wk_contacts:contact_id ( name, phone )'
-        )
-        .eq('agent_id', agentId)
-        .order('created_at', { ascending: false })
-        .limit(25);
+      .on('postgres_changes' as any, {
+        event: '*',
+        schema: 'public',
+        table: 'wk_calls',
+        filter: `agent_id=eq.${agentId}`,
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      } as any, () => {
+        void fetchCalls();
+      })
+      .subscribe();
 
-      if (campaignId) {
-        q = q.eq('campaign_id', campaignId);
-      }
-
-      const { data: rows, error } = await q;
-      if (cancelled) return;
-      setLoading(false);
-      if (error) { console.warn('[dialer-pro] history fetch error', error); return; }
-
-      const mapped = ((rows ?? []) as Array<{
-        id: string;
-        direction: string;
-        status: string;
-        started_at: string | null;
-        duration_sec: number | null;
-        disposition_column_id: string | null;
-        recording_url: string | null;
-        agent_note: string | null;
-        campaign_id: string | null;
-        wk_contacts: { name: string | null; phone: string | null } | null;
-      }>).map((r) => ({
-        id: r.id,
-        contactName: r.wk_contacts?.name ?? null,
-        contactPhone: r.wk_contacts?.phone ?? null,
-        direction: r.direction,
-        status: r.status,
-        startedAt: r.started_at,
-        durationSec: r.duration_sec,
-        dispositionColumnName: null,
-        recordingUrl: r.recording_url,
-        campaignName: null,
-        agentNote: r.agent_note,
-      }));
-
-      setCalls(mapped);
-    })();
-    return () => { cancelled = true; };
-  }, [campaignId, agentId]);
+    return () => { void supabase.removeChannel(channel); };
+  }, [agentId, fetchCalls]);
 
   const handlePlay = async (url: string) => {
     const signed = await signCallRecording(url);
