@@ -20,6 +20,7 @@ import {
   ChevronUp,
   Phone,
   MessageSquare,
+  Mail,
   Check,
   Clock,
 } from 'lucide-react';
@@ -27,15 +28,19 @@ import { useNavigate } from 'react-router-dom';
 import { cn } from '@/lib/utils';
 import { useFollowups } from '../../hooks/useFollowups';
 import { useSmsV2 } from '../../store/SmsV2Store';
-import { useActiveCallCtx } from '../live-call/ActiveCallContext';
+import { useDialerProModal } from '../../layout/DialerProModalContext';
+import ContactSmsModal from '../contacts/ContactSmsModal';
+import type { Contact } from '../../types';
 
 export default function FollowupBanner() {
   const { items, setStatus, snooze } = useFollowups();
   const { contacts, columns } = useSmsV2();
-  const { startCall } = useActiveCallCtx();
+  const { openDialerPro } = useDialerProModal();
   const navigate = useNavigate();
   const [open, setOpen] = useState(false);
   const [, setNow] = useState(Date.now());
+  const [smsTo, setSmsTo] = useState<Contact | null>(null);
+  const [smsChannel, setSmsChannel] = useState<'sms' | 'whatsapp' | 'email' | null>(null);
 
   // Tick every 30s so "is this due yet?" stays current without a
   // realtime event. Banner re-renders cheaply — no DB hit.
@@ -152,7 +157,7 @@ export default function FollowupBanner() {
                   </span>
                 )}
                 <button
-                  onClick={() => contact && void startCall(contact.id)}
+                  onClick={() => contact && openDialerPro(contact.id)}
                   disabled={!contact}
                   title="Call now"
                   className="p-1 rounded hover:bg-[#1E9A80]/10 text-[#1E9A80] disabled:opacity-50"
@@ -160,12 +165,40 @@ export default function FollowupBanner() {
                   <Phone className="w-3.5 h-3.5" />
                 </button>
                 <button
-                  onClick={() => contact && navigate(`/crm/inbox?contact=${contact.id}`)}
+                  onClick={() => {
+                    if (!contact) return;
+                    const c = contacts.find((x) => x.id === contact.id);
+                    if (c) { setSmsChannel('sms'); setSmsTo(c); }
+                  }}
                   disabled={!contact}
-                  title="SMS now"
-                  className="p-1 rounded hover:bg-[#3B82F6]/10 text-[#3B82F6] disabled:opacity-50"
+                  title="SMS"
+                  className="p-1 rounded hover:bg-[#ECFDF5] text-[#1E9A80] disabled:opacity-50"
                 >
                   <MessageSquare className="w-3.5 h-3.5" />
+                </button>
+                <button
+                  onClick={() => {
+                    if (!contact) return;
+                    const c = contacts.find((x) => x.id === contact.id);
+                    if (c) { setSmsChannel('whatsapp'); setSmsTo(c); }
+                  }}
+                  disabled={!contact}
+                  title="WhatsApp"
+                  className="p-1 rounded hover:bg-[#DCFCE7] text-[#25D366] disabled:opacity-50"
+                >
+                  <MessageSquare className="w-3.5 h-3.5" strokeWidth={2.4} />
+                </button>
+                <button
+                  onClick={() => {
+                    if (!contact) return;
+                    const c = contacts.find((x) => x.id === contact.id);
+                    if (c) { setSmsChannel('email'); setSmsTo(c); }
+                  }}
+                  disabled={!contact}
+                  title="Email"
+                  className="p-1 rounded hover:bg-[#DBEAFE] text-[#3B82F6] disabled:opacity-50"
+                >
+                  <Mail className="w-3.5 h-3.5" />
                 </button>
                 <button
                   onClick={() => void snooze(f.id, 1)}
@@ -185,6 +218,13 @@ export default function FollowupBanner() {
             );
           })}
         </div>
+      )}
+      {smsTo && (
+        <ContactSmsModal
+          contact={smsTo}
+          onClose={() => { setSmsTo(null); setSmsChannel(null); }}
+          defaultChannel={smsChannel}
+        />
       )}
     </div>
   );

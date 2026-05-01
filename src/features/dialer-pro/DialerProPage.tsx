@@ -46,11 +46,26 @@ function formatDuration(sec: number): string {
 }
 
 export default function DialerProPage() {
+  const [searchParams, setSearchParams] = useSearchParams();
+  const autoCallContactId = searchParams.get('call');
+  return (
+    <DialerProContent
+      autoCallContactId={autoCallContactId}
+      onAutoCallConsumed={() => setSearchParams({}, { replace: true })}
+    />
+  );
+}
+
+interface DialerProContentProps {
+  autoCallContactId?: string | null;
+  pipelineColumnId?: string | null;
+  onAutoCallConsumed?: () => void;
+}
+
+export function DialerProContent({ autoCallContactId, pipelineColumnId, onAutoCallConsumed }: DialerProContentProps) {
   const { user } = useAuth();
   const userId = user?.id ?? null;
   const agentFirstName = (user?.user_metadata?.first_name as string) ?? 'Agent';
-  const [searchParams, setSearchParams] = useSearchParams();
-  const autoCallContactId = searchParams.get('call');
 
   // Toasts
   const [toasts, setToasts] = useState<Array<{ id: number; msg: string; type: string }>>([]);
@@ -97,7 +112,7 @@ export default function DialerProPage() {
     if (!autoCallContactId || !deviceReady || !camp || autoCallFired.current) return;
     if (state.phase !== 'idle' && state.phase !== 'paused') return;
     autoCallFired.current = true;
-    setSearchParams({}, { replace: true });
+    onAutoCallConsumed?.();
 
     void (async () => {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -162,7 +177,7 @@ export default function DialerProPage() {
       }
       void machine.dialLead(queueLead);
     })();
-  }, [autoCallContactId, deviceReady, camp, state.phase, queue, machine, onToast, refreshQueue, setSearchParams]);
+  }, [autoCallContactId, deviceReady, camp, state.phase, queue, machine, onToast, refreshQueue, onAutoCallConsumed]);
 
   // Contact for the call room columns — during a call use currentLead,
   // when idle fall back to the next lead in queue so COL 1 (SMS/WA/Email)
@@ -331,6 +346,64 @@ export default function DialerProPage() {
       .eq('id', contactId);
   }, []);
 
+  // When opened from a pipeline column, fetch contact IDs in that column
+  // so "Next call" advances through the same column.
+  const columnContactsRef = useRef<string[]>([]);
+  const columnIndexRef = useRef(0);
+  useEffect(() => {
+    if (!pipelineColumnId) { columnContactsRef.current = []; return; }
+    void (async () => {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const { data } = await (supabase.from('wk_contacts' as any) as any)
+        .select('id')
+        .eq('pipeline_column_id', pipelineColumnId)
+        .order('created_at', { ascending: true });
+      columnContactsRef.current = (data ?? []).map((r: { id: string }) => r.id);
+      if (autoCallContactId) {
+        const idx = columnContactsRef.current.indexOf(autoCallContactId);
+        columnIndexRef.current = idx >= 0 ? idx : 0;
+      }
+    })();
+  }, [pipelineColumnId, autoCallContactId]);
+
+  const dialColumnContact = useCallback(async (contactId: string) => {
+    if (!camp) return;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { data: c } = await (supabase.from('wk_contacts' as any) as any)
+      .select('id, name, phone, pipeline_column_id')
+      .eq('id', contactId)
+      .maybeSingle();
+    if (!c?.phone) { onToast('Contact has no phone number', 'error'); return; }
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { data: existingRow } = await (supabase.from('wk_dialer_queue' as any) as any)
+      .select('id')
+      .eq('contact_id', contactId)
+      .eq('campaign_id', camp.id)
+      .maybeSingle();
+    let queueRowId: string;
+    if (existingRow) {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      await (supabase.from('wk_dialer_queue' as any) as any)
+        .update({ status: 'pending', priority: 9999 })
+        .eq('id', existingRow.id);
+      queueRowId = existingRow.id;
+    } else {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const { data: row, error: insertErr } = await (supabase.from('wk_dialer_queue' as any) as any)
+        .insert({ contact_id: contactId, campaign_id: camp.id, status: 'pending', priority: 9999, attempts: 0 })
+        .select('id').single();
+      if (insertErr || !row) { onToast('Could not add contact to queue', 'error'); return; }
+      queueRowId = row.id;
+    }
+    const lead: QueueLead = {
+      id: c.id, contactId: c.id, phone: c.phone, name: c.name ?? c.phone,
+      priority: 9999, attempts: 0, scheduledFor: null, status: 'pending',
+      campaignId: camp.id, pipelineColumnId: c.pipeline_column_id ?? null, queueRowId,
+    };
+    refreshQueue();
+    void machine.dialLead(lead);
+  }, [camp, machine, onToast, refreshQueue]);
+
   const handleWrapUpNext = useCallback(async (colId: string | null, notes: string) => {
     const lead = state.currentLead;
     if (colId) {
@@ -343,11 +416,20 @@ export default function DialerProPage() {
       removeFromQueue(lead.contactId);
     }
     setTimeout(async () => {
+      if (pipelineColumnId && columnContactsRef.current.length > 0) {
+        columnIndexRef.current += 1;
+        if (columnIndexRef.current < columnContactsRef.current.length) {
+          void dialColumnContact(columnContactsRef.current[columnIndexRef.current]);
+        } else {
+          onToast('End of column — no more leads', 'info');
+        }
+        return;
+      }
       const next = await machine.pickNextLead(queue);
       if (next) void machine.dialLead(next);
       else onToast('Queue empty', 'info');
     }, 200);
-  }, [machine, queue, onToast, state.currentLead, saveNotesToContact, removeFromQueue]);
+  }, [machine, queue, onToast, state.currentLead, saveNotesToContact, removeFromQueue, pipelineColumnId, dialColumnContact]);
 
   const handleWrapUpRedial = useCallback(async (colId: string | null, notes: string) => {
     const lead = state.currentLead;

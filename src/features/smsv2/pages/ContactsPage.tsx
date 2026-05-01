@@ -11,6 +11,7 @@ import { useCurrentAgent } from '../hooks/useCurrentAgent';
 import { useSmsV2 } from '../store/SmsV2Store';
 import { useContactPersistence, isRealContactId } from '../hooks/useContactPersistence';
 import { useAgentsToday } from '../hooks/useAgentsToday';
+import { useDialerProModal } from '../layout/DialerProModalContext';
 import { toE164 } from '@/core/utils/phone';
 import { supabase } from '@/integrations/supabase/client';
 import type { Contact } from '../types';
@@ -19,6 +20,7 @@ export default function ContactsPage() {
   const { contacts, columns, agents: storeAgents, patchContact, upsertContact, removeContact, pushToast } = useSmsV2();
   const persist = useContactPersistence();
   const navigateTo = useNavigate();
+  const { openDialerPro } = useDialerProModal();
   // Prefer real agents (from profiles) for the owner dropdown so saved
   // owner_agent_id is a real UUID, not a mock id like "a-hugo".
   const { agents: realAgents } = useAgentsToday();
@@ -282,7 +284,7 @@ export default function ContactsPage() {
                         onClick={(e) => {
                           e.preventDefault();
                           e.stopPropagation();
-                          navigateTo(`/crm/dialer-pro?call=${c.id}`);
+                          openDialerPro(c.id);
                         }}
                         className="p-1.5 hover:bg-[#ECFDF5] rounded text-[#1E9A80]"
                         title={`Call ${c.name}`}

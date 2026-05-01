@@ -12,6 +12,8 @@ import GlobalToasts from '../store/GlobalToasts';
 import { useHydrateContacts } from '../hooks/useHydrateContacts';
 import { useHydratePipelineColumns } from '../hooks/useHydratePipelineColumns';
 import FollowupBanner from '../components/followups/FollowupBanner';
+import { DialerProModalProvider } from './DialerProModalContext';
+import DialerProModal from './DialerProModal';
 
 // Side-effect-only component: pumps real wk_contacts and wk_pipeline_columns
 // into the store so every /smsv2 page reads live data with real UUIDs
@@ -32,51 +34,54 @@ export default function Smsv2Layout() {
       <SmsV2Provider>
         <StoreHydrator />
         <ActiveCallProvider>
-          <div
-            data-feature="SMSV2__LAYOUT"
-            className="h-screen flex flex-col bg-[#F3F3EE]"
-          >
-            {/* Follow-up banner — above nav per Hugo */}
-            <FollowupBanner />
+          <DialerProModalProvider>
+            <div
+              data-feature="SMSV2__LAYOUT"
+              className="h-screen flex flex-col bg-[#F3F3EE]"
+            >
+              {/* Follow-up banner — above nav per Hugo */}
+              <FollowupBanner />
 
-            {/* Top bar */}
-            <header className="h-14 bg-white border-b border-[#E5E7EB] flex items-center px-5 z-[101] flex-shrink-0 gap-3">
-              <Link
-                to="/admin"
-                className="text-[17px] font-extrabold text-[#1A1A1A] tracking-tight hover:opacity-70 transition-opacity"
-              >
-                nfstay
-              </Link>
-              <span className="text-sm font-medium text-[#9CA3AF]">CRM</span>
+              {/* Top bar */}
+              <header className="h-14 bg-white border-b border-[#E5E7EB] flex items-center px-5 z-[101] flex-shrink-0 gap-3">
+                <Link
+                  to="/admin"
+                  className="text-[17px] font-extrabold text-[#1A1A1A] tracking-tight hover:opacity-70 transition-opacity"
+                >
+                  nfstay
+                </Link>
+                <span className="text-sm font-medium text-[#9CA3AF]">CRM</span>
 
-              <div className="ml-auto flex items-center gap-3">
-                <Smsv2StatusBar />
-                {isAdmin && (
-                  <Link
-                    to="/admin"
-                    className="flex items-center gap-1.5 text-sm text-[#6B7280] hover:text-[#1A1A1A] transition-colors px-3 py-1.5 rounded-lg hover:bg-black/[0.04]"
-                  >
-                    <ArrowLeft className="w-4 h-4" strokeWidth={1.8} />
-                    <span className="hidden sm:inline">Admin</span>
-                  </Link>
-                )}
-              </div>
-            </header>
-
-            {/* Sidebar + main */}
-            <div className="flex-1 flex overflow-hidden">
-              <Smsv2Sidebar collapsed={sidebarCollapsed} onCollapse={setSidebarCollapsed} />
-              <main className="flex-1 overflow-auto flex flex-col">
-                <div className="flex-1 overflow-auto">
-                  <Outlet />
+                <div className="ml-auto flex items-center gap-3">
+                  <Smsv2StatusBar />
+                  {isAdmin && (
+                    <Link
+                      to="/admin"
+                      className="flex items-center gap-1.5 text-sm text-[#6B7280] hover:text-[#1A1A1A] transition-colors px-3 py-1.5 rounded-lg hover:bg-black/[0.04]"
+                    >
+                      <ArrowLeft className="w-4 h-4" strokeWidth={1.8} />
+                      <span className="hidden sm:inline">Admin</span>
+                    </Link>
+                  )}
                 </div>
-              </main>
-            </div>
+              </header>
 
-            {/* Softphone hidden on /crm/dialer — CallerPad inside DialerPage handles it */}
-            {!onDialerPage && <Softphone />}
-            <GlobalToasts />
-          </div>
+              {/* Sidebar + main */}
+              <div className="flex-1 flex overflow-hidden">
+                <Smsv2Sidebar collapsed={sidebarCollapsed} onCollapse={setSidebarCollapsed} />
+                <main className="flex-1 overflow-auto flex flex-col">
+                  <div className="flex-1 overflow-auto">
+                    <Outlet />
+                  </div>
+                </main>
+              </div>
+
+              {/* Softphone hidden on /crm/dialer — CallerPad inside DialerPage handles it */}
+              {!onDialerPage && <Softphone />}
+              <DialerProModal />
+              <GlobalToasts />
+            </div>
+          </DialerProModalProvider>
         </ActiveCallProvider>
       </SmsV2Provider>
     </CrmGuard>

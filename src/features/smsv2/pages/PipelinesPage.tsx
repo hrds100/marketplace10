@@ -4,10 +4,12 @@ import { cn } from '@/lib/utils';
 import { ACTIVE_PIPELINE } from '../data/mockPipelines';
 import { formatPence, formatRelativeTime } from '../data/helpers';
 import EditContactModal from '../components/contacts/EditContactModal';
+import ContactSmsModal from '../components/contacts/ContactSmsModal';
 import { useSmsV2 } from '../store/SmsV2Store';
 import { useContactPersistence } from '../hooks/useContactPersistence';
 import { useContactChannelStatus } from '../hooks/useContactSmsStatus';
 import { useFollowups } from '../hooks/useFollowups';
+import { useDialerProModal } from '../layout/DialerProModalContext';
 import type { Contact } from '../types';
 
 export default function PipelinesPage() {
@@ -16,6 +18,9 @@ export default function PipelinesPage() {
   const [editing, setEditing] = useState<Contact | null>(null);
   const [draggingId, setDraggingId] = useState<string | null>(null);
   const [dragOverColId, setDragOverColId] = useState<string | null>(null);
+  const [smsTo, setSmsTo] = useState<Contact | null>(null);
+  const [smsChannel, setSmsChannel] = useState<'sms' | 'whatsapp' | 'email' | null>(null);
+  const { openDialerPro } = useDialerProModal();
 
   // PR 20 + PR 107: per-channel "last sent" badge for each pipeline
   // card. Hook returns Map<contactId, { sms, whatsapp, email }> from
@@ -273,6 +278,40 @@ export default function PipelinesPage() {
                             </div>
                           );
                         })()}
+                        {/* Action buttons — visible on hover */}
+                        <div
+                          className="flex gap-0.5 mt-2 opacity-0 group-hover:opacity-100 transition-opacity"
+                          onClick={(e) => e.stopPropagation()}
+                        >
+                          <button
+                            onClick={(e) => { e.stopPropagation(); openDialerPro(c.id, { pipelineColumnId: col.id }); }}
+                            className="p-1 rounded hover:bg-[#ECFDF5] text-[#1E9A80]"
+                            title="Call"
+                          >
+                            <Phone className="w-3.5 h-3.5" />
+                          </button>
+                          <button
+                            onClick={(e) => { e.stopPropagation(); setSmsChannel('sms'); setSmsTo(c); }}
+                            className="p-1 rounded hover:bg-[#ECFDF5] text-[#1E9A80]"
+                            title="SMS"
+                          >
+                            <MessageSquare className="w-3.5 h-3.5" />
+                          </button>
+                          <button
+                            onClick={(e) => { e.stopPropagation(); setSmsChannel('whatsapp'); setSmsTo(c); }}
+                            className="p-1 rounded hover:bg-[#DCFCE7] text-[#25D366]"
+                            title="WhatsApp"
+                          >
+                            <MessageSquare className="w-3.5 h-3.5" strokeWidth={2.4} />
+                          </button>
+                          <button
+                            onClick={(e) => { e.stopPropagation(); setSmsChannel('email'); setSmsTo(c); }}
+                            className="p-1 rounded hover:bg-[#DBEAFE] text-[#3B82F6]"
+                            title="Email"
+                          >
+                            <Mail className="w-3.5 h-3.5" />
+                          </button>
+                        </div>
                       </div>
                     </div>
                   </button>
@@ -301,6 +340,14 @@ export default function PipelinesPage() {
         onClose={() => setEditing(null)}
         onSave={save}
       />
+
+      {smsTo && (
+        <ContactSmsModal
+          contact={smsTo}
+          onClose={() => { setSmsTo(null); setSmsChannel(null); }}
+          defaultChannel={smsChannel}
+        />
+      )}
     </div>
   );
 }
