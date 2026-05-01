@@ -182,7 +182,10 @@ export function DialerProContent({ autoCallContactId, pipelineColumnId, onAutoCa
   // Contact for the call room columns — during a call use currentLead,
   // when idle fall back to the next lead in queue so COL 1 (SMS/WA/Email)
   // is always populated and ready to send.
-  const activeContactId = state.currentLead?.contactId ?? queue[0]?.contactId ?? null;
+  const activeContactId = state.currentLead?.contactId
+    ?? (autoCallContactId && !autoCallFired.current ? autoCallContactId : null)
+    ?? queue[0]?.contactId
+    ?? null;
   const [contact, setContact] = useState<Contact | null>(null);
   useEffect(() => {
     if (!activeContactId) { setContact(null); return; }

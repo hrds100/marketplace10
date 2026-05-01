@@ -111,7 +111,7 @@ serve(async (req: Request) => {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }
-    const isAdmin = ['admin@hub.nfstay.com', 'hugo@nfstay.com'].includes(user.email ?? '');
+    const isAdmin = ['admin@hub.nfstay.com', 'hugo@nfstay.com', 'hugodesouzax@gmail.com'].includes(user.email ?? '');
     const role = profile?.workspace_role;
     if (!isAdmin && role !== 'agent' && role !== 'admin') {
       return new Response(JSON.stringify({ error: 'Not a workspace agent' }), {

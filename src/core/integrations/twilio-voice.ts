@@ -191,6 +191,7 @@ let renewalTimer: number | null = null;
 // but in a single tab). Sharing the in-flight Promise serialises
 // concurrent callers onto a single Device.
 let inFlightCreate: Promise<DeviceHandle> | null = null;
+let pendingDestroy: Promise<void> | null = null;
 
 // PR 132 (Hugo 2026-04-28, Bug 2): track consecutive failed re-registrations
 // so we surface a single persistent toast after 3 failures instead of
@@ -239,6 +240,9 @@ export interface DeviceHandle {
 }
 
 export async function createDevice(): Promise<DeviceHandle> {
+  if (pendingDestroy) {
+    await pendingDestroy;
+  }
   if (device && currentToken) {
     return { device, identity: currentToken.identity, extension: currentToken.extension };
   }
@@ -429,12 +433,16 @@ export async function destroyDevice(): Promise<void> {
     window.clearTimeout(renewalTimer);
     renewalTimer = null;
   }
-  if (device) {
-    try { await device.unregister(); } catch { /* ignore */ }
-    try { device.destroy(); } catch { /* ignore */ }
-  }
-  device = null;
-  currentToken = null;
+  const p = (async () => {
+    if (device) {
+      try { await device.unregister(); } catch { /* ignore */ }
+      try { device.destroy(); } catch { /* ignore */ }
+    }
+    device = null;
+    currentToken = null;
+  })();
+  pendingDestroy = p;
+  try { await p; } finally { pendingDestroy = null; }
 }
 
 // ----------------------------------------------------------------------------
