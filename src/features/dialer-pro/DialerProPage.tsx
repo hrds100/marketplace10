@@ -31,6 +31,7 @@ import CallTimeline from '@/features/smsv2/components/live-call/CallTimeline';
 import EditContactModal from '@/features/smsv2/components/contacts/EditContactModal';
 import type { Contact } from '@/features/smsv2/types';
 
+import { useQueryClient } from '@tanstack/react-query';
 import { useDialerMachine } from './useDialerMachine';
 import { useQueuePro } from './useQueuePro';
 import type { QueueLead } from './types';
@@ -101,6 +102,17 @@ export function DialerProContent({ autoCallContactId, pipelineColumnId, onAutoCa
     onToast,
   });
   const { state, deviceReady } = machine;
+
+  // Refresh call history when a call wraps up or outcome is saved
+  const queryClient = useQueryClient();
+  const prevPhaseRef = useRef(state.phase);
+  useEffect(() => {
+    const prev = prevPhaseRef.current;
+    prevPhaseRef.current = state.phase;
+    if (state.phase === 'wrap_up' || (prev === 'wrap_up' && state.phase === 'idle') || (prev === 'wrap_up' && state.phase === 'paused')) {
+      void queryClient.invalidateQueries({ queryKey: ['dialer-pro-call-history'] });
+    }
+  }, [state.phase, queryClient]);
 
   // Queue
   const { queue, refresh: refreshQueue, removeLocal: removeFromQueue } = useQueuePro(camp?.id ?? null);
