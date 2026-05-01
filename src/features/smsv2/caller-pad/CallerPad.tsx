@@ -212,7 +212,7 @@ export function CallerPad() {
 
   // Campaigns + pacing.
   const { campaigns, loading: campaignsLoading } = useDialerCampaigns({
-    scopedToAgentId: user ? user.id : null,
+    scopedToAgentId: isEffectiveAdmin ? null : (user ? user.id : null),
     includeInactive: true,
   });
   const [activeCampaignId, setActiveCampaignId] = useState<string>('');
