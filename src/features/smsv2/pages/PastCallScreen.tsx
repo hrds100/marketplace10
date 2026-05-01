@@ -386,19 +386,16 @@ export default function PastCallScreen() {
           const previous = contacts.find((c) => c.id === updated.id);
           upsertContact(updated);
           setEditing(null);
-          try {
-            await persist.patchContact(updated.id, {
-              name: updated.name,
-              email: updated.email,
-              pipeline_column_id: updated.pipelineColumnId,
-            });
+          const result = await persist.patchContact(updated.id, {
+            name: updated.name,
+            email: updated.email,
+            pipeline_column_id: updated.pipelineColumnId,
+          });
+          if (result === true) {
             pushToast('Contact saved', 'success');
-          } catch (e) {
+          } else {
             if (previous) upsertContact(previous);
-            pushToast(
-              `Save failed: ${e instanceof Error ? e.message : 'unknown'}`,
-              'error',
-            );
+            pushToast(result, 'error');
           }
         }}
       />

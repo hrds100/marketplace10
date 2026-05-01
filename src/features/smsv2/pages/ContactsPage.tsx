@@ -135,12 +135,12 @@ export default function ContactsPage() {
         email: updated.email ?? null,
         pipeline_column_id: updated.pipelineColumnId ?? null,
       })
-      .then((ok) => {
-        if (ok) {
+      .then((result) => {
+        if (result === true) {
           pushToast('Saved ✓', 'success');
         } else {
           if (prev) upsertContact(prev);
-          pushToast('Save failed — reverted', 'error');
+          pushToast(result ?? 'Save failed — reverted', 'error');
         }
       });
   };

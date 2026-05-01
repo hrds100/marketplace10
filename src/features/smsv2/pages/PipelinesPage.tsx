@@ -47,6 +47,7 @@ export default function PipelinesPage() {
   }, [followups]);
 
   const save = (updated: Contact) => {
+    const prev = contacts.find((c) => c.id === updated.id);
     upsertContact(updated);
     void persist.patchContact(updated.id, {
       name: updated.name,
@@ -57,6 +58,13 @@ export default function PipelinesPage() {
       deal_value_pence: updated.dealValuePence ?? null,
       is_hot: updated.isHot,
       custom_fields: updated.customFields,
+    }).then((result) => {
+      if (result === true) {
+        pushToast('Saved ✓', 'success');
+      } else {
+        if (prev) upsertContact(prev);
+        pushToast(result ?? 'Save failed', 'error');
+      }
     });
   };
 

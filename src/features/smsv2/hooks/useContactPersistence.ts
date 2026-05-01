@@ -49,7 +49,8 @@ function sanitizeUuidFields<T extends Record<string, unknown>>(patch: T): T {
 export interface ContactPersistAPI {
   /** Move a contact to a pipeline column. Returns true on success. */
   moveToColumn: (contactId: string, columnId: string) => Promise<boolean>;
-  /** Patch arbitrary fields. Skipped if the id is not a real UUID. */
+  /** Patch arbitrary fields. Skipped if the id is not a real UUID.
+   *  Returns `true` on success, or an error string on failure. */
   patchContact: (
     contactId: string,
     patch: Partial<{
@@ -63,7 +64,7 @@ export interface ContactPersistAPI {
       custom_fields: Record<string, string>;
       last_contact_at: string;
     }>
-  ) => Promise<boolean>;
+  ) => Promise<true | string>;
   /**
    * Replace the full tag set for a contact. Wipes wk_contact_tags rows
    * for the contact, then inserts the new list. Skipped for mock IDs.
@@ -104,6 +105,10 @@ export function useContactPersistence(): ContactPersistAPI {
     async (contactId, patch) => {
       if (!isRealContactId(contactId)) return true;
       const cleaned = sanitizeUuidFields(patch);
+      if ('email' in cleaned) {
+        (cleaned as Record<string, unknown>).email =
+          (cleaned as Record<string, unknown>).email || null;
+      }
       if (Object.keys(cleaned).length === 0) return true;
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const { error } = await (supabase.from('wk_contacts' as any) as any)
@@ -111,7 +116,11 @@ export function useContactPersistence(): ContactPersistAPI {
         .eq('id', contactId);
       if (error) {
         console.warn('[contact-persist] patchContact failed:', error.message);
-        return false;
+        if (error.message?.includes('wk_contacts_email_uniq'))
+          return 'This email is already used by another contact';
+        if (error.message?.includes('wk_contacts_phone_uniq'))
+          return 'This phone number is already used by another contact';
+        return 'Save failed';
       }
       return true;
     },
@@ -175,7 +184,7 @@ export function useContactPersistence(): ContactPersistAPI {
       .insert({
         name: input.name,
         phone: input.phone,
-        email: input.email ?? null,
+        email: input.email || null,
         owner_agent_id: owner,
         pipeline_column_id: pipelineColumnId,
         custom_fields: input.customFields ?? {},
