@@ -1,6 +1,6 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useCallback } from 'react';
 import { useSearchParams } from 'react-router-dom';
-import { Search, Phone, MessageSquare, Mail, Flame, Pencil, Upload } from 'lucide-react';
+import { Search, Phone, MessageSquare, Mail, Flame, Pencil, Upload, Trash2 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { formatPence, formatRelativeTime } from '../data/helpers';
 import StageSelector from '../components/shared/StageSelector';
@@ -13,10 +13,11 @@ import { useContactPersistence, isRealContactId } from '../hooks/useContactPersi
 import { useAgentsToday } from '../hooks/useAgentsToday';
 import { useActiveCallCtx } from '../components/live-call/ActiveCallContext';
 import { toE164 } from '@/core/utils/phone';
+import { supabase } from '@/integrations/supabase/client';
 import type { Contact } from '../types';
 
 export default function ContactsPage() {
-  const { contacts, columns, agents: storeAgents, patchContact, upsertContact, pushToast } = useSmsV2();
+  const { contacts, columns, agents: storeAgents, patchContact, upsertContact, removeContact, pushToast } = useSmsV2();
   const persist = useContactPersistence();
   const { startCall } = useActiveCallCtx();
   // Prefer real agents (from profiles) for the owner dropdown so saved
@@ -143,6 +144,26 @@ export default function ContactsPage() {
         }
       });
   };
+
+  const [deleting, setDeleting] = useState<string | null>(null);
+  const deleteContact = useCallback(async (c: Contact) => {
+    if (!confirm(`Delete "${c.name}" (${c.phone})? This cannot be undone.`)) return;
+    setDeleting(c.id);
+    try {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      await (supabase.from('wk_contact_tags' as any) as any).delete().eq('contact_id', c.id);
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      await (supabase.from('wk_dialer_queue' as any) as any).delete().eq('contact_id', c.id);
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const { error } = await (supabase.from('wk_contacts' as any) as any).delete().eq('id', c.id);
+      if (error) throw error;
+      removeContact(c.id);
+      pushToast('Contact deleted', 'success');
+    } catch {
+      pushToast('Delete failed', 'error');
+    }
+    setDeleting(null);
+  }, [removeContact, pushToast]);
 
   return (
     <div className="p-6 max-w-[1400px] mx-auto space-y-5">
@@ -311,6 +332,18 @@ export default function ContactsPage() {
                         data-testid={`contacts-row-email-${c.id}`}
                       >
                         <Mail className="w-3.5 h-3.5" />
+                      </button>
+                      <button
+                        onClick={(e) => {
+                          e.preventDefault();
+                          e.stopPropagation();
+                          void deleteContact(c);
+                        }}
+                        disabled={deleting === c.id}
+                        className="p-1.5 hover:bg-red-50 rounded text-[#9CA3AF] hover:text-red-500"
+                        title={`Delete ${c.name}`}
+                      >
+                        <Trash2 className={`w-3.5 h-3.5 ${deleting === c.id ? 'animate-spin' : ''}`} />
                       </button>
                     </div>
                   </td>
