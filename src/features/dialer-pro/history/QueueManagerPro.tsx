@@ -256,26 +256,48 @@ export default function QueueManagerPro({ queue, campaignId, onRefresh, onToast 
             contact={creatingNew}
             onClose={() => setCreatingNew(null)}
             onSave={async (draft) => {
-              if (!draft.phone.trim()) return;
-              // eslint-disable-next-line @typescript-eslint/no-explicit-any
-              const { data, error } = await (supabase.from('wk_contacts' as any) as any)
-                .insert({
-                  name: draft.name.trim() || null,
-                  phone: draft.phone.trim(),
-                  email: draft.email || null,
-                  pipeline_column_id: draft.pipelineColumnId || null,
-                  is_hot: draft.isHot,
-                  custom_fields: draft.customFields,
-                })
-                .select('id')
-                .single();
-              if (error || !data) return;
-              if (draft.tags.length > 0) {
-                // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                await (supabase.from('wk_contact_tags' as any) as any)
-                  .insert(draft.tags.map((t) => ({ contact_id: data.id, tag: t })));
+              if (!draft.phone.trim()) {
+                onToast?.('Phone number is required', 'error');
+                return;
               }
-              await addToQueue(data.id);
+              // Check if contact with this phone already exists
+              // eslint-disable-next-line @typescript-eslint/no-explicit-any
+              const { data: existing } = await (supabase.from('wk_contacts' as any) as any)
+                .select('id')
+                .eq('phone', draft.phone.trim())
+                .maybeSingle();
+
+              let contactId: string;
+              if (existing) {
+                contactId = existing.id;
+              } else {
+                // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                const { data, error } = await (supabase.from('wk_contacts' as any) as any)
+                  .insert({
+                    name: draft.name.trim() || null,
+                    phone: draft.phone.trim(),
+                    email: draft.email || null,
+                    pipeline_column_id: draft.pipelineColumnId || null,
+                    is_hot: draft.isHot,
+                    custom_fields: draft.customFields,
+                  })
+                  .select('id')
+                  .single();
+                if (error || !data) {
+                  console.warn('[queue-manager] contact insert failed:', error?.message);
+                  onToast?.(error?.message?.includes('phone_uniq')
+                    ? 'Phone number already exists'
+                    : error?.message ?? 'Could not create contact', 'error');
+                  return;
+                }
+                contactId = data.id;
+                if (draft.tags.length > 0) {
+                  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                  await (supabase.from('wk_contact_tags' as any) as any)
+                    .insert(draft.tags.map((t) => ({ contact_id: contactId, tag: t })));
+                }
+              }
+              await addToQueue(contactId);
               setCreatingNew(null);
             }}
           />
