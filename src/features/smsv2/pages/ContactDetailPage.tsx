@@ -136,7 +136,7 @@ export default function ContactDetailPage() {
             <Pencil className="w-4 h-4" /> Edit
           </button>
           <button
-            onClick={() => navigateTo('/crm/dialer-pro')}
+            onClick={() => navigateTo(`/crm/dialer-pro?call=${contact.id}`)}
             className="flex items-center gap-1.5 bg-[#1E9A80] text-white text-[13px] font-semibold px-4 py-2 rounded-[10px] hover:bg-[#1E9A80]/90 shadow-[0_4px_12px_rgba(30,154,128,0.35)]"
           >
             <Phone className="w-4 h-4" /> Call

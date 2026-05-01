@@ -282,7 +282,7 @@ export default function ContactsPage() {
                         onClick={(e) => {
                           e.preventDefault();
                           e.stopPropagation();
-                          navigateTo('/crm/dialer-pro');
+                          navigateTo(`/crm/dialer-pro?call=${c.id}`);
                         }}
                         className="p-1.5 hover:bg-[#ECFDF5] rounded text-[#1E9A80]"
                         title={`Call ${c.name}`}

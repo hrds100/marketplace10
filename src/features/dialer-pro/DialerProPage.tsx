@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import ReactDOM from 'react-dom';
 import {
   Phone, PhoneOff, Mic, MicOff, Pause as PauseIcon, Play, Square,
@@ -48,6 +49,8 @@ export default function DialerProPage() {
   const { user } = useAuth();
   const userId = user?.id ?? null;
   const agentFirstName = (user?.user_metadata?.first_name as string) ?? 'Agent';
+  const [searchParams, setSearchParams] = useSearchParams();
+  const autoCallContactId = searchParams.get('call');
 
   // Toasts
   const [toasts, setToasts] = useState<Array<{ id: number; msg: string; type: string }>>([]);
@@ -86,6 +89,58 @@ export default function DialerProPage() {
 
   // Queue
   const { queue, refresh: refreshQueue, removeLocal: removeFromQueue } = useQueuePro(camp?.id ?? null);
+
+  // Auto-dial: when ?call=<contactId> is in the URL, look up the contact
+  // and start calling them as soon as the device is ready.
+  const autoCallFired = useRef(false);
+  useEffect(() => {
+    if (!autoCallContactId || !deviceReady || !camp || autoCallFired.current) return;
+    if (state.phase !== 'idle' && state.phase !== 'paused') return;
+    autoCallFired.current = true;
+    setSearchParams({}, { replace: true });
+
+    void (async () => {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const { data: c } = await (supabase.from('wk_contacts' as any) as any)
+        .select('id, name, phone, pipeline_column_id')
+        .eq('id', autoCallContactId)
+        .maybeSingle();
+      if (!c?.phone) { onToast('Contact not found or has no phone number', 'error'); return; }
+
+      // Check if contact is already in the queue for this campaign
+      let queueLead = queue.find((q) => q.contactId === autoCallContactId);
+      if (!queueLead) {
+        // Insert into queue, then build a QueueLead from the insert
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const { data: row } = await (supabase.from('wk_dialer_queue' as any) as any)
+          .insert({
+            contact_id: autoCallContactId,
+            campaign_id: camp.id,
+            status: 'pending',
+            priority: 9999,
+            attempts: 0,
+          })
+          .select('id')
+          .single();
+        if (!row) { onToast('Could not add contact to queue', 'error'); return; }
+        queueLead = {
+          id: c.id,
+          contactId: c.id,
+          phone: c.phone,
+          name: c.name ?? c.phone,
+          priority: 9999,
+          attempts: 0,
+          scheduledFor: null,
+          status: 'pending',
+          campaignId: camp.id,
+          pipelineColumnId: c.pipeline_column_id ?? null,
+          queueRowId: row.id,
+        };
+        refreshQueue();
+      }
+      void machine.dialLead(queueLead);
+    })();
+  }, [autoCallContactId, deviceReady, camp, state.phase, queue, machine, onToast, refreshQueue, setSearchParams]);
 
   // Contact for the call room columns — during a call use currentLead,
   // when idle fall back to the next lead in queue so COL 1 (SMS/WA/Email)
