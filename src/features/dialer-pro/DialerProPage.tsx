@@ -107,22 +107,44 @@ export default function DialerProPage() {
         .maybeSingle();
       if (!c?.phone) { onToast('Contact not found or has no phone number', 'error'); return; }
 
-      // Check if contact is already in the queue for this campaign
+      // Check if contact is already in the pending queue
       let queueLead = queue.find((q) => q.contactId === autoCallContactId);
       if (!queueLead) {
-        // Insert into queue, then build a QueueLead from the insert
+        // Check if they exist in queue with a non-pending status (done/missed)
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const { data: row } = await (supabase.from('wk_dialer_queue' as any) as any)
-          .insert({
-            contact_id: autoCallContactId,
-            campaign_id: camp.id,
-            status: 'pending',
-            priority: 9999,
-            attempts: 0,
-          })
+        const { data: existingRow } = await (supabase.from('wk_dialer_queue' as any) as any)
           .select('id')
-          .single();
-        if (!row) { onToast('Could not add contact to queue', 'error'); return; }
+          .eq('contact_id', autoCallContactId)
+          .eq('campaign_id', camp.id)
+          .maybeSingle();
+
+        let queueRowId: string;
+        if (existingRow) {
+          // Reset existing row to pending with top priority
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          await (supabase.from('wk_dialer_queue' as any) as any)
+            .update({ status: 'pending', priority: 9999 })
+            .eq('id', existingRow.id);
+          queueRowId = existingRow.id;
+        } else {
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          const { data: row, error: insertErr } = await (supabase.from('wk_dialer_queue' as any) as any)
+            .insert({
+              contact_id: autoCallContactId,
+              campaign_id: camp.id,
+              status: 'pending',
+              priority: 9999,
+              attempts: 0,
+            })
+            .select('id')
+            .single();
+          if (insertErr || !row) {
+            console.warn('[dialer-pro] auto-call queue insert failed:', insertErr?.message);
+            onToast(insertErr?.message ?? 'Could not add contact to queue', 'error');
+            return;
+          }
+          queueRowId = row.id;
+        }
         queueLead = {
           id: c.id,
           contactId: c.id,
@@ -134,7 +156,7 @@ export default function DialerProPage() {
           status: 'pending',
           campaignId: camp.id,
           pipelineColumnId: c.pipeline_column_id ?? null,
-          queueRowId: row.id,
+          queueRowId,
         };
         refreshQueue();
       }

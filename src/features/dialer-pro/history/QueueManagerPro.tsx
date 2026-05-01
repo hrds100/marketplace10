@@ -80,21 +80,39 @@ export default function QueueManagerPro({ queue, campaignId, onRefresh, onToast 
       }
       setAdding(true);
       const maxPriority = queue.reduce((max, l) => Math.max(max, l.priority), 0);
+
+      // Check if contact already exists in queue (any status — unique constraint)
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const { error } = await (supabase.from('wk_dialer_queue' as any) as any).insert({
-        contact_id: contactId,
-        campaign_id: campaignId,
-        status: 'pending',
-        priority: maxPriority + 1,
-        attempts: 0,
-      });
-      setAdding(false);
-      if (error) {
-        onToast?.(error.message?.includes('duplicate') ? 'Contact already in queue' : 'Failed to add to queue', 'error');
+      const { data: existing } = await (supabase.from('wk_dialer_queue' as any) as any)
+        .select('id')
+        .eq('contact_id', contactId)
+        .eq('campaign_id', campaignId)
+        .maybeSingle();
+
+      if (existing) {
+        // Reset to pending with top priority
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        await (supabase.from('wk_dialer_queue' as any) as any)
+          .update({ status: 'pending', priority: maxPriority + 1 })
+          .eq('id', existing.id);
       } else {
-        onToast?.('Added — next in queue', 'success');
-        onRefresh();
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const { error } = await (supabase.from('wk_dialer_queue' as any) as any).insert({
+          contact_id: contactId,
+          campaign_id: campaignId,
+          status: 'pending',
+          priority: maxPriority + 1,
+          attempts: 0,
+        });
+        if (error) {
+          onToast?.('Failed to add to queue', 'error');
+          setAdding(false);
+          return;
+        }
       }
+      setAdding(false);
+      onToast?.('Added — next in queue', 'success');
+      onRefresh();
     },
     [campaignId, queue, onRefresh, onToast]
   );
