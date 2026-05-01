@@ -63,7 +63,7 @@ interface DialerProContentProps {
 }
 
 export function DialerProContent({ autoCallContactId, pipelineColumnId, onAutoCallConsumed }: DialerProContentProps) {
-  const { user } = useAuth();
+  const { user, isAdmin } = useAuth();
   const userId = user?.id ?? null;
   const agentFirstName = (user?.user_metadata?.first_name as string) ?? 'Agent';
 
@@ -76,7 +76,7 @@ export function DialerProContent({ autoCallContactId, pipelineColumnId, onAutoCa
   }, []);
 
   // Campaign (auto-select first)
-  const { campaigns } = useDialerCampaigns({ scopedToAgentId: userId, includeInactive: true });
+  const { campaigns } = useDialerCampaigns({ scopedToAgentId: isAdmin ? null : userId, includeInactive: true });
   const [activeCampaignId, setActiveCampaignId] = useState<string>('');
   useEffect(() => {
     if (campaigns.length > 0 && !campaigns.some((c) => c.id === activeCampaignId)) {
