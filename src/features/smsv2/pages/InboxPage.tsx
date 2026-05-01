@@ -29,6 +29,7 @@ import { useSmsTemplates } from '../hooks/useSmsTemplates';
 import { useCurrentAgent } from '../hooks/useCurrentAgent';
 import { interpolateTemplate } from '../lib/interpolateTemplate';
 import { supabase } from '@/integrations/supabase/client';
+import { useDialerProModal } from '../layout/DialerProModalContext';
 import type { Contact } from '../types';
 
 interface SmsSendInvoke {
@@ -95,6 +96,7 @@ export default function InboxPage() {
   const [replyChannel, setReplyChannel] = useState<ChannelKindUI | null>(null);
   const [sending, setSending] = useState(false);
   const navigateTo = useNavigate();
+  const { openDialerPro } = useDialerProModal();
   const threadScrollRef = useRef<HTMLDivElement>(null);
 
   // PR 88 (Hugo 2026-04-27): templates dropdown in the inbox composer.
@@ -554,14 +556,14 @@ export default function InboxPage() {
               "Call now" button if they decide to dial after all. */}
           <div className="flex flex-col items-end gap-0.5">
             <button
-              onClick={() => navigateTo(`/crm/dialer-pro`)}
+              onClick={() => navigateTo('/crm/dialer-pro')}
               className="text-[10px] text-[#1E9A80] hover:text-[#1E9A80]/80 font-medium underline-offset-2 hover:underline"
               title="Open the call room without dialling"
             >
               Open call room
             </button>
             <button
-              onClick={() => navigateTo(`/crm/dialer-pro?call=${activeContact.id}`)}
+              onClick={() => openDialerPro(activeContact.id)}
               className="flex items-center gap-1.5 bg-[#1E9A80] hover:bg-[#1E9A80]/90 text-white text-[12px] font-semibold px-3 py-1.5 rounded-[10px] shadow-[0_4px_12px_rgba(30,154,128,0.35)]"
             >
               <Phone className="w-3.5 h-3.5" /> Call
