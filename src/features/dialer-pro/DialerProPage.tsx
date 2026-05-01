@@ -33,6 +33,9 @@ import type { Contact } from '@/features/smsv2/types';
 
 import { useQueryClient } from '@tanstack/react-query';
 import { useCurrentAgent } from '@/features/smsv2/hooks/useCurrentAgent';
+import { useSmsV2 } from '@/features/smsv2/store/SmsV2Store';
+import { useContactPersistence } from '@/features/smsv2/hooks/useContactPersistence';
+import EditableName from '@/features/smsv2/components/contacts/EditableName';
 import { useDialerMachine } from './useDialerMachine';
 import { useQueuePro } from './useQueuePro';
 import type { QueueLead } from './types';
@@ -68,6 +71,8 @@ export function DialerProContent({ autoCallContactId, pipelineColumnId, onAutoCa
   const { user, isAdmin } = useAuth();
   const userId = user?.id ?? null;
   const { firstName: agentFirstName } = useCurrentAgent();
+  const { patchContact: storePatch } = useSmsV2();
+  const persistApi = useContactPersistence();
 
   // Toasts
   const [toasts, setToasts] = useState<Array<{ id: number; msg: string; type: string }>>([]);
@@ -76,6 +81,13 @@ export function DialerProContent({ autoCallContactId, pipelineColumnId, onAutoCa
     setToasts((prev) => [...prev.slice(-4), { id, msg, type }]);
     setTimeout(() => setToasts((prev) => prev.filter((t) => t.id !== id)), 4000);
   }, []);
+
+  const renameContact = useCallback(async (id: string, name: string) => {
+    storePatch(id, { name });
+    const res = await persistApi.patchContact(id, { name });
+    if (res !== true) onToast(`Rename failed: ${res}`, 'error');
+    return res;
+  }, [storePatch, persistApi, onToast]);
 
   // Campaign (auto-select first)
   const { campaigns } = useDialerCampaigns({ scopedToAgentId: isAdmin ? null : userId, includeInactive: true });
@@ -503,7 +515,7 @@ export function DialerProContent({ autoCallContactId, pipelineColumnId, onAutoCa
               <>
                 <div className="px-4 py-3 border-b border-[#E5E7EB]">
                   <div className="flex items-center gap-2">
-                    <div className="text-[16px] font-bold text-[#1A1A1A]">{contact.name}</div>
+                    <div className="text-[16px] font-bold text-[#1A1A1A]"><EditableName value={contact.name} onSave={(n) => renameContact(contact.id, n)} className="text-[16px] font-bold" /></div>
                     {contact.isHot && (
                       <span className="flex items-center gap-1 text-[10px] font-bold px-1.5 py-0.5 rounded-full" style={{ background: '#FEF2F2', color: '#EF4444' }}>
                         <Flame className="w-3 h-3" /> HOT
