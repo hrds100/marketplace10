@@ -110,16 +110,23 @@ export function useDialerMachine({ userId, campaignId, pipelineId, onToast }: Us
   const twilioCallRef = useRef<TwilioCall | null>(null);
   const dialedRef = useRef<Set<string>>(new Set());
 
-  // Twilio Device lifecycle
+  // Twilio Device lifecycle — retry up to 4 times with 2s delay
   const [deviceReady, setDeviceReady] = useState(false);
   useEffect(() => {
     let cancelled = false;
     void (async () => {
-      try {
-        await createDevice();
-        if (!cancelled) setDeviceReady(true);
-      } catch (e) {
-        console.warn('[dialer-pro] createDevice failed', e);
+      for (let attempt = 1; attempt <= 4; attempt++) {
+        if (cancelled) return;
+        try {
+          await createDevice();
+          if (!cancelled) setDeviceReady(true);
+          return;
+        } catch (e) {
+          console.warn(`[dialer-pro] createDevice attempt ${attempt}/4 failed`, e);
+          if (attempt < 4 && !cancelled) {
+            await new Promise((r) => setTimeout(r, 2000));
+          }
+        }
       }
     })();
     return () => { cancelled = true; setDeviceReady(false); };

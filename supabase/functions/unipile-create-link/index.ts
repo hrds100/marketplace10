@@ -31,7 +31,7 @@ const UNIPILE_TOKEN = Deno.env.get('UNIPILE_TOKEN') ?? '';
 const UNIPILE_DSN = Deno.env.get('UNIPILE_DSN') ?? 'api38.unipile.com:16812';
 const PUBLIC_APP_URL = Deno.env.get('PUBLIC_APP_URL') ?? 'https://hub.nfstay.com';
 
-const ADMIN_EMAILS = ['hugo@nfstay.com', 'admin@hub.nfstay.com'];
+const ADMIN_EMAILS = ['hugo@nfstay.com', 'admin@hub.nfstay.com', 'hugodesouzax@gmail.com'];
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
