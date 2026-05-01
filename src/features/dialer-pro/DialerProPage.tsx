@@ -680,7 +680,7 @@ export default function DialerProPage() {
               <span className="text-[10px] text-[#9CA3AF]">({queue.length})</span>
             </div>
             <div className="overflow-y-auto" style={{ maxHeight: 200 }}>
-              <QueueManagerPro queue={queue} campaignId={camp?.id ?? null} onRefresh={refreshQueue} />
+              <QueueManagerPro queue={queue} campaignId={camp?.id ?? null} onRefresh={refreshQueue} onToast={onToast} />
             </div>
           </div>
           {/* Resize handle */}

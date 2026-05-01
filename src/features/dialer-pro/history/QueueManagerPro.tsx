@@ -11,9 +11,10 @@ interface Props {
   queue: QueueLead[];
   campaignId: string | null;
   onRefresh: () => void;
+  onToast?: (msg: string, type: 'success' | 'error' | 'info') => void;
 }
 
-export default function QueueManagerPro({ queue, campaignId, onRefresh }: Props) {
+export default function QueueManagerPro({ queue, campaignId, onRefresh, onToast }: Props) {
   const [removing, setRemoving] = useState<string | null>(null);
   const [adding, setAdding] = useState(false);
   const [creatingNew, setCreatingNew] = useState<Contact | null>(null);
@@ -73,20 +74,29 @@ export default function QueueManagerPro({ queue, campaignId, onRefresh }: Props)
 
   const addToQueue = useCallback(
     async (contactId: string) => {
-      if (!campaignId) return;
+      if (!campaignId) {
+        onToast?.('No campaign selected — cannot add to queue', 'error');
+        return;
+      }
       setAdding(true);
+      const maxPriority = queue.reduce((max, l) => Math.max(max, l.priority), 0);
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      await (supabase.from('wk_dialer_queue' as any) as any).insert({
+      const { error } = await (supabase.from('wk_dialer_queue' as any) as any).insert({
         contact_id: contactId,
         campaign_id: campaignId,
         status: 'pending',
-        priority: 999,
+        priority: maxPriority + 1,
         attempts: 0,
       });
       setAdding(false);
-      onRefresh();
+      if (error) {
+        onToast?.(error.message?.includes('duplicate') ? 'Contact already in queue' : 'Failed to add to queue', 'error');
+      } else {
+        onToast?.('Added — next in queue', 'success');
+        onRefresh();
+      }
     },
-    [campaignId, onRefresh]
+    [campaignId, queue, onRefresh, onToast]
   );
 
   const removeFromQueue = useCallback(
@@ -127,7 +137,7 @@ export default function QueueManagerPro({ queue, campaignId, onRefresh }: Props)
           className="flex items-center gap-1 px-2.5 py-1 rounded-lg text-[11px] font-medium bg-[#1E9A80] text-white hover:bg-[#1E9A80]/90 transition-colors"
         >
           <Plus className="w-3 h-3" />
-          New contact
+          Add lead
         </button>
         <span className="text-[10px] text-[#9CA3AF]">{queue.length} pending</span>
       </div>
