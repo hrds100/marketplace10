@@ -32,6 +32,7 @@ import EditContactModal from '@/features/smsv2/components/contacts/EditContactMo
 import type { Contact } from '@/features/smsv2/types';
 
 import { useQueryClient } from '@tanstack/react-query';
+import { useCurrentAgent } from '@/features/smsv2/hooks/useCurrentAgent';
 import { useDialerMachine } from './useDialerMachine';
 import { useQueuePro } from './useQueuePro';
 import type { QueueLead } from './types';
@@ -66,7 +67,7 @@ interface DialerProContentProps {
 export function DialerProContent({ autoCallContactId, pipelineColumnId, onAutoCallConsumed }: DialerProContentProps) {
   const { user, isAdmin } = useAuth();
   const userId = user?.id ?? null;
-  const agentFirstName = (user?.user_metadata?.first_name as string) ?? 'Agent';
+  const { firstName: agentFirstName } = useCurrentAgent();
 
   // Toasts
   const [toasts, setToasts] = useState<Array<{ id: number; msg: string; type: string }>>([]);
