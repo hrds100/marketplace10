@@ -1,26 +1,53 @@
 import ReactDOM from 'react-dom';
-import { X } from 'lucide-react';
+import { X, Minus, Maximize2, Phone } from 'lucide-react';
 import { useDialerProModal } from './DialerProModalContext';
 import { DialerProContent } from '@/features/dialer-pro/DialerProPage';
 
 export default function DialerProModal() {
-  const { isOpen, contactId, pipelineColumnId, closeDialerPro } = useDialerProModal();
+  const {
+    isOpen, isMinimized, contactId, pipelineColumnId,
+    closeDialerPro, minimizeDialerPro, expandDialerPro,
+  } = useDialerProModal();
 
   if (!isOpen) return null;
 
+  if (isMinimized) {
+    return ReactDOM.createPortal(
+      <button
+        onClick={expandDialerPro}
+        className="fixed bottom-6 right-6 z-[300] flex items-center gap-2 px-4 py-2.5 bg-[#1E9A80] text-white rounded-full shadow-[0_4px_16px_rgba(30,154,128,0.35)] hover:shadow-[0_8px_24px_rgba(30,154,128,0.45)] transition-shadow"
+      >
+        <Phone className="w-4 h-4" />
+        <span className="text-sm font-semibold">Dialer</span>
+        <Maximize2 className="w-3.5 h-3.5 opacity-70" />
+      </button>,
+      document.body,
+    );
+  }
+
   return ReactDOM.createPortal(
     <div className="fixed inset-0 z-[300] flex items-center justify-center">
-      <div className="absolute inset-0 bg-black/50" onClick={closeDialerPro} />
+      <div className="absolute inset-0 bg-black/50" />
       <div
         className="relative bg-[#F3F3EE] rounded-2xl overflow-hidden shadow-[0_24px_64px_rgba(0,0,0,0.25)]"
         style={{ width: '85vw', height: '85vh' }}
       >
-        <button
-          onClick={closeDialerPro}
-          className="absolute top-3 right-3 z-10 p-1.5 rounded-lg bg-white/80 hover:bg-white text-[#6B7280] hover:text-[#1A1A1A] shadow-sm transition-colors"
-        >
-          <X className="w-4 h-4" />
-        </button>
+        <div className="absolute top-3 right-3 z-10 flex items-center gap-1">
+          <button
+            onClick={minimizeDialerPro}
+            className="p-1.5 rounded-lg bg-white/80 hover:bg-white text-[#6B7280] hover:text-[#1A1A1A] shadow-sm transition-colors"
+            title="Minimize"
+          >
+            <Minus className="w-4 h-4" />
+          </button>
+          <button
+            onClick={closeDialerPro}
+            className="p-1.5 rounded-lg bg-white/80 hover:bg-white text-[#6B7280] hover:text-red-500 shadow-sm transition-colors"
+            title="Close dialer"
+          >
+            <X className="w-4 h-4" />
+          </button>
+        </div>
         <DialerProContent
           autoCallContactId={contactId}
           pipelineColumnId={pipelineColumnId}

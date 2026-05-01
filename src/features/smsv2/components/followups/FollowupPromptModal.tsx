@@ -134,7 +134,7 @@ export default function FollowupPromptModal({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="z-[230] max-w-md">
+      <DialogContent className="z-[350] max-w-md">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Bell className="w-4 h-4 text-[#1E9A80]" />
