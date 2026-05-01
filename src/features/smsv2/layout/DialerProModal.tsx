@@ -15,11 +15,11 @@ export default function DialerProModal() {
     return ReactDOM.createPortal(
       <button
         onClick={expandDialerPro}
-        className="fixed bottom-6 right-6 z-[300] flex items-center gap-2 px-4 py-2.5 bg-[#1E9A80] text-white rounded-full shadow-[0_4px_16px_rgba(30,154,128,0.35)] hover:shadow-[0_8px_24px_rgba(30,154,128,0.45)] transition-shadow"
+        className="fixed bottom-6 right-6 z-[300] flex items-center gap-2.5 px-5 py-3 bg-[#1E9A80] text-white rounded-full shadow-[0_4px_16px_rgba(30,154,128,0.35)] hover:shadow-[0_8px_24px_rgba(30,154,128,0.45)] hover:scale-105 transition-all"
       >
-        <Phone className="w-4 h-4" />
-        <span className="text-sm font-semibold">Dialer</span>
-        <Maximize2 className="w-3.5 h-3.5 opacity-70" />
+        <Phone className="w-5 h-5" />
+        <span className="text-sm font-semibold">Open Dialer</span>
+        <Maximize2 className="w-4 h-4 opacity-80" />
       </button>,
       document.body,
     );
@@ -32,20 +32,23 @@ export default function DialerProModal() {
         className="relative bg-[#F3F3EE] rounded-2xl overflow-hidden shadow-[0_24px_64px_rgba(0,0,0,0.25)]"
         style={{ width: '85vw', height: '85vh' }}
       >
-        <div className="absolute top-3 right-3 z-10 flex items-center gap-1">
+        {/* Window controls — prominent bar at top-right */}
+        <div className="absolute top-0 right-0 z-10 flex items-center gap-0 rounded-bl-xl overflow-hidden shadow-sm">
           <button
             onClick={minimizeDialerPro}
-            className="p-1.5 rounded-lg bg-white/80 hover:bg-white text-[#6B7280] hover:text-[#1A1A1A] shadow-sm transition-colors"
+            className="flex items-center gap-1.5 px-4 py-2.5 bg-white hover:bg-[#F3F3EE] text-[#6B7280] hover:text-[#1A1A1A] border-b border-l border-[#E5E7EB] transition-colors"
             title="Minimize"
           >
-            <Minus className="w-4 h-4" />
+            <Minus className="w-4 h-4" strokeWidth={2.5} />
+            <span className="text-xs font-medium">Minimize</span>
           </button>
           <button
             onClick={closeDialerPro}
-            className="p-1.5 rounded-lg bg-white/80 hover:bg-white text-[#6B7280] hover:text-red-500 shadow-sm transition-colors"
+            className="flex items-center gap-1.5 px-4 py-2.5 bg-white hover:bg-red-50 text-[#6B7280] hover:text-red-600 border-b border-l border-[#E5E7EB] transition-colors"
             title="Close dialer"
           >
-            <X className="w-4 h-4" />
+            <X className="w-4 h-4" strokeWidth={2.5} />
+            <span className="text-xs font-medium">Close</span>
           </button>
         </div>
         <DialerProContent
