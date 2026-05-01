@@ -4,6 +4,7 @@ import { cn } from '@/lib/utils';
 import { ACTIVE_PIPELINE } from '../data/mockPipelines';
 import { formatPence, formatRelativeTime } from '../data/helpers';
 import EditContactModal from '../components/contacts/EditContactModal';
+import EditableName from '../components/contacts/EditableName';
 import ContactSmsModal from '../components/contacts/ContactSmsModal';
 import { useSmsV2 } from '../store/SmsV2Store';
 import { useContactPersistence } from '../hooks/useContactPersistence';
@@ -15,6 +16,12 @@ import type { Contact } from '../types';
 export default function PipelinesPage() {
   const { contacts, columns, upsertContact, patchContact, pushToast } = useSmsV2();
   const persist = useContactPersistence();
+  const renameContact = async (id: string, name: string) => {
+    patchContact(id, { name });
+    const res = await persist.patchContact(id, { name });
+    if (res !== true) pushToast(`Rename failed: ${res}`, 'error');
+    return res;
+  };
   const [editing, setEditing] = useState<Contact | null>(null);
   const [draggingId, setDraggingId] = useState<string | null>(null);
   const [dragOverColId, setDragOverColId] = useState<string | null>(null);
@@ -177,7 +184,7 @@ export default function PipelinesPage() {
                       <GripVertical className="w-3 h-3 text-[#9CA3AF] mt-0.5 flex-shrink-0" />
                       <div className="flex-1 min-w-0">
                         <div className="text-[13px] font-semibold text-[#1A1A1A] flex items-center gap-1 truncate">
-                          {c.name}
+                          <EditableName value={c.name} onSave={(n) => renameContact(c.id, n)} className="text-[13px] font-semibold" />
                           {c.isHot && (
                             <Flame
                               className="w-3 h-3 text-[#EF4444] flex-shrink-0"

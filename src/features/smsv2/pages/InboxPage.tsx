@@ -19,6 +19,7 @@ import { useDemoMode } from '../lib/useDemoMode';
 import { formatRelativeTime, formatTimeOnly, formatDuration } from '../data/helpers';
 import StageSelector from '../components/shared/StageSelector';
 import EditContactModal from '../components/contacts/EditContactModal';
+import EditableName from '../components/contacts/EditableName';
 import FollowupPromptModal from '../components/followups/FollowupPromptModal';
 import { useSmsV2 } from '../store/SmsV2Store';
 import { useContactTimeline } from '../hooks/useContactTimeline';
@@ -109,6 +110,13 @@ export default function InboxPage() {
   // onChange + no state, so typing did nothing. Now filters sidebarRows
   // by name / phone / last message body (case-insensitive).
   const [searchQuery, setSearchQuery] = useState('');
+
+  const renameContact = async (id: string, name: string) => {
+    patchContact(id, { name });
+    const res = await persist.patchContact(id, { name });
+    if (res !== true) pushToast(`Rename failed: ${res}`, 'error');
+    return res;
+  };
 
   // PR 52 (war room, Hugo 2026-04-27): the sidebar is now driven by
   // useInboxThreads (latest message per contact, ordered desc) merged
@@ -494,7 +502,7 @@ export default function InboxPage() {
                   </div>
                   <div className="flex-1 min-w-0">
                     <div className="text-[13px] font-semibold text-[#1A1A1A] truncate flex items-center gap-1">
-                      {r.name}
+                      <EditableName value={r.name} onSave={(n) => renameContact(r.contactId, n)} className="text-[13px] font-semibold" />
                     </div>
                     <div className="text-[11px] text-[#6B7280] truncate flex items-center gap-1">
                       {r.lastChannel && <ChannelGlyph channel={r.lastChannel} size={10} />}
@@ -529,7 +537,7 @@ export default function InboxPage() {
           </div>
           <div className="flex-1">
             <div className="text-[14px] font-semibold text-[#1A1A1A]">
-              {activeContact.name}
+              <EditableName value={activeContact.name} onSave={(n) => renameContact(activeContact.id, n)} className="text-[14px] font-semibold" />
             </div>
             <div className="text-[11px] text-[#6B7280] tabular-nums">
               {activeContact.phone}

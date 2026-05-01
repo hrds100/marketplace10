@@ -20,6 +20,7 @@ import {
 import StageSelector from '../components/shared/StageSelector';
 import ContactSmsModal from '../components/contacts/ContactSmsModal';
 import EditContactModal from '../components/contacts/EditContactModal';
+import EditableName from '../components/contacts/EditableName';
 import { useCurrentAgent } from '../hooks/useCurrentAgent';
 import { useSmsV2 } from '../store/SmsV2Store';
 import { useContactTimeline } from '../hooks/useContactTimeline';
@@ -42,6 +43,14 @@ export default function ContactDetailPage() {
   const persist = useContactPersistence();
   const timeline = useContactTimeline(contact?.id ?? '', contact?.phone);
   const demoMode = useDemoMode();
+
+  const renameContact = async (name: string) => {
+    if (!contact) return false as const;
+    patchContact(contact.id, { name });
+    const res = await persist.patchContact(contact.id, { name });
+    if (res !== true) pushToast(`Rename failed: ${res}`, 'error');
+    return res;
+  };
 
   if (!contact) {
     return (
@@ -121,7 +130,7 @@ export default function ContactDetailPage() {
         </div>
         <div className="flex-1">
           <div className="flex items-center gap-2">
-            <h1 className="text-[24px] font-bold text-[#1A1A1A] tracking-tight">{contact.name}</h1>
+            <h1 className="text-[24px] font-bold text-[#1A1A1A] tracking-tight"><EditableName value={contact.name} onSave={renameContact} className="text-[24px] font-bold" /></h1>
             {contact.isHot && (
               <span className="flex items-center gap-1 text-[10px] font-bold bg-[#FEF2F2] text-[#EF4444] px-2 py-0.5 rounded-full">
                 <Flame className="w-3 h-3" /> HOT

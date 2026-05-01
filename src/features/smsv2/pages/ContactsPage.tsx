@@ -7,6 +7,7 @@ import StageSelector from '../components/shared/StageSelector';
 import BulkUploadModal from '../components/contacts/BulkUploadModal';
 import ContactSmsModal from '../components/contacts/ContactSmsModal';
 import EditContactModal from '../components/contacts/EditContactModal';
+import EditableName from '../components/contacts/EditableName';
 import { useCurrentAgent } from '../hooks/useCurrentAgent';
 import { useSmsV2 } from '../store/SmsV2Store';
 import { useContactPersistence, isRealContactId } from '../hooks/useContactPersistence';
@@ -39,6 +40,12 @@ export default function ContactsPage() {
   const setSearch = (v: string) => setSpParam('q', v);
   const setStageFilter = (v: string) => setSpParam('stage', v, 'all');
   const setOwnerFilter = (v: string) => setSpParam('owner', v, 'all');
+  const renameContact = async (id: string, name: string) => {
+    patchContact(id, { name });
+    const res = await persist.patchContact(id, { name });
+    if (res !== true) pushToast(`Rename failed: ${res}`, 'error');
+    return res;
+  };
   const [editing, setEditing] = useState<Contact | null>(null);
   const [bulkOpen, setBulkOpen] = useState(false);
   const [creatingDraft, setCreatingDraft] = useState<Contact | null>(null);
@@ -247,7 +254,7 @@ export default function ContactsPage() {
                       to={`/crm/contacts/${c.id}`}
                       className="font-semibold text-[#1A1A1A] hover:text-[#1E9A80] flex items-center gap-1.5"
                     >
-                      {c.name}
+                      <EditableName value={c.name} onSave={(n) => renameContact(c.id, n)} className="font-semibold" />
                       {c.isHot && (
                         <Flame
                           className="w-3 h-3 text-[#EF4444]"
