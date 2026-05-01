@@ -8,15 +8,8 @@
 // notes for what to do on the follow-up."
 
 import { useEffect, useState } from 'react';
-import { Bell, Save, Loader2 } from 'lucide-react';
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogDescription,
-  DialogFooter,
-} from '@/components/ui/dialog';
+import ReactDOM from 'react-dom';
+import { Bell, Save, Loader2, X } from 'lucide-react';
 import { useFollowups } from '../../hooks/useFollowups';
 
 interface Props {
@@ -132,20 +125,30 @@ export default function FollowupPromptModal({
     }
   };
 
-  return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="z-[350] max-w-md">
-        <DialogHeader>
-          <DialogTitle className="flex items-center gap-2">
+  if (!open) return null;
+
+  return ReactDOM.createPortal(
+    <div className="fixed inset-0 z-[350] flex items-center justify-center">
+      <div className="absolute inset-0 bg-black/50" onClick={() => onOpenChange(false)} />
+      <div className="relative bg-white rounded-2xl shadow-[0_24px_64px_rgba(0,0,0,0.25)] w-full max-w-md mx-4 p-6">
+        <button
+          onClick={() => onOpenChange(false)}
+          className="absolute top-3 right-3 text-[#6B7280] hover:text-[#1A1A1A]"
+        >
+          <X className="w-4 h-4" />
+        </button>
+
+        <div className="mb-4">
+          <h2 className="flex items-center gap-2 text-[16px] font-semibold text-[#1A1A1A]">
             <Bell className="w-4 h-4 text-[#1E9A80]" />
             Follow-up for {contactName}
-          </DialogTitle>
-          <DialogDescription>
+          </h2>
+          <p className="text-[13px] text-[#6B7280] mt-1">
             Moving to <span className="font-semibold">{columnName}</span> — set
             when to follow up. The banner at the top of the screen will remind
             you the moment the time arrives.
-          </DialogDescription>
-        </DialogHeader>
+          </p>
+        </div>
 
         <div className="space-y-3">
           <div>
@@ -185,12 +188,12 @@ export default function FollowupPromptModal({
           </div>
           {hookError && (
             <div className="text-[12px] text-[#EF4444] bg-[#FEF2F2] border border-[#FEE2E2] rounded-md px-3 py-2">
-              ⚠ {hookError}
+              {hookError}
             </div>
           )}
         </div>
 
-        <DialogFooter>
+        <div className="flex justify-end gap-2 mt-4">
           <button
             type="button"
             onClick={() => onOpenChange(false)}
@@ -212,8 +215,9 @@ export default function FollowupPromptModal({
             )}
             {submitting ? 'Saving…' : 'Save follow-up'}
           </button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
+        </div>
+      </div>
+    </div>,
+    document.body,
   );
 }
