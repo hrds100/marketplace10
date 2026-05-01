@@ -304,10 +304,8 @@ export default function ContactSmsModal({
       }
       const { data, error } = resp;
       if (error || data?.error) {
-        pushToast(
-          `${CHANNEL_LABEL[channel]} send failed: ${error?.message ?? data?.error ?? 'unknown'}`,
-          'error'
-        );
+        const detail = (data?.error as string | undefined) ?? error?.message ?? 'unknown';
+        pushToast(`${CHANNEL_LABEL[channel]} send failed: ${detail}`, 'error');
         return;
       }
       pushToast(`${CHANNEL_LABEL[channel]} sent`, 'success');
