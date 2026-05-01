@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { useParams, Link } from 'react-router-dom';
+import { useParams, Link, useNavigate } from 'react-router-dom';
 import {
   ArrowLeft,
   Phone,
@@ -17,7 +17,6 @@ import {
   formatRelativeTime,
   formatTimeOnly,
 } from '../data/helpers';
-import { useActiveCallCtx } from '../components/live-call/ActiveCallContext';
 import StageSelector from '../components/shared/StageSelector';
 import ContactSmsModal from '../components/contacts/ContactSmsModal';
 import EditContactModal from '../components/contacts/EditContactModal';
@@ -37,7 +36,7 @@ export default function ContactDetailPage() {
   const { firstName: agentFirstName } = useCurrentAgent();
   const [newTag, setNewTag] = useState('');
   const [newField, setNewField] = useState({ key: '', value: '' });
-  const { startCall } = useActiveCallCtx();
+  const navigateTo = useNavigate();
   const persist = useContactPersistence();
   const timeline = useContactTimeline(contact?.id ?? '', contact?.phone);
   const demoMode = useDemoMode();
@@ -137,7 +136,7 @@ export default function ContactDetailPage() {
             <Pencil className="w-4 h-4" /> Edit
           </button>
           <button
-            onClick={() => startCall(contact.id)}
+            onClick={() => navigateTo('/crm/dialer-pro')}
             className="flex items-center gap-1.5 bg-[#1E9A80] text-white text-[13px] font-semibold px-4 py-2 rounded-[10px] hover:bg-[#1E9A80]/90 shadow-[0_4px_12px_rgba(30,154,128,0.35)]"
           >
             <Phone className="w-4 h-4" /> Call

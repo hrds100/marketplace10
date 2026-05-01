@@ -1,5 +1,5 @@
 import { useState, useMemo, useCallback } from 'react';
-import { useSearchParams } from 'react-router-dom';
+import { useSearchParams, useNavigate } from 'react-router-dom';
 import { Search, Phone, MessageSquare, Mail, Flame, Pencil, Upload, Trash2 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { formatPence, formatRelativeTime } from '../data/helpers';
@@ -11,7 +11,6 @@ import { useCurrentAgent } from '../hooks/useCurrentAgent';
 import { useSmsV2 } from '../store/SmsV2Store';
 import { useContactPersistence, isRealContactId } from '../hooks/useContactPersistence';
 import { useAgentsToday } from '../hooks/useAgentsToday';
-import { useActiveCallCtx } from '../components/live-call/ActiveCallContext';
 import { toE164 } from '@/core/utils/phone';
 import { supabase } from '@/integrations/supabase/client';
 import type { Contact } from '../types';
@@ -19,7 +18,7 @@ import type { Contact } from '../types';
 export default function ContactsPage() {
   const { contacts, columns, agents: storeAgents, patchContact, upsertContact, removeContact, pushToast } = useSmsV2();
   const persist = useContactPersistence();
-  const { startCall } = useActiveCallCtx();
+  const navigateTo = useNavigate();
   // Prefer real agents (from profiles) for the owner dropdown so saved
   // owner_agent_id is a real UUID, not a mock id like "a-hugo".
   const { agents: realAgents } = useAgentsToday();
@@ -281,11 +280,9 @@ export default function ContactsPage() {
                       </button>
                       <button
                         onClick={(e) => {
-                          // Stop the row's <Link> (navigates to detail) from
-                          // hijacking the click — we want to dial in place.
                           e.preventDefault();
                           e.stopPropagation();
-                          void startCall(c.id);
+                          navigateTo('/crm/dialer-pro');
                         }}
                         className="p-1.5 hover:bg-[#ECFDF5] rounded text-[#1E9A80]"
                         title={`Call ${c.name}`}

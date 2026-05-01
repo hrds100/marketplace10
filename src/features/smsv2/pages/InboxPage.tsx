@@ -1,5 +1,5 @@
 import { useState, useMemo, useEffect, useRef } from 'react';
-import { useSearchParams } from 'react-router-dom';
+import { useSearchParams, useNavigate } from 'react-router-dom';
 import {
   MessageSquare,
   PhoneIncoming,
@@ -17,7 +17,6 @@ import { cn } from '@/lib/utils';
 import { MOCK_SMS, MOCK_CALLS, MOCK_ACTIVITIES } from '../data/mockCalls';
 import { useDemoMode } from '../lib/useDemoMode';
 import { formatRelativeTime, formatTimeOnly, formatDuration } from '../data/helpers';
-import { useActiveCallCtx } from '../components/live-call/ActiveCallContext';
 import StageSelector from '../components/shared/StageSelector';
 import EditContactModal from '../components/contacts/EditContactModal';
 import FollowupPromptModal from '../components/followups/FollowupPromptModal';
@@ -95,7 +94,7 @@ export default function InboxPage() {
   // intent is obvious.
   const [replyChannel, setReplyChannel] = useState<ChannelKindUI | null>(null);
   const [sending, setSending] = useState(false);
-  const { startCall, openCallRoom } = useActiveCallCtx();
+  const navigateTo = useNavigate();
   const threadScrollRef = useRef<HTMLDivElement>(null);
 
   // PR 88 (Hugo 2026-04-27): templates dropdown in the inbox composer.
@@ -555,14 +554,14 @@ export default function InboxPage() {
               "Call now" button if they decide to dial after all. */}
           <div className="flex flex-col items-end gap-0.5">
             <button
-              onClick={() => openCallRoom(activeContact.id)}
+              onClick={() => navigateTo('/crm/dialer-pro')}
               className="text-[10px] text-[#1E9A80] hover:text-[#1E9A80]/80 font-medium underline-offset-2 hover:underline"
               title="Open the call room without dialling"
             >
               Open call room
             </button>
             <button
-              onClick={() => startCall(activeContact.id)}
+              onClick={() => navigateTo('/crm/dialer-pro')}
               className="flex items-center gap-1.5 bg-[#1E9A80] hover:bg-[#1E9A80]/90 text-white text-[12px] font-semibold px-3 py-1.5 rounded-[10px] shadow-[0_4px_12px_rgba(30,154,128,0.35)]"
             >
               <Phone className="w-3.5 h-3.5" /> Call
