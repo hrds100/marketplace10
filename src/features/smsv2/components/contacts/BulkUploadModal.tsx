@@ -110,6 +110,7 @@ export default function BulkUploadModal({
       complete: (parsed) => {
         const errs: string[] = [];
         const seen = new Set<string>();
+        const seenEmails = new Set<string>();
         const accepted: ParsedRow[] = [];
         for (const [i, raw] of parsed.data.entries()) {
           const phoneKey = pickKey(raw, PHONE_KEYS);
@@ -132,7 +133,16 @@ export default function BulkUploadModal({
           const nameKey = pickKey(raw, NAME_KEYS);
           const name = nameKey ? raw[nameKey].trim() : phone;
           const emailKey = pickKey(raw, EMAIL_KEYS);
-          const email = emailKey ? raw[emailKey].trim() : undefined;
+          const emailRaw = emailKey ? raw[emailKey].trim() : '';
+          let email: string | undefined = emailRaw || undefined;
+          if (email) {
+            const lc = email.toLowerCase();
+            if (seenEmails.has(lc)) {
+              email = undefined;
+            } else {
+              seenEmails.add(lc);
+            }
+          }
 
           // Custom fields: anything that wasn't phone/name/email
           const customFields: Record<string, string> = {};
@@ -176,7 +186,7 @@ export default function BulkUploadModal({
       return {
         name: row.name,
         phone: row.phone,
-        email: row.email ?? null,
+        email: row.email || null,
         owner_agent_id: ownerForThis,
         pipeline_column_id: stageId || null,
         custom_fields: row.customFields,
@@ -199,9 +209,17 @@ export default function BulkUploadModal({
     for (let i = 0; i < inserts.length; i += CHUNK) {
       const slice = inserts.slice(i, i + CHUNK);
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const { data, error } = await (supabase.from('wk_contacts' as any) as any)
+      let { data, error } = await (supabase.from('wk_contacts' as any) as any)
         .upsert(slice, { onConflict: 'phone', ignoreDuplicates: true })
         .select('id, phone');
+
+      if (error?.message?.includes('wk_contacts_email_uniq')) {
+        const stripped = slice.map((r: Record<string, unknown>) => ({ ...r, email: null }));
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        ({ data, error } = await (supabase.from('wk_contacts' as any) as any)
+          .upsert(stripped, { onConflict: 'phone', ignoreDuplicates: true })
+          .select('id, phone'));
+      }
 
       if (error) {
         errors.push(error.message);
