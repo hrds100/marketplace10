@@ -128,45 +128,66 @@
     </nav>
   </div>
 
-  <!-- Hero responsive overrides -->
+  <!-- Hero — V21 Card Stack with nfstay copy -->
   <style>
-    @media (max-width: 768px) {
-      #hero h1 { font-size: 40px !important; letter-spacing: -1.5px !important; }
-      #hero .hero-text-block { padding: 80px 0 60px !important; }
-      #hero .hero-buttons { flex-direction: column !important; }
-      #hero .hero-buttons a { width: 100% !important; text-align: center !important; }
-    }
-    @media (min-width: 769px) and (max-width: 1024px) {
-      #hero h1 { font-size: 56px !important; }
+    .v21-stack{position:relative;width:320px;height:420px;margin:0 auto}
+    .v21-card{position:absolute;width:300px;background:#fff;border:1px solid rgba(0,0,0,0.08);border-radius:16px;overflow:hidden;box-shadow:0 8px 32px rgba(0,0,0,0.1);transition:transform 0.4s ease}
+    .v21-card img{width:100%;height:180px;object-fit:cover}
+    .v21-card-body{padding:16px}
+    .v21-card-body h4{font-size:15px;font-weight:700;color:#1A1A1A}
+    .v21-card-body p{font-size:13px;color:#6B7280;margin-top:4px}
+    .v21-card-body .v21-price{font-size:18px;font-weight:800;color:#1E9A80;margin-top:8px}
+    .v21-c1{top:0;left:50%;transform:translateX(-50%) rotate(-3deg);z-index:1}
+    .v21-c2{top:16px;left:50%;transform:translateX(-46%) rotate(2deg);z-index:2}
+    .v21-c3{top:32px;left:50%;transform:translateX(-52%) rotate(-1deg);z-index:3}
+    @media(max-width:768px){
+      #hero .v21-hero-grid{grid-template-columns:1fr !important;text-align:center}
+      #hero .v21-stack{width:260px;height:380px;margin-bottom:20px}
+      #hero .v21-card{width:250px}
+      #hero .v21-card img{height:140px}
+      #hero .v21-hero-text{max-width:100% !important}
     }
   </style>
-
-  <!-- ========== HERO SECTION (nfstay) ========== -->
-  <section class="section section_hero" data-feature="SHARED__LANDING_HERO" id="hero">
-    <div class="hero-bg-clouds">
-      <svg class="cloud-svg cloud-1" viewBox="0 0 600 200" fill="none"><ellipse cx="300" cy="150" rx="280" ry="80" fill="rgba(255,255,255,0.6)"/><ellipse cx="200" cy="120" rx="160" ry="70" fill="rgba(255,255,255,0.5)"/><ellipse cx="400" cy="110" rx="180" ry="75" fill="rgba(255,255,255,0.55)"/></svg>
-      <svg class="cloud-svg cloud-2" viewBox="0 0 500 180" fill="none"><ellipse cx="250" cy="130" rx="230" ry="70" fill="rgba(255,255,255,0.5)"/><ellipse cx="350" cy="90" rx="150" ry="65" fill="rgba(255,255,255,0.45)"/></svg>
-    </div>
-
-    <div class="padding-global">
-      <div class="container-large">
-        <!-- Hero heading — centred, bold, editorial -->
-        <div class="hero-text-block" style="text-align:center;padding:120px 0 80px;max-width:900px;margin:0 auto;">
-          <div style="display:inline-flex;align-items:center;gap:8px;background:#ECFDF5;border-radius:100px;padding:6px 18px;margin-bottom:32px;">
-            <span style="width:8px;height:8px;background:#1E9A80;border-radius:50%;display:inline-block;"></span>
-            <span style="font-size:13px;font-weight:600;color:#1E9A80;letter-spacing:0.3px;">Over 100 managed properties and growing</span>
-          </div>
-          <h1 data-feature="SHARED__LANDING_HERO_HEADING" style="font-size:72px;font-weight:800;line-height:1.1;letter-spacing:-2.5px;color:#1A1A1A;margin:0 0 20px;">Be Part of the Growth</h1>
-          <p style="font-size:28px;font-weight:600;color:#1A1A1A;margin:0 0 8px;letter-spacing:-0.3px;line-height:1.3;">Airbnb Joint Venture Partnerships</p>
-          <p style="font-size:28px;font-weight:600;color:#1E9A80;margin:0 0 32px;letter-spacing:-0.3px;line-height:1.3;">from Only &pound;500</p>
-          <p style="font-size:20px;color:#6B7280;max-width:620px;margin:0 auto 40px;line-height:1.7;font-weight:400;">Get a fraction of a Serviced Accommodation Airbnb deal. Earn monthly returns without managing a single guest.</p>
-          <div class="hero-buttons" data-feature="SHARED__LANDING_HERO_BUTTONS" style="justify-content:center;gap:16px;">
-            <a href="/signup" class="hero-cta" data-feature="SHARED__LANDING_HERO_CTA" style="padding:16px 48px;font-size:16px;font-weight:600;border-radius:14px;background:#1E9A80;box-shadow:0 4px 16px rgba(30,154,128,0.35);">Get Started</a>
-            <a href="/signin" class="hero-login" data-feature="SHARED__LANDING_HERO_LOGIN" style="padding:16px 48px;font-size:16px;font-weight:600;border-radius:14px;">Login</a>
+  <section class="section section_hero" data-feature="SHARED__LANDING_HERO" id="hero" style="background:#F3F3EE;padding:140px 24px 80px;position:relative;overflow:hidden">
+    <div style="max-width:1100px;margin:0 auto;display:grid;grid-template-columns:1fr 1fr;gap:48px;align-items:center" class="v21-hero-grid">
+      <div class="v21-stack">
+        <div class="v21-card v21-c1">
+          <img src="https://images.unsplash.com/photo-1502672260266-1c1ef2d93688?w=600&q=80" alt="Modern flat" loading="lazy">
+          <div class="v21-card-body">
+            <h4>Shoreditch Studio</h4>
+            <p>London E1 &middot; Sleeps 4</p>
+            <div class="v21-price">&pound;720/mo return</div>
           </div>
         </div>
-
-        <div class="hero-scroll-indicator" style="display:none;"><div class="scroll-pill"></div></div>
+        <div class="v21-card v21-c2">
+          <img src="https://images.unsplash.com/photo-1522708323590-d24dbb6b0267?w=600&q=80" alt="Cosy apartment" loading="lazy">
+          <div class="v21-card-body">
+            <h4>Deansgate Loft</h4>
+            <p>Manchester M3 &middot; Sleeps 2</p>
+            <div class="v21-price">&pound;650/mo return</div>
+          </div>
+        </div>
+        <div class="v21-card v21-c3">
+          <img src="https://images.unsplash.com/photo-1560448204-e02f11c3d0e2?w=600&q=80" alt="Stylish interior" loading="lazy">
+          <div class="v21-card-body">
+            <h4>Harbourside Suite</h4>
+            <p>Bristol BS1 &middot; Sleeps 3</p>
+            <div class="v21-price">&pound;680/mo return</div>
+          </div>
+        </div>
+      </div>
+      <div class="v21-hero-text" style="max-width:480px">
+        <div style="display:inline-flex;align-items:center;gap:8px;background:#ECFDF5;border-radius:100px;padding:6px 18px;margin-bottom:24px;">
+          <span style="width:8px;height:8px;background:#1E9A80;border-radius:50%;display:inline-block;"></span>
+          <span style="font-size:13px;font-weight:600;color:#1E9A80;letter-spacing:0.3px;">Over 100 managed properties and growing</span>
+        </div>
+        <h1 data-feature="SHARED__LANDING_HERO_HEADING" style="font-size:56px;font-weight:800;line-height:1.08;letter-spacing:-2px;color:#1A1A1A;margin:0 0 20px;">Airbnb Joint Venture Partnerships</h1>
+        <p style="font-size:22px;font-weight:600;color:#1E9A80;margin:0 0 16px;letter-spacing:-0.3px;line-height:1.3;">Pick a share from &pound;500</p>
+        <p style="font-size:17px;color:#6B7280;margin:0 0 32px;line-height:1.7;">Earning monthly returns from managed Serviced Accommodation.</p>
+        <div class="hero-buttons" data-feature="SHARED__LANDING_HERO_BUTTONS" style="display:flex;gap:16px;flex-wrap:wrap;">
+          <a href="/signup" class="hero-cta" data-feature="SHARED__LANDING_HERO_CTA" style="padding:16px 48px;font-size:16px;font-weight:600;border-radius:14px;background:#1E9A80;color:#fff;box-shadow:0 4px 16px rgba(30,154,128,0.35);text-decoration:none;display:inline-block;">Get Started</a>
+          <a href="/signin" class="hero-login" data-feature="SHARED__LANDING_HERO_LOGIN" style="padding:16px 48px;font-size:16px;font-weight:600;border-radius:14px;text-decoration:none;display:inline-block;">Login</a>
+        </div>
       </div>
     </div>
   </section>
@@ -482,22 +503,52 @@
   </div>
 
   <!-- ========== JV PARTNERS SECTION ========== -->
-  <section id="jv-partners" class="s bg-cream sr" data-feature="SHARED__LANDING_JV_PARTNERS">
-    <div class="wrap">
-      <div class="sh">
-        <div style="display:inline-flex;align-items:center;gap:8px;background:rgba(30,154,128,0.06);padding:8px 20px;border-radius:10px;margin-bottom:16px;">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#1e9a80" stroke-width="2"><path d="M16 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="8.5" cy="7" r="4"/><path d="M20 8v6M23 11h-6"/></svg>
-          <span style="font-size:13px;font-weight:600;color:#1e9a80;text-transform:uppercase;letter-spacing:0.5px;">JV Partnerships</span>
+  <!-- JV Partners — V17 Problem / Solution Split -->
+  <style>
+    .v17-split{display:grid;grid-template-columns:1fr 1fr;min-height:auto}
+    .v17-side{display:flex;align-items:center;justify-content:center;padding:80px 48px}
+    .v17-problem{background:#f5f5f5}
+    .v17-solution{background:#fff;border-left:3px solid #1E9A80}
+    .v17-list{display:flex;flex-direction:column;gap:20px;margin-top:32px}
+    .v17-item{display:flex;align-items:flex-start;gap:14px}
+    .v17-item .icon{width:32px;height:32px;border-radius:8px;display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:16px}
+    .v17-item .icon.red{background:#fef2f2;color:#ef4444}
+    .v17-item .icon.green{background:#ecfdf5;color:#1E9A80}
+    .v17-item h4{font-size:15px;font-weight:700;color:#1A1A1A;margin-bottom:2px}
+    .v17-item p{font-size:13px;color:#6B7280;line-height:1.5}
+    @media(max-width:768px){
+      .v17-split{grid-template-columns:1fr}
+      .v17-side{padding:48px 24px}
+      .v17-solution{border-left:none;border-top:3px solid #1E9A80}
+    }
+  </style>
+  <section id="jv-partners" class="s sr" data-feature="SHARED__LANDING_JV_PARTNERS" style="padding:0;overflow:hidden">
+    <div class="v17-split">
+      <div class="v17-side v17-problem">
+        <div style="max-width:400px">
+          <p style="font-size:12px;font-weight:700;color:#9ca3af;text-transform:uppercase;letter-spacing:2px;margin-bottom:12px">Going Solo</p>
+          <h2 style="font-size:40px;font-weight:800;line-height:1.1;letter-spacing:-1px;color:#6b7280">The Airbnb SA Problem</h2>
+          <div class="v17-list">
+            <div class="v17-item"><div class="icon red">&#10005;</div><div><h4>&pound;30k&ndash;&pound;50k Upfront</h4><p>Deposit, furnishing, compliance and setup costs.</p></div></div>
+            <div class="v17-item"><div class="icon red">&#10005;</div><div><h4>Guest Management 24/7</h4><p>Check-ins, complaints, emergencies at all hours.</p></div></div>
+            <div class="v17-item"><div class="icon red">&#10005;</div><div><h4>All Risk, No Support</h4><p>Void periods, maintenance and regulation changes alone.</p></div></div>
+            <div class="v17-item"><div class="icon red">&#10005;</div><div><h4>Finding Deals Is Hard</h4><p>No pipeline. No marketplace. Just you and Rightmove.</p></div></div>
+          </div>
         </div>
-        <h2 style="font-size:40px;">Go together, not alone</h2>
-        <p>Join a fast-growing Serviced Accommodation company by owning a fraction of an Airbnb deal. Fully managed. You earn, they operate.</p>
       </div>
-      <div class="g3">
-        <div class="card sr-child" style="border-top:3px solid #1e9a80;"><h3>Own a fraction from &pound;500</h3><p>Pick a Serviced Accommodation Airbnb property on the marketplace and choose how many shares you want. No experience needed.</p></div>
-        <div class="card sr-child" style="border-top:3px solid #1e9a80;"><h3>Fully managed for you</h3><p>An experienced operator handles guests, cleaning, maintenance and bookings. You sit back and earn.</p></div>
-        <div class="card sr-child" style="border-top:3px solid #1e9a80;"><h3>Vote on key decisions</h3><p>Every partner gets a say. Vote on furniture upgrades, pricing changes, management decisions and more from your dashboard.</p></div>
+      <div class="v17-side v17-solution">
+        <div style="max-width:400px">
+          <p style="font-size:12px;font-weight:700;color:#1E9A80;text-transform:uppercase;letter-spacing:2px;margin-bottom:12px">With nfstay</p>
+          <h2 style="font-size:40px;font-weight:800;line-height:1.1;letter-spacing:-1px;color:#1A1A1A">The JV Partnership Solution</h2>
+          <div class="v17-list">
+            <div class="v17-item"><div class="icon green">&#10003;</div><div><h4>Start from &pound;500</h4><p>Fractional partnership. No mortgage or large deposit needed.</p></div></div>
+            <div class="v17-item"><div class="icon green">&#10003;</div><div><h4>Fully Managed</h4><p>Professional operators handle every guest and every booking.</p></div></div>
+            <div class="v17-item"><div class="icon green">&#10003;</div><div><h4>Shared Risk, Shared Reward</h4><p>JV structure means costs and returns are distributed fairly.</p></div></div>
+            <div class="v17-item"><div class="icon green">&#10003;</div><div><h4>Curated Marketplace</h4><p>Browse verified SA deals. Every property vetted before listing.</p></div></div>
+          </div>
+          <a href="/signup" class="btn btn-green" style="margin-top:32px;padding:14px 40px;font-size:15px;border-radius:14px;display:inline-block;">Get Started</a>
+        </div>
       </div>
-      <div style="text-align:center;margin-top:32px;"><a href="/signup" class="btn btn-green" style="padding:14px 40px;font-size:15px;border-radius:14px;">Get Started</a></div>
     </div>
   </section>
 
