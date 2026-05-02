@@ -62,7 +62,7 @@ export default function DashboardSidebar({ collapsed: controlledCollapsed, onCol
     }
   }, []);
 
-  const [investOpen, setInvestOpen] = useState(() => location.pathname.startsWith('/dashboard/invest'));
+  const [investOpen, setInvestOpen] = useState(true);
   const isInvestActive = location.pathname.startsWith('/dashboard/invest');
 
   const handleLogout = async () => {
