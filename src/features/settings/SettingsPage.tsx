@@ -15,7 +15,8 @@ import PaymentSheet from '@/features/payment/PaymentSheet';
 const settingsTabDefs = [
   { id: 'profile', labelKey: 'settings.profile', icon: User },
   { id: 'security', labelKey: 'settings.security', icon: Shield },
-  { id: 'membership', labelKey: 'settings.membership', icon: CreditCard },
+  // Membership tab hidden — JV pivot 2026-05-02 (backup/pre-homepage-pivot-2026-05-02)
+  // { id: 'membership', labelKey: 'settings.membership', icon: CreditCard },
   { id: 'notifications', labelKey: 'settings.notifications', icon: Bell },
   { id: 'payouts', labelKey: 'settings.payoutSettings', icon: Wallet },
   { id: 'signout', labelKey: 'nav.signOut', icon: LogOut },

@@ -16,12 +16,10 @@ import { useTranslation } from 'react-i18next';
 function useNavItems() {
   const { t } = useTranslation();
   return [
-    { to: '/dashboard/deals', icon: LayoutGrid, label: t('nav.deals') },
-    { to: '/dashboard/crm', icon: Kanban, label: t('nav.crm') },
-    { to: '/dashboard/list-a-deal', icon: PlusCircle, label: t('nav.listADeal') },
+    // Deals, CRM, List A Deal, University hidden — JV pivot 2026-05-02
+    // backup branch: backup/pre-homepage-pivot-2026-05-02
     { to: '/dashboard/booking-site', icon: Globe, label: t('nav.bookingSite'), pro: true },
     { to: '/dashboard/affiliates', icon: Users, label: t('nav.becomeAnAgent') },
-    { to: '/dashboard/university', icon: GraduationCap, label: t('nav.university') },
   ] as Array<{ to: string; icon: typeof LayoutGrid; label: string; pro?: boolean }>;
 }
 
@@ -69,7 +67,7 @@ export default function DashboardTopNav() {
 
   const isActive = (to: string) =>
     location.pathname === to ||
-    (to === '/dashboard/deals' && (location.pathname === '/dashboard' || location.pathname === '/dashboard/deals'));
+    (to === '/dashboard/invest/marketplace' && location.pathname === '/dashboard');
 
   return (
     <>
@@ -77,7 +75,7 @@ export default function DashboardTopNav() {
         {/* Logo — extra spacing before nav */}
         <Link
           data-feature="NAV_LAYOUT__TOP_LOGO"
-          to="/dashboard/deals"
+          to="/dashboard/invest/marketplace"
           className="text-[17px] font-extrabold text-foreground tracking-tight hover:opacity-70 transition-opacity mr-14 flex-shrink-0"
         >
           nfstay
@@ -129,13 +127,7 @@ export default function DashboardTopNav() {
               {t('nav.admin')}
             </NavLink>
           )}
-          <button
-            onClick={() => navigate('/dashboard/list-a-deal')}
-            className="bg-gradient-to-r from-emerald-500 to-teal-600 text-white px-4 py-[7px] rounded-lg text-[13px] font-semibold hover:from-emerald-600 hover:to-teal-700 shadow-md transition-all flex items-center gap-1.5"
-          >
-            <PlusCircle className="w-[15px] h-[15px]" strokeWidth={1.8} />
-            {t('nav.submitADeal')}
-          </button>
+          {/* Submit A Deal button hidden — JV pivot 2026-05-02 */}
           <LanguageSwitcher />
           <FavouritesDropdown />
           <NotificationBell />
@@ -180,13 +172,7 @@ export default function DashboardTopNav() {
               </NavLink>
             ))}
             <div className="border-t border-border mt-2 pt-2 space-y-0.5">
-              <button
-                onClick={() => { setMobileOpen(false); navigate('/dashboard/list-a-deal'); }}
-                className="flex items-center gap-2.5 px-3 py-2.5 rounded-lg text-sm font-semibold text-white bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-600 hover:to-teal-700 w-full shadow-md"
-              >
-                <PlusCircle className="w-[18px] h-[18px]" strokeWidth={1.75} />
-                <span>{t('nav.submitADeal')}</span>
-              </button>
+              {/* Submit A Deal button hidden — JV pivot 2026-05-02 */}
               {isAdmin && (
                 <NavLink to="/admin" onClick={() => setMobileOpen(false)} className="flex items-center gap-2.5 px-3 py-2.5 rounded-lg text-sm font-medium text-muted-foreground hover:bg-muted">
                   <Settings className="w-[18px] h-[18px]" strokeWidth={1.75} />

@@ -10,12 +10,10 @@ import { supabase } from '@/integrations/supabase/client';
 function useNavItems() {
   const { t } = useTranslation();
   return [
-    { to: '/dashboard/deals', icon: LayoutGrid, label: t('nav.deals') },
-    { to: '/dashboard/crm', icon: Kanban, label: t('nav.crm') },
-    { to: '/dashboard/list-a-deal', icon: PlusCircle, label: t('nav.listADeal') },
+    // Deals, CRM, List A Deal, University hidden — JV pivot 2026-05-02
+    // backup branch: backup/pre-homepage-pivot-2026-05-02
     { to: '/dashboard/booking-site', icon: Globe, label: t('nav.bookingSite'), highlight: true },
     { to: '/dashboard/affiliates', icon: Users, label: t('nav.becomeAnAgent') },
-    { to: '/dashboard/university', icon: GraduationCap, label: t('nav.university') },
   ] as Array<{ to: string; icon: typeof LayoutGrid; label: string; highlight?: boolean }>;
 }
 
@@ -86,7 +84,7 @@ export default function DashboardSidebar({ collapsed: controlledCollapsed, onCol
 
         <nav className="flex-1 py-2 px-2 space-y-0.5 overflow-y-auto">
           {navItems.map(item => {
-            const isActive = location.pathname === item.to || (item.to === '/dashboard/deals' && location.pathname === '/dashboard');
+            const isActive = location.pathname === item.to || (item.to === '/dashboard/invest/marketplace' && location.pathname === '/dashboard');
 
             // Paid users → open operator dashboard in new tab, auto-logged in via SSO
             if (item.to === '/dashboard/booking-site' && isPaidTier(tier)) {
