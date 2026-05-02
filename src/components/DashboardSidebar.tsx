@@ -12,8 +12,8 @@ function useNavItems() {
   return [
     // Deals, CRM, List A Deal, University hidden — JV pivot 2026-05-02
     // backup branch: backup/pre-homepage-pivot-2026-05-02
-    { to: '/dashboard/booking-site', icon: Globe, label: t('nav.bookingSite'), highlight: true },
     { to: '/dashboard/affiliates', icon: Users, label: t('nav.becomeAnAgent') },
+    { to: '/dashboard/booking-site', icon: Globe, label: t('nav.bookingSite'), highlight: true },
   ] as Array<{ to: string; icon: typeof LayoutGrid; label: string; highlight?: boolean }>;
 }
 
@@ -83,6 +83,50 @@ export default function DashboardSidebar({ collapsed: controlledCollapsed, onCol
         </div>
 
         <nav className="flex-1 py-2 px-2 space-y-0.5 overflow-y-auto">
+          {/* JV Partners expandable group — first in nav */}
+          <div>
+            {collapsed ? (
+              <button
+                data-feature="NAV_LAYOUT__SIDEBAR_INVEST"
+                onClick={() => { setCollapsed(false); setInvestOpen(true); }}
+                className={`group/nav relative flex items-center justify-center h-10 rounded-lg transition-all duration-200 px-2 w-full ${isInvestActive ? 'text-primary font-semibold' : 'text-muted-foreground font-medium hover:text-foreground hover:bg-black/[0.04] dark:hover:bg-white/[0.06]'}`}
+              >
+                <TrendingUp className="w-[15px] h-[15px]" strokeWidth={1.8} />
+                <div className="absolute left-full ml-3 px-3 py-2 bg-gray-900 text-white text-[11px] font-medium rounded-lg whitespace-nowrap opacity-0 invisible group-hover/nav:opacity-100 group-hover/nav:visible transition-all duration-200 z-[200] shadow-xl pointer-events-none scale-95 group-hover/nav:scale-100">{t('nav.jvPartners')}<div className="absolute top-1/2 -left-1 -translate-y-1/2 w-2 h-2 bg-gray-900 rotate-45" /></div>
+              </button>
+            ) : (
+              <>
+                <button
+                  data-feature="NAV_LAYOUT__SIDEBAR_INVEST"
+                  onClick={() => { setInvestOpen(!investOpen); navigate('/dashboard/invest/marketplace'); }}
+                  className={`flex items-center gap-2 h-10 w-full rounded-lg transition-all duration-200 px-3 ${isInvestActive ? 'text-primary font-semibold' : 'text-muted-foreground font-medium hover:text-foreground hover:bg-black/[0.04] dark:hover:bg-white/[0.06]'}`}
+                >
+                  <TrendingUp className="w-[15px] h-[15px] flex-shrink-0" strokeWidth={1.8} />
+                  <span className="text-[13px] leading-tight flex-1 text-left">{t('nav.jvPartners')}</span>
+                  <ChevronDown className={`w-3.5 h-3.5 transition-transform duration-200 ${investOpen ? 'rotate-180' : ''}`} strokeWidth={2} />
+                </button>
+                <div className={`overflow-hidden transition-all duration-200 ease-out ${investOpen ? 'max-h-48 opacity-100' : 'max-h-0 opacity-0'}`}>
+                  <div className="pl-4 space-y-0.5 py-0.5">
+                    {investSubItems.map(item => {
+                      const isActive = location.pathname === item.to;
+                      return (
+                        <NavLink
+                          key={item.to}
+                          to={item.to}
+                          data-feature="NAV_LAYOUT__SIDEBAR_INVEST"
+                          className={`flex items-center gap-2 h-9 rounded-lg transition-all duration-200 px-3 ${isActive ? 'bg-accent-light text-primary font-semibold shadow-[inset_3px_0_0] shadow-primary' : 'text-muted-foreground font-medium hover:text-foreground hover:bg-black/[0.04] dark:hover:bg-white/[0.06]'}`}
+                        >
+                          <item.icon className="w-[14px] h-[14px]" strokeWidth={1.8} />
+                          <span className="text-[12px] leading-tight">{item.label}</span>
+                        </NavLink>
+                      );
+                    })}
+                  </div>
+                </div>
+              </>
+            )}
+          </div>
+
           {navItems.map(item => {
             const isActive = location.pathname === item.to || (item.to === '/dashboard/invest/marketplace' && location.pathname === '/dashboard');
 
@@ -166,49 +210,6 @@ export default function DashboardSidebar({ collapsed: controlledCollapsed, onCol
             );
           })}
 
-          {/* JV Partners expandable group */}
-          <div className="mt-1 pt-1 border-t border-border/20">
-            {collapsed ? (
-              <button
-                data-feature="NAV_LAYOUT__SIDEBAR_INVEST"
-                onClick={() => { setCollapsed(false); setInvestOpen(true); }}
-                className={`group/nav relative flex items-center justify-center h-10 rounded-lg transition-all duration-200 px-2 w-full ${isInvestActive ? 'text-primary font-semibold' : 'text-muted-foreground font-medium hover:text-foreground hover:bg-black/[0.04] dark:hover:bg-white/[0.06]'}`}
-              >
-                <TrendingUp className="w-[15px] h-[15px]" strokeWidth={1.8} />
-                <div className="absolute left-full ml-3 px-3 py-2 bg-gray-900 text-white text-[11px] font-medium rounded-lg whitespace-nowrap opacity-0 invisible group-hover/nav:opacity-100 group-hover/nav:visible transition-all duration-200 z-[200] shadow-xl pointer-events-none scale-95 group-hover/nav:scale-100">{t('nav.jvPartners')}<div className="absolute top-1/2 -left-1 -translate-y-1/2 w-2 h-2 bg-gray-900 rotate-45" /></div>
-              </button>
-            ) : (
-              <>
-                <button
-                  data-feature="NAV_LAYOUT__SIDEBAR_INVEST"
-                  onClick={() => { setInvestOpen(!investOpen); navigate('/dashboard/invest/marketplace'); }}
-                  className={`flex items-center gap-2 h-10 w-full rounded-lg transition-all duration-200 px-3 ${isInvestActive ? 'text-primary font-semibold' : 'text-muted-foreground font-medium hover:text-foreground hover:bg-black/[0.04] dark:hover:bg-white/[0.06]'}`}
-                >
-                  <TrendingUp className="w-[15px] h-[15px] flex-shrink-0" strokeWidth={1.8} />
-                  <span className="text-[13px] leading-tight flex-1 text-left">{t('nav.jvPartners')}</span>
-                  <ChevronDown className={`w-3.5 h-3.5 transition-transform duration-200 ${investOpen ? 'rotate-180' : ''}`} strokeWidth={2} />
-                </button>
-                <div className={`overflow-hidden transition-all duration-200 ease-out ${investOpen ? 'max-h-48 opacity-100' : 'max-h-0 opacity-0'}`}>
-                  <div className="pl-4 space-y-0.5 py-0.5">
-                    {investSubItems.map(item => {
-                      const isActive = location.pathname === item.to;
-                      return (
-                        <NavLink
-                          key={item.to}
-                          to={item.to}
-                          data-feature="NAV_LAYOUT__SIDEBAR_INVEST"
-                          className={`flex items-center gap-2 h-9 rounded-lg transition-all duration-200 px-3 ${isActive ? 'bg-accent-light text-primary font-semibold shadow-[inset_3px_0_0] shadow-primary' : 'text-muted-foreground font-medium hover:text-foreground hover:bg-black/[0.04] dark:hover:bg-white/[0.06]'}`}
-                        >
-                          <item.icon className="w-[14px] h-[14px]" strokeWidth={1.8} />
-                          <span className="text-[12px] leading-tight">{item.label}</span>
-                        </NavLink>
-                      );
-                    })}
-                  </div>
-                </div>
-              </>
-            )}
-          </div>
         </nav>
 
         <div className="p-2 border-t border-border/30 space-y-0.5">

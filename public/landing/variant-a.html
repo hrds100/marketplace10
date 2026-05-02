@@ -128,6 +128,19 @@
     </nav>
   </div>
 
+  <!-- Hero responsive overrides -->
+  <style>
+    @media (max-width: 768px) {
+      #hero h1 { font-size: 40px !important; letter-spacing: -1.5px !important; }
+      #hero .hero-text-block { padding: 80px 0 60px !important; }
+      #hero .hero-buttons { flex-direction: column !important; }
+      #hero .hero-buttons a { width: 100% !important; text-align: center !important; }
+    }
+    @media (min-width: 769px) and (max-width: 1024px) {
+      #hero h1 { font-size: 56px !important; }
+    }
+  </style>
+
   <!-- ========== HERO SECTION (nfstay) ========== -->
   <section class="section section_hero" data-feature="SHARED__LANDING_HERO" id="hero">
     <div class="hero-bg-clouds">
@@ -137,13 +150,17 @@
 
     <div class="padding-global">
       <div class="container-large">
-        <!-- Hero heading -->
-        <div class="hero-text-block">
-          <h1 class="hero-heading" data-feature="SHARED__LANDING_HERO_HEADING"><span>Airbnb JV Partnerships</span><br><span class="italic-accent">Active deals from &pound;500</span></h1>
-          <p style="font-size:17px;color:#6B7280;max-width:540px;margin:16px auto 0;line-height:1.6;">Partner in live Airbnb properties managed by experienced UK operators. Earn monthly returns without managing a single guest.</p>
-          <div class="hero-buttons" data-feature="SHARED__LANDING_HERO_BUTTONS">
-            <a href="/signup" class="hero-cta" data-feature="SHARED__LANDING_HERO_CTA">Get Started</a>
-            <a href="/signin" class="hero-login" data-feature="SHARED__LANDING_HERO_LOGIN">Login</a>
+        <!-- Hero heading — centred, bold, editorial -->
+        <div class="hero-text-block" style="text-align:center;padding:120px 0 80px;max-width:900px;margin:0 auto;">
+          <div style="display:inline-flex;align-items:center;gap:8px;background:#ECFDF5;border-radius:100px;padding:6px 18px;margin-bottom:32px;">
+            <span style="width:8px;height:8px;background:#1E9A80;border-radius:50%;display:inline-block;"></span>
+            <span style="font-size:13px;font-weight:600;color:#1E9A80;letter-spacing:0.3px;">100+ UK operators live now</span>
+          </div>
+          <h1 data-feature="SHARED__LANDING_HERO_HEADING" style="font-size:72px;font-weight:800;line-height:1.05;letter-spacing:-2.5px;color:#1A1A1A;margin:0 0 24px;">Airbnb Partnerships<br><span style="color:#1E9A80;">from &pound;500</span></h1>
+          <p style="font-size:20px;color:#6B7280;max-width:560px;margin:0 auto 40px;line-height:1.7;font-weight:400;">Join live Airbnb properties managed by experienced UK operators. Earn monthly returns without managing a single guest.</p>
+          <div class="hero-buttons" data-feature="SHARED__LANDING_HERO_BUTTONS" style="justify-content:center;gap:16px;">
+            <a href="/signup" class="hero-cta" data-feature="SHARED__LANDING_HERO_CTA" style="padding:16px 48px;font-size:16px;font-weight:600;border-radius:14px;background:#1E9A80;box-shadow:0 4px 16px rgba(30,154,128,0.35);">Get Started</a>
+            <a href="/signin" class="hero-login" data-feature="SHARED__LANDING_HERO_LOGIN" style="padding:16px 48px;font-size:16px;font-weight:600;border-radius:14px;">Login</a>
           </div>
         </div>
 
@@ -372,7 +389,7 @@
           </div>
         </div>
 
-        <div class="hero-scroll-indicator"><div class="scroll-pill"></div></div>
+        <div class="hero-scroll-indicator" style="display:none;"><div class="scroll-pill"></div></div>
       </div>
     </div>
   </section>

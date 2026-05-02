@@ -18,8 +18,8 @@ function useNavItems() {
   return [
     // Deals, CRM, List A Deal, University hidden — JV pivot 2026-05-02
     // backup branch: backup/pre-homepage-pivot-2026-05-02
-    { to: '/dashboard/booking-site', icon: Globe, label: t('nav.bookingSite'), pro: true },
     { to: '/dashboard/affiliates', icon: Users, label: t('nav.becomeAnAgent') },
+    { to: '/dashboard/booking-site', icon: Globe, label: t('nav.bookingSite'), pro: true },
   ] as Array<{ to: string; icon: typeof LayoutGrid; label: string; pro?: boolean }>;
 }
 
@@ -83,6 +83,9 @@ export default function DashboardTopNav() {
 
         {/* Desktop nav — green active state matching sidebar */}
         <nav className="hidden md:flex items-center gap-0.5 flex-1 min-w-0">
+          {/* JV Partners dropdown — first in nav */}
+          <JVPartnersDropdown isActive={isActive} />
+
           {navItems.map(item => (
             <NavLink
               key={item.to}
@@ -112,9 +115,6 @@ export default function DashboardTopNav() {
               )}
             </NavLink>
           ))}
-
-          {/* JV Partners dropdown */}
-          <JVPartnersDropdown isActive={isActive} />
         </nav>
 
         {/* Right side — desktop */}
