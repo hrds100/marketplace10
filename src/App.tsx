@@ -204,7 +204,7 @@ const App = () => (
           <Route path="/lead/:token/nda" element={<LeadNDAPage />} />
           <Route path="/dashboard" element={<DashboardLayout />}>
             <Route index element={<Navigate to="invest/marketplace" replace />} />
-            <Route path="deals" element={<DealsPage />} />
+            <Route path="deals" element={<Navigate to="/dashboard/invest/marketplace" replace />} />
             {/* Favourites page removed — now a dropdown in top bar */}
             <Route path="crm" element={<CRMPage />} />
             <Route path="university" element={<UniversityPage />} />
