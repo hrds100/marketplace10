@@ -3,19 +3,19 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>nfstay - Landlord-Approved Airbnb Properties</title>
-  <meta name="description" content="Find, negotiate and grow your Airbnb portfolio. Verified rent-to-rent deals across the UK." />
+  <title>nfstay - Airbnb JV Partnerships from &pound;500</title>
+  <meta name="description" content="Active Airbnb partnerships from &pound;500. Booking sites, agent programme &amp; JV deals across the UK." />
   <meta property="og:type" content="website" />
-  <meta property="og:url" content="https://nfstay.com/" />
-  <meta property="og:title" content="Landlord-Approved Airbnb Properties" />
-  <meta property="og:description" content="Find, negotiate and grow your Airbnb portfolio." />
+  <meta property="og:url" content="https://hub.nfstay.com/" />
+  <meta property="og:title" content="Airbnb JV Partnerships from &pound;500" />
+  <meta property="og:description" content="Active Airbnb partnerships from &pound;500. Booking sites, agent programme &amp; JV deals." />
   <meta property="og:image" content="https://nfstay.com/og-preview.png" />
   <meta property="og:image:width" content="1200" />
   <meta property="og:image:height" content="630" />
   <meta name="twitter:card" content="summary_large_image" />
   <meta name="twitter:site" content="@nfstay" />
-  <meta name="twitter:title" content="Landlord-Approved Airbnb Properties" />
-  <meta name="twitter:description" content="Find, negotiate and grow your Airbnb portfolio." />
+  <meta name="twitter:title" content="Airbnb JV Partnerships from &pound;500" />
+  <meta name="twitter:description" content="Active Airbnb partnerships from &pound;500. Booking sites, agent programme &amp; JV deals." />
   <meta name="twitter:image" content="https://nfstay.com/og-preview.png" />
   <style>
     body { margin: 0; background: #F3F3EE; }
@@ -30,179 +30,9 @@
   <div class="ab-loading" id="ab-loader">Loading…</div>
 
   <script>
-    (function () {
-      // --- A/B Router ---
-      // Fetches config from Supabase edge function with 1s timeout.
-      // Falls back to localStorage (safety net), then hardcoded defaults.
-      // Assigns visitor to a variant via cookie, then loads the variant HTML.
-
-      var COOKIE_NAME = 'nfs_ab';
-      var COOKIE_DAYS = 30;
-      var CONFIG_KEY = 'nfs_ab_config';
-      var CONFIG_URL = 'https://asazddtvjvmckouxcmmo.supabase.co/functions/v1/growth-config';
-      var FETCH_TIMEOUT_MS = 2500;
-
-      // Hardcoded defaults — last resort
-      var defaults = {
-        enabled: true,
-        variants: ['a', 'b'],
-        weights: [50, 50]
-      };
-
-      function getCachedConfig() {
-        try {
-          var raw = localStorage.getItem(CONFIG_KEY);
-          if (raw) {
-            var parsed = JSON.parse(raw);
-            if (parsed && typeof parsed.enabled === 'boolean' && Array.isArray(parsed.weights)) {
-              return {
-                enabled: parsed.enabled,
-                variants: parsed.variants || ['a', 'b'],
-                weights: parsed.weights
-              };
-            }
-          }
-        } catch (e) {}
-        return null;
-      }
-
-      function cacheConfig(cfg) {
-        try { localStorage.setItem(CONFIG_KEY, JSON.stringify(cfg)); } catch (e) {}
-      }
-
-      function fetchConfigWithTimeout() {
-        return new Promise(function (resolve) {
-          var settled = false;
-          var timer = setTimeout(function () {
-            if (settled) return;
-            settled = true;
-            resolve(null);
-          }, FETCH_TIMEOUT_MS);
-
-          try {
-            var ctrl = typeof AbortController !== 'undefined' ? new AbortController() : null;
-            var opts = ctrl ? { signal: ctrl.signal } : {};
-            // Arm abort via the same timer
-            if (ctrl) {
-              setTimeout(function () { try { ctrl.abort(); } catch (e) {} }, FETCH_TIMEOUT_MS);
-            }
-            fetch(CONFIG_URL, opts)
-              .then(function (res) {
-                if (!res.ok) throw new Error('bad status');
-                return res.json();
-              })
-              .then(function (data) {
-                if (settled) return;
-                settled = true;
-                clearTimeout(timer);
-                if (
-                  data &&
-                  typeof data.ab_enabled === 'boolean' &&
-                  Array.isArray(data.ab_weights) &&
-                  data.ab_weights.length === 2
-                ) {
-                  resolve({
-                    enabled: data.ab_enabled,
-                    variants: ['a', 'b'],
-                    weights: data.ab_weights
-                  });
-                } else {
-                  resolve(null);
-                }
-              })
-              .catch(function () {
-                if (settled) return;
-                settled = true;
-                clearTimeout(timer);
-                resolve(null);
-              });
-          } catch (e) {
-            if (settled) return;
-            settled = true;
-            clearTimeout(timer);
-            resolve(null);
-          }
-        });
-      }
-
-      function getCookie(name) {
-        var match = document.cookie.match(new RegExp('(?:^|; )' + name + '=([^;]*)'));
-        return match ? decodeURIComponent(match[1]) : null;
-      }
-
-      function setCookie(name, value, days) {
-        var d = new Date();
-        d.setTime(d.getTime() + days * 86400000);
-        document.cookie = name + '=' + encodeURIComponent(value) +
-          ';expires=' + d.toUTCString() + ';path=/;SameSite=Lax';
-      }
-
-      function getVisitorId() {
-        var vid = localStorage.getItem('nfs_visitor_id');
-        if (!vid) {
-          vid = 'v_' + Math.random().toString(36).substr(2, 12) + Date.now().toString(36);
-          localStorage.setItem('nfs_visitor_id', vid);
-        }
-        return vid;
-      }
-
-      function pickVariant(config) {
-        var r = Math.random() * 100;
-        var cumulative = 0;
-        for (var i = 0; i < config.variants.length; i++) {
-          cumulative += config.weights[i];
-          if (r < cumulative) return config.variants[i];
-        }
-        return config.variants[0];
-      }
-
-      function loadVariant(config) {
-        // Store visitor ID for tracking (side effect)
-        getVisitorId();
-
-        // If A/B testing disabled, always serve variant A
-        if (!config.enabled) {
-          window.location.replace('/landing/variant-a.html');
-          return;
-        }
-
-        // Force assignment every load when weights are locked at 0/100 or 100/0
-        var forcedA = config.weights[0] >= 100;
-        var forcedB = config.weights[1] >= 100;
-
-        var variant = getCookie(COOKIE_NAME);
-        if (forcedA) variant = 'a';
-        else if (forcedB) variant = 'b';
-        else if (!variant || config.variants.indexOf(variant) === -1) {
-          variant = pickVariant(config);
-        }
-        setCookie(COOKIE_NAME, variant, COOKIE_DAYS);
-
-        var variantUrl = '/landing/variant-' + variant + '.html';
-        fetch(variantUrl)
-          .then(function (res) { return res.text(); })
-          .then(function (html) {
-            document.open();
-            document.write(html);
-            document.close();
-          })
-          .catch(function () {
-            window.location.replace('/landing/variant-a.html');
-          });
-      }
-
-      // Try remote config, fall back through cache → defaults
-      fetchConfigWithTimeout().then(function (remote) {
-        var config;
-        if (remote) {
-          config = remote;
-          cacheConfig(remote);
-        } else {
-          config = getCachedConfig() || defaults;
-        }
-        loadVariant(config);
-      });
-    })();
+    // Single homepage — no A/B testing. Always serve variant-a.
+    // Backup branch: backup/pre-homepage-pivot-2026-05-02
+    window.location.replace('/landing/variant-a.html');
   </script>
 </body>
 </html>

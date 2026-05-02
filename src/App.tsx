@@ -203,7 +203,7 @@ const App = () => (
           <Route path="/lead/:token" element={<LeadDetailsPage />} />
           <Route path="/lead/:token/nda" element={<LeadNDAPage />} />
           <Route path="/dashboard" element={<DashboardLayout />}>
-            <Route index element={<Navigate to="deals" replace />} />
+            <Route index element={<Navigate to="invest/marketplace" replace />} />
             <Route path="deals" element={<DealsPage />} />
             {/* Favourites page removed — now a dropdown in top bar */}
             <Route path="crm" element={<CRMPage />} />
