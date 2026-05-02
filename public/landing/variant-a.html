@@ -166,231 +166,6 @@
           </div>
         </div>
 
-        <!-- Demo Component (hidden — JV pivot, backup/pre-homepage-pivot-2026-05-02) -->
-        <div class="hero-demo-component" data-feature="SHARED__LANDING_HERO_DEMO" id="heroDemoComponent" style="display:none !important;">
-
-          <!-- Animated Cursor (hidden, shown during story) -->
-          <div class="animated-cursor" id="animatedCursor" style="display:none;">
-            <svg width="24" height="24" viewBox="0 0 24 24" fill="none"><path d="M5.5 3.21V20.8c0 .45.54.67.85.35l4.86-4.86h8.14a.5.5 0 00.35-.85L5.85 2.86a.5.5 0 00-.35.35z" fill="#0a0a0a" stroke="white" stroke-width="1"/></svg>
-          </div>
-
-          <!-- ===== LEFT PANEL ===== -->
-          <div class="chat-panel" data-feature="SHARED__LANDING_DEMO_CHAT">
-            <!-- Tabs -->
-            <div class="chat-tabs">
-              <button class="chat-tab active" data-tab="deals">
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><path d="M9 22V12h6v10"/></svg>
-                Deals
-              </button>
-              <button class="chat-tab" data-tab="crm">
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>
-                CRM Pipeline
-              </button>
-              <button class="chat-tab" data-tab="inbox">
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>
-                Unified Inbox
-              </button>
-            </div>
-
-            <!-- Progress Bar -->
-            <div class="chat-progress-bar"><div class="chat-progress-fill" id="chatProgressFill"></div></div>
-
-            <!-- Earnings Banner (idle state) -->
-            <div class="chat-earnings-banner" id="chatEarningsBanner">
-              <div class="earnings-thumb"><img src="https://images.unsplash.com/photo-1522708323590-d24dbb6b0267?w=200&h=200&fit=crop" alt="" style="width:100%;height:100%;object-fit:cover;display:block;"></div>
-              <h2 class="earnings-headline">You could earn <span class="earnings-amount">£1,200</span><br>hosting this property on Airbnb</h2>
-              <p class="earnings-sub">Message the landlord and ask what matters first.</p>
-            </div>
-
-            <!-- Chat Messages (story state) -->
-            <div class="chat-messages-area" id="chatMessagesArea"></div>
-
-            <!-- Input Area -->
-            <div class="chat-input-area">
-              <div class="chat-input-glow"></div>
-              <div class="chat-input-container">
-                <span class="chat-typewriter" id="chatTypewriter"></span>
-                <span class="typewriter-cursor" id="typewriterCursor">|</span>
-              </div>
-              <div class="click-here-tooltip" id="clickHereTooltip" style="display:none;">
-                <span>Click here</span>
-                <div class="tooltip-arrow"></div>
-                <div class="ripple-ring r1"></div>
-                <div class="ripple-ring r2"></div>
-                <div class="ripple-ring r3"></div>
-              </div>
-              <div class="chat-input-actions">
-                <button class="chat-mic-btn" aria-label="Voice"><div class="mic-dot"></div></button>
-                <button class="chat-send-btn" id="chatSendBtn" aria-label="Send" style="position:relative;overflow:visible;">
-                  <div class="send-pulse-ring"></div>
-                  <div class="send-pulse-ring delay"></div>
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="position:relative;z-index:1;"><path d="M12 19V5M5 12l7-7 7 7"/></svg>
-                </button>
-              </div>
-            </div>
-          </div>
-
-          <!-- ===== RIGHT PANEL ===== -->
-          <div class="preview-panel" data-feature="SHARED__LANDING_DEMO_PREVIEW">
-
-            <!-- 1. DEALS GRID -->
-            <div class="preview-content active" id="previewDeals">
-              <div class="nfs-mock-page">
-                <div class="nfs-mock-search">
-                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#9ca3af" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>
-                  <span>Search properties across the UK...</span>
-                  <span class="nfs-mock-filter"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 6h16M8 12h8M6 18h12"/></svg> Filters</span>
-                </div>
-                <div class="nfs-cards-grid">
-                  <div class="nfs-pcard" id="nfsCard1">
-                    <div class="nfs-pcard-img" style="background:url('https://images.unsplash.com/photo-1522708323590-d24dbb6b0267?w=400&h=250&fit=crop') center/cover"><span class="nfs-pcard-heart">♡</span></div>
-                    <div class="nfs-pcard-body">
-                      <div class="nfs-pcard-name"><span class="nfs-status-dot green"></span>2-Bed Flat, Ancoats</div>
-                      <div class="nfs-pcard-loc">Manchester · M4 6BF</div>
-                      <div class="nfs-pcard-row"><span class="nfs-pcard-label">Monthly rent</span><span class="nfs-pcard-val">£850</span></div>
-                      <div class="nfs-pcard-row"><span class="nfs-pcard-label">Est. profit</span><span class="nfs-pcard-val profit">£1,200</span></div>
-                      <div class="nfs-pcard-row"><span class="nfs-pcard-label">Type</span><span class="nfs-pcard-val">2-bed flat</span></div>
-                      <div class="nfs-pcard-btns"><a class="nfs-pcard-btn primary">Visit Listing</a><button class="nfs-pcard-btn outline" id="inquireBtn1">Inquire Now</button></div>
-                      <div class="nfs-pcard-footer"><span>Added 2 days ago</span><span><span class="nfs-status-dot green"></span> Live</span></div>
-                    </div>
-                  </div>
-                  <div class="nfs-pcard">
-                    <div class="nfs-pcard-img" style="background:url('https://images.unsplash.com/photo-1502672260266-1c1ef2d93688?w=400&h=250&fit=crop') center/cover"><span class="nfs-pcard-heart">♡</span></div>
-                    <div class="nfs-pcard-body">
-                      <div class="nfs-pcard-name"><span class="nfs-status-dot green"></span>3-Bed House, Headingley</div>
-                      <div class="nfs-pcard-loc">Leeds · LS6 3BN</div>
-                      <div class="nfs-pcard-row"><span class="nfs-pcard-label">Monthly rent</span><span class="nfs-pcard-val">£950</span></div>
-                      <div class="nfs-pcard-row"><span class="nfs-pcard-label">Est. profit</span><span class="nfs-pcard-val profit">£1,400</span></div>
-                      <div class="nfs-pcard-row"><span class="nfs-pcard-label">Type</span><span class="nfs-pcard-val">3-bed house</span></div>
-                      <div class="nfs-pcard-btns"><a class="nfs-pcard-btn primary">Visit Listing</a><button class="nfs-pcard-btn outline">Inquire Now</button></div>
-                      <div class="nfs-pcard-footer"><span>Added 5 days ago</span><span><span class="nfs-status-dot green"></span> Live</span></div>
-                    </div>
-                  </div>
-                  <div class="nfs-pcard">
-                    <div class="nfs-pcard-img" style="background:url('https://images.unsplash.com/photo-1560448204-e02f11c3d0e2?w=400&h=250&fit=crop') center/cover"><span class="nfs-pcard-heart">♡</span></div>
-                    <div class="nfs-pcard-body">
-                      <div class="nfs-pcard-name"><span class="nfs-status-dot amber"></span>1-Bed Studio, Baltic</div>
-                      <div class="nfs-pcard-loc">Liverpool · L1 0AH</div>
-                      <div class="nfs-pcard-row"><span class="nfs-pcard-label">Monthly rent</span><span class="nfs-pcard-val">£650</span></div>
-                      <div class="nfs-pcard-row"><span class="nfs-pcard-label">Est. profit</span><span class="nfs-pcard-val profit">£980</span></div>
-                      <div class="nfs-pcard-row"><span class="nfs-pcard-label">Type</span><span class="nfs-pcard-val">1-bed studio</span></div>
-                      <div class="nfs-pcard-btns"><a class="nfs-pcard-btn primary">Visit Listing</a><button class="nfs-pcard-btn outline">Inquire Now</button></div>
-                      <div class="nfs-pcard-footer"><span>Added 1 day ago</span><span><span class="nfs-status-dot amber"></span> Under offer</span></div>
-                    </div>
-                  </div>
-                  <div class="nfs-pcard">
-                    <div class="nfs-pcard-img" style="background:url('https://images.unsplash.com/photo-1493809842364-78817add7ffb?w=400&h=250&fit=crop') center/cover"><span class="nfs-pcard-heart">♡</span></div>
-                    <div class="nfs-pcard-body">
-                      <div class="nfs-pcard-name"><span class="nfs-status-dot green"></span>2-Bed Flat, Digbeth</div>
-                      <div class="nfs-pcard-loc">Birmingham · B5 6DB</div>
-                      <div class="nfs-pcard-row"><span class="nfs-pcard-label">Monthly rent</span><span class="nfs-pcard-val">£780</span></div>
-                      <div class="nfs-pcard-row"><span class="nfs-pcard-label">Est. profit</span><span class="nfs-pcard-val profit">£1,100</span></div>
-                      <div class="nfs-pcard-row"><span class="nfs-pcard-label">Type</span><span class="nfs-pcard-val">2-bed flat</span></div>
-                      <div class="nfs-pcard-btns"><a class="nfs-pcard-btn primary">Visit Listing</a><button class="nfs-pcard-btn outline">Inquire Now</button></div>
-                      <div class="nfs-pcard-footer"><span>Added 8 days ago</span><span><span class="nfs-status-dot green"></span> Live</span></div>
-                    </div>
-                  </div>
-                  <div class="nfs-pcard">
-                    <div class="nfs-pcard-img" style="background:url('https://images.unsplash.com/photo-1580587771525-78b9dba3b914?w=400&h=250&fit=crop') center/cover"><span class="nfs-pcard-heart">♡</span></div>
-                    <div class="nfs-pcard-body">
-                      <div class="nfs-pcard-name"><span class="nfs-status-dot green"></span>3-Bed Terrace, Clifton</div>
-                      <div class="nfs-pcard-loc">Bristol · BS8 1AB</div>
-                      <div class="nfs-pcard-row"><span class="nfs-pcard-label">Monthly rent</span><span class="nfs-pcard-val">£1,100</span></div>
-                      <div class="nfs-pcard-row"><span class="nfs-pcard-label">Est. profit</span><span class="nfs-pcard-val profit">£1,650</span></div>
-                      <div class="nfs-pcard-row"><span class="nfs-pcard-label">Type</span><span class="nfs-pcard-val">3-bed terrace</span></div>
-                      <div class="nfs-pcard-btns"><a class="nfs-pcard-btn primary">Visit Listing</a><button class="nfs-pcard-btn outline">Inquire Now</button></div>
-                      <div class="nfs-pcard-footer"><span>Added 3 days ago</span><span><span class="nfs-status-dot green"></span> Live</span></div>
-                    </div>
-                  </div>
-                  <div class="nfs-pcard">
-                    <div class="nfs-pcard-img" style="background:url('https://images.unsplash.com/photo-1512917774080-9991f1c4c750?w=400&h=250&fit=crop') center/cover"><span class="nfs-pcard-heart">♡</span></div>
-                    <div class="nfs-pcard-body">
-                      <div class="nfs-pcard-name"><span class="nfs-status-dot grey"></span>1-Bed Flat, Shoreditch</div>
-                      <div class="nfs-pcard-loc">London · E1 6QR</div>
-                      <div class="nfs-pcard-row"><span class="nfs-pcard-label">Monthly rent</span><span class="nfs-pcard-val">£1,350</span></div>
-                      <div class="nfs-pcard-row"><span class="nfs-pcard-label">Est. profit</span><span class="nfs-pcard-val profit">£1,900</span></div>
-                      <div class="nfs-pcard-row"><span class="nfs-pcard-label">Type</span><span class="nfs-pcard-val">1-bed flat</span></div>
-                      <div class="nfs-pcard-btns"><a class="nfs-pcard-btn primary">Visit Listing</a><button class="nfs-pcard-btn outline">Inquire Now</button></div>
-                      <div class="nfs-pcard-footer"><span>Added 15 days ago</span><span><span class="nfs-status-dot grey"></span> Expired</span></div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            <!-- 2. CRM PIPELINE -->
-            <div class="preview-content" id="previewCrm">
-              <div class="nfs-mock-page">
-                <div class="nfs-pipe-header"><strong>Deal Pipeline</strong><span class="nfs-pipe-meta">7 active deals</span><button class="nfs-pipe-add">+ Add Deal</button></div>
-                <div class="nfs-pipe-columns">
-                  <div class="nfs-pipe-col" id="pipeColNewLead">
-                    <div class="nfs-pipe-col-head"><span class="nfs-status-dot blue"></span>New Lead <span class="nfs-pipe-count">5</span></div>
-                    <div class="nfs-pipe-card"><strong>3-Bed, Headingley</strong><span>Leeds · £950/mo</span><span class="nfs-pipe-profit">+£1,400</span></div>
-                    <div class="nfs-pipe-card"><strong>1-Bed, Baltic</strong><span>Liverpool · £650/mo</span><span class="nfs-pipe-profit">+£980</span></div>
-                    <div class="nfs-pipe-card"><strong>2-Bed, Salford</strong><span>Manchester · £820/mo</span><span class="nfs-pipe-profit">+£1,050</span></div>
-                    <div class="nfs-pipe-card"><strong>1-Bed, Hulme</strong><span>Manchester · £700/mo</span><span class="nfs-pipe-profit">+£890</span></div>
-                    <div class="nfs-pipe-card"><strong>2-Bed, Kelham</strong><span>Sheffield · £680/mo</span><span class="nfs-pipe-profit">+£850</span></div>
-                  </div>
-                  <div class="nfs-pipe-col" id="pipeColContacted">
-                    <div class="nfs-pipe-col-head"><span class="nfs-status-dot amber"></span>Contacted <span class="nfs-pipe-count">3</span></div>
-                    <div class="nfs-pipe-card"><strong>2-Bed, Digbeth</strong><span>Birmingham · £780/mo</span><span class="nfs-pipe-profit">+£1,100</span></div>
-                    <div class="nfs-pipe-card"><strong>3-Bed, Clifton</strong><span>Bristol · £1,100/mo</span><span class="nfs-pipe-profit">+£1,650</span></div>
-                    <div class="nfs-pipe-card"><strong>1-Bed, Leith</strong><span>Edinburgh · £750/mo</span><span class="nfs-pipe-profit">+£1,020</span></div>
-                  </div>
-                  <div class="nfs-pipe-col">
-                    <div class="nfs-pipe-col-head"><span class="nfs-status-dot purple"></span>Viewing <span class="nfs-pipe-count">4</span></div>
-                    <div class="nfs-pipe-card"><strong>2-Bed, Jesmond</strong><span>Newcastle · £750/mo</span><span class="nfs-pipe-profit">+£920</span></div>
-                    <div class="nfs-pipe-card"><strong>3-Bed, Withington</strong><span>Manchester · £900/mo</span><span class="nfs-pipe-profit">+£1,300</span></div>
-                    <div class="nfs-pipe-card"><strong>1-Bed, Roath</strong><span>Cardiff · £620/mo</span><span class="nfs-pipe-profit">+£780</span></div>
-                    <div class="nfs-pipe-card"><strong>2-Bed, Brindley</strong><span>Birmingham · £850/mo</span><span class="nfs-pipe-profit">+£1,150</span></div>
-                  </div>
-                  <div class="nfs-pipe-col">
-                    <div class="nfs-pipe-col-head"><span class="nfs-status-dot green"></span>Deal Agreed <span class="nfs-pipe-count">2</span></div>
-                    <div class="nfs-pipe-card"><strong>1-Bed, Shoreditch</strong><span>London · £1,350/mo</span><span class="nfs-pipe-profit">+£1,900</span></div>
-                    <div class="nfs-pipe-card"><strong>2-Bed, Ancoats</strong><span>Manchester · £850/mo</span><span class="nfs-pipe-profit">+£1,200</span></div>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            <!-- 4. INBOX -->
-            <div class="preview-content" id="previewInbox">
-              <div class="nfs-inbox-mock">
-                <div class="nfs-inbox-threads">
-                  <div class="nfs-inbox-header">Messages <span class="nfs-inbox-count">5</span></div>
-                  <div class="nfs-thread active"><div class="nfs-avatar"><img src="https://i.pravatar.cc/64?img=12" width="32" height="32" alt=""></div><div class="nfs-thread-info"><strong>James Thornton</strong><span>Manchester flat inquiry</span></div><span class="nfs-thread-time">2m</span></div>
-                  <div class="nfs-thread"><div class="nfs-avatar"><img src="https://i.pravatar.cc/64?img=5" width="32" height="32" alt=""></div><div class="nfs-thread-info"><strong>Sarah Chen</strong><span>Viewing confirmed Thu</span></div><span class="nfs-thread-time">1h</span></div>
-                  <div class="nfs-thread"><div class="nfs-avatar"><img src="https://i.pravatar.cc/64?img=33" width="32" height="32" alt=""></div><div class="nfs-thread-info"><strong>David Walsh</strong><span>Contract signed ✓</span></div><span class="nfs-thread-time">3h</span></div>
-                  <div class="nfs-thread"><div class="nfs-avatar"><img src="https://i.pravatar.cc/64?img=15" width="32" height="32" alt=""></div><div class="nfs-thread-info"><strong>Mark Peters</strong><span>Keys handover Monday</span></div><span class="nfs-thread-time">1d</span></div>
-                  <div class="nfs-thread"><div class="nfs-avatar"><img src="https://i.pravatar.cc/64?img=9" width="32" height="32" alt=""></div><div class="nfs-thread-info"><strong>Rachel Adams</strong><span>Offer accepted 🎉</span></div><span class="nfs-thread-time">2d</span></div>
-                </div>
-                <div class="nfs-inbox-chat">
-                  <div class="nfs-chat-header"><div class="nfs-avatar small"><img src="https://i.pravatar.cc/64?img=12" width="24" height="24" alt=""></div><strong>James Thornton</strong><span class="nfs-online">● Online</span></div>
-                  <div class="nfs-chat-messages">
-                    <div class="nfs-msg them"><p>Hi! I saw the 2-bed in Ancoats. Is it available for Airbnb?</p></div>
-                    <div class="nfs-msg me"><p>Yes! Landlord approved. Rent £850, est. profit £1,200/mo.</p></div>
-                    <div class="nfs-msg them"><p>That sounds great. When can I arrange a viewing?</p></div>
-                    <div class="nfs-msg me"><p>Thursday or Friday -which works for you?</p></div>
-                    <div class="nfs-msg them"><p>Thursday 5pm would be perfect.</p></div>
-                    <div class="nfs-msg me"><p>Booked! I'll send the address and access details now. See you there 👋</p></div>
-                  </div>
-                  <div class="nfs-chat-input"><span>Type a message...</span><div class="nfs-send-mini"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="3"><path d="M12 19V5M5 12l7-7 7 7"/></svg></div></div>
-                </div>
-              </div>
-            </div>
-
-            <!-- 5. FINALE -->
-            <div class="preview-content" id="previewFinale">
-              <div class="nfs-finale">
-                <div class="nfs-finale-icon">🏡</div>
-                <h3>This is how easy it is to start and grow your Airbnb portfolio.</h3>
-                <p>From deal to doorstep -powered by nfstay</p>
-                <a href="/signup" class="nfs-finale-btn">Get Started Free</a>
-              </div>
-            </div>
-          </div>
-        </div>
-
         <div class="hero-scroll-indicator" style="display:none;"><div class="scroll-pill"></div></div>
       </div>
     </div>
@@ -714,15 +489,15 @@
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#1e9a80" stroke-width="2"><path d="M16 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="8.5" cy="7" r="4"/><path d="M20 8v6M23 11h-6"/></svg>
           <span style="font-size:13px;font-weight:600;color:#1e9a80;text-transform:uppercase;letter-spacing:0.5px;">JV Partnerships</span>
         </div>
-        <h2 style="font-size:40px;">Airbnb JV Partnerships<br>from just &pound;500</h2>
-        <p>Partner with experienced UK operators running live Airbnb properties. You join, they manage. Monthly returns without the hassle.</p>
+        <h2 style="font-size:40px;">Go together, not alone</h2>
+        <p>Join a fast-growing Serviced Accommodation company by owning a fraction of an Airbnb deal. Fully managed. You earn, they operate.</p>
       </div>
       <div class="g3">
-        <div class="card sr-child" style="border-top:3px solid #1e9a80;"><h3>Explore available properties</h3><p>View Serviced Accommodation Airbnb properties across the UK. Each one is fully managed by a verified operator.</p></div>
-        <div class="card sr-child" style="border-top:3px solid #1e9a80;"><h3>Partner from &pound;500</h3><p>Low entry point. Choose your partnership level and start earning monthly returns from day one.</p></div>
-        <div class="card sr-child" style="border-top:3px solid #1e9a80;"><h3>Track your portfolio</h3><p>Monitor your partnerships, view monthly payouts and see real-time occupancy data from your dashboard.</p></div>
+        <div class="card sr-child" style="border-top:3px solid #1e9a80;"><h3>Own a fraction from &pound;500</h3><p>Pick a Serviced Accommodation Airbnb property on the marketplace and choose how many shares you want. No experience needed.</p></div>
+        <div class="card sr-child" style="border-top:3px solid #1e9a80;"><h3>Fully managed for you</h3><p>An experienced operator handles guests, cleaning, maintenance and bookings. You sit back and earn.</p></div>
+        <div class="card sr-child" style="border-top:3px solid #1e9a80;"><h3>Vote on key decisions</h3><p>Every partner gets a say. Vote on furniture upgrades, pricing changes, management decisions and more from your dashboard.</p></div>
       </div>
-      <div style="text-align:center;margin-top:32px;"><a href="/signup" class="btn btn-green" style="padding:14px 40px;font-size:15px;border-radius:14px;">Explore JV Deals</a></div>
+      <div style="text-align:center;margin-top:32px;"><a href="/signup" class="btn btn-green" style="padding:14px 40px;font-size:15px;border-radius:14px;">Get Started</a></div>
     </div>
   </section>
 
@@ -754,7 +529,7 @@
     <div class="tl-container">
       <div class="tl-heading">
         <h2>How it <span class="tl-accent">works</span></h2>
-        <p>Three simple steps to join an Airbnb JV partnership.</p>
+        <p>Sign up, pick a deal and become part of a growing Serviced Accommodation company.</p>
       </div>
       <div class="tl-timeline">
 
@@ -763,10 +538,10 @@
           <div class="tl-card tl-v-bento">
             <div class="tl-bento-num">01</div>
             <div class="tl-bento-body">
-              <div class="tl-bento-label">Choose a Property</div>
-              <h3>Pick a Serviced Accommodation deal</h3>
-              <p>Browse live Airbnb properties on the marketplace. Each one is managed by a verified UK operator and ready to earn.</p>
-              <div class="tl-bento-pill">From only &pound;500</div>
+              <div class="tl-bento-label">Sign Up</div>
+              <h3>Create your free account</h3>
+              <p>Sign up in under a minute and browse live Airbnb Serviced Accommodation deals on the marketplace. Pick a property and choose your share from &pound;500.</p>
+              <div class="tl-bento-pill">Free to join</div>
             </div>
           </div>
         </div>
@@ -775,10 +550,10 @@
           <div class="tl-node"><span>02</span></div>
           <div class="tl-card tl-v-spotlight">
             <div class="tl-spot-glow"></div>
-            <div class="tl-spot-label">Your Share</div>
-            <h3>Get your fraction of the deal</h3>
-            <p>Choose how many shares you want from &pound;500. The operator manages the property, guests and maintenance.</p>
-            <div class="tl-spot-metric">&pound;680<span>/mo avg.</span></div>
+            <div class="tl-spot-label">Your Say</div>
+            <h3>A decision is proposed</h3>
+            <p>You, another partner or the management team can propose changes &mdash; replace furniture, adjust the nightly rate, change booking strategy or even switch the management company.</p>
+            <div class="tl-spot-metric" style="font-size:16px;"><span style="font-size:16px;">Majority rules</span></div>
           </div>
         </div>
 
@@ -786,11 +561,11 @@
           <div class="tl-node"><span>03</span></div>
           <div class="tl-card tl-v-revenue">
             <div class="tl-rev-sparkles"></div>
-            <div class="tl-rev-emoji">&#127881;</div>
-            <div class="tl-rev-label">Earn Monthly</div>
-            <h3>Receive your share of the Airbnb income</h3>
-            <div class="tl-rev-amount">&pound;680<span>/month</span></div>
-            <p>Track returns from your dashboard. Add more properties to grow your portfolio over time.</p>
+            <div class="tl-rev-emoji">&#9989;</div>
+            <div class="tl-rev-label">You Decide</div>
+            <h3>Vote and shape the outcome</h3>
+            <div class="tl-rev-amount" style="font-size:20px;">Your voice matters</div>
+            <p>All partners get notified via WhatsApp and email. Review the proposal, cast your vote and the majority decision is applied. Management starts with nfstay &mdash; if the majority votes to change it, it changes.</p>
             <a href="/signup" class="tl-rev-cta">Get started &rarr;</a>
           </div>
         </div>
@@ -1805,7 +1580,7 @@
 </footer>
   <script src="/landing/js/feature-inspector.js"></script>
   <script src="/landing/translations.js"></script>
-  <script src="/landing/js/hero-demo.js"></script>
+  <!-- hero-demo.js removed — JV pivot 2026-05-02 -->
   <script src="/landing/js/journey.js"></script>
   <script src="/landing/js/global.js"></script>
   <script src="/landing/premium.js"></script>

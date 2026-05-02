@@ -4,7 +4,7 @@
   "framework": "vite",
   "trailingSlash": false,
   "redirects": [
-    { "source": "/", "has": [{ "type": "host", "value": "hub.nfstay.com" }], "destination": "https://hub.nfstay.com/deals", "permanent": false },
+    { "source": "/", "has": [{ "type": "host", "value": "hub.nfstay.com" }], "destination": "https://hub.nfstay.com/dashboard/invest/marketplace", "permanent": false },
     { "source": "/", "has": [{ "type": "host", "value": "www.nfstay.com" }], "destination": "https://nfstay.com", "permanent": true },
     { "source": "/signin", "has": [{ "type": "host", "value": "nfstay.com" }], "destination": "https://hub.nfstay.com/signin", "permanent": false },
     { "source": "/signup", "has": [{ "type": "host", "value": "nfstay.com" }], "destination": "https://hub.nfstay.com/signup", "permanent": false },
@@ -39,6 +39,11 @@
     }
   ],
   "rewrites": [
+    {
+      "source": "/",
+      "has": [{ "type": "host", "value": "nfstay.com" }],
+      "destination": "/landing/variant-a.html"
+    },
     {
       "source": "/api/health",
       "destination": "https://asazddtvjvmckouxcmmo.supabase.co/functions/v1/health"
