@@ -9,30 +9,1662 @@
   <meta property="og:url" content="https://hub.nfstay.com/" />
   <meta property="og:title" content="Airbnb JV Partnerships from &pound;500" />
   <meta property="og:description" content="Active Airbnb partnerships from &pound;500. Booking sites, agent programme &amp; JV deals." />
-  <meta property="og:image" content="https://nfstay.com/og-preview.png" />
+  <meta property="og:image" content="https://hub.nfstay.com/og-preview.png" />
   <meta property="og:image:width" content="1200" />
   <meta property="og:image:height" content="630" />
   <meta name="twitter:card" content="summary_large_image" />
   <meta name="twitter:site" content="@nfstay" />
   <meta name="twitter:title" content="Airbnb JV Partnerships from &pound;500" />
   <meta name="twitter:description" content="Active Airbnb partnerships from &pound;500. Booking sites, agent programme &amp; JV deals." />
-  <meta name="twitter:image" content="https://nfstay.com/og-preview.png" />
+  <meta name="twitter:image" content="https://hub.nfstay.com/og-preview.png" />
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Playfair+Display:ital,wght@1,400;1,700&family=Sora:wght@400;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/landing/css/base.css">
+  <link rel="stylesheet" href="/landing/css/nav.css">
+  <link rel="stylesheet" href="/landing/css/hero.css">
+  <link rel="stylesheet" href="/landing/css/journey.css">
+  <link rel="stylesheet" href="/landing/css/sections.css">
+  <link rel="stylesheet" href="/landing/css/animations.css">
+  <link rel="stylesheet" href="/landing/css/responsive.css">
+  <link rel="stylesheet" href="/landing/css/social-proof.css">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
+  <!-- ScrollTrigger removed -journey section uses IntersectionObserver -->
   <style>
-    body { margin: 0; background: #F3F3EE; }
-    .ab-loading {
-      display: flex; align-items: center; justify-content: center;
-      height: 100vh; font-family: Inter, sans-serif;
-      color: #6B7280; font-size: 14px;
+    @media (max-width: 768px) {
+      #pricing .wrap.narrow > div[style*="grid-template-columns"] {
+        grid-template-columns: 1fr !important;
+        max-width: 400px !important;
+      }
     }
   </style>
 </head>
 <body>
-  <div class="ab-loading" id="ab-loader">Loading…</div>
+
+  <!-- ========== NAVBAR ========== -->
+  <div class="nav_fixed" id="navbar">
+    <div class="nav_component" data-feature="SHARED__LANDING_NAV" role="banner">
+      <div class="padding-global">
+        <div class="nav_container">
+          <!-- Left: Logo + Divider + Links -->
+          <div class="nav-left-group">
+            <a href="/" class="logo-link" data-feature="SHARED__LANDING_NAV_LOGO" aria-label="nfstay Home">
+              <span class="logo-61"><span class="logo-61-box">nf</span><span class="logo-61-text">stay</span></span>
+            </a>
+            <div class="vertical-divider-navbar"></div>
+            <div class="nav_links">
+              <a href="#jv-partners" class="nav_menu_link" data-feature="SHARED__LANDING_NAV_LINK">JV Partners</a>
+              <a href="#become-agent" class="nav_menu_link" data-feature="SHARED__LANDING_NAV_LINK">Become an Agent</a>
+              <a href="#booking-sites" class="nav_menu_link" data-feature="SHARED__LANDING_NAV_LINK">Booking Sites</a>
+              <a href="#how-it-works" class="nav_menu_link" data-feature="SHARED__LANDING_NAV_LINK">How It Works</a>
+            </div>
+          </div>
+
+          <!-- Right: Language + Demo + Login + CTA -->
+          <div class="nav-end-wrapper">
+            <div class="lang-dropdown" data-feature="SHARED__LANDING_NAV_LANG" style="position:relative;">
+              <button onclick="this.parentElement.classList.toggle('open')" style="display:flex;align-items:center;gap:5px;padding:6px 10px;border-radius:10px;border:1px solid rgba(0,0,0,0.08);background:#fff;cursor:pointer;font-size:12px;font-weight:500;color:#1a1a1a;">
+                <span style="font-size:14px;">&#127468;&#127463;</span> EN
+                <svg width="10" height="10" viewBox="0 0 10 10" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M2.5 4l2.5 2.5L7.5 4"/></svg>
+              </button>
+              <div class="lang-menu" style="position:absolute;top:100%;right:0;margin-top:4px;background:#fff;border:1px solid rgba(0,0,0,0.08);border-radius:12px;box-shadow:0 8px 32px rgba(0,0,0,0.1);padding:6px;min-width:160px;z-index:200;">
+                <a href="#" data-lang="en" style="display:flex;align-items:center;gap:8px;padding:8px 12px;border-radius:8px;font-size:13px;color:#1a1a1a;text-decoration:none;font-weight:500;background:rgba(30,154,128,0.06);">&#127468;&#127463; English</a>
+                <a href="#" data-lang="pt" style="display:flex;align-items:center;gap:8px;padding:8px 12px;border-radius:8px;font-size:13px;color:#1a1a1a;text-decoration:none;">&#127463;&#127479; Portugu&ecirc;s</a>
+                <a href="#" data-lang="es" style="display:flex;align-items:center;gap:8px;padding:8px 12px;border-radius:8px;font-size:13px;color:#1a1a1a;text-decoration:none;">&#127466;&#127480; Espa&ntilde;ol</a>
+                <a href="#" data-lang="fr" style="display:flex;align-items:center;gap:8px;padding:8px 12px;border-radius:8px;font-size:13px;color:#1a1a1a;text-decoration:none;">&#127467;&#127479; Fran&ccedil;ais</a>
+                <a href="#" data-lang="ar" style="display:flex;align-items:center;gap:8px;padding:8px 12px;border-radius:8px;font-size:13px;color:#1a1a1a;text-decoration:none;">&#127462;&#127466; &#1575;&#1604;&#1593;&#1585;&#1576;&#1610;&#1577;</a>
+              </div>
+            </div>
+            <a href="/signin" class="nav_menu_link" data-feature="SHARED__LANDING_NAV_LOGIN" data-i18n="nav_login">Login</a>
+            <a href="/signup" class="nav-btn" data-feature="SHARED__LANDING_NAV_CTA" data-i18n="nav_cta">Get Started</a>
+          </div>
+
+          <!-- Mobile: hamburger + language -->
+          <div class="nav-mobile-right">
+            <div class="language-switcher-wrapper mobile-only">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="12" r="10"/><path d="M2 12h20"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>
+              <svg width="10" height="10" viewBox="0 0 10 10" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M2.5 4l2.5 2.5L7.5 4"/></svg>
+            </div>
+            <button class="nav_button" data-feature="SHARED__LANDING_NAV_BURGER" aria-label="Menu">
+              <div class="hamburger-icon">
+                <span></span><span></span><span></span>
+              </div>
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Mobile Menu (full-screen overlay) -->
+    <nav class="nav_menu-mobile" data-feature="SHARED__LANDING_NAV_MOBILE" id="mobileMenu">
+      <button class="mobile-menu-close" id="mobileMenuClose" aria-label="Close menu">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M18 6L6 18"/><path d="M6 6l12 12"/></svg>
+      </button>
+      <div class="mobile-menu-links">
+        <a href="#jv-partners" class="nav_menu_link mobile">JV Partners</a>
+        <a href="#become-agent" class="nav_menu_link mobile">Become an Agent</a>
+        <a href="#booking-sites" class="nav_menu_link mobile">Booking Sites</a>
+        <a href="#how-it-works" class="nav_menu_link mobile">How It Works</a>
+      </div>
+      <!-- Language switcher inside mobile menu -->
+      <div class="mobile-lang-switcher" id="mobileLangSwitcher">
+        <button class="mobile-lang-btn" id="mobileLangBtn">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="12" r="10"/><path d="M2 12h20"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>
+          <span id="mobileLangLabel">English</span>
+          <svg width="10" height="10" viewBox="0 0 10 10" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M2.5 4l2.5 2.5L7.5 4"/></svg>
+        </button>
+        <div class="mobile-lang-options" id="mobileLangOptions">
+          <a href="#" data-lang="en">&#127468;&#127463; English</a>
+          <a href="#" data-lang="pt">&#127463;&#127479; Portugu&ecirc;s</a>
+          <a href="#" data-lang="es">&#127466;&#127480; Espa&ntilde;ol</a>
+          <a href="#" data-lang="fr">&#127467;&#127479; Fran&ccedil;ais</a>
+          <a href="#" data-lang="ar">&#127462;&#127466; &#1575;&#1604;&#1593;&#1585;&#1576;&#1610;&#1577;</a>
+        </div>
+      </div>
+      <div class="nav-end-wrapper mobile">
+        <a href="/signin" class="nav_menu_link secondary">Login</a>
+        <a href="/signup" class="nav-btn mobile">Get Started</a>
+      </div>
+    </nav>
+  </div>
+
+  <!-- Hero responsive overrides -->
+  <style>
+    @media (max-width: 768px) {
+      #hero h1 { font-size: 40px !important; letter-spacing: -1.5px !important; }
+      #hero .hero-text-block { padding: 80px 0 60px !important; }
+      #hero .hero-buttons { flex-direction: column !important; }
+      #hero .hero-buttons a { width: 100% !important; text-align: center !important; }
+    }
+    @media (min-width: 769px) and (max-width: 1024px) {
+      #hero h1 { font-size: 56px !important; }
+    }
+  </style>
+
+  <!-- ========== HERO SECTION (nfstay) ========== -->
+  <section class="section section_hero" data-feature="SHARED__LANDING_HERO" id="hero">
+    <div class="hero-bg-clouds">
+      <svg class="cloud-svg cloud-1" viewBox="0 0 600 200" fill="none"><ellipse cx="300" cy="150" rx="280" ry="80" fill="rgba(255,255,255,0.6)"/><ellipse cx="200" cy="120" rx="160" ry="70" fill="rgba(255,255,255,0.5)"/><ellipse cx="400" cy="110" rx="180" ry="75" fill="rgba(255,255,255,0.55)"/></svg>
+      <svg class="cloud-svg cloud-2" viewBox="0 0 500 180" fill="none"><ellipse cx="250" cy="130" rx="230" ry="70" fill="rgba(255,255,255,0.5)"/><ellipse cx="350" cy="90" rx="150" ry="65" fill="rgba(255,255,255,0.45)"/></svg>
+    </div>
+
+    <div class="padding-global">
+      <div class="container-large">
+        <!-- Hero heading — centred, bold, editorial -->
+        <div class="hero-text-block" style="text-align:center;padding:120px 0 80px;max-width:900px;margin:0 auto;">
+          <div style="display:inline-flex;align-items:center;gap:8px;background:#ECFDF5;border-radius:100px;padding:6px 18px;margin-bottom:32px;">
+            <span style="width:8px;height:8px;background:#1E9A80;border-radius:50%;display:inline-block;"></span>
+            <span style="font-size:13px;font-weight:600;color:#1E9A80;letter-spacing:0.3px;">Over 100 managed properties and growing</span>
+          </div>
+          <h1 data-feature="SHARED__LANDING_HERO_HEADING" style="font-size:72px;font-weight:800;line-height:1.1;letter-spacing:-2.5px;color:#1A1A1A;margin:0 0 20px;">Be Part of the Growth</h1>
+          <p style="font-size:28px;font-weight:600;color:#1A1A1A;margin:0 0 8px;letter-spacing:-0.3px;line-height:1.3;">Airbnb Joint Venture Partnerships</p>
+          <p style="font-size:28px;font-weight:600;color:#1E9A80;margin:0 0 32px;letter-spacing:-0.3px;line-height:1.3;">from Only &pound;500</p>
+          <p style="font-size:20px;color:#6B7280;max-width:620px;margin:0 auto 40px;line-height:1.7;font-weight:400;">Get a fraction of a Serviced Accommodation Airbnb deal. All properties managed by experienced UK operators. Earn monthly returns without managing a single guest.</p>
+          <div class="hero-buttons" data-feature="SHARED__LANDING_HERO_BUTTONS" style="justify-content:center;gap:16px;">
+            <a href="/signup" class="hero-cta" data-feature="SHARED__LANDING_HERO_CTA" style="padding:16px 48px;font-size:16px;font-weight:600;border-radius:14px;background:#1E9A80;box-shadow:0 4px 16px rgba(30,154,128,0.35);">Get Started</a>
+            <a href="/signin" class="hero-login" data-feature="SHARED__LANDING_HERO_LOGIN" style="padding:16px 48px;font-size:16px;font-weight:600;border-radius:14px;">Login</a>
+          </div>
+        </div>
+
+        <div class="hero-scroll-indicator" style="display:none;"><div class="scroll-pill"></div></div>
+      </div>
+    </div>
+  </section>
+
+
+
+  
+
+  
+<div class="s bg-white sm sr"><div class="wrap"><div class="trust-stripe" data-feature="SHARED__LANDING_TRUST">
+  <div class="ts-item"><div class="ts-val" data-count="100" data-suffix="+">0</div><div class="ts-lbl">Managed properties</div></div>
+  <div class="ts-item"><div class="ts-val">&pound;500</div><div class="ts-lbl">Min. JV entry</div></div>
+  <div class="ts-item"><div class="ts-val" data-count="680" data-prefix="&pound;">0</div><div class="ts-lbl">Avg. monthly return</div></div>
+</div></div></div>
+
+  <!-- ========== INTRO VIDEO (poster + modal) ========== -->
+  <section class="nfs-vid-section" data-feature="SHARED__LANDING_VIDEO">
+    <div class="nfs-vid-wrap">
+      <button type="button" class="nfs-vid-poster" aria-label="Play video">
+        <img src="/Bnum185DF7WQdbcM8rQdLenB7UU.png" alt="Watch the nfstay story" loading="lazy">
+        <span class="nfs-vid-play" aria-hidden="true">
+          <svg viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>
+        </span>
+      </button>
+    </div>
+  </section>
+  <div class="nfs-vid-modal" role="dialog" aria-modal="true" aria-label="Video" hidden>
+    <button type="button" class="nfs-vid-close" aria-label="Close video">&times;</button>
+    <div class="nfs-vid-modal-inner">
+      <div class="nfs-vid-modal-frame">
+        <iframe class="nfs-vid-iframe" src="" title="nfstay - watch the story" allow="autoplay; fullscreen; encrypted-media; picture-in-picture" allowfullscreen></iframe>
+      </div>
+    </div>
+  </div>
+  <style>
+    .nfs-vid-section { padding: 64px 16px; background: #fff; }
+    .nfs-vid-wrap { max-width: 1060px; margin: 0 auto; }
+    .nfs-vid-poster {
+      position: relative; display: block;
+      width: 100%; aspect-ratio: 16/9;
+      border: 0; padding: 0; margin: 0;
+      border-radius: 20px; overflow: hidden;
+      cursor: pointer; background: #000;
+      box-shadow: rgba(0,0,0,0.12) 0 12px 40px -8px;
+    }
+    .nfs-vid-poster img { width: 100%; height: 100%; object-fit: cover; display: block; transition: transform 0.4s ease; }
+    .nfs-vid-poster:hover img { transform: scale(1.02); }
+    .nfs-vid-play {
+      position: absolute; top: 50%; left: 50%;
+      transform: translate(-50%, -50%);
+      width: 84px; height: 84px;
+      background: rgba(255,255,255,0.92);
+      border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      color: #1A1A1A;
+      box-shadow: rgba(0,0,0,0.2) 0 8px 24px;
+      transition: transform 0.2s ease, background 0.2s ease;
+    }
+    .nfs-vid-poster:hover .nfs-vid-play { background: #fff; transform: translate(-50%, -50%) scale(1.06); }
+    .nfs-vid-play svg { width: 36px; height: 36px; margin-left: 4px; }
+    .nfs-vid-modal { position: fixed; inset: 0; background: rgba(0,0,0,0.85); z-index: 9999; display: flex; align-items: center; justify-content: center; padding: 24px; }
+    .nfs-vid-modal[hidden] { display: none; }
+    .nfs-vid-modal-inner { width: 100%; max-width: 1100px; }
+    .nfs-vid-modal-frame { position: relative; width: 100%; aspect-ratio: 16/9; background: #000; border-radius: 16px; overflow: hidden; }
+    .nfs-vid-modal-frame iframe { position: absolute; inset: 0; width: 100%; height: 100%; border: 0; }
+    .nfs-vid-close {
+      position: absolute; top: 20px; right: 24px;
+      width: 44px; height: 44px; border: 0;
+      background: rgba(255,255,255,0.15); color: #fff;
+      font-size: 32px; line-height: 1; border-radius: 50%;
+      cursor: pointer; display: flex; align-items: center; justify-content: center;
+    }
+    .nfs-vid-close:hover { background: rgba(255,255,255,0.28); }
+    @media (max-width: 768px) {
+      .nfs-vid-section { padding: 40px 32px; }
+      .nfs-vid-poster { border-radius: 16px; }
+      .nfs-vid-play { width: 56px; height: 56px; }
+      .nfs-vid-play svg { width: 24px; height: 24px; }
+    }
+    @media (max-width: 480px) {
+      .nfs-vid-section { padding: 32px 28px; }
+    }
+  </style>
+  <script>
+    (function(){
+      var poster = document.querySelector('.nfs-vid-poster');
+      var modal = document.querySelector('.nfs-vid-modal');
+      var iframe = modal && modal.querySelector('.nfs-vid-iframe');
+      var closeBtn = modal && modal.querySelector('.nfs-vid-close');
+      if (!poster || !modal || !iframe) return;
+      var src = 'https://www.youtube-nocookie.com/embed/ldtEs9dm-C4?autoplay=1&rel=0&modestbranding=1';
+      function openVid(){ iframe.src = src; modal.hidden = false; document.body.style.overflow = 'hidden'; }
+      function closeVid(){ iframe.src = ''; modal.hidden = true; document.body.style.overflow = ''; }
+      poster.addEventListener('click', openVid);
+      closeBtn.addEventListener('click', closeVid);
+      modal.addEventListener('click', function(e){ if (e.target === modal) closeVid(); });
+      document.addEventListener('keydown', function(e){ if (e.key === 'Escape' && !modal.hidden) closeVid(); });
+    })();
+  </script>
+
+  <!-- PERSONA SELECTOR (hidden — JV pivot) -->
+  <div class="s bg-white sr" data-feature="SHARED__LANDING_PERSONAS" style="display:none !important;"><div class="wrap">
+    <div class="sh"><h2 data-i18n="persona_title">What describes you?</h2><p data-i18n="persona_sub">Select your stage to see how nfstay fits.</p></div>
+    <div data-persona-group>
+      <div class="persona-bar" data-feature="SHARED__LANDING_PERSONA_BAR"><div class="persona-pill active" data-persona="new" data-i18n="persona_new">New operator</div><div class="persona-pill" data-persona="scaling" data-i18n="persona_scaling">Scaling operator</div><div class="persona-pill" data-persona="landlord" data-i18n="persona_landlord">Landlord</div></div>
+      <div class="persona-content active" data-persona-content="new"><div class="sh"><h2 style="font-size:24px;">Starting from scratch? We have got you.</h2><p>Learn the model, find your first deal, and close it in one platform.</p></div><div class="g3"><div class="card" style="border-top:3px solid #1e9a80;"><h3>Academy first</h3><p>Start with structured courses. Learn sourcing, analysis and landlord pitching.</p></div><div class="card" style="border-top:3px solid #1e9a80;"><h3>Browse real deals</h3><p>Apply what you learn on 1,800+ verified properties.</p></div><div class="card" style="border-top:3px solid #1e9a80;"><h3>Message landlords</h3><p>Use the inbox to send your first inquiry with confidence.</p></div></div></div>
+      <div class="persona-content" data-persona-content="scaling"><div class="sh"><h2 style="font-size:24px;">Ready to scale? Organise and accelerate.</h2><p>Manage multiple deals, track your pipeline and never miss a follow-up.</p></div><div class="g3"><div class="card" style="border-top:3px solid #1e9a80;"><h3>CRM pipeline</h3><p>Visual deal stages from inquiry to signed contract.</p></div><div class="card" style="border-top:3px solid #1e9a80;"><h3>Unified inbox</h3><p>All landlord conversations in one searchable feed.</p></div><div class="card" style="border-top:3px solid #1e9a80;"><h3>Earnings estimator</h3><p>Model returns on every property before you commit.</p></div></div></div>
+      <div class="persona-content" data-persona-content="landlord"><div class="sh"><h2 style="font-size:24px;">List your property. Get qualified operators.</h2><p>Reach serious rent-to-rent operators who guarantee rent.</p></div><div class="g3"><div class="card" style="border-top:3px solid #1e9a80;"><h3>List your deal</h3><p>Submit your property and reach 300+ verified operators.</p></div><div class="card" style="border-top:3px solid #1e9a80;"><h3>Inbox messages</h3><p>Receive and respond to inquiries from qualified operators.</p></div><div class="card" style="border-top:3px solid #1e9a80;"><h3>Guaranteed rent</h3><p>Operators pay monthly, regardless of occupancy.</p></div></div></div>
+    </div>
+  </div></div>
+
+  <!-- DEAL GRID (hidden — JV pivot) -->
+  <div class="s bg-cream sr" data-feature="SHARED__LANDING_DEALS" id="deals" style="display:none !important;"><div class="wrap"><div class="sh"><h2 data-i18n="deals_h">Browse landlord-approved deals</h2><p>Every listing is verified, compliance-checked and ready to operate.</p></div>
+    <div class="g3 deal-grid">
+      <div class="deal-card sr-child" data-feature="SHARED__LANDING_DEAL_CARD"><div class="deal-img" style="background-image:url('https://images.unsplash.com/photo-1522708323590-d24dbb6b0267?w=400&h=220&fit=crop')"><span style="background:rgba(30,154,128,0.9);color:#fff;font-size:9px;font-weight:600;padding:2px 8px;border-radius:9999px;position:absolute;top:10px;left:10px;">Rental</span></div><div class="deal-body"><h4>2-Bed Flat, Ancoats</h4><div class="deal-meta">Manchester &middot; M4 6BF</div><div class="deal-row"><span class="label">Monthly rent</span><span class="val">&pound;850</span></div><div class="deal-row"><span class="label">Est. profit</span><span class="val profit">&pound;1,200</span></div><div class="deal-row"><span class="label">Type</span><span class="val">2-bed flat</span></div><div class="deal-btns"><a href="/signup" class="btn btn-green btn-sm">Visit listing</a><a href="/signup" class="btn btn-outline btn-sm">Inquire now</a></div></div></div>
+      <div class="deal-card sr-child" data-feature="SHARED__LANDING_DEAL_CARD"><div class="deal-img" style="background-image:url('https://images.unsplash.com/photo-1502672260266-1c1ef2d93688?w=400&h=220&fit=crop')"><span style="background:rgba(30,154,128,0.9);color:#fff;font-size:9px;font-weight:600;padding:2px 8px;border-radius:9999px;position:absolute;top:10px;left:10px;">Rental</span></div><div class="deal-body"><h4>3-Bed House, Headingley</h4><div class="deal-meta">Leeds &middot; LS6 3BN</div><div class="deal-row"><span class="label">Monthly rent</span><span class="val">&pound;950</span></div><div class="deal-row"><span class="label">Est. profit</span><span class="val profit">&pound;1,400</span></div><div class="deal-row"><span class="label">Type</span><span class="val">3-bed house</span></div><div class="deal-btns"><a href="/signup" class="btn btn-green btn-sm">Visit listing</a><a href="/signup" class="btn btn-outline btn-sm">Inquire now</a></div></div></div>
+      <div class="deal-card sr-child" data-feature="SHARED__LANDING_DEAL_CARD"><div class="deal-img" style="background-image:url('https://images.unsplash.com/photo-1560448204-e02f11c3d0e2?w=400&h=220&fit=crop')"><span style="background:rgba(30,154,128,0.9);color:#fff;font-size:9px;font-weight:600;padding:2px 8px;border-radius:9999px;position:absolute;top:10px;left:10px;">Rental</span></div><div class="deal-body"><h4>1-Bed Studio, Baltic</h4><div class="deal-meta">Liverpool &middot; L1 0AH</div><div class="deal-row"><span class="label">Monthly rent</span><span class="val">&pound;650</span></div><div class="deal-row"><span class="label">Est. profit</span><span class="val profit">&pound;980</span></div><div class="deal-row"><span class="label">Type</span><span class="val">1-bed studio</span></div><div class="deal-btns"><a href="/signup" class="btn btn-green btn-sm">Visit listing</a><a href="/signup" class="btn btn-outline btn-sm">Inquire now</a></div></div></div>
+    </div>
+    <p class="deal-swipe-hint">&larr; Swipe to see more deals &rarr;</p>
+    <p style="text-align:center;font-size:13px;color:#6b7280;margin-top:24px;">Updated daily — 100+ weekly approved listings across the UK</p>
+  </div></div>
+
+  <!-- PIPELINE (hidden — JV pivot) -->
+  <div class="s bg-white sr" data-feature="SHARED__LANDING_PIPELINE" style="display:none !important;"><div class="wrap"><div class="sh"><h2 data-i18n="pipe_h">Close faster. Miss nothing.</h2><p>Track every deal from first message to signed contract.</p></div>
+    <div style="background:#fafafa;border:1px solid rgba(0,0,0,0.06);border-radius:16px;padding:20px;overflow-x:auto;">
+      <div class="pipeline">
+        <div class="pipe-col sr-child" data-feature="SHARED__LANDING_PIPELINE_COL" style="background:#fff;border:1px solid rgba(0,0,0,0.06);border-radius:12px;padding:14px;">
+          <div class="pipe-head"><span class="pipe-dot blue"></span>Spotted</div>
+          <div class="pipe-card" style="border-left:3px solid #3b82f6;"><strong>2-Bed, Ancoats</strong><span>Manchester &middot; &pound;850/mo &middot; <span style="color:#1e9a80;font-weight:600;">+&pound;1,200</span></span></div>
+          <div class="pipe-card" style="border-left:3px solid #3b82f6;"><strong>1-Bed, Hulme</strong><span>Manchester &middot; &pound;700/mo &middot; <span style="color:#1e9a80;font-weight:600;">+&pound;890</span></span></div>
+          <div class="pipe-card" style="border-left:3px solid #3b82f6;"><strong>2-Bed, Kelham</strong><span>Sheffield &middot; &pound;680/mo &middot; <span style="color:#1e9a80;font-weight:600;">+&pound;850</span></span></div>
+        </div>
+        <div class="pipe-col sr-child" data-feature="SHARED__LANDING_PIPELINE_COL" style="background:#fff;border:1px solid rgba(0,0,0,0.06);border-radius:12px;padding:14px;">
+          <div class="pipe-head"><span class="pipe-dot amber"></span>Shortlisted</div>
+          <div class="pipe-card" style="border-left:3px solid #f59e0b;"><strong>3-Bed, Headingley</strong><span>Leeds &middot; &pound;950/mo &middot; <span style="color:#1e9a80;font-weight:600;">+&pound;1,400</span></span></div>
+          <div class="pipe-card" style="border-left:3px solid #f59e0b;"><strong>1-Bed, Leith</strong><span>Edinburgh &middot; &pound;750/mo &middot; <span style="color:#1e9a80;font-weight:600;">+&pound;1,020</span></span></div>
+        </div>
+        <div class="pipe-col sr-child" data-feature="SHARED__LANDING_PIPELINE_COL" style="background:#fff;border:1px solid rgba(0,0,0,0.06);border-radius:12px;padding:14px;">
+          <div class="pipe-head"><span class="pipe-dot purple"></span>Offer Sent</div>
+          <div class="pipe-card" style="border-left:3px solid #8b5cf6;"><strong>2-Bed, Digbeth</strong><span>Birmingham &middot; &pound;780/mo &middot; <span style="color:#1e9a80;font-weight:600;">+&pound;1,100</span></span></div>
+          <div class="pipe-card" style="border-left:3px solid #8b5cf6;"><strong>3-Bed, Clifton</strong><span>Bristol &middot; &pound;1,100/mo &middot; <span style="color:#1e9a80;font-weight:600;">+&pound;1,650</span></span></div>
+        </div>
+        <div class="pipe-col sr-child" data-feature="SHARED__LANDING_PIPELINE_COL" style="background:#fff;border:1px solid rgba(0,0,0,0.06);border-radius:12px;padding:14px;">
+          <div class="pipe-head"><span class="pipe-dot green"></span>Signed</div>
+          <div class="pipe-card" style="border-left:3px solid #1e9a80;"><strong>1-Bed, Shoreditch</strong><span>London &middot; &pound;1,350/mo &middot; <span style="color:#1e9a80;font-weight:600;">+&pound;1,900</span></span></div>
+        </div>
+      </div>
+    </div>
+    <ul class="benefits sr" style="margin-top:24px;"><li class="sr-child">See every deal at a glance</li><li class="sr-child">Set follow-up reminders</li><li class="sr-child">Never let a deal go cold</li><li class="sr-child">From lead to lease in one view</li></ul>
+  </div></div>
+
+  <!-- UNIFIED INBOX (hidden — JV pivot) -->
+  <div class="s bg-cream sr" data-feature="SHARED__LANDING_INBOX" style="display:none !important;"><div class="wrap"><div class="sh"><h2 data-i18n="inbox_h">Landlords, Agents, Airbnb Operators - One Unified Inbox</h2><p>WhatsApp, email and portal messages in a single thread - linked to your deals.</p></div>
+    <div class="inbox-mock" data-feature="SHARED__LANDING_INBOX_MOCK">
+      <div class="inbox-list"><div class="inbox-list-head">Conversations</div><div class="inbox-thread active"><div style="display:flex;align-items:center;gap:8px;"><img src="https://i.pravatar.cc/32?img=12" width="28" height="28" loading="lazy" style="width:28px;height:28px;border-radius:50%;flex-shrink:0;" alt=""><div><div class="inbox-thread-name">James Thornton</div><div class="inbox-thread-preview">Is the Manchester flat available?</div></div></div></div><div class="inbox-thread"><div style="display:flex;align-items:center;gap:8px;"><img src="https://i.pravatar.cc/32?img=5" width="28" height="28" loading="lazy" style="width:28px;height:28px;border-radius:50%;flex-shrink:0;" alt=""><div><div class="inbox-thread-name">Sarah Chen</div><div class="inbox-thread-preview">Viewing confirmed for Thursday</div></div></div></div><div class="inbox-thread"><div style="display:flex;align-items:center;gap:8px;"><img src="https://i.pravatar.cc/32?img=33" width="28" height="28" loading="lazy" style="width:28px;height:28px;border-radius:50%;flex-shrink:0;" alt=""><div><div class="inbox-thread-name">David Walsh</div><div class="inbox-thread-preview">Contract sent for review</div></div></div></div></div>
+      <div class="inbox-chat"><div class="inbox-chat-head">James Thornton <span class="deal-tag">2-Bed, Ancoats</span></div><div class="inbox-msgs"><div class="msg them">Is the 2-bed in Ancoats still available for serviced accommodation?</div><div class="msg me">Yes, the landlord has approved it. Monthly rent is &pound;850 with an estimated profit of &pound;1,200.</div><div class="msg them">That sounds ideal. When can I arrange a viewing?</div><div class="msg me">Thursday at 5pm works. I will send the address now.</div></div></div>
+    </div>
+    <div class="inbox-features sr"><div class="inbox-feat sr-child">Auto-link messages to deals</div><div class="inbox-feat sr-child">Reminders before viewings and renewals</div><div class="inbox-feat sr-child">See deal stage inside every thread</div></div>
+  </div></div>
+
+  <!-- BOOKING SITE BUILDER DEMO -->
+  <div class="s bg-white booking-demo-section" data-feature="SHARED__LANDING_BOOKING">
+    <div class="booking-demo-wrap">
+      <div class="sh">
+        <div class="nfs-section-badge">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#1e9a80" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M2 12h20M12 2a15.3 15.3 0 014 10 15.3 15.3 0 01-4 10 15.3 15.3 0 01-4-10 15.3 15.3 0 014-10z"/></svg>
+          White-Label Booking Site
+        </div>
+        <h2 data-i18n="booking_h">Build your direct booking channel</h2>
+        <p>Stop paying 15-20% OTA commissions. Launch your branded booking site in minutes.</p>
+      </div>
+
+      <div class="booking-demo-layout">
+        <!-- Controls -->
+        <div class="booking-demo-controls">
+          <div class="booking-controls-card" data-feature="SHARED__LANDING_BOOKING_CONTROLS">
+            <div class="booking-controls-heading">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#1e9a80" stroke-width="2"><path d="M12 2L2 7l10 5 10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/></svg>
+              Customise Your Site
+            </div>
+
+            <!-- Brand Name -->
+            <div class="booking-form-group">
+              <label class="booking-form-label">Brand Name</label>
+              <input type="text" id="demoName" value="Luxe Stays" class="booking-form-input">
+            </div>
+
+            <!-- Logo Upload -->
+            <div class="booking-form-group">
+              <label class="booking-form-label">Logo</label>
+              <label id="logoUploadZone" class="booking-upload-zone booking-upload-logo">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#6b7280" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+                <span id="logoLabel">Upload your logo</span>
+                <input type="file" id="logoInput" accept="image/*" style="display:none;" onchange="handleLogoUpload(this)">
+              </label>
+            </div>
+
+            <!-- Hero Background -->
+            <div class="booking-form-group">
+              <label class="booking-form-label">Hero Background</label>
+              <label class="booking-upload-zone">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#6b7280" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+                <span id="bgLabel">Change background</span>
+                <input type="file" id="bgInput" accept="image/*" style="display:none;" onchange="handleBgUpload(this)">
+              </label>
+            </div>
+
+            <!-- Accent Colour -->
+            <div class="booking-form-group">
+              <label class="booking-form-label">Accent Colour</label>
+              <div class="booking-color-row">
+                <button class="demo-color active" data-color="#10b981" style="background:#10b981;" onclick="pickColor(this)"></button>
+                <button class="demo-color" data-color="#3b82f6" style="background:#3b82f6;" onclick="pickColor(this)"></button>
+                <button class="demo-color" data-color="#8b5cf6" style="background:#8b5cf6;" onclick="pickColor(this)"></button>
+                <button class="demo-color" data-color="#f59e0b" style="background:#f59e0b;" onclick="pickColor(this)"></button>
+                <button class="demo-color" data-color="#ef4444" style="background:#ef4444;" onclick="pickColor(this)"></button>
+                <button class="demo-color" data-color="#1a1a1a" style="background:#1a1a1a;" onclick="pickColor(this)"></button>
+              </div>
+            </div>
+
+            <!-- URL -->
+            <div class="booking-form-group">
+              <label class="booking-form-label">Site URL</label>
+              <div class="booking-url-group">
+                <input type="text" id="demoSubdomain" value="luxestays" style="flex:1;height:38px;border:none;padding:0 12px;font-size:13px;color:#1a1a1a;outline:none;" readonly>
+                <span class="booking-url-suffix">.nfstay.app</span>
+              </div>
+            </div>
+
+            <a href="/signup" class="booking-cta-btn" data-feature="SHARED__LANDING_BOOKING_CTA">Build Your Site Free</a>
+            <p class="booking-cta-sub">No credit card needed</p>
+          </div>
+        </div>
+
+        <!-- Live Preview -->
+        <div class="booking-demo-preview" data-feature="SHARED__LANDING_BOOKING_PREVIEW">
+          <div style="border:1px solid rgba(0,0,0,0.06);border-radius:16px;overflow:hidden;box-shadow:0 12px 48px rgba(0,0,0,0.08);background:#fff;">
+            <!-- Browser chrome -->
+            <div style="background:linear-gradient(180deg,#f8f9fa,#f3f4f6);border-bottom:1px solid rgba(0,0,0,0.06);padding:12px 16px;display:flex;align-items:center;gap:8px;">
+              <span style="width:10px;height:10px;border-radius:50%;background:#ff5f57;"></span>
+              <span style="width:10px;height:10px;border-radius:50%;background:#ffbd2e;"></span>
+              <span style="width:10px;height:10px;border-radius:50%;background:#28c840;"></span>
+              <div style="flex:1;background:#fff;border:1px solid rgba(0,0,0,0.06);border-radius:8px;padding:6px 14px;font-size:12px;color:#6b7280;margin-left:12px;display:flex;align-items:center;gap:4px;">
+                <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="#1e9a80" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+                <span id="demoUrlBar">luxestays.nfstay.app</span>
+              </div>
+            </div>
+
+            <!-- Header -->
+            <div style="display:flex;align-items:center;justify-content:space-between;padding:14px 24px;border-bottom:1px solid #f3f4f6;">
+              <div style="display:flex;align-items:center;gap:8px;">
+                <img id="demoLogoImg" src="" style="width:28px;height:28px;border-radius:6px;object-fit:cover;display:none;" alt="">
+                <span style="font-size:16px;font-weight:700;" id="demoLogo">Luxe Stays</span>
+              </div>
+              <div style="display:flex;gap:20px;font-size:12px;color:#6b7280;font-weight:500;">
+                <span>Properties</span><span>About</span><span>Contact</span>
+              </div>
+            </div>
+
+            <!-- Hero -->
+            <div style="position:relative;height:220px;overflow:hidden;">
+              <img id="demoHeroImg" src="https://images.unsplash.com/photo-1566073771259-6a8506099945?w=800&q=80" width="800" height="400" loading="lazy" style="width:100%;height:100%;object-fit:cover;" alt="">
+              <div style="position:absolute;inset:0;background:linear-gradient(to top,rgba(0,0,0,0.7),rgba(0,0,0,0.15),transparent);"></div>
+              <div style="position:absolute;bottom:0;left:0;right:0;padding:24px;">
+                <h3 style="font-size:22px;font-weight:700;color:#fff;margin-bottom:6px;">Find Your Perfect Stay</h3>
+                <p style="font-size:13px;color:rgba(255,255,255,0.8);">Book directly for the best rates and personal experience</p>
+              </div>
+            </div>
+
+            <!-- Search bar -->
+            <div style="padding:0 24px;margin-top:-18px;position:relative;z-index:1;">
+              <div style="background:#fff;border-radius:12px;box-shadow:0 4px 20px rgba(0,0,0,0.08);border:1px solid #f3f4f6;padding:12px 16px;display:flex;align-items:center;gap:10px;">
+                <div style="flex:1;"><span style="font-size:9px;color:#6b7280;font-weight:500;display:block;">Location</span><span style="font-size:12px;color:#1a1a1a;">Where are you going?</span></div>
+                <div style="width:1px;height:28px;background:#e5e7eb;"></div>
+                <div style="flex:1;"><span style="font-size:9px;color:#6b7280;font-weight:500;display:block;">Check in - Check out</span><span style="font-size:12px;color:#1a1a1a;">Add dates</span></div>
+                <div style="width:1px;height:28px;background:#e5e7eb;"></div>
+                <div style="flex:0.6;"><span style="font-size:9px;color:#6b7280;font-weight:500;display:block;">Guests</span><span style="font-size:12px;color:#1a1a1a;">2</span></div>
+                <button id="demoSearchBtn" style="padding:8px 18px;border-radius:10px;color:#fff;font-size:12px;font-weight:600;border:none;cursor:pointer;background:#10b981;">Search</button>
+              </div>
+            </div>
+
+            <!-- Properties -->
+            <div style="padding:20px 24px;">
+              <span style="font-size:13px;font-weight:600;color:#1a1a1a;display:block;margin-bottom:12px;">Featured Properties</span>
+              <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px;">
+                <div style="border:1px solid #f3f4f6;border-radius:12px;overflow:hidden;transition:box-shadow 0.2s;" onmouseover="this.style.boxShadow='0 4px 16px rgba(0,0,0,0.08)'" onmouseout="this.style.boxShadow='none'">
+                  <img src="https://images.unsplash.com/photo-1522708323590-d24dbb6b0267?w=300&q=80" width="300" height="90" loading="lazy" style="width:100%;height:90px;object-fit:cover;" alt="">
+                  <div style="padding:10px;"><span style="font-size:12px;font-weight:600;color:#1a1a1a;display:block;">Modern City Apartment</span><span style="font-size:10px;color:#6b7280;">London, UK</span><span class="demo-price" style="font-size:12px;font-weight:700;color:#10b981;display:block;margin-top:4px;">&pound;120 <span style="font-size:10px;font-weight:400;color:#6b7280;">/ night</span></span></div>
+                </div>
+                <div style="border:1px solid #f3f4f6;border-radius:12px;overflow:hidden;transition:box-shadow 0.2s;" onmouseover="this.style.boxShadow='0 4px 16px rgba(0,0,0,0.08)'" onmouseout="this.style.boxShadow='none'">
+                  <img src="https://images.unsplash.com/photo-1502672260266-1c1ef2d93688?w=300&q=80" width="300" height="90" loading="lazy" style="width:100%;height:90px;object-fit:cover;" alt="">
+                  <div style="padding:10px;"><span style="font-size:12px;font-weight:600;color:#1a1a1a;display:block;">Luxury Penthouse Suite</span><span style="font-size:10px;color:#6b7280;">Manchester, UK</span><span class="demo-price" style="font-size:12px;font-weight:700;color:#10b981;display:block;margin-top:4px;">&pound;185 <span style="font-size:10px;font-weight:400;color:#6b7280;">/ night</span></span></div>
+                </div>
+                <div style="border:1px solid #f3f4f6;border-radius:12px;overflow:hidden;transition:box-shadow 0.2s;" onmouseover="this.style.boxShadow='0 4px 16px rgba(0,0,0,0.08)'" onmouseout="this.style.boxShadow='none'">
+                  <img src="https://images.unsplash.com/photo-1560448204-e02f11c3d0e2?w=300&q=80" width="300" height="90" loading="lazy" style="width:100%;height:90px;object-fit:cover;" alt="">
+                  <div style="padding:10px;"><span style="font-size:12px;font-weight:600;color:#1a1a1a;display:block;">Cosy Studio Retreat</span><span style="font-size:10px;color:#6b7280;">Birmingham, UK</span><span class="demo-price" style="font-size:12px;font-weight:700;color:#10b981;display:block;margin-top:4px;">&pound;85 <span style="font-size:10px;font-weight:400;color:#6b7280;">/ night</span></span></div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Footer -->
+            <div style="padding:12px 24px;background:#fafafa;border-top:1px solid #f3f4f6;display:flex;align-items:center;justify-content:space-between;">
+              <div style="display:flex;align-items:center;gap:6px;">
+                <img id="demoFooterLogo" src="" style="width:20px;height:20px;border-radius:4px;object-fit:cover;display:none;" alt="">
+                <span style="font-size:12px;font-weight:600;" id="demoFooterName">Luxe Stays</span>
+              </div>
+              <span style="font-size:10px;color:#6b7280;">Powered by nfstay</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ========== JV PARTNERS SECTION ========== -->
+  <section id="jv-partners" class="s bg-cream sr" data-feature="SHARED__LANDING_JV_PARTNERS">
+    <div class="wrap">
+      <div class="sh">
+        <div style="display:inline-flex;align-items:center;gap:8px;background:rgba(30,154,128,0.06);padding:8px 20px;border-radius:10px;margin-bottom:16px;">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#1e9a80" stroke-width="2"><path d="M16 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="8.5" cy="7" r="4"/><path d="M20 8v6M23 11h-6"/></svg>
+          <span style="font-size:13px;font-weight:600;color:#1e9a80;text-transform:uppercase;letter-spacing:0.5px;">JV Partnerships</span>
+        </div>
+        <h2 style="font-size:40px;">Go together, not alone</h2>
+        <p>Join a fast-growing Serviced Accommodation company by owning a fraction of an Airbnb deal. Fully managed. You earn, they operate.</p>
+      </div>
+      <div class="g3">
+        <div class="card sr-child" style="border-top:3px solid #1e9a80;"><h3>Own a fraction from &pound;500</h3><p>Pick a Serviced Accommodation Airbnb property on the marketplace and choose how many shares you want. No experience needed.</p></div>
+        <div class="card sr-child" style="border-top:3px solid #1e9a80;"><h3>Fully managed for you</h3><p>An experienced operator handles guests, cleaning, maintenance and bookings. You sit back and earn.</p></div>
+        <div class="card sr-child" style="border-top:3px solid #1e9a80;"><h3>Vote on key decisions</h3><p>Every partner gets a say. Vote on furniture upgrades, pricing changes, management decisions and more from your dashboard.</p></div>
+      </div>
+      <div style="text-align:center;margin-top:32px;"><a href="/signup" class="btn btn-green" style="padding:14px 40px;font-size:15px;border-radius:14px;">Get Started</a></div>
+    </div>
+  </section>
+
+  <!-- ========== BECOME AN AGENT SECTION ========== -->
+  <section id="become-agent" class="s bg-white sr" data-feature="SHARED__LANDING_BECOME_AGENT">
+    <div class="wrap">
+      <div class="sh">
+        <div style="display:inline-flex;align-items:center;gap:8px;background:rgba(30,154,128,0.06);padding:8px 20px;border-radius:10px;margin-bottom:16px;">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#1e9a80" stroke-width="2"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75"/></svg>
+          <span style="font-size:13px;font-weight:600;color:#1e9a80;text-transform:uppercase;letter-spacing:0.5px;">Agent Programme</span>
+        </div>
+        <h2 style="font-size:40px;">Become an nfstay Agent</h2>
+        <p>Earn commissions by referring partners and operators to nfstay. Share your link, get paid every month.</p>
+      </div>
+      <div class="g3">
+        <div class="card sr-child" style="border-top:3px solid #1e9a80;"><h3>Get your referral link</h3><p>Sign up as an agent and receive your unique tracking link in seconds. No setup fees.</p></div>
+        <div class="card sr-child" style="border-top:3px solid #1e9a80;"><h3>Share and earn</h3><p>Refer partners and Airbnb operators. Earn recurring commissions on every successful sign-up.</p></div>
+        <div class="card sr-child" style="border-top:3px solid #1e9a80;"><h3>Track your earnings</h3><p>See your referrals, commissions and payouts from your agent dashboard. Withdraw anytime.</p></div>
+      </div>
+      <div style="text-align:center;margin-top:32px;"><a href="/signup" class="btn btn-green" style="padding:14px 40px;font-size:15px;border-radius:14px;">Join the Agent Programme</a></div>
+    </div>
+  </section>
+
+  <!-- ========== BOOKING SITES ANCHOR ========== -->
+  <div id="booking-sites"></div>
+
+  <!-- JOURNEY — HOW IT WORKS (simplified 3-step) -->
+  <section id="how-it-works" class="tl-section" data-feature="SHARED__LANDING_JOURNEY">
+    <div class="tl-container">
+      <div class="tl-heading">
+        <h2>How it <span class="tl-accent">works</span></h2>
+        <p>Sign up, pick a deal and become part of a growing Serviced Accommodation company.</p>
+      </div>
+      <div class="tl-timeline">
+
+        <div class="tl-item" data-feature="SHARED__LANDING_JOURNEY_STEP">
+          <div class="tl-node"><span>01</span></div>
+          <div class="tl-card tl-v-bento">
+            <div class="tl-bento-num">01</div>
+            <div class="tl-bento-body">
+              <div class="tl-bento-label">Sign Up</div>
+              <h3>Create your free account</h3>
+              <p>Sign up in under a minute and browse live Airbnb Serviced Accommodation deals on the marketplace. Pick a property and choose your share from &pound;500.</p>
+              <div class="tl-bento-pill">Free to join</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="tl-item" data-feature="SHARED__LANDING_JOURNEY_STEP">
+          <div class="tl-node"><span>02</span></div>
+          <div class="tl-card tl-v-spotlight">
+            <div class="tl-spot-glow"></div>
+            <div class="tl-spot-label">Your Say</div>
+            <h3>A decision is proposed</h3>
+            <p>You, another partner or the management team can propose changes &mdash; replace furniture, adjust the nightly rate, change booking strategy or even switch the management company.</p>
+            <div class="tl-spot-metric" style="font-size:16px;"><span style="font-size:16px;">Majority rules</span></div>
+          </div>
+        </div>
+
+        <div class="tl-item" data-feature="SHARED__LANDING_JOURNEY_STEP">
+          <div class="tl-node"><span>03</span></div>
+          <div class="tl-card tl-v-revenue">
+            <div class="tl-rev-sparkles"></div>
+            <div class="tl-rev-emoji">&#9989;</div>
+            <div class="tl-rev-label">You Decide</div>
+            <h3>Vote and shape the outcome</h3>
+            <div class="tl-rev-amount" style="font-size:20px;">Your voice matters</div>
+            <p>All partners get notified via WhatsApp and email. Review the proposal, cast your vote and the majority decision is applied. Management starts with nfstay &mdash; if the majority votes to change it, it changes.</p>
+            <a href="/signup" class="tl-rev-cta">Get started &rarr;</a>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </section>
+  <!-- ACADEMY (with emojis, progress bars, gamification) -->
+  <div class="s bg-cream sr" data-feature="SHARED__LANDING_ACADEMY" id="university-old" style="display:none;"><div class="wrap">
+    <div class="sh">
+      <div style="display:inline-flex;align-items:center;gap:8px;background:rgba(30,154,128,0.06);padding:8px 20px;border-radius:10px;margin-bottom:16px;">
+        <span style="font-size:20px;">&#127891;</span>
+        <span style="font-size:13px;font-weight:600;color:#1e9a80;text-transform:uppercase;letter-spacing:0.5px;">nfstay Academy</span>
+      </div>
+      <h2 data-i18n="academy_h">Learn rent-to-rent. Then do it. In the same place.</h2>
+      <p>15 years of operator knowledge, structured into step-by-step modules with progress tracking.</p>
+    </div>
+
+    <div style="display:flex;gap:16px;justify-content:center;flex-wrap:wrap;margin-bottom:32px;">
+      <div style="display:flex;align-items:center;gap:6px;background:#fff;border:1px solid rgba(0,0,0,0.06);border-radius:10px;padding:10px 16px;">
+        <span style="font-size:18px;">&#128218;</span>
+        <div><div style="font-size:13px;font-weight:700;color:#1a1a1a;">44 lessons</div><div style="font-size:10px;color:#6b7280;">6 modules</div></div>
+      </div>
+      <div style="display:flex;align-items:center;gap:6px;background:#fff;border:1px solid rgba(0,0,0,0.06);border-radius:10px;padding:10px 16px;">
+        <span style="font-size:18px;">&#127891;</span>
+        <div><div style="font-size:13px;font-weight:700;color:#1a1a1a;">Beginner to Pro</div><div style="font-size:10px;color:#6b7280;">Step-by-step path</div></div>
+      </div>
+      <div style="display:flex;align-items:center;gap:6px;background:#fff;border:1px solid rgba(0,0,0,0.06);border-radius:10px;padding:10px 16px;">
+        <span style="font-size:18px;">&#9989;</span>
+        <div><div style="font-size:13px;font-weight:700;color:#1a1a1a;">Track progress</div><div style="font-size:10px;color:#6b7280;">Pick up where you left off</div></div>
+      </div>
+    </div>
+
+    <div class="g3">
+      <div class="course sr-child" data-feature="SHARED__LANDING_ACADEMY_COURSE" style="padding:0;overflow:hidden;"><div style="height:6px;background:linear-gradient(90deg,#1e9a80,#10b981);"></div><div style="padding:20px;"><div style="display:flex;align-items:center;gap:10px;margin-bottom:10px;"><span style="font-size:28px;">&#128218;</span><div style="flex:1;"><h3 style="margin:0;font-size:15px;">Getting Started</h3><div style="font-size:11px;color:#6b7280;">6 lessons &middot; <span style="color:#1e9a80;font-weight:600;">Beginner</span></div></div><span style="font-size:11px;font-weight:600;color:#1e9a80;">100%</span></div><div style="height:4px;background:#e5e7eb;border-radius:2px;overflow:hidden;"><div style="width:100%;height:100%;background:#1e9a80;border-radius:2px;"></div></div><p style="font-size:12px;color:#6b7280;margin-top:10px;line-height:1.5;">The fundamentals of rent-to-rent.</p></div></div>
+      <div class="course sr-child" data-feature="SHARED__LANDING_ACADEMY_COURSE" style="padding:0;overflow:hidden;"><div style="height:6px;background:linear-gradient(90deg,#1e9a80,#10b981);"></div><div style="padding:20px;"><div style="display:flex;align-items:center;gap:10px;margin-bottom:10px;"><span style="font-size:28px;">&#128269;</span><div style="flex:1;"><h3 style="margin:0;font-size:15px;">Property Hunting</h3><div style="font-size:11px;color:#6b7280;">8 lessons &middot; <span style="color:#1e9a80;font-weight:600;">Beginner</span></div></div><span style="font-size:11px;font-weight:600;color:#1e9a80;">75%</span></div><div style="height:4px;background:#e5e7eb;border-radius:2px;overflow:hidden;"><div style="width:75%;height:100%;background:#1e9a80;border-radius:2px;"></div></div><p style="font-size:12px;color:#6b7280;margin-top:10px;line-height:1.5;">Where to find deals and evaluate areas.</p></div></div>
+      <div class="course sr-child" data-feature="SHARED__LANDING_ACADEMY_COURSE" style="padding:0;overflow:hidden;"><div style="height:6px;background:linear-gradient(90deg,#f59e0b,#fbbf24);"></div><div style="padding:20px;"><div style="display:flex;align-items:center;gap:10px;margin-bottom:10px;"><span style="font-size:28px;">&#128172;</span><div style="flex:1;"><h3 style="margin:0;font-size:15px;">Landlord Pitching</h3><div style="font-size:11px;color:#6b7280;">6 lessons &middot; <span style="color:#f59e0b;font-weight:600;">Intermediate</span></div></div><span style="font-size:11px;font-weight:600;color:#f59e0b;">40%</span></div><div style="height:4px;background:#e5e7eb;border-radius:2px;overflow:hidden;"><div style="width:40%;height:100%;background:#f59e0b;border-radius:2px;"></div></div><p style="font-size:12px;color:#6b7280;margin-top:10px;line-height:1.5;">Scripts and objection handling.</p></div></div>
+      <div class="course sr-child" data-feature="SHARED__LANDING_ACADEMY_COURSE" style="padding:0;overflow:hidden;"><div style="height:6px;background:linear-gradient(90deg,#f59e0b,#fbbf24);"></div><div style="padding:20px;"><div style="display:flex;align-items:center;gap:10px;margin-bottom:10px;"><span style="font-size:28px;">&#128176;</span><div style="flex:1;"><h3 style="margin:0;font-size:15px;">Numbers and Profit</h3><div style="font-size:11px;color:#6b7280;">8 lessons &middot; <span style="color:#f59e0b;font-weight:600;">Intermediate</span></div></div><span style="font-size:11px;font-weight:600;color:#6b7280;">0%</span></div><div style="height:4px;background:#e5e7eb;border-radius:2px;overflow:hidden;"><div style="width:0%;height:100%;background:#f59e0b;border-radius:2px;"></div></div><p style="font-size:12px;color:#6b7280;margin-top:10px;line-height:1.5;">Model returns and know your margins.</p></div></div>
+      <div class="course sr-child" data-feature="SHARED__LANDING_ACADEMY_COURSE" style="padding:0;overflow:hidden;"><div style="height:6px;background:linear-gradient(90deg,#f59e0b,#fbbf24);"></div><div style="padding:20px;"><div style="display:flex;align-items:center;gap:10px;margin-bottom:10px;"><span style="font-size:28px;">&#128200;</span><div style="flex:1;"><h3 style="margin:0;font-size:15px;">Scaling Your Portfolio</h3><div style="font-size:11px;color:#6b7280;">10 lessons &middot; <span style="color:#f59e0b;font-weight:600;">Intermediate</span></div></div><span style="font-size:11px;font-weight:600;color:#6b7280;">0%</span></div><div style="height:4px;background:#e5e7eb;border-radius:2px;overflow:hidden;"><div style="width:0%;height:100%;background:#f59e0b;border-radius:2px;"></div></div><p style="font-size:12px;color:#6b7280;margin-top:10px;line-height:1.5;">Systems, automation, team building.</p></div></div>
+      <div class="course sr-child" data-feature="SHARED__LANDING_ACADEMY_COURSE" style="padding:0;overflow:hidden;"><div style="height:6px;background:linear-gradient(90deg,#1e9a80,#10b981);"></div><div style="padding:20px;"><div style="display:flex;align-items:center;gap:10px;margin-bottom:10px;"><span style="font-size:28px;">&#127968;</span><div style="flex:1;"><h3 style="margin:0;font-size:15px;">Direct Bookings</h3><div style="font-size:11px;color:#6b7280;">6 lessons &middot; <span style="color:#1e9a80;font-weight:600;">Beginner</span></div></div><span style="font-size:11px;font-weight:600;color:#6b7280;">0%</span></div><div style="height:4px;background:#e5e7eb;border-radius:2px;overflow:hidden;"><div style="width:0%;height:100%;background:#1e9a80;border-radius:2px;"></div></div><p style="font-size:12px;color:#6b7280;margin-top:10px;line-height:1.5;">Build your own booking site.</p></div></div>
+    </div>
+    <p style="text-align:center;font-size:13px;color:#6b7280;margin-top:24px;">All modules included in your membership</p>
+  </div></div>
+
+  <!-- ========== ACADEMY V2: SPLIT LAYOUT + ACCORDION (Option B improved) ========== -->
+  <!-- Hugo: Delete this entire block if you prefer the original above. -->
+  <div class="s bg-cream sr" data-feature="SHARED__LANDING_ACADEMY_V2" id="university" style="display:none !important;">
+    <div class="wrap" style="max-width:1200px;">
+      <div style="display:flex;flex-direction:row;align-items:center;gap:48px;" id="accV2Layout">
+
+        <!-- Left: Text Content -->
+        <div style="flex:1;min-width:0;">
+          <div style="display:inline-flex;align-items:center;gap:8px;background:rgba(30,154,128,0.06);padding:8px 20px;border-radius:10px;margin-bottom:16px;">
+            <span style="font-size:20px;">&#127891;</span>
+            <span style="font-size:13px;font-weight:600;color:#1e9a80;text-transform:uppercase;letter-spacing:0.5px;">nfstay Academy</span>
+          </div>
+          <h2 style="text-align:left;font-size:34px;font-weight:700;line-height:1.15;color:#1a1a1a;margin-bottom:16px;">Learn rent-to-rent.<br>Then do it.<br>In the same place.</h2>
+          <p style="font-size:16px;color:#6b7280;line-height:1.6;max-width:440px;margin-bottom:24px;">15 years of operator knowledge, structured into step-by-step modules with progress tracking.</p>
+
+          <div style="display:flex;gap:12px;flex-wrap:wrap;margin-bottom:28px;">
+            <div style="display:flex;align-items:center;gap:6px;background:#fff;border:1px solid rgba(0,0,0,0.06);border-radius:10px;padding:8px 14px;">
+              <span style="font-size:16px;">&#128218;</span>
+              <div><div style="font-size:12px;font-weight:700;color:#1a1a1a;">44 lessons</div><div style="font-size:10px;color:#6b7280;">6 modules</div></div>
+            </div>
+            <div style="display:flex;align-items:center;gap:6px;background:#fff;border:1px solid rgba(0,0,0,0.06);border-radius:10px;padding:8px 14px;">
+              <span style="font-size:16px;">&#127891;</span>
+              <div><div style="font-size:12px;font-weight:700;color:#1a1a1a;">Beginner to Pro</div><div style="font-size:10px;color:#6b7280;">Step-by-step</div></div>
+            </div>
+            <div style="display:flex;align-items:center;gap:6px;background:#fff;border:1px solid rgba(0,0,0,0.06);border-radius:10px;padding:8px 14px;">
+              <span style="font-size:16px;">&#9989;</span>
+              <div><div style="font-size:12px;font-weight:700;color:#1a1a1a;">Track progress</div><div style="font-size:10px;color:#6b7280;">Resume anytime</div></div>
+            </div>
+          </div>
+
+          <a href="/signup" style="display:inline-block;background:#1a1a1a;color:#fff;font-weight:600;font-size:14px;padding:13px 32px;border-radius:14px;box-shadow:0 4px 16px rgba(0,0,0,0.12);transition:background 200ms;">Start Learning</a>
+        </div>
+
+        <!-- Right: Image Accordion -->
+        <div style="flex:1;min-width:0;display:flex;align-items:center;justify-content:center;gap:10px;padding:8px 0;" id="accV2">
+
+          <!-- 1. Getting Started -->
+          <div class="accv2-item active" data-idx="0">
+            <div class="accv2-bg" style="background:linear-gradient(135deg,#0f766e 0%,#1e9a80 40%,#34d399 100%);"></div>
+            <div class="accv2-pattern"></div>
+            <div class="accv2-emoji-bg"><span>&#128218;</span></div>
+            <div class="accv2-overlay"></div>
+            <div class="accv2-caption"><span class="accv2-emoji">&#128218;</span> Getting Started</div>
+            <div class="accv2-detail">
+              <div class="accv2-detail-badge">Beginner</div>
+              <div class="accv2-detail-lessons">6 lessons &middot; ~25 min</div>
+              <div class="accv2-detail-desc">The fundamentals of rent-to-rent. Set up your business from scratch.</div>
+              <div class="accv2-detail-bar"><div class="accv2-detail-fill" style="width:100%;"></div></div>
+              <div class="accv2-detail-status">&#9989; Complete</div>
+            </div>
+          </div>
+
+          <!-- 2. Property Hunting -->
+          <div class="accv2-item" data-idx="1">
+            <div class="accv2-bg" style="background:linear-gradient(135deg,#065f46 0%,#1e9a80 50%,#6ee7b7 100%);"></div>
+            <div class="accv2-pattern"></div>
+            <div class="accv2-emoji-bg"><span>&#128269;</span></div>
+            <div class="accv2-overlay"></div>
+            <div class="accv2-caption"><span class="accv2-emoji">&#128269;</span> Property Hunting</div>
+            <div class="accv2-detail">
+              <div class="accv2-detail-badge">Beginner</div>
+              <div class="accv2-detail-lessons">8 lessons &middot; ~35 min</div>
+              <div class="accv2-detail-desc">Where to find deals and evaluate areas across the UK.</div>
+              <div class="accv2-detail-bar"><div class="accv2-detail-fill" style="width:75%;"></div></div>
+              <div class="accv2-detail-status">75% done</div>
+            </div>
+          </div>
+
+          <!-- 3. Landlord Pitching -->
+          <div class="accv2-item" data-idx="2">
+            <div class="accv2-bg" style="background:linear-gradient(135deg,#1a1a1a 0%,#374151 50%,#6b7280 100%);"></div>
+            <div class="accv2-pattern"></div>
+            <div class="accv2-emoji-bg"><span>&#128172;</span></div>
+            <div class="accv2-overlay"></div>
+            <div class="accv2-caption"><span class="accv2-emoji">&#128172;</span> Landlord Pitching</div>
+            <div class="accv2-detail">
+              <div class="accv2-detail-badge accv2-badge-inter">Intermediate</div>
+              <div class="accv2-detail-lessons">6 lessons &middot; ~20 min</div>
+              <div class="accv2-detail-desc">Scripts, objection handling, and closing techniques.</div>
+              <div class="accv2-detail-bar"><div class="accv2-detail-fill" style="width:40%;background:#f59e0b;"></div></div>
+              <div class="accv2-detail-status">40% done</div>
+            </div>
+          </div>
+
+          <!-- 4. Numbers and Profit -->
+          <div class="accv2-item" data-idx="3">
+            <div class="accv2-bg" style="background:linear-gradient(135deg,#111827 0%,#1f2937 40%,#4b5563 100%);"></div>
+            <div class="accv2-pattern"></div>
+            <div class="accv2-emoji-bg"><span>&#128176;</span></div>
+            <div class="accv2-overlay"></div>
+            <div class="accv2-caption"><span class="accv2-emoji">&#128176;</span> Numbers &amp; Profit</div>
+            <div class="accv2-detail">
+              <div class="accv2-detail-badge accv2-badge-inter">Intermediate</div>
+              <div class="accv2-detail-lessons">8 lessons &middot; ~30 min</div>
+              <div class="accv2-detail-desc">Model returns and know your margins before you sign.</div>
+              <div class="accv2-detail-bar"><div class="accv2-detail-fill" style="width:0%;"></div></div>
+              <div class="accv2-detail-status">Not started</div>
+            </div>
+          </div>
+
+          <!-- 5. Scaling Your Portfolio -->
+          <div class="accv2-item" data-idx="4">
+            <div class="accv2-bg" style="background:linear-gradient(135deg,#0c4a6e 0%,#0284c7 50%,#38bdf8 100%);"></div>
+            <div class="accv2-pattern"></div>
+            <div class="accv2-emoji-bg"><span>&#128200;</span></div>
+            <div class="accv2-overlay"></div>
+            <div class="accv2-caption"><span class="accv2-emoji">&#128200;</span> Scaling Up</div>
+            <div class="accv2-detail">
+              <div class="accv2-detail-badge accv2-badge-inter">Intermediate</div>
+              <div class="accv2-detail-lessons">10 lessons &middot; ~40 min</div>
+              <div class="accv2-detail-desc">Systems, automation, and team building to grow your portfolio.</div>
+              <div class="accv2-detail-bar"><div class="accv2-detail-fill" style="width:0%;"></div></div>
+              <div class="accv2-detail-status">Not started</div>
+            </div>
+          </div>
+
+          <!-- 6. Direct Bookings -->
+          <div class="accv2-item" data-idx="5">
+            <div class="accv2-bg" style="background:linear-gradient(135deg,#1e9a80 0%,#10b981 50%,#a7f3d0 100%);"></div>
+            <div class="accv2-pattern"></div>
+            <div class="accv2-emoji-bg"><span>&#127968;</span></div>
+            <div class="accv2-overlay"></div>
+            <div class="accv2-caption"><span class="accv2-emoji">&#127968;</span> Direct Bookings</div>
+            <div class="accv2-detail">
+              <div class="accv2-detail-badge">Beginner</div>
+              <div class="accv2-detail-lessons">6 lessons &middot; ~25 min</div>
+              <div class="accv2-detail-desc">Build your own booking site and stop relying on Airbnb.</div>
+              <div class="accv2-detail-bar"><div class="accv2-detail-fill" style="width:0%;"></div></div>
+              <div class="accv2-detail-status">Not started</div>
+            </div>
+          </div>
+
+        </div>
+      </div>
+      <p style="text-align:center;font-size:13px;color:#6b7280;margin-top:32px;">All modules included in your membership</p>
+    </div>
+  </div>
+
+  <style>
+    /* ── Academy V2 Accordion ── */
+    .accv2-item {
+      position: relative; height: 450px; border-radius: 16px; overflow: hidden;
+      cursor: pointer; flex-shrink: 0; width: 56px;
+      transition: width 700ms cubic-bezier(0.22,1,0.36,1);
+      box-shadow: 0 4px 24px rgba(0,0,0,0.10);
+    }
+    .accv2-item.active { width: 300px; }
+
+    /* Gradient background */
+    .accv2-bg { position: absolute; inset: 0; }
+
+    /* Subtle dot pattern overlay */
+    .accv2-pattern {
+      position: absolute; inset: 0; opacity: 0.07;
+      background-image: radial-gradient(circle, rgba(255,255,255,0.8) 1px, transparent 1px);
+      background-size: 20px 20px;
+    }
+
+    /* Large faded emoji in background */
+    .accv2-emoji-bg {
+      position: absolute; top: 50%; left: 50%; transform: translate(-50%,-50%);
+      font-size: 120px; opacity: 0.12; pointer-events: none;
+      transition: opacity 400ms;
+    }
+    .accv2-item.active .accv2-emoji-bg { opacity: 0.08; font-size: 160px; }
+
+    /* Dark overlay for text legibility */
+    .accv2-overlay {
+      position: absolute; inset: 0;
+      background: linear-gradient(to top, rgba(0,0,0,0.55) 0%, rgba(0,0,0,0.1) 40%, transparent 70%);
+    }
+
+    /* Caption — collapsed: rotated vertical, positioned higher */
+    .accv2-caption {
+      position: absolute; color: #fff; font-size: 15px; font-weight: 600;
+      white-space: nowrap; transition: all 500ms cubic-bezier(0.22,1,0.36,1);
+      bottom: 50%; left: 50%;
+      transform: translateX(-50%) translateY(50%) rotate(90deg);
+      transform-origin: center center;
+    }
+    .accv2-item.active .accv2-caption {
+      bottom: auto; top: 20px; left: 20px;
+      transform: translateX(0) translateY(0) rotate(0deg);
+      font-size: 18px;
+    }
+    .accv2-emoji { margin-right: 6px; }
+
+    /* Detail panel — only visible when active */
+    .accv2-detail {
+      position: absolute; bottom: 16px; left: 16px; right: 16px;
+      opacity: 0; transform: translateY(10px);
+      transition: opacity 400ms 100ms, transform 400ms 100ms;
+    }
+    .accv2-item.active .accv2-detail { opacity: 1; transform: translateY(0); }
+
+    .accv2-detail-badge {
+      display: inline-block; font-size: 10px; font-weight: 700; text-transform: uppercase;
+      letter-spacing: 0.5px; padding: 3px 10px; border-radius: 100px;
+      background: rgba(30,154,128,0.25); color: #a7f3d0; margin-bottom: 8px;
+    }
+    .accv2-badge-inter { background: rgba(245,158,11,0.25); color: #fde68a; }
+
+    .accv2-detail-lessons {
+      font-size: 12px; color: rgba(255,255,255,0.8); margin-bottom: 6px; font-weight: 500;
+    }
+    .accv2-detail-desc {
+      font-size: 13px; color: rgba(255,255,255,0.9); line-height: 1.5; margin-bottom: 12px;
+    }
+    .accv2-detail-bar {
+      width: 100%; height: 4px; border-radius: 2px; background: rgba(255,255,255,0.2); overflow: hidden;
+      margin-bottom: 6px;
+    }
+    .accv2-detail-fill {
+      height: 100%; border-radius: 2px; background: #34d399;
+      transition: width 600ms cubic-bezier(0.22,1,0.36,1);
+    }
+    .accv2-detail-status {
+      font-size: 11px; font-weight: 600; color: rgba(255,255,255,0.75);
+    }
+
+    /* Responsive */
+    @media (max-width: 991px) {
+      #accV2Layout { flex-direction: column !important; gap: 32px !important; }
+      #accV2Layout > div:first-child { text-align: center; }
+      #accV2Layout > div:first-child h2 { text-align: center !important; }
+      #accV2Layout > div:first-child p { margin-left: auto; margin-right: auto; }
+      #accV2 { width: 100%; justify-content: center; }
+    }
+    @media (max-width: 768px) {
+      #accV2 { gap: 6px !important; }
+      .accv2-item { height: 340px !important; width: 44px !important; }
+      .accv2-item.active { width: 240px !important; }
+      .accv2-caption { font-size: 13px !important; }
+      .accv2-item.active .accv2-caption { font-size: 15px !important; }
+      .accv2-emoji-bg { font-size: 80px !important; }
+    }
+    @media (max-width: 480px) {
+      .accv2-item { height: 280px !important; width: 36px !important; }
+      .accv2-item.active { width: 200px !important; }
+      .accv2-caption { font-size: 11px !important; }
+      .accv2-detail-desc { font-size: 11px !important; }
+    }
+  </style>
 
   <script>
-    // Single homepage — no A/B testing. Always serve variant-a.
-    // Backup branch: backup/pre-homepage-pivot-2026-05-02
-    window.location.replace('/landing/variant-a.html');
+    (function() {
+      var items = document.querySelectorAll('#accV2 .accv2-item');
+      items.forEach(function(item) {
+        item.addEventListener('mouseenter', function() {
+          items.forEach(function(i) { i.classList.remove('active'); });
+          item.classList.add('active');
+        });
+        item.addEventListener('click', function() {
+          items.forEach(function(i) { i.classList.remove('active'); });
+          item.classList.add('active');
+        });
+      });
+    })();
   </script>
+
+  <!-- TESTIMONIALS V2: VERTICAL SCROLLING COLUMNS -->
+  <div class="s bg-cream sr" data-feature="SHARED__LANDING_TESTIMONIALS_V2" style="overflow:hidden;">
+    <div class="wrap" style="max-width:1440px;">
+      <div class="sh">
+        <div style="display:inline-flex;justify-content:center;">
+          <div style="border:1px solid rgba(0,0,0,0.08);padding:4px 16px;border-radius:10px;font-size:13px;font-weight:500;color:#1a1a1a;">Testimonials</div>
+        </div>
+        <h2 style="margin-top:20px;">What our operators say</h2>
+        <p>Real feedback from UK rent-to-rent operators using nfstay every day.</p>
+      </div>
+
+      <div style="display:flex;justify-content:center;gap:24px;max-height:740px;overflow:hidden;-webkit-mask-image:linear-gradient(to bottom,transparent,black 20%,black 80%,transparent);mask-image:linear-gradient(to bottom,transparent,black 20%,black 80%,transparent);">
+
+        <!-- Column 1 (5 reviews) -->
+        <div class="tvc-col" style="--tvc-duration:26s;">
+          <div class="tvc-track">
+            <div class="tvc-card">
+              <div style="color:#1e9a80;font-size:13px;letter-spacing:1px;margin-bottom:8px;">&#9733;&#9733;&#9733;&#9733;&#9733;</div>
+              <p class="tvc-text">nfstay helped me close my first three Airbnb partnerships in under a month. The dashboard keeps me organised.</p>
+              <div class="tvc-author"><img src="https://i.pravatar.cc/40?img=12" loading="lazy" alt=""><div><div class="tvc-name">Sarah K.</div><div class="tvc-role">Operator &middot; Manchester</div></div></div>
+            </div>
+            <div class="tvc-card">
+              <div style="color:#1e9a80;font-size:13px;letter-spacing:1px;margin-bottom:8px;">&#9733;&#9733;&#9733;&#9733;&#9733;</div>
+              <p class="tvc-text">My first JV partnership paid for itself within six weeks. From zero to earning Airbnb income in no time.</p>
+              <div class="tvc-author"><img src="https://i.pravatar.cc/40?img=15" loading="lazy" alt=""><div><div class="tvc-name">Tom P.</div><div class="tvc-role">Operator &middot; London</div></div></div>
+            </div>
+            <div class="tvc-card">
+              <div style="color:#1e9a80;font-size:13px;letter-spacing:1px;margin-bottom:8px;">&#9733;&#9733;&#9733;&#9733;&#9733;</div>
+              <p class="tvc-text">Every deal is verified. The earnings estimator is accurate. I use it before every viewing.</p>
+              <div class="tvc-author"><img src="https://i.pravatar.cc/40?img=5" loading="lazy" alt=""><div><div class="tvc-name">Priya S.</div><div class="tvc-role">Operator &middot; Birmingham</div></div></div>
+            </div>
+            <div class="tvc-card">
+              <div style="color:#1e9a80;font-size:13px;letter-spacing:1px;margin-bottom:8px;">&#9733;&#9733;&#9733;&#9733;&#9733;</div>
+              <p class="tvc-text">The dashboard saved me hours of tracking. All my Airbnb partnerships in one place.</p>
+              <div class="tvc-author"><img src="https://i.pravatar.cc/40?img=33" loading="lazy" alt=""><div><div class="tvc-name">James H.</div><div class="tvc-role">Operator &middot; Liverpool</div></div></div>
+            </div>
+            <div class="tvc-card">
+              <div style="color:#1e9a80;font-size:13px;letter-spacing:1px;margin-bottom:8px;">&#9733;&#9733;&#9733;&#9733;&#9733;</div>
+              <p class="tvc-text">I joined two Airbnb partnerships in my first month. Returns arrived on schedule.</p>
+              <div class="tvc-author"><img src="https://i.pravatar.cc/40?img=9" loading="lazy" alt=""><div><div class="tvc-name">Rachel L.</div><div class="tvc-role">Operator &middot; Bristol</div></div></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Column 2 (5 reviews — hidden on mobile) -->
+        <div class="tvc-col tvc-col-md" style="--tvc-duration:32s;">
+          <div class="tvc-track">
+            <div class="tvc-card">
+              <div style="color:#1e9a80;font-size:13px;letter-spacing:1px;margin-bottom:8px;">&#9733;&#9733;&#9733;&#9733;&#9733;</div>
+              <p class="tvc-text">Best decision I have made. The JV partnerships deliver consistent Airbnb returns.</p>
+              <div class="tvc-author"><img src="https://i.pravatar.cc/40?img=25" loading="lazy" alt=""><div><div class="tvc-name">David W.</div><div class="tvc-role">Operator &middot; Leeds</div></div></div>
+            </div>
+            <div class="tvc-card">
+              <div style="color:#1e9a80;font-size:13px;letter-spacing:1px;margin-bottom:8px;">&#9733;&#9733;&#9733;&#9733;&#9733;</div>
+              <p class="tvc-text">The direct booking site builder paid for the subscription in week one.</p>
+              <div class="tvc-author"><img src="https://i.pravatar.cc/40?img=44" loading="lazy" alt=""><div><div class="tvc-name">Amara O.</div><div class="tvc-role">Operator &middot; Nottingham</div></div></div>
+            </div>
+            <div class="tvc-card">
+              <div style="color:#1e9a80;font-size:13px;letter-spacing:1px;margin-bottom:8px;">&#9733;&#9733;&#9733;&#9733;&#9733;</div>
+              <p class="tvc-text">From zero properties to five in eight months. nfstay made it possible.</p>
+              <div class="tvc-author"><img src="https://i.pravatar.cc/40?img=11" loading="lazy" alt=""><div><div class="tvc-name">Callum M.</div><div class="tvc-role">Operator &middot; Sheffield</div></div></div>
+            </div>
+            <div class="tvc-card">
+              <div style="color:#1e9a80;font-size:13px;letter-spacing:1px;margin-bottom:8px;">&#9733;&#9733;&#9733;&#9733;&#9733;</div>
+              <p class="tvc-text">The earnings estimator is scary accurate. I trust it more than my spreadsheets.</p>
+              <div class="tvc-author"><img src="https://i.pravatar.cc/40?img=23" loading="lazy" alt=""><div><div class="tvc-name">Fatima R.</div><div class="tvc-role">Operator &middot; Cardiff</div></div></div>
+            </div>
+            <div class="tvc-card">
+              <div style="color:#1e9a80;font-size:13px;letter-spacing:1px;margin-bottom:8px;">&#9733;&#9733;&#9733;&#9733;&#9733;</div>
+              <p class="tvc-text">I love that every deal is landlord-approved. No wasted viewings.</p>
+              <div class="tvc-author"><img src="https://i.pravatar.cc/40?img=8" loading="lazy" alt=""><div><div class="tvc-name">Michael T.</div><div class="tvc-role">Operator &middot; Newcastle</div></div></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Column 3 (4 reviews — hidden on mobile+tablet) -->
+        <div class="tvc-col tvc-col-lg" style="--tvc-duration:28s;">
+          <div class="tvc-track">
+            <div class="tvc-card">
+              <div style="color:#1e9a80;font-size:13px;letter-spacing:1px;margin-bottom:8px;">&#9733;&#9733;&#9733;&#9733;&#9733;</div>
+              <p class="tvc-text">The partnership dashboard is exactly what I needed. Visual, simple, effective.</p>
+              <div class="tvc-author"><img src="https://i.pravatar.cc/40?img=36" loading="lazy" alt=""><div><div class="tvc-name">Sophie B.</div><div class="tvc-role">Operator &middot; Edinburgh</div></div></div>
+            </div>
+            <div class="tvc-card">
+              <div style="color:#1e9a80;font-size:13px;letter-spacing:1px;margin-bottom:8px;">&#9733;&#9733;&#9733;&#9733;&#9733;</div>
+              <p class="tvc-text">nfstay took me from knowing nothing about Airbnb to earning from two properties.</p>
+              <div class="tvc-author"><img src="https://i.pravatar.cc/40?img=17" loading="lazy" alt=""><div><div class="tvc-name">Daniel F.</div><div class="tvc-role">Operator &middot; Glasgow</div></div></div>
+            </div>
+            <div class="tvc-card">
+              <div style="color:#1e9a80;font-size:13px;letter-spacing:1px;margin-bottom:8px;">&#9733;&#9733;&#9733;&#9733;&#9733;</div>
+              <p class="tvc-text">The agent programme earns me passive income just by sharing my link.</p>
+              <div class="tvc-author"><img src="https://i.pravatar.cc/40?img=41" loading="lazy" alt=""><div><div class="tvc-name">Hannah G.</div><div class="tvc-role">Affiliate &middot; Manchester</div></div></div>
+            </div>
+            <div class="tvc-card">
+              <div style="color:#1e9a80;font-size:13px;letter-spacing:1px;margin-bottom:8px;">&#9733;&#9733;&#9733;&#9733;&#9733;</div>
+              <p class="tvc-text">Finally a platform built specifically for UK rent-to-rent operators.</p>
+              <div class="tvc-author"><img src="https://i.pravatar.cc/40?img=7" loading="lazy" alt=""><div><div class="tvc-name">Oliver P.</div><div class="tvc-role">Operator &middot; London</div></div></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Column 4 (4 reviews — hidden below xl) -->
+        <div class="tvc-col tvc-col-xl" style="--tvc-duration:30s;">
+          <div class="tvc-track">
+            <div class="tvc-card">
+              <div style="color:#1e9a80;font-size:13px;letter-spacing:1px;margin-bottom:8px;">&#9733;&#9733;&#9733;&#9733;&#9733;</div>
+              <p class="tvc-text">The portfolio tracker is a game-changer. All my Airbnb returns in one view.</p>
+              <div class="tvc-author"><img src="https://i.pravatar.cc/40?img=29" loading="lazy" alt=""><div><div class="tvc-name">Emma C.</div><div class="tvc-role">Operator &middot; Birmingham</div></div></div>
+            </div>
+            <div class="tvc-card">
+              <div style="color:#1e9a80;font-size:13px;letter-spacing:1px;margin-bottom:8px;">&#9733;&#9733;&#9733;&#9733;&#9733;</div>
+              <p class="tvc-text">I have referred eight people. The commissions are genuinely good.</p>
+              <div class="tvc-author"><img src="https://i.pravatar.cc/40?img=13" loading="lazy" alt=""><div><div class="tvc-name">Jack S.</div><div class="tvc-role">Affiliate &middot; Leeds</div></div></div>
+            </div>
+            <div class="tvc-card">
+              <div style="color:#1e9a80;font-size:13px;letter-spacing:1px;margin-bottom:8px;">&#9733;&#9733;&#9733;&#9733;&#9733;</div>
+              <p class="tvc-text">Compliance-checked deals save me so much due diligence time.</p>
+              <div class="tvc-author"><img src="https://i.pravatar.cc/40?img=38" loading="lazy" alt=""><div><div class="tvc-name">Lucy W.</div><div class="tvc-role">Operator &middot; Bristol</div></div></div>
+            </div>
+            <div class="tvc-card">
+              <div style="color:#1e9a80;font-size:13px;letter-spacing:1px;margin-bottom:8px;">&#9733;&#9733;&#9733;&#9733;&#9733;</div>
+              <p class="tvc-text">The booking site builder is incredibly easy. Live in under an hour.</p>
+              <div class="tvc-author"><img src="https://i.pravatar.cc/40?img=19" loading="lazy" alt=""><div><div class="tvc-name">Nathan D.</div><div class="tvc-role">Operator &middot; Liverpool</div></div></div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+  <style>
+    /* ── Testimonials Vertical Columns ── */
+    .tvc-col { width: 320px; overflow: hidden; }
+    .tvc-col-md { display: none; }
+    .tvc-col-lg { display: none; }
+    .tvc-col-xl { display: none; }
+    @media (min-width: 768px) { .tvc-col-md { display: block; } }
+    @media (min-width: 1024px) { .tvc-col-lg { display: block; } }
+    @media (min-width: 1280px) { .tvc-col-xl { display: block; } }
+
+    .tvc-track {
+      display: flex; flex-direction: column; gap: 24px; padding-bottom: 24px;
+      animation: tvcScroll var(--tvc-duration, 28s) linear infinite;
+    }
+
+    @keyframes tvcScroll {
+      0% { transform: translateY(0); }
+      100% { transform: translateY(-50%); }
+    }
+
+    .tvc-card {
+      background: #fff; border: 1px solid rgba(0,0,0,0.06); border-radius: 20px;
+      padding: 28px; box-shadow: 0 2px 12px rgba(30,154,128,0.04);
+      width: 100%; max-width: 320px;
+    }
+    .tvc-text {
+      font-size: 14px; color: #1a1a1a; line-height: 1.65; margin: 0;
+    }
+    .tvc-author {
+      display: flex; align-items: center; gap: 10px; margin-top: 16px;
+      padding-top: 14px; border-top: 1px solid #f3f4f6;
+    }
+    .tvc-author img { width: 40px; height: 40px; border-radius: 50%; }
+    .tvc-name { font-size: 13px; font-weight: 600; color: #1a1a1a; line-height: 1.3; }
+    .tvc-role { font-size: 11px; color: #6b7280; line-height: 1.3; }
+
+    /* Pause animation on hover */
+    .tvc-col:hover .tvc-track { animation-play-state: paused; }
+
+    /* Respect reduced motion */
+    @media (prefers-reduced-motion: reduce) {
+      .tvc-track { animation: none !important; }
+    }
+  </style>
+
+  <script>
+    // Duplicate each column's cards so the infinite scroll loops seamlessly
+    document.querySelectorAll('.tvc-track').forEach(function(track) {
+      var cards = track.innerHTML;
+      track.innerHTML = cards + cards;
+    });
+  </script>
+
+  <!-- TESTIMONIALS OLD (horizontal auto-sliding carousel — kept below V2) -->
+  <div class="s bg-cream sr" data-feature="SHARED__LANDING_TESTIMONIALS" style="overflow:hidden;display:none;">
+    <div class="wrap"><div class="sh"><h2 data-i18n="testi_h">Trusted by thousands of operators</h2><div style="display:flex;align-items:center;justify-content:center;gap:4px;margin-top:8px;"><span style="font-size:18px;color:#1e9a80;">&#9733;&#9733;&#9733;&#9733;&#9733;</span><span style="font-size:14px;color:#6b7280;margin-left:6px;">4.8 out of 5</span></div></div></div>
+    <div style="overflow:hidden;padding:0 0 20px;">
+      <div class="review-track" style="display:flex;gap:16px;animation:reviewSlide 12s linear infinite;">
+        <div class="review-slide" style="min-width:300px;max-width:300px;flex-shrink:0;background:#fff;border:1px solid rgba(0,0,0,0.06);border-radius:16px;padding:24px;">
+          <div style="color:#1e9a80;font-size:14px;letter-spacing:1px;margin-bottom:10px;">&#9733;&#9733;&#9733;&#9733;&#9733;</div>
+          <p style="font-size:14px;color:#1a1a1a;line-height:1.6;margin-bottom:14px;">&ldquo;nfstay helped me close my first three deals in under a month. The CRM is the reason I stay organised.&rdquo;</p>
+          <div style="display:flex;align-items:center;gap:8px;padding-top:12px;border-top:1px solid #f3f4f6;">
+            <img src="https://i.pravatar.cc/36?img=12" loading="lazy" style="width:32px;height:32px;border-radius:50%;" alt="">
+            <div><div style="font-size:13px;font-weight:600;color:#1a1a1a;">Sarah K.</div><div style="font-size:11px;color:#6b7280;">Manchester</div></div>
+          </div>
+        </div>
+<div class="review-slide" style="min-width:300px;max-width:300px;flex-shrink:0;background:#fff;border:1px solid rgba(0,0,0,0.06);border-radius:16px;padding:24px;">
+          <div style="color:#1e9a80;font-size:14px;letter-spacing:1px;margin-bottom:10px;">&#9733;&#9733;&#9733;&#9733;&#9733;</div>
+          <p style="font-size:14px;color:#1a1a1a;line-height:1.6;margin-bottom:14px;">&ldquo;The Academy alone paid for itself. I went from zero to signing my first property in six weeks.&rdquo;</p>
+          <div style="display:flex;align-items:center;gap:8px;padding-top:12px;border-top:1px solid #f3f4f6;">
+            <img src="https://i.pravatar.cc/36?img=15" loading="lazy" style="width:32px;height:32px;border-radius:50%;" alt="">
+            <div><div style="font-size:13px;font-weight:600;color:#1a1a1a;">Tom P.</div><div style="font-size:11px;color:#6b7280;">London</div></div>
+          </div>
+        </div>
+<div class="review-slide" style="min-width:300px;max-width:300px;flex-shrink:0;background:#fff;border:1px solid rgba(0,0,0,0.06);border-radius:16px;padding:24px;">
+          <div style="color:#1e9a80;font-size:14px;letter-spacing:1px;margin-bottom:10px;">&#9733;&#9733;&#9733;&#9733;&#9733;</div>
+          <p style="font-size:14px;color:#1a1a1a;line-height:1.6;margin-bottom:14px;">&ldquo;Every deal is verified. The earnings estimator is accurate. I use it before every viewing.&rdquo;</p>
+          <div style="display:flex;align-items:center;gap:8px;padding-top:12px;border-top:1px solid #f3f4f6;">
+            <img src="https://i.pravatar.cc/36?img=5" loading="lazy" style="width:32px;height:32px;border-radius:50%;" alt="">
+            <div><div style="font-size:13px;font-weight:600;color:#1a1a1a;">Priya S.</div><div style="font-size:11px;color:#6b7280;">Birmingham</div></div>
+          </div>
+        </div>
+<div class="review-slide" style="min-width:300px;max-width:300px;flex-shrink:0;background:#fff;border:1px solid rgba(0,0,0,0.06);border-radius:16px;padding:24px;">
+          <div style="color:#1e9a80;font-size:14px;letter-spacing:1px;margin-bottom:10px;">&#9733;&#9733;&#9733;&#9733;&#9733;</div>
+          <p style="font-size:14px;color:#1a1a1a;line-height:1.6;margin-bottom:14px;">&ldquo;The inbox saved me hours of back-and-forth emails. Everything in one place.&rdquo;</p>
+          <div style="display:flex;align-items:center;gap:8px;padding-top:12px;border-top:1px solid #f3f4f6;">
+            <img src="https://i.pravatar.cc/36?img=33" loading="lazy" style="width:32px;height:32px;border-radius:50%;" alt="">
+            <div><div style="font-size:13px;font-weight:600;color:#1a1a1a;">James H.</div><div style="font-size:11px;color:#6b7280;">Liverpool</div></div>
+          </div>
+        </div>
+<div class="review-slide" style="min-width:300px;max-width:300px;flex-shrink:0;background:#fff;border:1px solid rgba(0,0,0,0.06);border-radius:16px;padding:24px;">
+          <div style="color:#1e9a80;font-size:14px;letter-spacing:1px;margin-bottom:10px;">&#9733;&#9733;&#9733;&#9733;&#9733;</div>
+          <p style="font-size:14px;color:#1a1a1a;line-height:1.6;margin-bottom:14px;">&ldquo;I closed two deals in my first month. The pipeline keeps me on track.&rdquo;</p>
+          <div style="display:flex;align-items:center;gap:8px;padding-top:12px;border-top:1px solid #f3f4f6;">
+            <img src="https://i.pravatar.cc/36?img=9" loading="lazy" style="width:32px;height:32px;border-radius:50%;" alt="">
+            <div><div style="font-size:13px;font-weight:600;color:#1a1a1a;">Rachel L.</div><div style="font-size:11px;color:#6b7280;">Bristol</div></div>
+          </div>
+        </div>
+<div class="review-slide" style="min-width:300px;max-width:300px;flex-shrink:0;background:#fff;border:1px solid rgba(0,0,0,0.06);border-radius:16px;padding:24px;">
+          <div style="color:#1e9a80;font-size:14px;letter-spacing:1px;margin-bottom:10px;">&#9733;&#9733;&#9733;&#9733;&#9733;</div>
+          <p style="font-size:14px;color:#1a1a1a;line-height:1.6;margin-bottom:14px;">&ldquo;Best decision I have made. The platform is world-class.&rdquo;</p>
+          <div style="display:flex;align-items:center;gap:8px;padding-top:12px;border-top:1px solid #f3f4f6;">
+            <img src="https://i.pravatar.cc/36?img=25" loading="lazy" style="width:32px;height:32px;border-radius:50%;" alt="">
+            <div><div style="font-size:13px;font-weight:600;color:#1a1a1a;">David W.</div><div style="font-size:11px;color:#6b7280;">Leeds</div></div>
+          </div>
+        </div>
+<div class="review-slide" style="min-width:300px;max-width:300px;flex-shrink:0;background:#fff;border:1px solid rgba(0,0,0,0.06);border-radius:16px;padding:24px;">
+          <div style="color:#1e9a80;font-size:14px;letter-spacing:1px;margin-bottom:10px;">&#9733;&#9733;&#9733;&#9733;&#9733;</div>
+          <p style="font-size:14px;color:#1a1a1a;line-height:1.6;margin-bottom:14px;">&ldquo;The direct booking site builder paid for the subscription in week one.&rdquo;</p>
+          <div style="display:flex;align-items:center;gap:8px;padding-top:12px;border-top:1px solid #f3f4f6;">
+            <img src="https://i.pravatar.cc/36?img=44" loading="lazy" style="width:32px;height:32px;border-radius:50%;" alt="">
+            <div><div style="font-size:13px;font-weight:600;color:#1a1a1a;">Amara O.</div><div style="font-size:11px;color:#6b7280;">Nottingham</div></div>
+          </div>
+        </div>
+<div class="review-slide" style="min-width:300px;max-width:300px;flex-shrink:0;background:#fff;border:1px solid rgba(0,0,0,0.06);border-radius:16px;padding:24px;">
+          <div style="color:#1e9a80;font-size:14px;letter-spacing:1px;margin-bottom:10px;">&#9733;&#9733;&#9733;&#9733;&#9733;</div>
+          <p style="font-size:14px;color:#1a1a1a;line-height:1.6;margin-bottom:14px;">&ldquo;From zero properties to five in eight months. nfstay made it possible.&rdquo;</p>
+          <div style="display:flex;align-items:center;gap:8px;padding-top:12px;border-top:1px solid #f3f4f6;">
+            <img src="https://i.pravatar.cc/36?img=11" loading="lazy" style="width:32px;height:32px;border-radius:50%;" alt="">
+            <div><div style="font-size:13px;font-weight:600;color:#1a1a1a;">Callum M.</div><div style="font-size:11px;color:#6b7280;">Sheffield</div></div>
+          </div>
+        </div>
+<div class="review-slide" style="min-width:300px;max-width:300px;flex-shrink:0;background:#fff;border:1px solid rgba(0,0,0,0.06);border-radius:16px;padding:24px;">
+          <div style="color:#1e9a80;font-size:14px;letter-spacing:1px;margin-bottom:10px;">&#9733;&#9733;&#9733;&#9733;&#9733;</div>
+          <p style="font-size:14px;color:#1a1a1a;line-height:1.6;margin-bottom:14px;">&ldquo;The earnings estimator is scary accurate. I trust it more than my spreadsheets.&rdquo;</p>
+          <div style="display:flex;align-items:center;gap:8px;padding-top:12px;border-top:1px solid #f3f4f6;">
+            <img src="https://i.pravatar.cc/36?img=23" loading="lazy" style="width:32px;height:32px;border-radius:50%;" alt="">
+            <div><div style="font-size:13px;font-weight:600;color:#1a1a1a;">Fatima R.</div><div style="font-size:11px;color:#6b7280;">Cardiff</div></div>
+          </div>
+        </div>
+<div class="review-slide" style="min-width:300px;max-width:300px;flex-shrink:0;background:#fff;border:1px solid rgba(0,0,0,0.06);border-radius:16px;padding:24px;">
+          <div style="color:#1e9a80;font-size:14px;letter-spacing:1px;margin-bottom:10px;">&#9733;&#9733;&#9733;&#9733;&#9733;</div>
+          <p style="font-size:14px;color:#1a1a1a;line-height:1.6;margin-bottom:14px;">&ldquo;I love that every deal is landlord-approved. No wasted viewings.&rdquo;</p>
+          <div style="display:flex;align-items:center;gap:8px;padding-top:12px;border-top:1px solid #f3f4f6;">
+            <img src="https://i.pravatar.cc/36?img=8" loading="lazy" style="width:32px;height:32px;border-radius:50%;" alt="">
+            <div><div style="font-size:13px;font-weight:600;color:#1a1a1a;">Michael T.</div><div style="font-size:11px;color:#6b7280;">Newcastle</div></div>
+          </div>
+        </div>
+<div class="review-slide" style="min-width:300px;max-width:300px;flex-shrink:0;background:#fff;border:1px solid rgba(0,0,0,0.06);border-radius:16px;padding:24px;">
+          <div style="color:#1e9a80;font-size:14px;letter-spacing:1px;margin-bottom:10px;">&#9733;&#9733;&#9733;&#9733;&#9733;</div>
+          <p style="font-size:14px;color:#1a1a1a;line-height:1.6;margin-bottom:14px;">&ldquo;The CRM pipeline is exactly what I needed. Visual, simple, effective.&rdquo;</p>
+          <div style="display:flex;align-items:center;gap:8px;padding-top:12px;border-top:1px solid #f3f4f6;">
+            <img src="https://i.pravatar.cc/36?img=36" loading="lazy" style="width:32px;height:32px;border-radius:50%;" alt="">
+            <div><div style="font-size:13px;font-weight:600;color:#1a1a1a;">Sophie B.</div><div style="font-size:11px;color:#6b7280;">Edinburgh</div></div>
+          </div>
+        </div>
+<div class="review-slide" style="min-width:300px;max-width:300px;flex-shrink:0;background:#fff;border:1px solid rgba(0,0,0,0.06);border-radius:16px;padding:24px;">
+          <div style="color:#1e9a80;font-size:14px;letter-spacing:1px;margin-bottom:10px;">&#9733;&#9733;&#9733;&#9733;&#9733;</div>
+          <p style="font-size:14px;color:#1a1a1a;line-height:1.6;margin-bottom:14px;">&ldquo;nfstay University took me from knowing nothing to running two properties.&rdquo;</p>
+          <div style="display:flex;align-items:center;gap:8px;padding-top:12px;border-top:1px solid #f3f4f6;">
+            <img src="https://i.pravatar.cc/36?img=17" loading="lazy" style="width:32px;height:32px;border-radius:50%;" alt="">
+            <div><div style="font-size:13px;font-weight:600;color:#1a1a1a;">Daniel F.</div><div style="font-size:11px;color:#6b7280;">Glasgow</div></div>
+          </div>
+        </div>
+<div class="review-slide" style="min-width:300px;max-width:300px;flex-shrink:0;background:#fff;border:1px solid rgba(0,0,0,0.06);border-radius:16px;padding:24px;">
+          <div style="color:#1e9a80;font-size:14px;letter-spacing:1px;margin-bottom:10px;">&#9733;&#9733;&#9733;&#9733;&#9733;</div>
+          <p style="font-size:14px;color:#1a1a1a;line-height:1.6;margin-bottom:14px;">&ldquo;The agent programme earns me passive income just by sharing my link.&rdquo;</p>
+          <div style="display:flex;align-items:center;gap:8px;padding-top:12px;border-top:1px solid #f3f4f6;">
+            <img src="https://i.pravatar.cc/36?img=41" loading="lazy" style="width:32px;height:32px;border-radius:50%;" alt="">
+            <div><div style="font-size:13px;font-weight:600;color:#1a1a1a;">Hannah G.</div><div style="font-size:11px;color:#6b7280;">Manchester</div></div>
+          </div>
+        </div>
+<div class="review-slide" style="min-width:300px;max-width:300px;flex-shrink:0;background:#fff;border:1px solid rgba(0,0,0,0.06);border-radius:16px;padding:24px;">
+          <div style="color:#1e9a80;font-size:14px;letter-spacing:1px;margin-bottom:10px;">&#9733;&#9733;&#9733;&#9733;&#9733;</div>
+          <p style="font-size:14px;color:#1a1a1a;line-height:1.6;margin-bottom:14px;">&ldquo;Finally a platform built specifically for UK rent-to-rent operators.&rdquo;</p>
+          <div style="display:flex;align-items:center;gap:8px;padding-top:12px;border-top:1px solid #f3f4f6;">
+            <img src="https://i.pravatar.cc/36?img=7" loading="lazy" style="width:32px;height:32px;border-radius:50%;" alt="">
+            <div><div style="font-size:13px;font-weight:600;color:#1a1a1a;">Oliver P.</div><div style="font-size:11px;color:#6b7280;">London</div></div>
+          </div>
+        </div>
+<div class="review-slide" style="min-width:300px;max-width:300px;flex-shrink:0;background:#fff;border:1px solid rgba(0,0,0,0.06);border-radius:16px;padding:24px;">
+          <div style="color:#1e9a80;font-size:14px;letter-spacing:1px;margin-bottom:10px;">&#9733;&#9733;&#9733;&#9733;&#9733;</div>
+          <p style="font-size:14px;color:#1a1a1a;line-height:1.6;margin-bottom:14px;">&ldquo;The unified inbox is a game-changer. No more lost messages.&rdquo;</p>
+          <div style="display:flex;align-items:center;gap:8px;padding-top:12px;border-top:1px solid #f3f4f6;">
+            <img src="https://i.pravatar.cc/36?img=29" loading="lazy" style="width:32px;height:32px;border-radius:50%;" alt="">
+            <div><div style="font-size:13px;font-weight:600;color:#1a1a1a;">Emma C.</div><div style="font-size:11px;color:#6b7280;">Birmingham</div></div>
+          </div>
+        </div>
+<div class="review-slide" style="min-width:300px;max-width:300px;flex-shrink:0;background:#fff;border:1px solid rgba(0,0,0,0.06);border-radius:16px;padding:24px;">
+          <div style="color:#1e9a80;font-size:14px;letter-spacing:1px;margin-bottom:10px;">&#9733;&#9733;&#9733;&#9733;&#9733;</div>
+          <p style="font-size:14px;color:#1a1a1a;line-height:1.6;margin-bottom:14px;">&ldquo;I have referred eight people. The commissions are genuinely good.&rdquo;</p>
+          <div style="display:flex;align-items:center;gap:8px;padding-top:12px;border-top:1px solid #f3f4f6;">
+            <img src="https://i.pravatar.cc/36?img=13" loading="lazy" style="width:32px;height:32px;border-radius:50%;" alt="">
+            <div><div style="font-size:13px;font-weight:600;color:#1a1a1a;">Jack S.</div><div style="font-size:11px;color:#6b7280;">Leeds</div></div>
+          </div>
+        </div>
+<div class="review-slide" style="min-width:300px;max-width:300px;flex-shrink:0;background:#fff;border:1px solid rgba(0,0,0,0.06);border-radius:16px;padding:24px;">
+          <div style="color:#1e9a80;font-size:14px;letter-spacing:1px;margin-bottom:10px;">&#9733;&#9733;&#9733;&#9733;&#9733;</div>
+          <p style="font-size:14px;color:#1a1a1a;line-height:1.6;margin-bottom:14px;">&ldquo;Compliance-checked deals save me so much due diligence time.&rdquo;</p>
+          <div style="display:flex;align-items:center;gap:8px;padding-top:12px;border-top:1px solid #f3f4f6;">
+            <img src="https://i.pravatar.cc/36?img=38" loading="lazy" style="width:32px;height:32px;border-radius:50%;" alt="">
+            <div><div style="font-size:13px;font-weight:600;color:#1a1a1a;">Lucy W.</div><div style="font-size:11px;color:#6b7280;">Bristol</div></div>
+          </div>
+        </div>
+<div class="review-slide" style="min-width:300px;max-width:300px;flex-shrink:0;background:#fff;border:1px solid rgba(0,0,0,0.06);border-radius:16px;padding:24px;">
+          <div style="color:#1e9a80;font-size:14px;letter-spacing:1px;margin-bottom:10px;">&#9733;&#9733;&#9733;&#9733;&#9733;</div>
+          <p style="font-size:14px;color:#1a1a1a;line-height:1.6;margin-bottom:14px;">&ldquo;The booking site builder is incredibly easy. Live in under an hour.&rdquo;</p>
+          <div style="display:flex;align-items:center;gap:8px;padding-top:12px;border-top:1px solid #f3f4f6;">
+            <img src="https://i.pravatar.cc/36?img=19" loading="lazy" style="width:32px;height:32px;border-radius:50%;" alt="">
+            <div><div style="font-size:13px;font-weight:600;color:#1a1a1a;">Nathan D.</div><div style="font-size:11px;color:#6b7280;">Liverpool</div></div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+  <!-- PRICING (hidden — JV pivot) -->
+  <div class="s bg-white sr" data-feature="SHARED__LANDING_PRICING" id="pricing" style="display:none !important;"><div class="wrap narrow">
+    <h2 style="font-size:32px;font-weight:700;color:#1a1a1a;text-align:center;margin-bottom:40px;">Your options today</h2>
+
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:24px;max-width:880px;margin:0 auto;">
+      <!-- Standard Card -->
+      <div style="position:relative;background:#fff;border:2px solid #1E9A80;border-radius:16px;padding:32px 28px;box-shadow:0 0 0 1px #1E9A80,0 8px 32px rgba(30,154,128,0.10);">
+        <div style="position:absolute;top:-14px;left:50%;transform:translateX(-50%);background:#1E9A80;color:#fff;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;padding:5px 16px;border-radius:6px;white-space:nowrap;">Most popular</div>
+        <div style="font-size:11px;text-transform:uppercase;letter-spacing:0.12em;color:#9CA3AF;font-weight:600;margin-bottom:6px;">New &amp; growing operators</div>
+        <div style="font-size:20px;font-weight:700;color:#1A1A1A;margin-bottom:16px;">Full Access Membership</div>
+        <div style="display:flex;align-items:baseline;gap:10px;margin-bottom:4px;">
+          <div style="font-size:2rem;font-weight:700;color:#d1d5db;text-decoration:line-through;line-height:1;">&pound;67</div>
+          <div style="font-size:3.2rem;font-weight:800;color:#1E9A80;line-height:1;">&pound;5</div>
+        </div>
+        <div style="font-size:14px;color:#6B7280;margin-bottom:20px;">Start with a 3-day trial for &pound;5, then &pound;67/month</div>
+        <div style="display:inline-block;font-size:12px;font-weight:700;padding:4px 12px;border-radius:6px;background:rgba(30,154,128,0.1);color:#1E9A80;margin-bottom:20px;">100 deal contacts per month</div>
+        <ul class="price-list"><li>CRM pipeline to track every deal</li><li>Earnings estimator per property</li><li>nfstay Academy (44 lessons, 6 modules)</li><li>Direct deal contact details</li><li>Priority deal alerts</li><li>Affiliate Agent programme</li><li>White-label booking site</li></ul>
+        <a href="/signup" class="btn btn-green btn-full" data-feature="SHARED__LANDING_PRICING_CTA" style="padding:14px 20px;font-size:15px;border-radius:12px;">Start &pound;5 Trial</a>
+      </div>
+
+      <!-- Lifetime Card -->
+      <div style="position:relative;background:#fff;border:1.5px solid #E5E7EB;border-radius:16px;padding:32px 28px;">
+        <div style="font-size:11px;text-transform:uppercase;letter-spacing:0.12em;color:#9CA3AF;font-weight:600;margin-bottom:6px;">Scaling operators - 5+ units</div>
+        <div style="font-size:20px;font-weight:700;color:#1A1A1A;margin-bottom:16px;">Lifetime Access</div>
+        <div style="display:flex;align-items:baseline;gap:2px;margin-bottom:6px;">
+          <span style="font-size:16px;color:#1A1A1A;position:relative;top:-0.5em;">&pound;</span><span style="font-size:3rem;font-weight:400;color:#1A1A1A;line-height:1;">1,997</span><span style="font-size:15px;color:#9CA3AF;margin-left:4px;">one-time</span>
+        </div>
+        <div style="font-size:14px;color:#6B7280;margin-bottom:20px;">Full platform access, forever</div>
+        <div style="display:inline-block;font-size:12px;font-weight:700;padding:4px 12px;border-radius:6px;background:rgba(245,158,11,0.1);color:#B45309;margin-bottom:20px;">Unlimited deal contacts from 100+ weekly deals</div>
+        <ul class="price-list"><li>Everything in Full Access</li><li>Unlimited deal contacts - no cap, ever</li><li>100+ new verified deals added every week</li><li>All future features included</li><li>Price locked forever - one payment</li><li>Priority support</li></ul>
+        <a href="/signup" style="display:block;width:100%;text-align:center;padding:14px 20px;border-radius:12px;font-size:15px;font-weight:600;text-decoration:none;background:#111111;color:#fff;box-sizing:border-box;transition:background 0.2s;">Get Lifetime Access - &pound;1,997</a>
+        <div style="font-size:12px;color:#9CA3AF;text-align:center;margin-top:10px;">Or start with the &pound;5 trial and upgrade inside your account</div>
+      </div>
+    </div>
+
+  </div></div>
+
+  <!-- ========== MEET OUR TEAM (slider with social toggle) ========== -->
+  <section class="nfs-team-section" data-feature="SHARED__LANDING_TEAM">
+    <div class="nfs-team-wrap">
+      <div class="nfs-team-head">
+        <h2>Meet Our Team</h2>
+        <p>The people behind nfstay - operators, builders and advisors making Airbnb partnerships simpler for UK partners.</p>
+      </div>
+      <div class="nfs-team-slider">
+        <button type="button" class="nfs-team-nav nfs-team-prev" aria-label="Previous team members" data-nfs-team-dir="-1">&lsaquo;</button>
+        <div class="nfs-team-track">
+          <figure class="nfs-team-card">
+            <div class="nfs-team-photo">
+              <img src="/landing/team/chris-germano.png" alt="Chris Germano" loading="lazy">
+              <div class="nfs-team-actions">
+                <button type="button" class="nfs-team-plus" aria-label="Show social links"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg></button>
+                <div class="nfs-team-socials">
+                  <button type="button" class="nfs-team-soc nfs-team-soc-close" aria-label="Close"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M6 6l12 12M6 18L18 6"/></svg></button>
+                  <a class="nfs-team-soc nfs-team-soc-li" href="https://www.linkedin.com/in/chris-germano-5aab5711a/" target="_blank" rel="noopener" aria-label="LinkedIn"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M20.45 20.45h-3.56v-5.57c0-1.33-.02-3.04-1.85-3.04-1.85 0-2.14 1.44-2.14 2.94v5.67H9.35V9h3.41v1.56h.05c.48-.9 1.64-1.85 3.37-1.85 3.6 0 4.27 2.37 4.27 5.45v6.29zM5.34 7.43a2.06 2.06 0 110-4.13 2.06 2.06 0 010 4.13zm1.78 13.02H3.55V9h3.57v11.45zM22.22 0H1.77C.79 0 0 .77 0 1.73v20.54C0 23.23.79 24 1.77 24h20.45c.98 0 1.78-.77 1.78-1.73V1.73C24 .77 23.2 0 22.22 0z"/></svg></a>                </div>
+              </div>
+            </div>
+            <figcaption><span class="nfs-team-name">Chris Germano</span><span class="nfs-team-role">Co-Founder</span></figcaption>
+          </figure>
+          <figure class="nfs-team-card">
+            <div class="nfs-team-photo">
+              <img src="/landing/team/Hugo_Souza.png" alt="Hugo Souza" loading="lazy">
+              <div class="nfs-team-actions">
+                <button type="button" class="nfs-team-plus" aria-label="Show social links"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg></button>
+                <div class="nfs-team-socials">
+                  <button type="button" class="nfs-team-soc nfs-team-soc-close" aria-label="Close"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M6 6l12 12M6 18L18 6"/></svg></button>
+                  <a class="nfs-team-soc nfs-team-soc-li" href="https://www.linkedin.com/in/hugorsunico/" target="_blank" rel="noopener" aria-label="LinkedIn"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M20.45 20.45h-3.56v-5.57c0-1.33-.02-3.04-1.85-3.04-1.85 0-2.14 1.44-2.14 2.94v5.67H9.35V9h3.41v1.56h.05c.48-.9 1.64-1.85 3.37-1.85 3.6 0 4.27 2.37 4.27 5.45v6.29zM5.34 7.43a2.06 2.06 0 110-4.13 2.06 2.06 0 010 4.13zm1.78 13.02H3.55V9h3.57v11.45zM22.22 0H1.77C.79 0 0 .77 0 1.73v20.54C0 23.23.79 24 1.77 24h20.45c.98 0 1.78-.77 1.78-1.73V1.73C24 .77 23.2 0 22.22 0z"/></svg></a>                </div>
+              </div>
+            </div>
+            <figcaption><span class="nfs-team-name">Hugo Souza</span><span class="nfs-team-role">Co-Founder</span></figcaption>
+          </figure>
+          <figure class="nfs-team-card">
+            <div class="nfs-team-photo">
+              <img src="/landing/team/Valeria_Germano.png" alt="Valeria Germano" loading="lazy">
+              <div class="nfs-team-actions">
+                <button type="button" class="nfs-team-plus" aria-label="Show social links"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg></button>
+                <div class="nfs-team-socials">
+                  <button type="button" class="nfs-team-soc nfs-team-soc-close" aria-label="Close"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M6 6l12 12M6 18L18 6"/></svg></button>
+                  <a class="nfs-team-soc nfs-team-soc-li" href="https://www.linkedin.com/in/val%C3%A9riaalvesgermano/" target="_blank" rel="noopener" aria-label="LinkedIn"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M20.45 20.45h-3.56v-5.57c0-1.33-.02-3.04-1.85-3.04-1.85 0-2.14 1.44-2.14 2.94v5.67H9.35V9h3.41v1.56h.05c.48-.9 1.64-1.85 3.37-1.85 3.6 0 4.27 2.37 4.27 5.45v6.29zM5.34 7.43a2.06 2.06 0 110-4.13 2.06 2.06 0 010 4.13zm1.78 13.02H3.55V9h3.57v11.45zM22.22 0H1.77C.79 0 0 .77 0 1.73v20.54C0 23.23.79 24 1.77 24h20.45c.98 0 1.78-.77 1.78-1.73V1.73C24 .77 23.2 0 22.22 0z"/></svg></a>                </div>
+              </div>
+            </div>
+            <figcaption><span class="nfs-team-name">Valeria Germano</span><span class="nfs-team-role">General Manager</span></figcaption>
+          </figure>
+          <figure class="nfs-team-card">
+            <div class="nfs-team-photo">
+              <img src="/landing/team/Elijah%20Paul.png" alt="Elijah Paul" loading="lazy">
+              <div class="nfs-team-actions">
+                <button type="button" class="nfs-team-plus" aria-label="Show social links"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg></button>
+                <div class="nfs-team-socials">
+                  <button type="button" class="nfs-team-soc nfs-team-soc-close" aria-label="Close"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M6 6l12 12M6 18L18 6"/></svg></button>
+                  <a class="nfs-team-soc nfs-team-soc-li" href="https://www.linkedin.com/company/nfstay/" target="_blank" rel="noopener" aria-label="LinkedIn"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M20.45 20.45h-3.56v-5.57c0-1.33-.02-3.04-1.85-3.04-1.85 0-2.14 1.44-2.14 2.94v5.67H9.35V9h3.41v1.56h.05c.48-.9 1.64-1.85 3.37-1.85 3.6 0 4.27 2.37 4.27 5.45v6.29zM5.34 7.43a2.06 2.06 0 110-4.13 2.06 2.06 0 010 4.13zm1.78 13.02H3.55V9h3.57v11.45zM22.22 0H1.77C.79 0 0 .77 0 1.73v20.54C0 23.23.79 24 1.77 24h20.45c.98 0 1.78-.77 1.78-1.73V1.73C24 .77 23.2 0 22.22 0z"/></svg></a>                </div>
+              </div>
+            </div>
+            <figcaption><span class="nfs-team-name">Elijah Paul</span><span class="nfs-team-role">Senior Consultant</span></figcaption>
+          </figure>
+          <figure class="nfs-team-card">
+            <div class="nfs-team-photo">
+              <img src="/landing/team/Emile_Florence.png" alt="Emile Florence" loading="lazy">
+              <div class="nfs-team-actions">
+                <button type="button" class="nfs-team-plus" aria-label="Show social links"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg></button>
+                <div class="nfs-team-socials">
+                  <button type="button" class="nfs-team-soc nfs-team-soc-close" aria-label="Close"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M6 6l12 12M6 18L18 6"/></svg></button>
+                  <a class="nfs-team-soc nfs-team-soc-li" href="https://www.linkedin.com/in/emilieclarke/" target="_blank" rel="noopener" aria-label="LinkedIn"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M20.45 20.45h-3.56v-5.57c0-1.33-.02-3.04-1.85-3.04-1.85 0-2.14 1.44-2.14 2.94v5.67H9.35V9h3.41v1.56h.05c.48-.9 1.64-1.85 3.37-1.85 3.6 0 4.27 2.37 4.27 5.45v6.29zM5.34 7.43a2.06 2.06 0 110-4.13 2.06 2.06 0 010 4.13zm1.78 13.02H3.55V9h3.57v11.45zM22.22 0H1.77C.79 0 0 .77 0 1.73v20.54C0 23.23.79 24 1.77 24h20.45c.98 0 1.78-.77 1.78-1.73V1.73C24 .77 23.2 0 22.22 0z"/></svg></a>                </div>
+              </div>
+            </div>
+            <figcaption><span class="nfs-team-name">Emile Florence</span><span class="nfs-team-role">Senior Consultant</span></figcaption>
+          </figure>
+          <figure class="nfs-team-card">
+            <div class="nfs-team-photo">
+              <img src="/landing/team/Pierre_Bisen.png" alt="Pierre Bisen" loading="lazy">
+              <div class="nfs-team-actions">
+                <button type="button" class="nfs-team-plus" aria-label="Show social links"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg></button>
+                <div class="nfs-team-socials">
+                  <button type="button" class="nfs-team-soc nfs-team-soc-close" aria-label="Close"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M6 6l12 12M6 18L18 6"/></svg></button>
+                  <a class="nfs-team-soc nfs-team-soc-li" href="https://www.linkedin.com/in/pierre-pravin-bisen-09b31a261/" target="_blank" rel="noopener" aria-label="LinkedIn"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M20.45 20.45h-3.56v-5.57c0-1.33-.02-3.04-1.85-3.04-1.85 0-2.14 1.44-2.14 2.94v5.67H9.35V9h3.41v1.56h.05c.48-.9 1.64-1.85 3.37-1.85 3.6 0 4.27 2.37 4.27 5.45v6.29zM5.34 7.43a2.06 2.06 0 110-4.13 2.06 2.06 0 010 4.13zm1.78 13.02H3.55V9h3.57v11.45zM22.22 0H1.77C.79 0 0 .77 0 1.73v20.54C0 23.23.79 24 1.77 24h20.45c.98 0 1.78-.77 1.78-1.73V1.73C24 .77 23.2 0 22.22 0z"/></svg></a>                </div>
+              </div>
+            </div>
+            <figcaption><span class="nfs-team-name">Pierre Bisen</span><span class="nfs-team-role">Account Executive</span></figcaption>
+          </figure>
+          <figure class="nfs-team-card">
+            <div class="nfs-team-photo">
+              <img src="/landing/team/Ismar_Zembo.png" alt="Ismar Zembo" loading="lazy">
+              <div class="nfs-team-actions">
+                <button type="button" class="nfs-team-plus" aria-label="Show social links"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg></button>
+                <div class="nfs-team-socials">
+                  <button type="button" class="nfs-team-soc nfs-team-soc-close" aria-label="Close"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M6 6l12 12M6 18L18 6"/></svg></button>
+                  <a class="nfs-team-soc nfs-team-soc-li" href="https://www.linkedin.com/in/ismarzemboassetmanagmentblockhaintradingforex/" target="_blank" rel="noopener" aria-label="LinkedIn"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M20.45 20.45h-3.56v-5.57c0-1.33-.02-3.04-1.85-3.04-1.85 0-2.14 1.44-2.14 2.94v5.67H9.35V9h3.41v1.56h.05c.48-.9 1.64-1.85 3.37-1.85 3.6 0 4.27 2.37 4.27 5.45v6.29zM5.34 7.43a2.06 2.06 0 110-4.13 2.06 2.06 0 010 4.13zm1.78 13.02H3.55V9h3.57v11.45zM22.22 0H1.77C.79 0 0 .77 0 1.73v20.54C0 23.23.79 24 1.77 24h20.45c.98 0 1.78-.77 1.78-1.73V1.73C24 .77 23.2 0 22.22 0z"/></svg></a>                </div>
+              </div>
+            </div>
+            <figcaption><span class="nfs-team-name">Ismar Zembo</span><span class="nfs-team-role">Advisor</span></figcaption>
+          </figure>
+          <figure class="nfs-team-card">
+            <div class="nfs-team-photo">
+              <img src="/landing/team/Abduljah_Bahatti.png" alt="Abduljah Bahatti" loading="lazy">
+              <div class="nfs-team-actions">
+                <button type="button" class="nfs-team-plus" aria-label="Show social links"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg></button>
+                <div class="nfs-team-socials">
+                  <button type="button" class="nfs-team-soc nfs-team-soc-close" aria-label="Close"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M6 6l12 12M6 18L18 6"/></svg></button>
+                  <a class="nfs-team-soc nfs-team-soc-li" href="https://www.linkedin.com/in/abhatti47/" target="_blank" rel="noopener" aria-label="LinkedIn"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M20.45 20.45h-3.56v-5.57c0-1.33-.02-3.04-1.85-3.04-1.85 0-2.14 1.44-2.14 2.94v5.67H9.35V9h3.41v1.56h.05c.48-.9 1.64-1.85 3.37-1.85 3.6 0 4.27 2.37 4.27 5.45v6.29zM5.34 7.43a2.06 2.06 0 110-4.13 2.06 2.06 0 010 4.13zm1.78 13.02H3.55V9h3.57v11.45zM22.22 0H1.77C.79 0 0 .77 0 1.73v20.54C0 23.23.79 24 1.77 24h20.45c.98 0 1.78-.77 1.78-1.73V1.73C24 .77 23.2 0 22.22 0z"/></svg></a>                </div>
+              </div>
+            </div>
+            <figcaption><span class="nfs-team-name">Abduljah Bahatti</span><span class="nfs-team-role">Web Developer</span></figcaption>
+          </figure>
+          <figure class="nfs-team-card">
+            <div class="nfs-team-photo">
+              <img src="/landing/team/Frederik_Lund.png" alt="Frederik Lund" loading="lazy">
+              <div class="nfs-team-actions">
+                <button type="button" class="nfs-team-plus" aria-label="Show social links"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg></button>
+                <div class="nfs-team-socials">
+                  <button type="button" class="nfs-team-soc nfs-team-soc-close" aria-label="Close"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M6 6l12 12M6 18L18 6"/></svg></button>
+                  <a class="nfs-team-soc nfs-team-soc-li" href="https://www.linkedin.com/in/lundfrederik/" target="_blank" rel="noopener" aria-label="LinkedIn"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M20.45 20.45h-3.56v-5.57c0-1.33-.02-3.04-1.85-3.04-1.85 0-2.14 1.44-2.14 2.94v5.67H9.35V9h3.41v1.56h.05c.48-.9 1.64-1.85 3.37-1.85 3.6 0 4.27 2.37 4.27 5.45v6.29zM5.34 7.43a2.06 2.06 0 110-4.13 2.06 2.06 0 010 4.13zm1.78 13.02H3.55V9h3.57v11.45zM22.22 0H1.77C.79 0 0 .77 0 1.73v20.54C0 23.23.79 24 1.77 24h20.45c.98 0 1.78-.77 1.78-1.73V1.73C24 .77 23.2 0 22.22 0z"/></svg></a>                </div>
+              </div>
+            </div>
+            <figcaption><span class="nfs-team-name">Frederik Lund</span><span class="nfs-team-role">Legal Advisor</span></figcaption>
+          </figure>
+          <figure class="nfs-team-card">
+            <div class="nfs-team-photo">
+              <img src="/landing/team/Anna_Dani.png" alt="Anna Dani" loading="lazy">
+              <div class="nfs-team-actions">
+                <button type="button" class="nfs-team-plus" aria-label="Show social links"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg></button>
+                <div class="nfs-team-socials">
+                  <button type="button" class="nfs-team-soc nfs-team-soc-close" aria-label="Close"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M6 6l12 12M6 18L18 6"/></svg></button>
+                  <a class="nfs-team-soc nfs-team-soc-li" href="https://www.linkedin.com/in/annaversati/" target="_blank" rel="noopener" aria-label="LinkedIn"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M20.45 20.45h-3.56v-5.57c0-1.33-.02-3.04-1.85-3.04-1.85 0-2.14 1.44-2.14 2.94v5.67H9.35V9h3.41v1.56h.05c.48-.9 1.64-1.85 3.37-1.85 3.6 0 4.27 2.37 4.27 5.45v6.29zM5.34 7.43a2.06 2.06 0 110-4.13 2.06 2.06 0 010 4.13zm1.78 13.02H3.55V9h3.57v11.45zM22.22 0H1.77C.79 0 0 .77 0 1.73v20.54C0 23.23.79 24 1.77 24h20.45c.98 0 1.78-.77 1.78-1.73V1.73C24 .77 23.2 0 22.22 0z"/></svg></a>                </div>
+              </div>
+            </div>
+            <figcaption><span class="nfs-team-name">Anna Dani</span><span class="nfs-team-role">External Affairs</span></figcaption>
+          </figure>
+        </div>
+        <button type="button" class="nfs-team-nav nfs-team-next" aria-label="Next team members" data-nfs-team-dir="1">&rsaquo;</button>
+      </div>
+    </div>
+  </section>
+  <style>
+    .nfs-team-section { padding: 96px 16px; background: #fff; font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif; }
+    .nfs-team-wrap { max-width: 1200px; margin: 0 auto; }
+    .nfs-team-head { text-align: center; margin-bottom: 56px; }
+    .nfs-team-head h2 { font-family: inherit; font-size: 48px; font-weight: 700; letter-spacing: -1px; line-height: 1.1; color: #1A1A1A; margin: 0 0 20px; }
+    .nfs-team-head p { font-size: 17px; line-height: 1.6; color: #6B7280; max-width: 580px; margin: 0 auto; }
+    .nfs-team-slider { position: relative; }
+    .nfs-team-track {
+      display: grid;
+      grid-auto-flow: column;
+      grid-auto-columns: calc((100% - 64px) / 3);
+      gap: 32px;
+      overflow-x: auto;
+      scroll-snap-type: x mandatory;
+      scroll-behavior: smooth;
+      padding: 4px 4px 16px;
+      scrollbar-width: none;
+      -ms-overflow-style: none;
+    }
+    .nfs-team-track::-webkit-scrollbar { display: none; }
+    .nfs-team-card { margin: 0; text-align: center; scroll-snap-align: start; display: flex; flex-direction: column; align-items: stretch; }
+    .nfs-team-photo { position: relative; width: 100%; }
+    .nfs-team-photo img {
+      width: 100%; aspect-ratio: 1 / 1;
+      object-fit: cover; object-position: top center;
+      border-radius: 16px;
+      filter: grayscale(100%);
+      transition: filter 0.3s ease;
+      background: #F3F3EE;
+      display: block;
+    }
+    .nfs-team-card:hover .nfs-team-photo img { filter: grayscale(0%); }
+    .nfs-team-actions { position: absolute; left: 50%; bottom: 16px; transform: translateX(-50%); display: flex; align-items: center; }
+    .nfs-team-plus, .nfs-team-soc {
+      width: 40px; height: 40px;
+      border: 0; border-radius: 12px;
+      background: rgba(255,255,255,0.95);
+      color: #1A1A1A;
+      display: inline-flex; align-items: center; justify-content: center;
+      cursor: pointer; text-decoration: none;
+      box-shadow: rgba(0,0,0,0.12) 0 4px 12px;
+      transition: transform 0.2s ease, background 0.2s ease;
+    }
+    .nfs-team-plus:hover, .nfs-team-soc:hover { transform: translateY(-2px); background: #fff; }
+    .nfs-team-plus svg, .nfs-team-soc svg { width: 18px; height: 18px; }
+    .nfs-team-socials { display: none; gap: 8px; align-items: center; }
+    .nfs-team-card[data-open="true"] .nfs-team-plus { display: none; }
+    .nfs-team-card[data-open="true"] .nfs-team-socials { display: inline-flex; }
+    .nfs-team-soc-li { color: #0A66C2; }
+    .nfs-team-card figcaption { margin-top: 20px; display: flex; flex-direction: column; gap: 4px; }
+    .nfs-team-name { font-size: 20px; font-weight: 700; color: #1A1A1A; letter-spacing: -0.2px; }
+    .nfs-team-role { font-size: 14px; font-weight: 400; color: #6B7280; }
+    .nfs-team-nav {
+      position: absolute; top: 40%;
+      transform: translateY(-50%);
+      width: 48px; height: 48px;
+      border: 0; border-radius: 50%;
+      background: rgba(0,0,0,0.55);
+      color: #fff; font-size: 28px; line-height: 1;
+      cursor: pointer; z-index: 2;
+      display: flex; align-items: center; justify-content: center;
+      transition: background 0.2s ease, transform 0.2s ease;
+    }
+    .nfs-team-nav:hover { background: rgba(0,0,0,0.78); transform: translateY(-50%) scale(1.05); }
+    .nfs-team-prev { left: -8px; }
+    .nfs-team-next { right: -8px; }
+    @media (max-width: 1024px) {
+      .nfs-team-track { grid-auto-columns: calc((100% - 24px) / 2); gap: 24px; }
+      .nfs-team-head h2 { font-size: 40px; }
+    }
+    @media (max-width: 640px) {
+      .nfs-team-section { padding: 64px 16px; }
+      .nfs-team-track { grid-auto-columns: 100%; gap: 16px; }
+      .nfs-team-head { margin-bottom: 40px; }
+      .nfs-team-head h2 { font-size: 32px; }
+      .nfs-team-head p { font-size: 15px; }
+      .nfs-team-nav { display: none; }
+    }
+  </style>
+  <script>
+    (function(){
+      var track = document.querySelector('.nfs-team-track');
+      if (track) {
+        document.querySelectorAll('[data-nfs-team-dir]').forEach(function(btn){
+          btn.addEventListener('click', function(){
+            var dir = parseInt(btn.getAttribute('data-nfs-team-dir'), 10);
+            var card = track.querySelector('.nfs-team-card');
+            var step = card ? card.getBoundingClientRect().width + 32 : 320;
+            track.scrollBy({ left: dir * step, behavior: 'smooth' });
+          });
+        });
+      }
+      document.querySelectorAll('.nfs-team-plus').forEach(function(btn){
+        btn.addEventListener('click', function(){
+          var card = btn.closest('.nfs-team-card');
+          if (card) card.setAttribute('data-open', 'true');
+        });
+      });
+      document.querySelectorAll('.nfs-team-soc-close').forEach(function(btn){
+        btn.addEventListener('click', function(){
+          var card = btn.closest('.nfs-team-card');
+          if (card) card.setAttribute('data-open', 'false');
+        });
+      });
+    })();
+  </script>
+
+  <!-- CTA BAND -->
+  <div class="s bg-gradient sr" data-feature="SHARED__LANDING_CTA_BAND"><div class="wrap cta-band"><h2 style="font-size:48px;line-height:1.1;letter-spacing:-1px;">Ready to earn from Airbnb?</h2><p style="font-size:18px;margin-top:12px;">Join 100+ operators and partners building their Airbnb portfolio with nfstay.</p><div class="cta-btns" style="margin-top:28px;"><a href="/signup" class="btn btn-white" data-feature="SHARED__LANDING_CTA_BUTTON" style="padding:18px 48px;font-size:17px;border-radius:14px;">Get Started</a></div></div></div>
+
+<!-- OLD FOOTER (hidden) -->
+<footer class="footer" data-feature="SHARED__LANDING_FOOTER_OLD" style="display:none;">
+    <div class="wrap">
+      <div class="footer-grid">
+        <div><div class="footer-brand" data-feature="SHARED__LANDING_FOOTER_LOGO"><span class="box">nf</span><span class="text">stay</span></div><p class="footer-desc">Airbnb JV partnerships, booking sites and agent programme for UK property partners.</p></div>
+        <div class="footer-col" data-feature="SHARED__LANDING_FOOTER_COL"><h4>Platform</h4><a href="/signup">JV Partnerships</a><a href="/signup">Become an Agent</a><a href="/signup">Booking Sites</a></div>
+        <div class="footer-col" data-feature="SHARED__LANDING_FOOTER_COL"><h4>Learn</h4><a href="#how-it-works">How It Works</a><a href="/signup">Agent Programme</a></div>
+        <div class="footer-col" data-feature="SHARED__LANDING_FOOTER_COL"><h4>Company</h4><a href="/signup">Pricing</a><a href="/signup">Agent Programme</a><a href="/signup">Contact</a></div>
+        <div class="footer-col" data-feature="SHARED__LANDING_FOOTER_COL"><h4>Legal</h4><a href="https://docs.nfstay.com/legal/terms-and-conditions" target="_blank" rel="noopener noreferrer">Terms and Conditions</a><a href="https://docs.nfstay.com/legal/privacy-policy" target="_blank" rel="noopener noreferrer">Privacy Policy</a></div>
+      </div>
+      <div class="footer-bottom" data-feature="SHARED__LANDING_FOOTER_BOTTOM"><a href="https://find-and-update.company-information.service.gov.uk/company/13806307" target="_blank" rel="noopener noreferrer" style="color:inherit;text-decoration:none;">Airbrick Finance Ltd</a> &middot; Company No. 13806307 &middot; Trading as nfstay<br>Nfstay Holdings FZE LLC &middot; Ajman NuVentures Centre Free Zone, UAE<br>&copy; 2026 nfstay. All rights reserved.</div>
+    </div>
+  </footer>
+
+<!-- NEW FOOTER V2 -->
+<footer data-feature="SHARED__LANDING_FOOTER" style="background:#fff;border-top:1px solid rgba(0,0,0,0.06);padding:64px 0 32px;">
+  <div class="wrap" style="max-width:1200px;">
+    <!-- Top: Logo+desc+socials LEFT | Link columns RIGHT -->
+    <div style="display:flex;flex-direction:row;justify-content:space-between;gap:48px;flex-wrap:wrap;">
+
+      <!-- Left: Brand block -->
+      <div style="max-width:320px;">
+        <div style="display:flex;align-items:center;gap:3px;margin-bottom:12px;font-family:'Sora',sans-serif;">
+          <a href="/" style="display:flex;align-items:center;gap:3px;text-decoration:none;">
+            <span style="display:flex;align-items:center;justify-content:center;width:28px;height:28px;border:2px solid #0a0a0a;border-radius:6px;font-size:12px;font-weight:700;color:#0a0a0a;">nf</span>
+            <span style="font-size:18px;font-weight:400;letter-spacing:2px;color:#0a0a0a;">stay</span>
+          </a>
+        </div>
+        <p style="font-size:13px;color:#6b7280;line-height:1.6;margin-bottom:20px;">Airbnb JV partnerships, booking sites and agent programme for UK property partners.</p>
+        <!-- Social icons -->
+        <div style="display:flex;align-items:center;gap:16px;">
+          <a href="https://instagram.com/nfstay" aria-label="Instagram" style="color:#6b7280;transition:color 150ms;">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="2" width="20" height="20" rx="5" ry="5"/><path d="M16 11.37A4 4 0 1112.63 8 4 4 0 0116 11.37z"/><line x1="17.5" y1="6.5" x2="17.51" y2="6.5"/></svg>
+          </a>
+          <a href="https://facebook.com/nfstay" aria-label="Facebook" style="color:#6b7280;transition:color 150ms;">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 2h-3a5 5 0 00-5 5v3H7v4h3v8h4v-8h3l1-4h-4V7a1 1 0 011-1h3z"/></svg>
+          </a>
+          <a href="https://x.com/nfstay" aria-label="X / Twitter" style="color:#6b7280;transition:color 150ms;">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 4s-.7 2.1-2 3.4c1.6 10-9.4 17.3-18 11.6 2.2.1 4.4-.6 6-2C3 15.5.5 9.6 3 5c2.2 2.6 5.6 4.1 9 4-.9-4.2 4-6.6 7-3.8 1.1 0 3-1.2 3-1.2z"/></svg>
+          </a>
+          <a href="https://linkedin.com/company/nfstay" aria-label="LinkedIn" style="color:#6b7280;transition:color 150ms;">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 8a6 6 0 016 6v7h-4v-7a2 2 0 00-2-2 2 2 0 00-2 2v7h-4v-7a6 6 0 016-6z"/><rect x="2" y="9" width="4" height="12"/><circle cx="4" cy="4" r="2"/></svg>
+          </a>
+        </div>
+      </div>
+
+      <!-- Right: Link columns -->
+      <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:48px;flex:1;min-width:0;">
+        <div>
+          <h4 style="font-size:12px;font-weight:700;color:#1a1a1a;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:14px;">Platform</h4>
+          <div style="display:flex;flex-direction:column;gap:10px;">
+            <a href="#jv-partners" style="font-size:13px;color:#6b7280;text-decoration:none;transition:color 150ms;">JV Partnerships</a>
+            <a href="#become-agent" style="font-size:13px;color:#6b7280;text-decoration:none;transition:color 150ms;">Become an Agent</a>
+            <a href="#booking-sites" style="font-size:13px;color:#6b7280;text-decoration:none;transition:color 150ms;">Booking Sites</a>
+          </div>
+        </div>
+        <div>
+          <h4 style="font-size:12px;font-weight:700;color:#1a1a1a;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:14px;">Learn</h4>
+          <div style="display:flex;flex-direction:column;gap:10px;">
+            <a href="#how-it-works" style="font-size:13px;color:#6b7280;text-decoration:none;transition:color 150ms;">How It Works</a>
+            <a href="/signup" style="font-size:13px;color:#6b7280;text-decoration:none;transition:color 150ms;">Agent Programme</a>
+          </div>
+        </div>
+        <div>
+          <h4 style="font-size:12px;font-weight:700;color:#1a1a1a;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:14px;">Company</h4>
+          <div style="display:flex;flex-direction:column;gap:10px;">
+            <a href="/signup" style="font-size:13px;color:#6b7280;text-decoration:none;transition:color 150ms;">Contact</a>
+            <a href="/signup" style="font-size:13px;color:#6b7280;text-decoration:none;transition:color 150ms;">Blog</a>
+            <a href="https://docs.nfstay.com/legal/terms-and-conditions" target="_blank" rel="noopener noreferrer" style="font-size:13px;color:#6b7280;text-decoration:none;transition:color 150ms;">Terms and Conditions</a>
+            <a href="https://docs.nfstay.com/legal/privacy-policy" target="_blank" rel="noopener noreferrer" style="font-size:13px;color:#6b7280;text-decoration:none;transition:color 150ms;">Privacy Policy</a>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Bottom bar -->
+    <div style="display:flex;flex-direction:row;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:12px;border-top:1px solid rgba(0,0,0,0.06);padding-top:24px;margin-top:40px;">
+      <div style="display:flex;flex-direction:column;gap:4px;">
+        <p style="font-size:12px;color:#9ca3af;"><a href="https://find-and-update.company-information.service.gov.uk/company/13806307" target="_blank" rel="noopener noreferrer" style="color:#9ca3af;text-decoration:none;">Airbrick Finance Ltd</a> &middot; Company No. 13806307 &middot; Trading as nfstay</p>
+        <p style="font-size:12px;color:#9ca3af;">Nfstay Holdings FZE LLC &middot; Ajman NuVentures Centre Free Zone, UAE</p>
+        <p style="font-size:12px;color:#9ca3af;">&copy; 2026 nfstay. All rights reserved.</p>
+      </div>
+      <div style="display:flex;gap:16px;">
+        <a href="https://docs.nfstay.com/legal/terms-and-conditions" target="_blank" rel="noopener noreferrer" style="font-size:12px;color:#9ca3af;text-decoration:none;transition:color 150ms;">Terms and Conditions</a>
+        <a href="https://docs.nfstay.com/legal/privacy-policy" target="_blank" rel="noopener noreferrer" style="font-size:12px;color:#9ca3af;text-decoration:none;transition:color 150ms;">Privacy Policy</a>
+      </div>
+    </div>
+  </div>
+</footer>
+  <script src="/landing/js/feature-inspector.js"></script>
+  <script src="/landing/translations.js"></script>
+  <!-- hero-demo.js removed — JV pivot 2026-05-02 -->
+  <script src="/landing/js/journey.js"></script>
+  <script src="/landing/js/global.js"></script>
+  <script src="/landing/premium.js"></script>
+  <script src="/landing/js/deals-loader.js"></script>
+
+  <script>
+  // Language switcher engine
+  // Map landing page lang codes to React app i18next codes
+  var langToI18n = { en: 'en', pt: 'pt-BR', es: 'es', fr: 'fr', ar: 'ar', it: 'it' };
+  var i18nToLang = { en: 'en', 'pt-BR': 'pt', es: 'es', fr: 'fr', ar: 'ar', it: 'it' };
+
+  window.switchLang = function(lang) {
+    if (typeof TRANSLATIONS === 'undefined') return;
+    var t = TRANSLATIONS[lang];
+    if (!t) return;
+
+    // Save to localStorage so the React dashboard picks up the same language
+    localStorage.setItem('nfstay_lang', langToI18n[lang] || lang);
+
+    document.querySelectorAll('[data-i18n]').forEach(function(el) {
+      var key = el.getAttribute('data-i18n');
+      if (t[key]) el.textContent = t[key];
+    });
+
+    document.documentElement.dir = lang === 'ar' ? 'rtl' : 'ltr';
+
+    var flags = { en: '\ud83c\uddec\ud83c\udde7', pt: '\ud83c\udde7\ud83c\uddf7', es: '\ud83c\uddea\ud83c\uddf8', fr: '\ud83c\uddeb\ud83c\uddf7', ar: '\ud83c\udde6\ud83c\uddea' };
+    var labels = { en: 'EN', pt: 'PT', es: 'ES', fr: 'FR', ar: 'AR' };
+    var langBtn = document.querySelector('.lang-dropdown button');
+    if (langBtn) {
+      langBtn.innerHTML = '<span style="font-size:14px;">' + (flags[lang] || flags.en) + '</span> ' + (labels[lang] || 'EN') + ' <svg width="10" height="10" viewBox="0 0 10 10" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M2.5 4l2.5 2.5L7.5 4"/></svg>';
+    }
+
+    var dd = document.querySelector('.lang-dropdown');
+    if (dd) dd.classList.remove('open');
+
+    document.querySelectorAll('.lang-dropdown .lang-menu a').forEach(function(a) {
+      a.style.background = a.getAttribute('data-lang') === lang ? 'rgba(30,154,128,0.06)' : '';
+    });
+  };
+
+  // Use onclick directly on language links for maximum reliability
+  document.querySelectorAll('[data-lang]').forEach(function(a) {
+    a.onclick = function(e) {
+      e.preventDefault();
+      e.stopPropagation();
+      var lang = this.getAttribute('data-lang');
+      window.switchLang(lang);
+      return false;
+    };
+  });
+
+  // On page load, restore language from localStorage (shared with React dashboard)
+  (function() {
+    var saved = localStorage.getItem('nfstay_lang');
+    if (saved && i18nToLang[saved]) {
+      window.switchLang(i18nToLang[saved]);
+    }
+  })();
+  </script>
+
+  <script>
+    // Nav glassmorphism — shrink to pill after scrolling past hero animation
+    (function() {
+      var nav = document.getElementById('navbar');
+      var hero = document.getElementById('hero');
+      if (!nav || !hero) return;
+      var isScrolled = false;
+      function onScroll() {
+        var triggerPoint = hero.offsetTop + hero.offsetHeight;
+        var past = window.scrollY > triggerPoint;
+        if (past !== isScrolled) {
+          isScrolled = past;
+          nav.classList.toggle('scrolled', isScrolled);
+        }
+      }
+      window.addEventListener('scroll', onScroll, { passive: true });
+      onScroll();
+    })();
+  </script>
+
+  <!-- A/B Testing + Social Proof -->
+  <script src="/landing/js/ab-testing.js"></script>
+  <script src="/landing/js/social-proof.js"></script>
+
 </body>
 </html>
