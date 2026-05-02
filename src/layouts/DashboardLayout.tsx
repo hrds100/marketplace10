@@ -62,13 +62,7 @@ function TopBar() {
           <Gem className="w-[13px] h-[13px] text-blue-400" strokeWidth={2} />
           {t('nav.partnerOnAirbnbs')}
         </button>
-        <button
-          onClick={() => navigate('/dashboard/list-a-deal')}
-          className="hidden md:flex bg-gradient-to-r from-emerald-500 to-teal-600 text-white px-3.5 py-[6px] rounded-lg text-[12px] font-semibold hover:from-emerald-600 hover:to-teal-700 shadow-sm transition-all items-center gap-1.5"
-        >
-          <PlusCircle className="w-[14px] h-[14px]" strokeWidth={1.8} />
-          {t('nav.submitADeal')}
-        </button>
+        {/* Submit A Deal button hidden — JV pivot 2026-05-02 */}
         <FavouritesDropdown />
         <NotificationBell />
         <BurgerMenu />
