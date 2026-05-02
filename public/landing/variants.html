@@ -26,20 +26,22 @@
 
     /* ── Version Switcher ── */
     #v-switch{
-      position:fixed;right:12px;top:50%;transform:translateY(-50%);
-      z-index:9999;display:flex;flex-direction:column;gap:6px;
+      position:fixed;right:8px;top:50%;transform:translateY(-50%);
+      z-index:9999;display:flex;flex-direction:column;gap:3px;
       background:rgba(255,255,255,0.92);backdrop-filter:blur(16px);
-      border:1px solid var(--border);border-radius:14px;padding:8px 6px;
+      border:1px solid var(--border);border-radius:12px;padding:6px 4px;
       box-shadow:0 8px 32px rgba(0,0,0,0.12);
+      max-height:90vh;overflow-y:auto;scrollbar-width:none;
     }
+    #v-switch::-webkit-scrollbar{display:none}
     #v-switch button{
-      width:36px;height:28px;border:1px solid transparent;border-radius:8px;
-      background:none;font-size:11px;font-weight:600;color:var(--body);
-      transition:all 150ms;
+      width:32px;height:22px;border:1px solid transparent;border-radius:6px;
+      background:none;font-size:9px;font-weight:600;color:var(--body);
+      transition:all 150ms;flex-shrink:0;
     }
     #v-switch button:hover{background:var(--green-tint);color:var(--green)}
     #v-switch button.active{background:var(--green);color:#fff;border-color:var(--green)}
-    #v-switch .sw-label{font-size:8px;color:var(--muted);text-align:center;letter-spacing:0.5px;text-transform:uppercase;padding-bottom:2px;border-bottom:1px solid var(--border);margin-bottom:2px}
+    #v-switch .sw-label{font-size:7px;color:var(--muted);text-align:center;letter-spacing:0.5px;text-transform:uppercase;padding-bottom:2px;border-bottom:1px solid var(--border);margin-bottom:1px;flex-shrink:0}
 
     /* ── Navbar (no shrink) ── */
     .nv{position:fixed;top:0;left:0;right:0;z-index:1000;padding:8px 16px}
@@ -160,6 +162,27 @@
   <button onclick="switchV(8)">V8</button>
   <button onclick="switchV(9)">V9</button>
   <button onclick="switchV(10)">V10</button>
+  <div class="sw-label" style="margin-top:4px">New</div>
+  <button onclick="switchV(11)">V11</button>
+  <button onclick="switchV(12)">V12</button>
+  <button onclick="switchV(13)">V13</button>
+  <button onclick="switchV(14)">V14</button>
+  <button onclick="switchV(15)">V15</button>
+  <button onclick="switchV(16)">V16</button>
+  <button onclick="switchV(17)">V17</button>
+  <button onclick="switchV(18)">V18</button>
+  <button onclick="switchV(19)">V19</button>
+  <button onclick="switchV(20)">V20</button>
+  <button onclick="switchV(21)">V21</button>
+  <button onclick="switchV(22)">V22</button>
+  <button onclick="switchV(23)">V23</button>
+  <button onclick="switchV(24)">V24</button>
+  <button onclick="switchV(25)">V25</button>
+  <button onclick="switchV(26)">V26</button>
+  <button onclick="switchV(27)">V27</button>
+  <button onclick="switchV(28)">V28</button>
+  <button onclick="switchV(29)">V29</button>
+  <button onclick="switchV(30)">V30</button>
 </div>
 
 <!-- ════════ NAVBAR (no shrink) ════════ -->
@@ -430,6 +453,1072 @@
   </section>
 </div>
 
+<!-- V11-V20 HEROES -->
+<!-- ══════════════════════════════════════════
+     V11–V20 HERO ZONES
+     ══════════════════════════════════════════ -->
+
+<!-- V11 — Stake/Fintech Clone -->
+<div data-v="11" class="vs">
+  <style>
+    .v11-metric{display:flex;align-items:center;gap:8px;font-size:14px;color:var(--body)}
+    .v11-metric .dot{width:6px;height:6px;border-radius:50%;flex-shrink:0}
+    .v11-metric .dot.up{background:#10b981}
+    .v11-yield{font-size:13px;font-weight:700;color:#10b981;background:#ecfdf5;padding:3px 10px;border-radius:6px}
+    .v11-prop-card{background:#fff;border:1px solid #e5e7eb;border-radius:16px;padding:24px;max-width:380px;box-shadow:0 2px 12px rgba(0,0,0,0.04)}
+    .v11-prop-card h4{font-size:16px;font-weight:700;color:var(--heading);margin-bottom:4px}
+    .v11-prop-card .sub{font-size:13px;color:var(--body)}
+    .v11-prop-card .stats{display:flex;gap:24px;margin-top:16px;padding-top:16px;border-top:1px solid #f3f4f6}
+    .v11-prop-card .stat-val{font-size:20px;font-weight:800;color:var(--heading)}
+    .v11-prop-card .stat-lbl{font-size:11px;color:var(--muted);margin-top:2px}
+    .v11-how{display:grid;grid-template-columns:repeat(3,1fr);gap:32px;margin-top:64px}
+    .v11-how-item{text-align:center}
+    .v11-how-item .icon{width:48px;height:48px;border-radius:12px;background:#f9fafb;border:1px solid #e5e7eb;display:inline-flex;align-items:center;justify-content:center;font-size:22px;margin-bottom:16px}
+    .v11-how-item h4{font-size:15px;font-weight:700;color:var(--heading);margin-bottom:6px}
+    .v11-how-item p{font-size:13px;color:var(--body);line-height:1.6}
+    .v11-badges{display:flex;gap:12px;justify-content:center;margin-top:48px;flex-wrap:wrap}
+    .v11-badges .reg-badge{display:flex;align-items:center;gap:6px;background:#f9fafb;border:1px solid #e5e7eb;border-radius:8px;padding:8px 14px;font-size:12px;font-weight:500;color:var(--body)}
+    .v11-badges .reg-badge svg{width:16px;height:16px;color:var(--green)}
+    @media(max-width:768px){
+      .v11-hero-grid{flex-direction:column !important;text-align:center}
+      .v11-prop-card{margin:0 auto}
+      .v11-how{grid-template-columns:1fr}
+    }
+  </style>
+  <section style="background:#fff;padding:140px 24px 80px;border-radius:0 0 28px 28px">
+    <div style="max-width:1100px;margin:0 auto">
+      <div class="v11-hero-grid" style="display:flex;align-items:center;gap:64px;justify-content:space-between">
+        <div style="max-width:520px">
+          <p style="font-size:13px;font-weight:600;color:var(--green);text-transform:uppercase;letter-spacing:1.5px;margin-bottom:16px">Airbnb JV Platform</p>
+          <h1 style="font-size:46px;font-weight:800;line-height:1.1;letter-spacing:-1.5px;color:var(--heading)">Earn from UK Serviced Accommodation</h1>
+          <p style="font-size:16px;color:var(--body);margin-top:16px;line-height:1.7">Fractional partnerships in managed Airbnb properties. Browse deals, own a share from &pound;500, and earn monthly returns.</p>
+          <div style="display:flex;gap:12px;margin-top:28px;flex-wrap:wrap">
+            <a href="/signup" class="btn-dark" style="padding:12px 32px;font-size:14px;border-radius:10px">Get Started</a>
+            <a href="/signin" style="padding:12px 32px;font-size:14px;font-weight:500;color:var(--body);border:1px solid #e5e7eb;border-radius:10px">Login</a>
+          </div>
+        </div>
+        <div class="v11-prop-card">
+          <div style="display:flex;justify-content:space-between;align-items:flex-start">
+            <div>
+              <h4>Manchester City Centre</h4>
+              <div class="sub">2-bed SA &middot; Sleeps 6</div>
+            </div>
+            <span class="v11-yield">+10.4%</span>
+          </div>
+          <div class="stats">
+            <div><div class="stat-val">&pound;500</div><div class="stat-lbl">Min. entry</div></div>
+            <div><div class="stat-val">&pound;680</div><div class="stat-lbl">Avg. monthly</div></div>
+            <div><div class="stat-val">91%</div><div class="stat-lbl">Occupancy</div></div>
+          </div>
+        </div>
+      </div>
+      <div class="v11-how">
+        <div class="v11-how-item">
+          <div class="icon">&#128269;</div>
+          <h4>Browse Verified Deals</h4>
+          <p>Every property is vetted for location, yield and compliance before listing.</p>
+        </div>
+        <div class="v11-how-item">
+          <div class="icon">&#128176;</div>
+          <h4>Own Your Share</h4>
+          <p>Pick a fraction from &pound;500. No experience or large capital needed.</p>
+        </div>
+        <div class="v11-how-item">
+          <div class="icon">&#128200;</div>
+          <h4>Earn Monthly Returns</h4>
+          <p>Professional operators manage everything. Returns paid to your account monthly.</p>
+        </div>
+      </div>
+      <div class="v11-badges">
+        <div class="reg-badge"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 12l2 2 4-4"/><circle cx="12" cy="12" r="10"/></svg>UK Registered</div>
+        <div class="reg-badge"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 12l2 2 4-4"/><circle cx="12" cy="12" r="10"/></svg>Fully Insured</div>
+        <div class="reg-badge"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 12l2 2 4-4"/><circle cx="12" cy="12" r="10"/></svg>Transparent Reporting</div>
+      </div>
+    </div>
+  </section>
+</div>
+
+<!-- V12 — Dark Mode Luxury -->
+<div data-v="12" class="vs">
+  <style>
+    .v12-card{background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.08);border-radius:16px;padding:32px;transition:border-color 200ms}
+    .v12-card:hover{border-color:rgba(30,154,128,0.3)}
+    .v12-card h3{font-size:16px;font-weight:700;color:#fff;margin-bottom:8px}
+    .v12-card p{font-size:13px;color:rgba(255,255,255,0.5);line-height:1.6}
+    .v12-line{width:40px;height:1px;background:var(--green);margin-bottom:16px}
+    @media(max-width:768px){
+      .v12-grid{grid-template-columns:1fr !important}
+    }
+  </style>
+  <section style="background:#0D0D0D;padding:160px 24px 100px;border-radius:0 0 28px 28px;position:relative;overflow:hidden">
+    <div style="position:absolute;top:20%;left:50%;width:600px;height:600px;background:radial-gradient(circle,rgba(30,154,128,0.06) 0%,transparent 70%);transform:translateX(-50%);pointer-events:none"></div>
+    <div style="max-width:900px;margin:0 auto;position:relative;z-index:2;text-align:center">
+      <div style="display:inline-block;border:1px solid rgba(30,154,128,0.3);padding:6px 16px;border-radius:100px;margin-bottom:32px">
+        <span style="font-size:12px;font-weight:600;color:var(--green);letter-spacing:1px">FRACTIONAL AIRBNB PARTNERSHIPS</span>
+      </div>
+      <h1 class="hero-xlarge" style="font-size:68px;font-weight:800;line-height:1.05;letter-spacing:-2.5px;color:#fff">Earn from Airbnb.<br><span style="color:var(--green)">Without the work.</span></h1>
+      <p style="font-size:17px;color:rgba(255,255,255,0.45);margin-top:20px;max-width:500px;margin-left:auto;margin-right:auto;line-height:1.7">Managed Serviced Accommodation partnerships from &pound;500. Monthly returns. Full voting rights.</p>
+      <div style="display:flex;justify-content:center;gap:16px;margin-top:40px;flex-wrap:wrap">
+        <a href="/signup" style="display:inline-block;padding:14px 40px;background:var(--green);color:#fff;border-radius:12px;font-size:15px;font-weight:600;box-shadow:0 0 24px rgba(30,154,128,0.3);transition:transform 200ms">Get Started</a>
+        <a href="/signin" style="display:inline-block;padding:14px 40px;border:1px solid rgba(255,255,255,0.12);color:rgba(255,255,255,0.7);border-radius:12px;font-size:15px;font-weight:500;transition:border-color 200ms">Login</a>
+      </div>
+      <div class="v12-grid" style="display:grid;grid-template-columns:repeat(3,1fr);gap:20px;margin-top:72px;text-align:left">
+        <div class="v12-card"><div class="v12-line"></div><h3>&pound;500 Entry</h3><p>Start with a fraction. No large capital needed to access the SA market.</p></div>
+        <div class="v12-card"><div class="v12-line"></div><h3>&pound;680 Avg. Monthly</h3><p>Consistent returns from professionally managed Airbnb properties.</p></div>
+        <div class="v12-card"><div class="v12-line"></div><h3>100+ Properties</h3><p>A growing portfolio of UK Serviced Accommodation deals.</p></div>
+      </div>
+    </div>
+  </section>
+</div>
+
+<!-- V13 — Outcome-First Minimal -->
+<div data-v="13" class="vs">
+  <style>
+    .v13-steps{display:grid;grid-template-columns:repeat(3,1fr);gap:40px;max-width:900px;margin:0 auto}
+    .v13-step{text-align:center}
+    .v13-step .num{font-size:48px;font-weight:900;color:var(--green);opacity:0.2;margin-bottom:8px}
+    .v13-step h3{font-size:17px;font-weight:700;color:var(--heading);margin-bottom:6px}
+    .v13-step p{font-size:14px;color:var(--body);line-height:1.6}
+    @media(max-width:768px){
+      .v13-steps{grid-template-columns:1fr;gap:32px}
+      .v13-headline{font-size:56px !important}
+    }
+  </style>
+  <section style="background:#fff;padding:180px 24px 80px;border-radius:0 0 28px 28px">
+    <div style="max-width:900px;margin:0 auto;text-align:center">
+      <h1 class="v13-headline hero-mega" style="font-size:88px;font-weight:900;line-height:1;letter-spacing:-4px;color:var(--heading)">&pound;680/Month.<br>Hands-Off.</h1>
+      <p style="font-size:18px;color:var(--body);margin-top:24px;max-width:480px;margin-left:auto;margin-right:auto;line-height:1.7">Fractional Airbnb partnerships from &pound;500. Managed for you. Returns paid monthly.</p>
+      <a href="/signup" class="btn-green" style="margin-top:36px;padding:16px 56px;font-size:16px">Get Started</a>
+    </div>
+  </section>
+  <section style="padding:96px 24px;background:#F3F3EE">
+    <div class="v13-steps">
+      <div class="v13-step"><div class="num">01</div><h3>Pick a Property</h3><p>Browse verified Airbnb SA deals on the marketplace. Choose your share.</p></div>
+      <div class="v13-step"><div class="num">02</div><h3>We Manage It</h3><p>Professional operators handle guests, cleaning and bookings end to end.</p></div>
+      <div class="v13-step"><div class="num">03</div><h3>Earn Monthly</h3><p>Returns paid to your account. Vote on key decisions from your dashboard.</p></div>
+    </div>
+  </section>
+</div>
+
+<!-- V14 — Interactive Calculator Hero -->
+<div data-v="14" class="vs">
+  <style>
+    .v14-calc{background:#fff;border:1px solid #e5e7eb;border-radius:20px;padding:40px;max-width:560px;margin:0 auto;box-shadow:0 8px 40px rgba(0,0,0,0.06)}
+    .v14-row{display:flex;justify-content:space-between;align-items:center;margin-bottom:20px}
+    .v14-row .label{font-size:14px;font-weight:600;color:var(--heading)}
+    .v14-row .value{font-size:14px;font-weight:700;color:var(--green)}
+    .v14-bar{width:100%;height:8px;background:#f3f4f6;border-radius:4px;overflow:hidden;margin-bottom:24px}
+    .v14-bar-fill{height:100%;border-radius:4px;background:linear-gradient(90deg,var(--green),#34d399)}
+    .v14-result{text-align:center;padding-top:24px;border-top:1px solid #f3f4f6}
+    .v14-result .big{font-size:56px;font-weight:900;color:var(--heading);letter-spacing:-2px}
+    .v14-result .sub{font-size:15px;color:var(--body);margin-top:4px}
+    .v14-breakdown{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-top:24px}
+    .v14-bd-item{text-align:center}
+    .v14-bd-item .val{font-size:18px;font-weight:800;color:var(--heading)}
+    .v14-bd-item .lbl{font-size:11px;color:var(--muted);margin-top:2px}
+    @media(max-width:768px){
+      .v14-hero-flex{flex-direction:column !important}
+      .v14-calc{max-width:100%}
+    }
+  </style>
+  <section style="background:linear-gradient(180deg,#f3f3ee,#eae9e4);padding:140px 24px 80px;border-radius:0 0 28px 28px">
+    <div style="max-width:1100px;margin:0 auto">
+      <div class="v14-hero-flex" style="display:flex;align-items:center;gap:64px">
+        <div style="flex:1;max-width:460px">
+          <div class="badge" style="margin-bottom:20px"><span>Partnership Calculator</span></div>
+          <h1 style="font-size:48px;font-weight:800;line-height:1.08;letter-spacing:-1.5px;color:var(--heading)">See What Your Partnership Could Earn</h1>
+          <p style="font-size:16px;color:var(--body);margin-top:16px;line-height:1.7">Based on average returns across our portfolio of 100+ managed Airbnb Serviced Accommodation properties.</p>
+          <a href="/signup" class="btn-green" style="margin-top:28px">Get Started from &pound;500</a>
+        </div>
+        <div class="v14-calc">
+          <div class="v14-row"><span class="label">Your Partnership</span><span class="value">&pound;500</span></div>
+          <div class="v14-bar"><div class="v14-bar-fill" style="width:10%"></div></div>
+          <div class="v14-row"><span class="label">Property Value</span><span class="value">&pound;285,000</span></div>
+          <div class="v14-bar"><div class="v14-bar-fill" style="width:65%"></div></div>
+          <div class="v14-row"><span class="label">Avg. Occupancy</span><span class="value">91%</span></div>
+          <div class="v14-bar"><div class="v14-bar-fill" style="width:91%"></div></div>
+          <div class="v14-result">
+            <div class="big" style="color:var(--green)">&pound;680</div>
+            <div class="sub">Estimated Monthly Return</div>
+            <div class="v14-breakdown">
+              <div class="v14-bd-item"><div class="val">&pound;8,160</div><div class="lbl">Annual</div></div>
+              <div class="v14-bd-item"><div class="val">10.4%</div><div class="lbl">Yield</div></div>
+              <div class="v14-bd-item"><div class="val">100+</div><div class="lbl">Properties</div></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+</div>
+
+<!-- V15 — Broken Grid Editorial -->
+<div data-v="15" class="vs">
+  <style>
+    .v15-grid{display:grid;grid-template-columns:repeat(12,1fr);grid-template-rows:auto auto auto;gap:16px;max-width:1200px;margin:0 auto;position:relative}
+    .v15-headline{grid-column:1/8;grid-row:1/2;padding-top:20px}
+    .v15-img{grid-column:7/13;grid-row:1/3;border-radius:20px;overflow:hidden;box-shadow:0 24px 64px rgba(0,0,0,0.12);z-index:1}
+    .v15-img img{width:100%;height:100%;object-fit:cover;display:block;min-height:400px}
+    .v15-copy{grid-column:1/6;grid-row:2/3;padding:32px 0}
+    .v15-stat-bar{grid-column:1/13;grid-row:3/4;display:flex;gap:48px;padding:40px 0;border-top:1px solid var(--border)}
+    .v15-stat{text-align:left}
+    .v15-stat .val{font-size:36px;font-weight:800;color:var(--heading);letter-spacing:-1px}
+    .v15-stat .val.green{color:var(--green)}
+    .v15-stat .lbl{font-size:12px;color:var(--body);margin-top:2px}
+    @media(max-width:768px){
+      .v15-grid{display:flex;flex-direction:column;gap:24px}
+      .v15-img img{min-height:260px}
+      .v15-stat-bar{flex-wrap:wrap;gap:24px}
+    }
+  </style>
+  <section style="background:#F3F3EE;padding:140px 24px 60px;border-radius:0 0 28px 28px">
+    <div class="v15-grid">
+      <div class="v15-headline">
+        <p style="font-size:12px;font-weight:700;color:var(--green);text-transform:uppercase;letter-spacing:2px;margin-bottom:16px">Airbnb JV Partnerships</p>
+        <h1 style="font-family:'Playfair Display',serif;font-size:64px;font-weight:700;line-height:1.05;letter-spacing:-1px;color:var(--heading);font-style:italic">Own a Fraction<br>of Something Real</h1>
+      </div>
+      <div class="v15-img">
+        <img src="https://images.unsplash.com/photo-1502672260266-1c1ef2d93688?w=800&q=80" alt="Luxury apartment interior" loading="lazy">
+      </div>
+      <div class="v15-copy">
+        <p style="font-size:18px;color:var(--body);line-height:1.8;max-width:440px">Managed Serviced Accommodation in the UK. From &pound;500, you own a share of a real Airbnb property, earn monthly returns, and vote on every decision that matters.</p>
+        <div style="display:flex;gap:12px;margin-top:28px">
+          <a href="/signup" class="btn-green">Get Started</a>
+          <a href="/signin" class="btn-outline">Login</a>
+        </div>
+      </div>
+      <div class="v15-stat-bar">
+        <div class="v15-stat"><div class="val green">&pound;500</div><div class="lbl">Minimum Entry</div></div>
+        <div class="v15-stat"><div class="val">&pound;680</div><div class="lbl">Avg. Monthly Return</div></div>
+        <div class="v15-stat"><div class="val">100+</div><div class="lbl">Managed Properties</div></div>
+        <div class="v15-stat"><div class="val">91%</div><div class="lbl">Avg. Occupancy</div></div>
+      </div>
+    </div>
+  </section>
+</div>
+
+<!-- V16 — Scroll-Snap Full-Page Sections -->
+<div data-v="16" class="vs">
+  <style>
+    .v16-snap{scroll-snap-type:y mandatory;overflow-y:auto;height:100vh;scroll-behavior:smooth}
+    .v16-screen{scroll-snap-align:start;min-height:100vh;display:flex;align-items:center;justify-content:center;padding:24px;text-align:center}
+    .v16-screen h2{font-size:56px;font-weight:800;line-height:1.08;letter-spacing:-2px;color:var(--heading);max-width:700px}
+    .v16-screen p{font-size:18px;color:var(--body);margin-top:16px;max-width:520px;line-height:1.7;margin-left:auto;margin-right:auto}
+    .v16-screen.dark{background:#0a0a0a}
+    .v16-screen.dark h2{color:#fff}
+    .v16-screen.dark p{color:rgba(255,255,255,0.5)}
+    .v16-num-row{display:flex;gap:48px;justify-content:center;margin-top:40px;flex-wrap:wrap}
+    .v16-num{text-align:center}
+    .v16-num .val{font-size:48px;font-weight:900;color:var(--green);letter-spacing:-2px}
+    .v16-num .lbl{font-size:13px;color:var(--body);margin-top:4px}
+    .v16-screen.dark .v16-num .lbl{color:rgba(255,255,255,0.5)}
+    @media(max-width:768px){
+      .v16-screen h2{font-size:36px !important;letter-spacing:-1px}
+    }
+  </style>
+  <div class="v16-snap">
+    <div class="v16-screen" style="background:#F3F3EE;padding-top:120px">
+      <div>
+        <div class="badge" style="margin-bottom:24px"><span>Airbnb JV Partnerships</span></div>
+        <h2 style="font-size:72px;letter-spacing:-3px">Be Part of<br>the Growth.</h2>
+        <p>Scroll to see how fractional Airbnb partnerships work.</p>
+        <div style="margin-top:48px;font-size:24px;color:var(--muted);animation:v6count 1.5s ease-in-out infinite alternate">&#8595;</div>
+      </div>
+    </div>
+    <div class="v16-screen" style="background:#fff">
+      <div>
+        <p style="font-size:13px;font-weight:700;color:#ef4444;text-transform:uppercase;letter-spacing:2px;margin-bottom:16px">The Problem</p>
+        <h2>Airbnb SA Costs &pound;30k+ to Start Alone</h2>
+        <p>Deposits, furnishing, compliance, guest management. The barriers to Serviced Accommodation are steep for most people.</p>
+      </div>
+    </div>
+    <div class="v16-screen" style="background:#F3F3EE">
+      <div>
+        <p style="font-size:13px;font-weight:700;color:var(--green);text-transform:uppercase;letter-spacing:2px;margin-bottom:16px">The Solution</p>
+        <h2>Own a Share from &pound;500. We Manage Everything.</h2>
+        <p>nfstay lets you partner on managed Airbnb properties. Professional operators handle every guest, every booking, every clean.</p>
+      </div>
+    </div>
+    <div class="v16-screen dark">
+      <div>
+        <p style="font-size:13px;font-weight:700;color:var(--green);text-transform:uppercase;letter-spacing:2px;margin-bottom:16px">The Numbers</p>
+        <div class="v16-num-row">
+          <div class="v16-num"><div class="val">&pound;500</div><div class="lbl">Minimum Entry</div></div>
+          <div class="v16-num"><div class="val">&pound;680</div><div class="lbl">Avg. Monthly Return</div></div>
+          <div class="v16-num"><div class="val">100+</div><div class="lbl">Managed Properties</div></div>
+        </div>
+        <a href="/signup" class="btn-green" style="margin-top:48px;padding:18px 56px;font-size:17px">Get Started</a>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- V17 — Problem / Solution Split Screen -->
+<div data-v="17" class="vs">
+  <style>
+    .v17-split{display:grid;grid-template-columns:1fr 1fr;min-height:100vh}
+    .v17-side{display:flex;align-items:center;justify-content:center;padding:140px 48px 80px}
+    .v17-problem{background:#f5f5f5}
+    .v17-solution{background:#fff;border-left:3px solid var(--green)}
+    .v17-list{display:flex;flex-direction:column;gap:20px;margin-top:32px}
+    .v17-item{display:flex;align-items:flex-start;gap:14px}
+    .v17-item .icon{width:32px;height:32px;border-radius:8px;display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:16px}
+    .v17-item .icon.red{background:#fef2f2;color:#ef4444}
+    .v17-item .icon.green{background:#ecfdf5;color:var(--green)}
+    .v17-item h4{font-size:15px;font-weight:700;color:var(--heading);margin-bottom:2px}
+    .v17-item p{font-size:13px;color:var(--body);line-height:1.5}
+    .v17-problem h2{color:#6b7280}
+    .v17-solution h2{color:var(--heading)}
+    @media(max-width:768px){
+      .v17-split{grid-template-columns:1fr}
+      .v17-side{padding:80px 24px 60px}
+      .v17-problem{padding-top:140px}
+      .v17-solution{border-left:none;border-top:3px solid var(--green)}
+    }
+  </style>
+  <section style="border-radius:0 0 28px 28px;overflow:hidden">
+    <div class="v17-split">
+      <div class="v17-side v17-problem">
+        <div style="max-width:400px">
+          <p style="font-size:12px;font-weight:700;color:#9ca3af;text-transform:uppercase;letter-spacing:2px;margin-bottom:12px">Going Solo</p>
+          <h2 style="font-size:40px;font-weight:800;line-height:1.1;letter-spacing:-1px">The Airbnb SA Problem</h2>
+          <div class="v17-list">
+            <div class="v17-item"><div class="icon red">&#10005;</div><div><h4>&pound;30k&ndash;&pound;50k Upfront</h4><p>Deposit, furnishing, compliance and setup costs.</p></div></div>
+            <div class="v17-item"><div class="icon red">&#10005;</div><div><h4>Guest Management 24/7</h4><p>Check-ins, complaints, emergencies at all hours.</p></div></div>
+            <div class="v17-item"><div class="icon red">&#10005;</div><div><h4>All Risk, No Support</h4><p>Void periods, maintenance and regulation changes alone.</p></div></div>
+            <div class="v17-item"><div class="icon red">&#10005;</div><div><h4>Finding Deals Is Hard</h4><p>No pipeline. No marketplace. Just you and Rightmove.</p></div></div>
+          </div>
+        </div>
+      </div>
+      <div class="v17-side v17-solution">
+        <div style="max-width:400px">
+          <p style="font-size:12px;font-weight:700;color:var(--green);text-transform:uppercase;letter-spacing:2px;margin-bottom:12px">With nfstay</p>
+          <h2 style="font-size:40px;font-weight:800;line-height:1.1;letter-spacing:-1px">The JV Partnership Solution</h2>
+          <div class="v17-list">
+            <div class="v17-item"><div class="icon green">&#10003;</div><div><h4>Start from &pound;500</h4><p>Fractional partnership. No mortgage or large deposit needed.</p></div></div>
+            <div class="v17-item"><div class="icon green">&#10003;</div><div><h4>Fully Managed</h4><p>Professional operators handle every guest and every booking.</p></div></div>
+            <div class="v17-item"><div class="icon green">&#10003;</div><div><h4>Shared Risk, Shared Reward</h4><p>JV structure means costs and returns are distributed fairly.</p></div></div>
+            <div class="v17-item"><div class="icon green">&#10003;</div><div><h4>Curated Marketplace</h4><p>Browse verified SA deals. Every property vetted before listing.</p></div></div>
+          </div>
+          <a href="/signup" class="btn-green" style="margin-top:32px">Get Started</a>
+        </div>
+      </div>
+    </div>
+  </section>
+</div>
+
+<!-- V18 — Timeline Journey -->
+<div data-v="18" class="vs">
+  <style>
+    .v18-timeline{position:relative;max-width:700px;margin:0 auto;padding-left:48px}
+    .v18-timeline::before{content:'';position:absolute;left:15px;top:0;bottom:0;width:2px;background:linear-gradient(to bottom,var(--green),#e5e7eb)}
+    .v18-milestone{position:relative;padding:0 0 48px}
+    .v18-milestone:last-child{padding-bottom:0}
+    .v18-dot{position:absolute;left:-41px;top:4px;width:14px;height:14px;border-radius:50%;background:var(--green);border:3px solid #fff;box-shadow:0 0 0 2px var(--green)}
+    .v18-dot.future{background:#e5e7eb;border-color:#fff;box-shadow:0 0 0 2px #e5e7eb}
+    .v18-time{font-size:12px;font-weight:700;color:var(--green);text-transform:uppercase;letter-spacing:1px;margin-bottom:6px}
+    .v18-milestone h3{font-size:18px;font-weight:700;color:var(--heading);margin-bottom:4px}
+    .v18-milestone p{font-size:14px;color:var(--body);line-height:1.6}
+    @media(max-width:768px){
+      .v18-hero-title{font-size:40px !important}
+    }
+  </style>
+  <section style="background:linear-gradient(180deg,#f3f3ee,#fff);padding:140px 24px 60px;border-radius:0 0 28px 28px">
+    <div style="max-width:900px;margin:0 auto;text-align:center;margin-bottom:64px">
+      <div class="badge" style="margin-bottom:20px"><span>Your Partnership Journey</span></div>
+      <h1 class="v18-hero-title" style="font-size:52px;font-weight:800;line-height:1.08;letter-spacing:-1.5px;color:var(--heading)">From Sign-Up to Passive Income</h1>
+      <p style="font-size:17px;color:var(--body);margin-top:14px;max-width:520px;margin-left:auto;margin-right:auto;line-height:1.7">Your first year as an nfstay JV partner, mapped out.</p>
+    </div>
+    <div class="v18-timeline">
+      <div class="v18-milestone">
+        <div class="v18-dot"></div>
+        <div class="v18-time">Day 0</div>
+        <h3>Create Your Account</h3>
+        <p>Sign up in under 2 minutes. Verify your identity. You&rsquo;re ready to browse.</p>
+      </div>
+      <div class="v18-milestone">
+        <div class="v18-dot"></div>
+        <div class="v18-time">Week 1</div>
+        <h3>Browse Live Deals</h3>
+        <p>Explore verified Airbnb SA properties on the marketplace. View yields, locations and operator details.</p>
+      </div>
+      <div class="v18-milestone">
+        <div class="v18-dot"></div>
+        <div class="v18-time">Week 2</div>
+        <h3>Choose Your Property</h3>
+        <p>Pick a deal. Select your share from &pound;500. Complete your partnership agreement.</p>
+      </div>
+      <div class="v18-milestone">
+        <div class="v18-dot"></div>
+        <div class="v18-time">Month 1</div>
+        <h3>First Earnings</h3>
+        <p>Your property is live on Airbnb. The operator manages everything. Returns start flowing.</p>
+      </div>
+      <div class="v18-milestone">
+        <div class="v18-dot future"></div>
+        <div class="v18-time" style="color:var(--muted)">Month 6</div>
+        <h3>Portfolio Growing</h3>
+        <p>Add more shares or new properties. Vote on decisions. Track performance on your dashboard.</p>
+      </div>
+      <div class="v18-milestone">
+        <div class="v18-dot future"></div>
+        <div class="v18-time" style="color:var(--muted)">Month 12</div>
+        <h3>Passive Income Established</h3>
+        <p>A year of consistent monthly returns. Full transparency. A voice in every decision.</p>
+      </div>
+    </div>
+    <div style="text-align:center;margin-top:48px">
+      <a href="/signup" class="btn-green">Start Your Journey</a>
+    </div>
+  </section>
+</div>
+
+<!-- V19 — Video-First Hero -->
+<div data-v="19" class="vs">
+  <style>
+    .v19-play{width:96px;height:96px;border-radius:50%;background:rgba(255,255,255,0.95);display:flex;align-items:center;justify-content:center;box-shadow:0 8px 32px rgba(0,0,0,0.3);transition:transform 200ms}
+    .v19-play:hover{transform:scale(1.08)}
+    .v19-play svg{width:40px;height:40px;margin-left:4px;color:#1a1a1a}
+    .v19-val-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:24px;max-width:800px;margin:48px auto 0}
+    .v19-val-item{text-align:center;padding:24px 16px;background:#fff;border:1px solid var(--border);border-radius:14px}
+    .v19-val-item .val{font-size:28px;font-weight:800;color:var(--heading)}
+    .v19-val-item .val.green{color:var(--green)}
+    .v19-val-item .lbl{font-size:12px;color:var(--body);margin-top:4px}
+    @media(max-width:768px){
+      .v19-val-grid{grid-template-columns:repeat(2,1fr)}
+      .v19-hero-title{font-size:36px !important}
+    }
+  </style>
+  <section style="position:relative;min-height:80vh;display:flex;flex-direction:column;align-items:center;justify-content:center;overflow:hidden;border-radius:0 0 28px 28px;background:#0a0a0a">
+    <div style="position:absolute;inset:0;background:url('https://images.unsplash.com/photo-1566073771259-6a8506099945?w=1600&q=80') center/cover;opacity:0.35"></div>
+    <div style="position:absolute;inset:0;background:linear-gradient(180deg,rgba(10,10,10,0.3) 0%,rgba(10,10,10,0.7) 100%)"></div>
+    <div style="position:relative;z-index:2;text-align:center;padding:140px 24px 40px;max-width:700px">
+      <a href="#" class="v19-play" style="margin:0 auto 32px;text-decoration:none">
+        <svg viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>
+      </a>
+      <p style="font-size:14px;font-weight:600;color:rgba(255,255,255,0.7);letter-spacing:1px;text-transform:uppercase;margin-bottom:16px">See How It Works</p>
+      <h1 class="v19-hero-title" style="font-size:52px;font-weight:800;line-height:1.08;letter-spacing:-1.5px;color:#fff">Airbnb Partnerships,<br>Simplified.</h1>
+      <p style="font-size:17px;color:rgba(255,255,255,0.6);margin-top:16px;line-height:1.7">Fractional Serviced Accommodation joint ventures from &pound;500. Managed for you. Earn monthly.</p>
+      <a href="/signup" class="btn-green" style="margin-top:32px;padding:16px 48px;font-size:16px">Get Started</a>
+    </div>
+  </section>
+  <section style="padding:64px 24px;background:#F3F3EE">
+    <div class="v19-val-grid">
+      <div class="v19-val-item"><div class="val green">&pound;500</div><div class="lbl">Min. Entry</div></div>
+      <div class="v19-val-item"><div class="val">&pound;680</div><div class="lbl">Avg. Monthly</div></div>
+      <div class="v19-val-item"><div class="val">100+</div><div class="lbl">Properties</div></div>
+      <div class="v19-val-item"><div class="val">91%</div><div class="lbl">Occupancy</div></div>
+    </div>
+  </section>
+</div>
+
+<!-- V20 — Trust-First Institutional -->
+<div data-v="20" class="vs">
+  <style>
+    .v20-trust-hero{display:flex;gap:24px;justify-content:center;flex-wrap:wrap;margin:40px 0}
+    .v20-trust-card{background:#fff;border:1px solid #e5e7eb;border-radius:14px;padding:28px 32px;text-align:center;min-width:180px;flex:1;max-width:240px}
+    .v20-trust-card .icon{width:48px;height:48px;border-radius:12px;display:inline-flex;align-items:center;justify-content:center;font-size:24px;margin-bottom:12px}
+    .v20-trust-card .icon.navy{background:#eff6ff;color:#1e40af}
+    .v20-trust-card .icon.green{background:#ecfdf5;color:var(--green)}
+    .v20-trust-card h4{font-size:15px;font-weight:700;color:var(--heading);margin-bottom:4px}
+    .v20-trust-card p{font-size:12px;color:var(--body);line-height:1.5}
+    .v20-offer{display:grid;grid-template-columns:repeat(3,1fr);gap:24px;margin-top:64px}
+    .v20-offer-card{background:#fff;border:1px solid #e5e7eb;border-radius:14px;padding:28px;border-top:3px solid #1e3a5f}
+    .v20-offer-card h3{font-size:17px;font-weight:700;color:var(--heading);margin-bottom:8px}
+    .v20-offer-card p{font-size:13px;color:var(--body);line-height:1.6}
+    @media(max-width:768px){
+      .v20-offer{grid-template-columns:1fr}
+      .v20-hero-title{font-size:40px !important}
+    }
+  </style>
+  <section style="background:linear-gradient(180deg,#f8fafc,#f3f3ee);padding:140px 24px 80px;border-radius:0 0 28px 28px">
+    <div style="max-width:1000px;margin:0 auto;text-align:center">
+      <div style="display:inline-flex;align-items:center;gap:8px;background:#eff6ff;border:1px solid #bfdbfe;padding:6px 16px;border-radius:100px;margin-bottom:24px">
+        <span style="font-size:12px;font-weight:700;color:#1e40af;letter-spacing:0.5px">UK REGISTERED &middot; FULLY INSURED &middot; TRANSPARENT</span>
+      </div>
+      <h1 class="v20-hero-title" style="font-size:52px;font-weight:800;line-height:1.08;letter-spacing:-1.5px;color:var(--heading)">Regulated. Insured.<br>Transparent.</h1>
+      <p style="font-size:17px;color:var(--body);margin-top:14px;max-width:560px;margin-left:auto;margin-right:auto;line-height:1.7">nfstay operates with the standards you expect from a financial partner. Airbrick Finance Ltd, Company No. 13806307.</p>
+      <div class="v20-trust-hero">
+        <div class="v20-trust-card">
+          <div class="icon navy">&#128203;</div>
+          <h4>UK Registered</h4>
+          <p>Companies House verified. Full corporate accountability.</p>
+        </div>
+        <div class="v20-trust-card">
+          <div class="icon green">&#128737;</div>
+          <h4>Fully Insured</h4>
+          <p>Property and liability insurance on every managed unit.</p>
+        </div>
+        <div class="v20-trust-card">
+          <div class="icon navy">&#128200;</div>
+          <h4>Monthly Reporting</h4>
+          <p>Transparent earnings, occupancy and performance data.</p>
+        </div>
+        <div class="v20-trust-card">
+          <div class="icon green">&#9989;</div>
+          <h4>Partner Voting</h4>
+          <p>Democratic governance. Every partner has a say.</p>
+        </div>
+      </div>
+      <div style="width:80px;height:2px;background:linear-gradient(90deg,#1e3a5f,var(--green));margin:48px auto 0"></div>
+      <h2 style="font-size:32px;font-weight:800;color:var(--heading);margin-top:24px;letter-spacing:-0.5px">The Partnership Offer</h2>
+      <div class="v20-offer">
+        <div class="v20-offer-card"><h3>From &pound;500</h3><p>Fractional Airbnb Serviced Accommodation partnerships. No large deposit. No mortgage required.</p></div>
+        <div class="v20-offer-card"><h3>&pound;680 Avg. Monthly</h3><p>Consistent returns from professionally managed properties across the UK.</p></div>
+        <div class="v20-offer-card"><h3>100+ Properties</h3><p>A growing portfolio of verified SA deals. Every property vetted before listing.</p></div>
+      </div>
+      <a href="/signup" class="btn-green" style="margin-top:40px">Get Started</a>
+    </div>
+  </section>
+</div>
+
+
+
+<!-- V21-V30 STYLES + HEROES -->
+<!-- ══════════════════════════════════════════════════════════════
+     V21–V30 VARIANT ZONES
+     Drop these into the HERO, TRUST, and CTA BAND zones of variants.html
+     ══════════════════════════════════════════════════════════════ -->
+
+<!-- ══════════════════════════════════════════════════════════════
+     VARIANT-SPECIFIC STYLES (add to <style> block)
+     ══════════════════════════════════════════════════════════════ -->
+<style>
+  /* ── V21 Card Stack ── */
+  .v21-stack{position:relative;width:320px;height:420px;margin:0 auto}
+  .v21-card{position:absolute;width:300px;background:#fff;border:1px solid var(--border);border-radius:16px;overflow:hidden;box-shadow:0 8px 32px rgba(0,0,0,0.1);transition:transform 0.4s ease}
+  .v21-card img{width:100%;height:180px;object-fit:cover}
+  .v21-card-body{padding:16px}
+  .v21-card-body h4{font-size:15px;font-weight:700;color:var(--heading)}
+  .v21-card-body p{font-size:13px;color:var(--body);margin-top:4px}
+  .v21-card-body .v21-price{font-size:18px;font-weight:800;color:var(--green);margin-top:8px}
+  .v21-c1{top:0;left:50%;transform:translateX(-50%) rotate(-3deg);z-index:1}
+  .v21-c2{top:16px;left:50%;transform:translateX(-46%) rotate(2deg);z-index:2}
+  .v21-c3{top:32px;left:50%;transform:translateX(-52%) rotate(-1deg);z-index:3}
+  @media(max-width:768px){.v21-stack{width:260px;height:380px}.v21-card{width:250px}.v21-card img{height:140px}}
+
+  /* ── V22 Newspaper ── */
+  .v22-masthead{text-align:center;border-bottom:4px double var(--heading);padding-bottom:16px;margin-bottom:24px}
+  .v22-masthead h1{font-family:'Playfair Display',serif;font-size:64px;font-weight:700;letter-spacing:-1px;color:var(--heading);line-height:1}
+  .v22-dateline{font-size:12px;color:var(--body);letter-spacing:1px;text-transform:uppercase;margin-top:8px}
+  .v22-cols{display:grid;grid-template-columns:1fr 1fr 1fr;gap:0;border-top:1px solid var(--border)}
+  .v22-col{padding:20px 24px;border-right:1px solid var(--border);font-size:15px;color:var(--body);line-height:1.7}
+  .v22-col:last-child{border-right:none}
+  .v22-col h3{font-family:'Playfair Display',serif;font-size:22px;font-weight:700;color:var(--heading);margin-bottom:8px;line-height:1.2}
+  .v22-headline{font-family:'Playfair Display',serif;font-size:36px;font-weight:700;color:var(--heading);line-height:1.15;text-align:center;margin:24px 0 16px;letter-spacing:-0.5px}
+  .v22-subhead{text-align:center;font-size:16px;color:var(--body);margin-bottom:32px}
+  @media(max-width:768px){.v22-cols{grid-template-columns:1fr}.v22-col{border-right:none;border-bottom:1px solid var(--border)}.v22-col:last-child{border-bottom:none}.v22-masthead h1{font-size:40px}.v22-headline{font-size:26px}}
+
+  /* ── V23 Minimal Japanese ── */
+  .v23-hero{display:flex;align-items:center;justify-content:center;min-height:100vh;padding:120px 24px 80px;background:#FAFAF8}
+  .v23-inner{max-width:800px;display:flex;flex-direction:column;align-items:center;gap:64px}
+  .v23-img{width:320px;height:240px;border-radius:4px;object-fit:cover;opacity:0.9}
+  .v23-text{font-size:18px;font-weight:300;color:#4a4a4a;letter-spacing:0.5px;line-height:2;text-align:center;max-width:480px}
+  .v23-accent{display:inline-block;width:24px;height:2px;background:var(--green);margin:32px auto;display:block}
+  .v23-cta{font-size:13px;font-weight:500;color:var(--heading);letter-spacing:2px;text-transform:uppercase;border-bottom:1px solid var(--heading);padding-bottom:2px;transition:color 200ms}
+  .v23-cta:hover{color:var(--green);border-color:var(--green)}
+  @media(max-width:768px){.v23-img{width:240px;height:180px}.v23-text{font-size:16px}}
+
+  /* ── V24 Dashboard Preview ── */
+  .v24-dash{background:#1a1a2e;border-radius:12px;padding:24px;max-width:900px;margin:0 auto;box-shadow:0 16px 64px rgba(0,0,0,0.3)}
+  .v24-topbar{display:flex;justify-content:space-between;align-items:center;margin-bottom:20px}
+  .v24-topbar-logo{font-family:'Sora',sans-serif;font-size:14px;color:#fff;font-weight:700}
+  .v24-dots{display:flex;gap:6px}
+  .v24-dot{width:10px;height:10px;border-radius:50%}
+  .v24-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+  .v24-panel{background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.08);border-radius:10px;padding:20px}
+  .v24-panel h4{font-size:11px;font-weight:600;color:rgba(255,255,255,0.5);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:12px}
+  .v24-panel .v24-big{font-size:32px;font-weight:800;color:#fff}
+  .v24-panel .v24-green{color:var(--green)}
+  .v24-bar{height:8px;border-radius:4px;margin-top:6px}
+  .v24-prop-row{display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid rgba(255,255,255,0.06)}
+  .v24-prop-row:last-child{border-bottom:none}
+  .v24-prop-name{font-size:13px;color:rgba(255,255,255,0.8)}
+  .v24-prop-val{font-size:13px;font-weight:700;color:var(--green)}
+  @media(max-width:768px){.v24-grid{grid-template-columns:1fr}}
+
+  /* ── V25 Comparison Table ── */
+  .v25-table{width:100%;max-width:900px;margin:0 auto;border-collapse:separate;border-spacing:0;font-size:14px}
+  .v25-table th{padding:14px 16px;font-size:13px;font-weight:600;text-align:center;border-bottom:2px solid var(--border);color:var(--body)}
+  .v25-table th.v25-hl{background:var(--green);color:#fff;border-radius:12px 12px 0 0;font-size:14px;font-weight:700}
+  .v25-table td{padding:12px 16px;text-align:center;border-bottom:1px solid var(--border);color:var(--heading)}
+  .v25-table td:first-child{text-align:left;font-weight:500}
+  .v25-table td.v25-hl{background:var(--green-tint)}
+  .v25-check{color:var(--green);font-size:18px;font-weight:700}
+  .v25-cross{color:#d1d5db;font-size:18px}
+  .v25-muted{color:var(--muted);font-size:13px}
+  @media(max-width:768px){.v25-table{font-size:12px}.v25-table th,.v25-table td{padding:8px 6px}}
+
+  /* ── V26 Testimonial Mosaic ── */
+  .v26-mosaic{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;max-width:1100px;margin:0 auto}
+  .v26-tile{border-radius:14px;padding:20px;font-size:14px;line-height:1.6;color:var(--heading)}
+  .v26-tile.big{grid-column:span 2}
+  .v26-tile-name{font-size:12px;font-weight:600;color:var(--body);margin-top:12px}
+  .v26-bg-white{background:#fff;border:1px solid var(--border)}
+  .v26-bg-green{background:var(--green-tint)}
+  .v26-bg-grey{background:#f3f4f6}
+  @media(max-width:768px){.v26-mosaic{grid-template-columns:1fr 1fr}.v26-tile.big{grid-column:span 2}}
+  @media(max-width:480px){.v26-mosaic{grid-template-columns:1fr}.v26-tile.big{grid-column:span 1}}
+
+  /* ── V27 Animated Counters ── */
+  @keyframes v27count{0%{opacity:0;transform:scale(0.8) translateY(40px)}100%{opacity:1;transform:scale(1) translateY(0)}}
+  .v27-counter{font-size:120px;font-weight:900;line-height:1;letter-spacing:-4px}
+  .v27-counter-wrap{animation:v27count 1s cubic-bezier(0.16,1,0.3,1) forwards;opacity:0}
+  .v27-c2{animation-delay:0.2s}
+  .v27-c3{animation-delay:0.4s}
+  @media(max-width:768px){.v27-counter{font-size:72px;letter-spacing:-2px}}
+
+  /* ── V28 FAQ Accordion ── */
+  .v28-accordion{max-width:700px;margin:0 auto}
+  .v28-item{border:1px solid var(--border);border-radius:12px;margin-bottom:8px;background:#fff;overflow:hidden}
+  .v28-item summary{padding:18px 24px;font-size:16px;font-weight:600;color:var(--heading);cursor:pointer;list-style:none;display:flex;justify-content:space-between;align-items:center}
+  .v28-item summary::-webkit-details-marker{display:none}
+  .v28-item summary::after{content:'+';font-size:20px;font-weight:300;color:var(--muted);transition:transform 200ms}
+  .v28-item[open] summary::after{transform:rotate(45deg);color:var(--green)}
+  .v28-item .v28-answer{padding:0 24px 18px;font-size:14px;color:var(--body);line-height:1.7}
+
+  /* ── V29 Gradient Mesh ── */
+  .v29-mesh{
+    position:relative;min-height:100vh;display:flex;align-items:center;justify-content:center;
+    background:
+      radial-gradient(ellipse at 20% 50%, rgba(30,154,128,0.4) 0%, transparent 50%),
+      radial-gradient(ellipse at 80% 20%, rgba(6,95,70,0.3) 0%, transparent 50%),
+      radial-gradient(ellipse at 50% 80%, rgba(15,118,110,0.35) 0%, transparent 50%),
+      radial-gradient(ellipse at 70% 60%, rgba(30,80,120,0.15) 0%, transparent 40%),
+      linear-gradient(160deg, #0a1a14 0%, #0f2820 40%, #0a0f14 100%);
+  }
+
+  /* ── V30 Mobile App ── */
+  .v30-phone{max-width:420px;margin:0 auto;background:#fff;border-radius:32px;border:1px solid var(--border);box-shadow:0 16px 64px rgba(0,0,0,0.1);overflow:hidden}
+  .v30-status{padding:8px 24px;display:flex;justify-content:space-between;font-size:11px;font-weight:600;color:var(--heading)}
+  .v30-content{padding:24px}
+  .v30-bottom-nav{display:flex;justify-content:space-around;padding:12px 0;border-top:1px solid var(--border);background:#fafafa}
+  .v30-nav-item{display:flex;flex-direction:column;align-items:center;gap:2px;font-size:10px;font-weight:500;color:var(--muted)}
+  .v30-nav-item.active{color:var(--green)}
+  .v30-nav-icon{width:20px;height:20px;border-radius:6px;background:currentColor;opacity:0.3}
+  .v30-nav-item.active .v30-nav-icon{opacity:1}
+  .v30-pill{display:inline-block;padding:4px 12px;border-radius:100px;font-size:11px;font-weight:600}
+  .v30-progress{height:6px;border-radius:3px;background:#f3f4f6;overflow:hidden;margin-top:8px}
+  .v30-progress-fill{height:100%;border-radius:3px;background:var(--green)}
+</style>
+
+
+<!-- ══════════════════════════════════════════
+     ZONE: HERO — V21–V30
+     ══════════════════════════════════════════ -->
+
+<!-- V21 — Card Stack / Swipeable Feel -->
+<div data-v="21" class="vs">
+  <section style="background:#F3F3EE;padding:140px 24px 80px;border-radius:0 0 28px 28px;position:relative;overflow:hidden">
+    <div style="max-width:1100px;margin:0 auto;display:grid;grid-template-columns:1fr 1fr;gap:48px;align-items:center">
+      <div class="v21-stack">
+        <div class="v21-card v21-c1">
+          <img src="https://images.unsplash.com/photo-1502672260266-1c1ef2d93688?w=600&q=80" alt="Modern flat">
+          <div class="v21-card-body">
+            <h4>Shoreditch Studio</h4>
+            <p>London E1 &middot; Sleeps 4</p>
+            <div class="v21-price">&pound;720/mo return</div>
+          </div>
+        </div>
+        <div class="v21-card v21-c2">
+          <img src="https://images.unsplash.com/photo-1522708323590-d24dbb6b0267?w=600&q=80" alt="Cosy apartment">
+          <div class="v21-card-body">
+            <h4>Deansgate Loft</h4>
+            <p>Manchester M3 &middot; Sleeps 2</p>
+            <div class="v21-price">&pound;650/mo return</div>
+          </div>
+        </div>
+        <div class="v21-card v21-c3">
+          <img src="https://images.unsplash.com/photo-1560448204-e02f11c3d0e2?w=600&q=80" alt="Stylish interior">
+          <div class="v21-card-body">
+            <h4>Harbourside Suite</h4>
+            <p>Bristol BS1 &middot; Sleeps 3</p>
+            <div class="v21-price">&pound;680/mo return</div>
+          </div>
+        </div>
+      </div>
+      <div>
+        <div class="badge" style="margin-bottom:20px"><span style="width:8px;height:8px;background:var(--green);border-radius:50%;display:inline-block"></span><span>100+ live deals</span></div>
+        <h1 class="hero-large" style="font-size:56px;font-weight:800;line-height:1.08;letter-spacing:-2px;color:var(--heading)">Swipe Through<br>Airbnb Deals</h1>
+        <p style="font-size:18px;color:var(--body);margin-top:20px;line-height:1.7;max-width:440px">Pick your property. Choose your share from &pound;500. Earn monthly returns from managed Serviced Accommodation.</p>
+        <div style="display:flex;gap:12px;margin-top:32px">
+          <a href="/signup" class="btn-green">Browse Deals</a>
+          <a href="/signin" class="btn-outline">Login</a>
+        </div>
+      </div>
+    </div>
+  </section>
+</div>
+
+<!-- V22 — Newspaper / Broadsheet -->
+<div data-v="22" class="vs">
+  <section style="background:#FDFCF9;padding:140px 24px 80px;border-radius:0 0 28px 28px">
+    <div style="max-width:900px;margin:0 auto">
+      <div class="v22-masthead">
+        <div style="font-size:11px;color:var(--body);letter-spacing:2px;text-transform:uppercase;margin-bottom:8px">The Property Partner &middot; Est. 2024</div>
+        <h1 class="v22-masthead" style="border:none;padding:0;margin:0">
+          <span style="font-family:'Playfair Display',serif;font-size:64px;font-weight:700;letter-spacing:-1px;color:var(--heading);line-height:1">nfstay</span>
+        </h1>
+        <div class="v22-dateline">London &middot; Friday 2 May 2026 &middot; Special Edition</div>
+      </div>
+      <div style="border-bottom:4px double var(--heading);margin-bottom:24px"></div>
+      <h2 class="v22-headline">UK Airbnb Partnerships Now Open from &pound;500</h2>
+      <p class="v22-subhead">Fractional Serviced Accommodation deals deliver average &pound;680 monthly returns to 100+ partners.</p>
+      <div class="v22-cols">
+        <div class="v22-col">
+          <h3>The Partnership Model</h3>
+          <p>nfstay offers fractional joint venture partnerships in UK Airbnb Serviced Accommodation properties. Partners enter from as little as &pound;500, selecting their share of a fully managed property. No experience required.</p>
+        </div>
+        <div class="v22-col">
+          <h3>Fully Managed Returns</h3>
+          <p>Each property is operated by experienced SA managers handling guests, cleaning, pricing and maintenance. Partners receive monthly returns and track performance through a live dashboard.</p>
+        </div>
+        <div class="v22-col">
+          <h3>Democratic Governance</h3>
+          <p>Every partner votes on key decisions &mdash; furniture, pricing strategy, management changes. Majority rules. Full transparency through the partner dashboard ensures accountability at every stage.</p>
+        </div>
+      </div>
+      <div style="text-align:center;margin-top:40px;padding-top:24px;border-top:1px solid var(--border)">
+        <a href="/signup" class="btn-dark">Read More &mdash; Get Started</a>
+      </div>
+    </div>
+  </section>
+</div>
+
+<!-- V23 — Minimal Japanese / Muji -->
+<div data-v="23" class="vs">
+  <div class="v23-hero">
+    <div class="v23-inner">
+      <img src="https://images.unsplash.com/photo-1600585154340-be6161a56a0c?w=800&q=80" alt="Minimal interior" class="v23-img">
+      <div>
+        <div class="v23-accent"></div>
+        <p class="v23-text">Quiet partnership in Airbnb Serviced Accommodation.<br>From &pound;500. Fully managed. Monthly returns.</p>
+        <div class="v23-accent"></div>
+        <div style="text-align:center;margin-top:40px">
+          <a href="/signup" class="v23-cta">Begin</a>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- V24 — Dashboard Preview -->
+<div data-v="24" class="vs">
+  <section style="background:linear-gradient(180deg,#f3f3ee 0%,#eae9e4 100%);padding:140px 24px 80px;border-radius:0 0 28px 28px">
+    <div style="max-width:1000px;margin:0 auto">
+      <div class="v24-dash">
+        <div class="v24-topbar">
+          <div class="v24-topbar-logo">nfstay Dashboard</div>
+          <div class="v24-dots">
+            <div class="v24-dot" style="background:#ff5f57"></div>
+            <div class="v24-dot" style="background:#febc2e"></div>
+            <div class="v24-dot" style="background:#28c840"></div>
+          </div>
+        </div>
+        <div class="v24-grid">
+          <div class="v24-panel">
+            <h4>Total Earnings</h4>
+            <div class="v24-big v24-green">&pound;8,160</div>
+            <p style="font-size:12px;color:rgba(255,255,255,0.4);margin-top:4px">12 months &middot; 2 properties</p>
+          </div>
+          <div class="v24-panel">
+            <h4>Monthly Average</h4>
+            <div class="v24-big">&pound;680</div>
+            <div class="v24-bar" style="background:rgba(255,255,255,0.08)">
+              <div style="width:72%;height:100%;background:var(--green);border-radius:4px"></div>
+            </div>
+          </div>
+          <div class="v24-panel" style="grid-column:1/3">
+            <h4>My Properties</h4>
+            <div class="v24-prop-row">
+              <span class="v24-prop-name">Shoreditch Studio &middot; London E1</span>
+              <span class="v24-prop-val">&pound;720/mo</span>
+            </div>
+            <div class="v24-prop-row">
+              <span class="v24-prop-name">Deansgate Loft &middot; Manchester M3</span>
+              <span class="v24-prop-val">&pound;650/mo</span>
+            </div>
+            <div class="v24-prop-row">
+              <span class="v24-prop-name">Harbourside Suite &middot; Bristol BS1</span>
+              <span class="v24-prop-val">&pound;680/mo</span>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div style="text-align:center;margin-top:48px">
+        <h2 style="font-size:40px;font-weight:700;letter-spacing:-1px;color:var(--heading);line-height:1.15">See your portfolio grow</h2>
+        <p style="font-size:18px;color:var(--body);margin-top:12px;max-width:520px;margin-left:auto;margin-right:auto;line-height:1.7">Join 100+ partners tracking real Airbnb returns from their dashboard. From &pound;500.</p>
+        <div style="margin-top:28px;display:flex;justify-content:center;gap:12px">
+          <a href="/signup" class="btn-green">Get Started</a>
+          <a href="/signin" class="btn-outline">Login</a>
+        </div>
+      </div>
+    </div>
+  </section>
+</div>
+
+<!-- V25 — Comparison Table Hero -->
+<div data-v="25" class="vs">
+  <section style="background:#F3F3EE;padding:140px 24px 80px;border-radius:0 0 28px 28px">
+    <div style="max-width:960px;margin:0 auto">
+      <div style="text-align:center;margin-bottom:40px">
+        <h1 class="hero-large" style="font-size:48px;font-weight:800;letter-spacing:-1.5px;color:var(--heading);line-height:1.1">A smarter way to earn from property</h1>
+        <p style="font-size:17px;color:var(--body);margin-top:12px">See how nfstay JV partnerships compare.</p>
+      </div>
+      <div style="background:#fff;border:1px solid var(--border);border-radius:16px;overflow:hidden;box-shadow:0 4px 24px rgba(0,0,0,0.06)">
+        <table class="v25-table">
+          <thead>
+            <tr>
+              <th style="text-align:left"></th>
+              <th class="v25-hl">nfstay JV</th>
+              <th>Buy-to-Let</th>
+              <th>Stocks &amp; Shares</th>
+              <th>Cash Savings</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>Minimum entry</td>
+              <td class="v25-hl" style="font-weight:700;color:var(--green)">&pound;500</td>
+              <td>&pound;25,000+</td>
+              <td>&pound;100+</td>
+              <td>&pound;1</td>
+            </tr>
+            <tr>
+              <td>Monthly income</td>
+              <td class="v25-hl"><span class="v25-check">&#10003;</span></td>
+              <td><span class="v25-check">&#10003;</span></td>
+              <td><span class="v25-muted">Varies</span></td>
+              <td><span class="v25-muted">Minimal</span></td>
+            </tr>
+            <tr>
+              <td>Fully managed</td>
+              <td class="v25-hl"><span class="v25-check">&#10003;</span></td>
+              <td><span class="v25-cross">&#10007;</span></td>
+              <td><span class="v25-check">&#10003;</span></td>
+              <td><span class="v25-check">&#10003;</span></td>
+            </tr>
+            <tr>
+              <td>You vote on decisions</td>
+              <td class="v25-hl"><span class="v25-check">&#10003;</span></td>
+              <td><span class="v25-muted">Solo</span></td>
+              <td><span class="v25-cross">&#10007;</span></td>
+              <td><span class="v25-cross">&#10007;</span></td>
+            </tr>
+            <tr>
+              <td>Real asset backed</td>
+              <td class="v25-hl"><span class="v25-check">&#10003;</span></td>
+              <td><span class="v25-check">&#10003;</span></td>
+              <td><span class="v25-cross">&#10007;</span></td>
+              <td><span class="v25-cross">&#10007;</span></td>
+            </tr>
+            <tr>
+              <td>Avg. monthly return</td>
+              <td class="v25-hl" style="font-weight:700;color:var(--green)">&pound;680</td>
+              <td>&pound;500&ndash;800</td>
+              <td><span class="v25-muted">Volatile</span></td>
+              <td><span class="v25-muted">&pound;10&ndash;30</span></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      <div style="text-align:center;margin-top:40px">
+        <a href="/signup" class="btn-green">Get Started from &pound;500</a>
+      </div>
+    </div>
+  </section>
+</div>
+
+<!-- V26 — Testimonial Mosaic Wall -->
+<div data-v="26" class="vs">
+  <section style="background:#F3F3EE;padding:140px 24px 60px;border-radius:0 0 28px 28px">
+    <div style="max-width:1100px;margin:0 auto">
+      <div class="v26-mosaic">
+        <div class="v26-tile big v26-bg-green">
+          <p>&ldquo;I started with &pound;500 and within a month I could see real returns in my dashboard. This is unlike anything else I&rsquo;ve tried in property.&rdquo;</p>
+          <div class="v26-tile-name">Sarah K. &middot; London</div>
+        </div>
+        <div class="v26-tile v26-bg-white">
+          <p>&ldquo;Hands-off, transparent, and I actually get a vote.&rdquo;</p>
+          <div class="v26-tile-name">David W. &middot; Leeds</div>
+        </div>
+        <div class="v26-tile v26-bg-grey">
+          <p>&ldquo;The dashboard alone is worth it.&rdquo;</p>
+          <div class="v26-tile-name">Rachel M. &middot; Bristol</div>
+        </div>
+        <div class="v26-tile v26-bg-white">
+          <p>&ldquo;Fully managed. I just watch the numbers.&rdquo;</p>
+          <div class="v26-tile-name">James T. &middot; Manchester</div>
+        </div>
+        <div class="v26-tile v26-bg-grey">
+          <p>&ldquo;I compared it to buy-to-let. nfstay was the clear winner for my budget.&rdquo;</p>
+          <div class="v26-tile-name">Priya S. &middot; Birmingham</div>
+        </div>
+        <div class="v26-tile big v26-bg-white">
+          <p>&ldquo;What convinced me was the voting system. I actually get a say in how the property is run. It&rsquo;s a real partnership, not a fund.&rdquo;</p>
+          <div class="v26-tile-name">Tom H. &middot; Edinburgh</div>
+        </div>
+        <div class="v26-tile v26-bg-green">
+          <p>&ldquo;Best decision I made this year. Monthly returns, zero stress.&rdquo;</p>
+          <div class="v26-tile-name">Hannah G. &middot; Cardiff</div>
+        </div>
+        <div class="v26-tile v26-bg-grey">
+          <p>&ldquo;From sign-up to first return took about 3 weeks.&rdquo;</p>
+          <div class="v26-tile-name">Michael R. &middot; Glasgow</div>
+        </div>
+      </div>
+      <div style="text-align:center;margin-top:48px">
+        <h2 style="font-size:40px;font-weight:700;letter-spacing:-1px;color:var(--heading)">Join 100+ Partners</h2>
+        <p style="font-size:17px;color:var(--body);margin-top:8px">Airbnb JV partnerships from &pound;500. Fully managed.</p>
+        <div style="margin-top:28px">
+          <a href="/signup" class="btn-green">Get Started</a>
+        </div>
+      </div>
+    </div>
+  </section>
+</div>
+
+<!-- V27 — Animated Counters Focus -->
+<div data-v="27" class="vs">
+  <section style="background:#F3F3EE;padding:140px 24px 80px;border-radius:0 0 28px 28px;min-height:100vh;display:flex;align-items:center">
+    <div style="max-width:1100px;margin:0 auto;width:100%">
+      <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:32px;text-align:center">
+        <div class="v27-counter-wrap">
+          <div class="v27-counter" style="color:var(--green)">&pound;2.4M+</div>
+          <p style="font-size:16px;color:var(--body);margin-top:8px;font-weight:500">Total Portfolio Value</p>
+        </div>
+        <div class="v27-counter-wrap v27-c2">
+          <div class="v27-counter" style="color:var(--heading)">100+</div>
+          <p style="font-size:16px;color:var(--body);margin-top:8px;font-weight:500">Managed Properties</p>
+        </div>
+        <div class="v27-counter-wrap v27-c3">
+          <div class="v27-counter" style="color:var(--green)">&pound;680</div>
+          <p style="font-size:16px;color:var(--body);margin-top:8px;font-weight:500">Avg. Monthly Return</p>
+        </div>
+      </div>
+      <div style="text-align:center;margin-top:64px">
+        <p style="font-size:20px;color:var(--body);max-width:560px;margin:0 auto;line-height:1.7">Fractional Airbnb Serviced Accommodation partnerships from &pound;500. Fully managed. You vote on decisions.</p>
+        <div style="margin-top:32px">
+          <a href="/signup" class="btn-green" style="padding:18px 56px;font-size:17px">Get Started</a>
+        </div>
+      </div>
+    </div>
+  </section>
+</div>
+
+<!-- V28 — FAQ-First / Objection Killer -->
+<div data-v="28" class="vs">
+  <section style="background:#F3F3EE;padding:140px 24px 80px;border-radius:0 0 28px 28px">
+    <div style="max-width:760px;margin:0 auto">
+      <div style="text-align:center;margin-bottom:48px">
+        <h1 class="hero-large" style="font-size:48px;font-weight:800;letter-spacing:-1.5px;color:var(--heading);line-height:1.1">We Know What You&rsquo;re Thinking</h1>
+        <p style="font-size:17px;color:var(--body);margin-top:12px">Let&rsquo;s address the obvious questions first.</p>
+      </div>
+      <div class="v28-accordion">
+        <details class="v28-item" open>
+          <summary>&ldquo;Is this a scam?&rdquo;</summary>
+          <div class="v28-answer">nfstay is operated by Airbrick Finance Ltd (Company No. 13806307), registered in England and Wales. Every property is a real, verified Serviced Accommodation unit. You can see your returns, your property, and your fellow partners in the dashboard. We operate 100+ properties across the UK.</div>
+        </details>
+        <details class="v28-item">
+          <summary>&ldquo;What&rsquo;s the catch?&rdquo;</summary>
+          <div class="v28-answer">There is no catch. You buy a share of a managed Airbnb property from &pound;500. The operator handles everything &mdash; guests, cleaning, pricing, maintenance. You earn monthly returns. If you want out, you can transfer your share to another partner.</div>
+        </details>
+        <details class="v28-item">
+          <summary>&ldquo;Can I withdraw my money?&rdquo;</summary>
+          <div class="v28-answer">Your monthly returns are paid out to your account. Your initial partnership share can be transferred to another partner via the dashboard. Returns are tracked in real time so you always know exactly where you stand.</div>
+        </details>
+        <details class="v28-item">
+          <summary>&ldquo;Who manages the property?&rdquo;</summary>
+          <div class="v28-answer">Each property is run by a professional SA operator with a track record in short-term rental management. Partners vote on management decisions &mdash; pricing, furniture, booking strategy. Majority rules. You are never locked out of the process.</div>
+        </details>
+      </div>
+      <div style="text-align:center;margin-top:56px;padding-top:48px;border-top:1px solid var(--border)">
+        <h2 style="font-size:32px;font-weight:700;color:var(--heading);letter-spacing:-0.5px">Now that we&rsquo;ve cleared that up</h2>
+        <p style="font-size:17px;color:var(--body);margin-top:8px;max-width:480px;margin-left:auto;margin-right:auto;line-height:1.7">Airbnb JV partnerships from &pound;500. Average &pound;680/mo return. 100+ managed properties. You vote on every decision.</p>
+        <div style="margin-top:28px;display:flex;justify-content:center;gap:12px">
+          <a href="/signup" class="btn-green">Get Started</a>
+          <a href="/signin" class="btn-outline">Login</a>
+        </div>
+      </div>
+    </div>
+  </section>
+</div>
+
+<!-- V29 — Gradient Mesh / Abstract Art -->
+<div data-v="29" class="vs">
+  <section class="v29-mesh" style="padding:120px 24px 80px;border-radius:0 0 28px 28px;min-height:100vh">
+    <div style="text-align:center;max-width:800px;margin:0 auto;position:relative;z-index:1">
+      <h1 style="font-family:'Playfair Display',serif;font-size:72px;font-weight:700;color:#fff;line-height:1.08;letter-spacing:-1px">
+        Beautiful Returns,<br><em style="font-style:italic;color:rgba(236,253,245,0.9)">Quietly Earned</em>
+      </h1>
+      <p style="font-size:20px;color:rgba(255,255,255,0.65);margin-top:28px;max-width:500px;margin-left:auto;margin-right:auto;line-height:1.7">Fractional Airbnb partnerships. Managed Serviced Accommodation. From &pound;500.</p>
+      <div style="margin-top:48px;display:flex;justify-content:center;gap:16px">
+        <a href="/signup" style="display:inline-block;padding:16px 44px;background:#fff;color:#0a0a0a;font-size:16px;font-weight:600;border-radius:14px;transition:transform 200ms">Get Started</a>
+        <a href="/signin" style="display:inline-block;padding:16px 44px;border:1px solid rgba(255,255,255,0.3);color:#fff;font-size:16px;font-weight:600;border-radius:14px;transition:transform 200ms">Login</a>
+      </div>
+    </div>
+  </section>
+</div>
+
+<!-- V30 — Mobile-Native / App-Like -->
+<div data-v="30" class="vs">
+  <section style="background:#F3F3EE;padding:140px 24px 80px;border-radius:0 0 28px 28px;display:flex;align-items:center;justify-content:center;min-height:100vh">
+    <div>
+      <div class="v30-phone">
+        <div class="v30-status">
+          <span>9:41</span>
+          <span style="display:flex;gap:4px;align-items:center">
+            <span style="width:16px;height:10px;border:1.5px solid var(--heading);border-radius:2px;display:inline-block;position:relative"><span style="position:absolute;right:1px;top:1px;bottom:1px;width:8px;background:var(--green);border-radius:1px"></span></span>
+          </span>
+        </div>
+        <div class="v30-content">
+          <div style="display:flex;align-items:center;gap:6px;margin-bottom:24px">
+            <span style="display:flex;align-items:center;justify-content:center;width:28px;height:28px;border:2px solid #0a0a0a;border-radius:6px;font-family:'Sora',sans-serif;font-size:10px;font-weight:700;color:#0a0a0a">nf</span>
+            <span style="font-family:'Sora',sans-serif;font-size:16px;font-weight:400;letter-spacing:2px;color:#0a0a0a">stay</span>
+          </div>
+          <h2 style="font-size:28px;font-weight:800;color:var(--heading);letter-spacing:-0.5px;line-height:1.15">Airbnb JV<br>Partnerships</h2>
+          <p style="font-size:14px;color:var(--body);margin-top:12px;line-height:1.6">Managed Serviced Accommodation deals from &pound;500. Monthly returns. You vote on decisions.</p>
+          <div style="margin-top:20px;display:flex;gap:8px">
+            <span class="v30-pill" style="background:var(--green-tint);color:var(--green)">&pound;680/mo avg</span>
+            <span class="v30-pill" style="background:#f3f4f6;color:var(--heading)">100+ properties</span>
+          </div>
+          <div style="margin-top:20px">
+            <p style="font-size:11px;font-weight:600;color:var(--body);margin-bottom:4px">Portfolio funded</p>
+            <div class="v30-progress"><div class="v30-progress-fill" style="width:78%"></div></div>
+            <p style="font-size:11px;color:var(--muted);margin-top:4px">78% filled &mdash; spaces limited</p>
+          </div>
+          <a href="/signup" class="btn-green" style="display:block;text-align:center;margin-top:24px;border-radius:12px;padding:14px">Get Started</a>
+          <p style="text-align:center;font-size:12px;color:var(--muted);margin-top:12px">Already a partner? <a href="/signin" style="color:var(--green);font-weight:600">Login</a></p>
+        </div>
+        <div class="v30-bottom-nav">
+          <div class="v30-nav-item active">
+            <div class="v30-nav-icon"></div>
+            <span>Deals</span>
+          </div>
+          <div class="v30-nav-item">
+            <div class="v30-nav-icon"></div>
+            <span>Portfolio</span>
+          </div>
+          <div class="v30-nav-item">
+            <div class="v30-nav-icon"></div>
+            <span>Vote</span>
+          </div>
+          <div class="v30-nav-item">
+            <div class="v30-nav-icon"></div>
+            <span>Profile</span>
+          </div>
+        </div>
+      </div>
+      <div style="text-align:center;margin-top:32px">
+        <p style="font-size:13px;color:var(--muted)">Available on web &middot; No app download required</p>
+      </div>
+    </div>
+  </section>
+</div>
+
+
+
+
 <!-- ══════════════════════════════════════════
      ZONE: TRUST STATS
      ══════════════════════════════════════════ -->
@@ -468,6 +1557,110 @@
 <div data-v="10" class="vs"><div style="height:1px"></div></div>
 
 <!-- ══════════════════════════════════════════
+
+<!-- V11-V20 TRUST -->
+<!-- ══════════════════════════════════════════
+     V11–V20 TRUST ZONES
+     ══════════════════════════════════════════ -->
+
+<!-- V11 Trust — incorporated into hero -->
+<div data-v="11" class="vs"><div style="height:1px"></div></div>
+
+<!-- V12 Trust — incorporated into hero -->
+<div data-v="12" class="vs"><div style="height:1px"></div></div>
+
+<!-- V13 Trust — minimal strip -->
+<div data-v="13" class="vs">
+  <div class="sec-white"><div class="trust-row">
+    <div class="trust-item"><div class="trust-val" style="font-size:28px;font-weight:700">100+</div><div class="trust-lbl">Properties</div></div>
+    <div class="trust-item"><div class="trust-val green" style="font-size:28px;font-weight:700">&pound;500</div><div class="trust-lbl">Min. entry</div></div>
+    <div class="trust-item"><div class="trust-val" style="font-size:28px;font-weight:700">&pound;680</div><div class="trust-lbl">Avg. monthly</div></div>
+  </div></div>
+</div>
+
+<!-- V14 Trust — incorporated into calculator -->
+<div data-v="14" class="vs"><div style="height:1px"></div></div>
+
+<!-- V15 Trust — incorporated into stat bar -->
+<div data-v="15" class="vs"><div style="height:1px"></div></div>
+
+<!-- V16 Trust — incorporated into scroll sections -->
+<div data-v="16" class="vs"><div style="height:1px"></div></div>
+
+<!-- V17 Trust — compact strip -->
+<div data-v="17" class="vs">
+  <div class="sec-white"><div class="trust-row">
+    <div class="trust-item"><div class="trust-val">100+</div><div class="trust-lbl">Managed properties</div></div>
+    <div class="trust-item"><div class="trust-val green">&pound;500</div><div class="trust-lbl">Min. partnership</div></div>
+    <div class="trust-item"><div class="trust-val">&pound;680</div><div class="trust-lbl">Avg. monthly return</div></div>
+  </div></div>
+</div>
+
+<!-- V18 Trust — incorporated into timeline -->
+<div data-v="18" class="vs"><div style="height:1px"></div></div>
+
+<!-- V19 Trust — incorporated into value grid -->
+<div data-v="19" class="vs"><div style="height:1px"></div></div>
+
+<!-- V20 Trust — incorporated into trust cards -->
+<div data-v="20" class="vs"><div style="height:1px"></div></div>
+
+
+
+<!-- V21-V30 TRUST -->
+<!-- ══════════════════════════════════════════
+     ZONE: TRUST STATS — V21–V30
+     ══════════════════════════════════════════ -->
+
+<!-- V21 Trust — stats under card stack -->
+<div data-v="21" class="vs">
+  <div class="trust-row" style="background:#fff;border-top:1px solid var(--border);border-bottom:1px solid var(--border)">
+    <div class="trust-item"><div class="trust-val green">&pound;500</div><div class="trust-lbl">Minimum Entry</div></div>
+    <div class="trust-item"><div class="trust-val">&pound;680</div><div class="trust-lbl">Avg. Monthly Return</div></div>
+    <div class="trust-item"><div class="trust-val green">100+</div><div class="trust-lbl">Managed Properties</div></div>
+    <div class="trust-item"><div class="trust-val">24/7</div><div class="trust-lbl">Dashboard Access</div></div>
+  </div>
+</div>
+
+<!-- V22 Trust — incorporated in newspaper hero -->
+<div data-v="22" class="vs"><div style="height:1px"></div></div>
+
+<!-- V23 Trust — minimal, single line -->
+<div data-v="23" class="vs">
+  <div style="text-align:center;padding:48px 24px;font-size:14px;color:var(--muted);letter-spacing:1px">
+    100+ properties &nbsp;&middot;&nbsp; &pound;680 average return &nbsp;&middot;&nbsp; From &pound;500
+  </div>
+</div>
+
+<!-- V24 Trust — incorporated in dashboard hero -->
+<div data-v="24" class="vs"><div style="height:1px"></div></div>
+
+<!-- V25 Trust — incorporated in comparison table -->
+<div data-v="25" class="vs"><div style="height:1px"></div></div>
+
+<!-- V26 Trust — incorporated in mosaic hero -->
+<div data-v="26" class="vs"><div style="height:1px"></div></div>
+
+<!-- V27 Trust — incorporated in counter hero -->
+<div data-v="27" class="vs"><div style="height:1px"></div></div>
+
+<!-- V28 Trust — subtle stats under FAQ -->
+<div data-v="28" class="vs">
+  <div class="trust-row" style="background:#fff;border-top:1px solid var(--border);border-bottom:1px solid var(--border)">
+    <div class="trust-item"><div class="trust-val green">&pound;500</div><div class="trust-lbl">From</div></div>
+    <div class="trust-item"><div class="trust-val">&pound;680</div><div class="trust-lbl">Avg. Return/mo</div></div>
+    <div class="trust-item"><div class="trust-val green">100+</div><div class="trust-lbl">Properties</div></div>
+  </div>
+</div>
+
+<!-- V29 Trust — incorporated in mesh hero -->
+<div data-v="29" class="vs"><div style="height:1px"></div></div>
+
+<!-- V30 Trust — incorporated in app-like hero -->
+<div data-v="30" class="vs"><div style="height:1px"></div></div>
+
+
+
      SHARED: VIDEO SECTION
      ══════════════════════════════════════════ -->
 <section style="padding:64px 16px;background:#fff">
@@ -730,6 +1923,7 @@
 </section>
 
 <!-- ══════════════════════════════════════════
+
      ZONE: CTA BAND
      ══════════════════════════════════════════ -->
 
@@ -744,6 +1938,57 @@
 <div data-v="8" class="vs"><div class="cta-band" style="background:#0a0a0a;color:#fff"><h2 style="color:#fff;font-size:56px;letter-spacing:-2px">Your Move.</h2><p style="color:rgba(255,255,255,0.6)">Airbnb partnerships from &pound;500. Fully managed.</p><div class="btn-wrap"><a href="/signup" class="btn-green" style="padding:18px 48px;font-size:17px">Get Started</a></div></div></div>
 <div data-v="9" class="vs"><div class="cta-band" style="background:linear-gradient(135deg,#0f766e,#1E9A80,#065f46);color:#fff"><h2 style="color:#fff">A Better Way to Earn from Airbnb</h2><p style="color:rgba(255,255,255,0.8)">Start from &pound;500. Fully managed. You vote on decisions.</p><div class="btn-wrap"><a href="/signup" style="display:inline-block;padding:18px 48px;background:#fff;color:#0a0a0a;font-size:17px;font-weight:700;border-radius:14px">Get Started from &pound;500</a></div></div></div>
 <div data-v="10" class="vs"><div class="cta-band v10-grad" style="color:#fff"><h2 style="color:#fff">Begin Your Journey</h2><p style="color:rgba(255,255,255,0.7)">Elegant returns. Simple partnership. From &pound;500.</p><div class="btn-wrap"><a href="/signup" style="display:inline-block;padding:18px 48px;background:#fff;color:#0a0a0a;font-size:17px;font-weight:700;border-radius:14px">Get Started</a></div></div></div>
+
+<!-- V11-V20 CTA BANDS -->
+<!-- ══════════════════════════════════════════
+     V11–V20 CTA BAND ZONES
+     ══════════════════════════════════════════ -->
+
+<div data-v="11" class="vs"><div class="cta-band" style="background:#fff;border:1px solid #e5e7eb"><h2>Start Earning from Airbnb</h2><p style="color:var(--body)">Fractional partnerships from &pound;500. Verified deals. Monthly returns.</p><div class="btn-wrap"><a href="/signup" class="btn-dark" style="border-radius:10px">Get Started</a></div></div></div>
+
+<div data-v="12" class="vs"><div class="cta-band" style="background:#0D0D0D;color:#fff"><h2 style="color:#fff">Ready to Begin?</h2><p style="color:rgba(255,255,255,0.4)">Airbnb partnerships from &pound;500. Managed. Monthly returns.</p><div class="btn-wrap"><a href="/signup" style="display:inline-block;padding:18px 48px;background:var(--green);color:#fff;font-size:17px;font-weight:700;border-radius:12px;box-shadow:0 0 24px rgba(30,154,128,0.3)">Get Started</a></div></div></div>
+
+<div data-v="13" class="vs"><div class="cta-band" style="background:#fff"><h2 style="font-size:56px;letter-spacing:-2px">&pound;680/Month.</h2><p style="color:var(--body)">From &pound;500. Fully managed. Start now.</p><div class="btn-wrap"><a href="/signup" class="btn-green" style="padding:18px 56px;font-size:17px">Get Started</a></div></div></div>
+
+<div data-v="14" class="vs"><div class="cta-band" style="background:linear-gradient(135deg,#0f766e,#1E9A80);color:#fff"><h2 style="color:#fff">See the Numbers for Yourself</h2><p style="color:rgba(255,255,255,0.8)">Sign up and explore live Airbnb SA deals on the marketplace.</p><div class="btn-wrap"><a href="/signup" style="display:inline-block;padding:18px 48px;background:#fff;color:#0a0a0a;font-size:17px;font-weight:700;border-radius:14px">Get Started</a></div></div></div>
+
+<div data-v="15" class="vs"><div class="cta-band" style="background:#F3F3EE"><h2 style="font-family:'Playfair Display',serif;font-style:italic;font-weight:700">Something Real Awaits</h2><p style="color:var(--body)">Fractional Airbnb partnerships from &pound;500.</p><div class="btn-wrap"><a href="/signup" class="btn-green">Get Started</a></div></div></div>
+
+<div data-v="16" class="vs"><div class="cta-band" style="background:#0a0a0a;color:#fff"><h2 style="color:#fff;font-size:56px;letter-spacing:-2px">Scroll Complete.<br>Your Move.</h2><p style="color:rgba(255,255,255,0.5)">Airbnb partnerships from &pound;500.</p><div class="btn-wrap"><a href="/signup" class="btn-green" style="padding:18px 48px;font-size:17px">Get Started</a></div></div></div>
+
+<div data-v="17" class="vs"><div class="cta-band" style="background:linear-gradient(90deg,#f5f5f5 50%,var(--green) 50%);color:#fff"><h2 style="color:#fff">Choose the Right Side</h2><p style="color:rgba(255,255,255,0.8)">JV partnerships from &pound;500. Fully managed.</p><div class="btn-wrap"><a href="/signup" style="display:inline-block;padding:18px 48px;background:#fff;color:#0a0a0a;font-size:17px;font-weight:700;border-radius:14px">Get Started</a></div></div></div>
+
+<div data-v="18" class="vs"><div class="cta-band" style="background:linear-gradient(135deg,#0f766e,#1E9A80,#065f46);color:#fff"><h2 style="color:#fff">Start Your Journey Today</h2><p style="color:rgba(255,255,255,0.8)">Day 0 begins when you sign up. From &pound;500.</p><div class="btn-wrap"><a href="/signup" style="display:inline-block;padding:18px 48px;background:#fff;color:#0a0a0a;font-size:17px;font-weight:700;border-radius:14px">Get Started</a></div></div></div>
+
+<div data-v="19" class="vs"><div class="cta-band" style="background:#0a0a0a;color:#fff"><h2 style="color:#fff">See It in Action</h2><p style="color:rgba(255,255,255,0.6)">Airbnb JV partnerships. From &pound;500. Fully managed.</p><div class="btn-wrap"><a href="/signup" class="btn-green" style="padding:18px 48px;font-size:17px">Get Started</a></div></div></div>
+
+<div data-v="20" class="vs"><div class="cta-band" style="background:linear-gradient(135deg,#1e3a5f,#1e40af);color:#fff"><h2 style="color:#fff">Partner with Confidence</h2><p style="color:rgba(255,255,255,0.7)">UK registered. Fully insured. Partnerships from &pound;500.</p><div class="btn-wrap"><a href="/signup" style="display:inline-block;padding:18px 48px;background:#fff;color:#0a0a0a;font-size:17px;font-weight:700;border-radius:14px">Get Started</a></div></div></div>
+
+<!-- V21-V30 CTA BANDS -->
+<!-- ══════════════════════════════════════════
+     ZONE: CTA BAND — V21–V30
+     ══════════════════════════════════════════ -->
+
+<div data-v="21" class="vs"><div class="cta-band" style="background:linear-gradient(135deg,#0f766e,#1E9A80,#065f46);color:#fff"><h2 style="color:#fff">Pick Your Next Property</h2><p style="color:rgba(255,255,255,0.8)">100+ Airbnb deals waiting. Partnerships from &pound;500.</p><div class="btn-wrap"><a href="/signup" style="display:inline-block;padding:18px 48px;background:#fff;color:#0a0a0a;font-size:17px;font-weight:700;border-radius:14px">Browse Deals</a></div></div></div>
+
+<div data-v="22" class="vs"><div class="cta-band" style="background:#FDFCF9;border:4px double var(--heading)"><h2 style="font-family:'Playfair Display',serif;letter-spacing:-0.5px">Subscribe to Partnership</h2><p style="color:var(--body)">Join 100+ partners earning from managed Airbnb properties.</p><div class="btn-wrap"><a href="/signup" class="btn-dark" style="padding:18px 48px;font-size:17px">Get Started</a></div></div></div>
+
+<div data-v="23" class="vs"><div style="text-align:center;padding:120px 24px"><div class="v23-accent" style="margin:0 auto 32px"></div><p style="font-size:18px;font-weight:300;color:#4a4a4a;letter-spacing:0.5px">When you are ready.</p><div style="margin-top:32px"><a href="/signup" class="v23-cta">Begin your partnership</a></div><div class="v23-accent" style="margin:32px auto 0"></div></div></div>
+
+<div data-v="24" class="vs"><div class="cta-band" style="background:#1a1a2e;color:#fff"><h2 style="color:#fff">Your Dashboard Awaits</h2><p style="color:rgba(255,255,255,0.5)">Track real Airbnb returns. From &pound;500.</p><div class="btn-wrap"><a href="/signup" class="btn-green" style="padding:18px 48px;font-size:17px">Get Started</a></div></div></div>
+
+<div data-v="25" class="vs"><div class="cta-band" style="background:var(--green-tint)"><h2>The comparison is clear</h2><p style="color:var(--body)">nfstay JV partnerships. From &pound;500. Avg. &pound;680/mo return.</p><div class="btn-wrap"><a href="/signup" class="btn-green" style="padding:18px 56px;font-size:17px">Get Started</a></div></div></div>
+
+<div data-v="26" class="vs"><div class="cta-band" style="background:linear-gradient(135deg,#0f766e,#1E9A80);color:#fff"><h2 style="color:#fff">Be the Next Success Story</h2><p style="color:rgba(255,255,255,0.8)">Airbnb partnerships from &pound;500. Join 100+ partners.</p><div class="btn-wrap"><a href="/signup" style="display:inline-block;padding:18px 48px;background:#fff;color:#0a0a0a;font-size:17px;font-weight:700;border-radius:14px">Get Started</a></div></div></div>
+
+<div data-v="27" class="vs"><div class="cta-band" style="background:var(--bg)"><h2 style="font-size:56px;letter-spacing:-2px">The numbers speak.</h2><p style="color:var(--body)">Airbnb JV partnerships from &pound;500. Start earning.</p><div class="btn-wrap"><a href="/signup" class="btn-green" style="padding:18px 56px;font-size:17px">Get Started</a></div></div></div>
+
+<div data-v="28" class="vs"><div class="cta-band" style="background:#fff;border:1px solid var(--border)"><h2>No more questions?</h2><p style="color:var(--body)">Airbnb partnerships from &pound;500. Fully managed. You decide.</p><div class="btn-wrap"><a href="/signup" class="btn-green" style="padding:18px 48px;font-size:17px">Get Started</a></div></div></div>
+
+<div data-v="29" class="vs"><div class="cta-band v29-mesh" style="color:#fff;border-radius:24px;margin:16px"><h2 style="color:#fff;font-family:'Playfair Display',serif">Begin Something Beautiful</h2><p style="color:rgba(255,255,255,0.65)">Airbnb partnerships. Quietly managed. From &pound;500.</p><div class="btn-wrap"><a href="/signup" style="display:inline-block;padding:18px 48px;background:#fff;color:#0a0a0a;font-size:17px;font-weight:700;border-radius:14px">Get Started</a></div></div></div>
+
+<div data-v="30" class="vs"><div class="cta-band" style="background:#fff;border:1px solid var(--border);max-width:420px;margin:16px auto;border-radius:24px"><h2 style="font-size:28px">Ready to start?</h2><p style="color:var(--body);font-size:15px">Partnerships from &pound;500. No app required.</p><div class="btn-wrap"><a href="/signup" class="btn-green" style="display:block;border-radius:12px;padding:14px 40px">Get Started</a></div></div></div>
+
 
 <!-- ══════════════════════════════════════════
      SHARED: FOOTER
@@ -798,4 +2043,3 @@ function switchV(n){
 </script>
 
 </body>
-</html>
