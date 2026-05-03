@@ -56,7 +56,7 @@ export default function SendAgreementModal({ contact, onClose }: Props) {
           recipient_name: contact.name,
           amount: Number(amount),
           currency,
-          title: 'Token Sale Agreement',
+          title: 'Property Service Accommodation Partnership Agreement',
           status: 'sent',
           created_at: new Date().toISOString(),
           updated_at: new Date().toISOString(),
@@ -67,19 +67,19 @@ export default function SendAgreementModal({ contact, onClose }: Props) {
       const firstName = (contact.name || '').split(' ')[0] || 'there';
 
       if (channel === 'whatsapp' && contact.phone) {
-        const body = `Hi ${firstName},\n\nI've prepared your Token Sale Agreement for the ${propertyTitle} opportunity.\n\nPlease review the terms and sign here:\n${agreementUrl}\n\nOnce signed, you'll be taken straight to the secure payment page.\n\nLet me know if you have any questions.\n\nnfstay`;
+        const body = `Hi ${firstName},\n\nFollowing our conversation, I've prepared your Partnership Agreement for the ${propertyTitle} opportunity.\n\nPlease review the terms and sign here:\n${agreementUrl}\n\nOnce signed, you'll be taken straight to the secure payment page.\n\nLet me know if you have any questions.\n\nnfstay`;
 
         await supabase.functions.invoke('unipile-send', {
           body: { contact_id: contact.id, body },
         });
       } else if (channel === 'email' && contact.email) {
-        const body = `Hi ${firstName},\n\nThank you for your interest in the ${propertyTitle} property.\n\nI've prepared a Token Sale Agreement for your review. This document outlines the investment terms, property details, financial projections, and your rights as a token holder.\n\nPlease review and sign the agreement here:\n${agreementUrl}\n\nAfter signing, you'll be redirected to complete your secure payment.\n\nnfstay | hub.nfstay.com`;
+        const body = `Hi ${firstName},\n\nThank you for your interest in the ${propertyTitle} property.\n\nI've prepared a Partnership Agreement for your review. This document outlines the deal details, allocation terms, financial projections, and your rights as a partner.\n\nPlease review and sign the agreement here:\n${agreementUrl}\n\nAfter signing, you'll be redirected to complete your secure payment.\n\nnfstay | hub.nfstay.com`;
 
         await supabase.functions.invoke('wk-email-send', {
           body: {
             contact_id: contact.id,
             to: contact.email,
-            subject: `Your Token Sale Agreement — ${propertyTitle}`,
+            subject: `Your Partnership Agreement — ${propertyTitle}`,
             body,
           },
         });

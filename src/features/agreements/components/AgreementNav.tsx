@@ -3,11 +3,12 @@ import { cn } from '@/lib/utils';
 
 const sections = [
   { id: 'overview', label: 'Overview' },
-  { id: 'property', label: 'Property Details' },
-  { id: 'investment', label: 'Investment Terms' },
+  { id: 'property', label: 'Deal Details' },
+  { id: 'allocation', label: 'Allocation Terms' },
   { id: 'financials', label: 'Financial Projections' },
   { id: 'risks', label: 'Risk Factors' },
-  { id: 'representations', label: 'Representations' },
+  { id: 'obligations', label: 'Partner Obligations' },
+  { id: 'disclaimer', label: 'Disclaimer' },
   { id: 'governing-law', label: 'Governing Law' },
   { id: 'signature', label: 'Signature' },
 ];

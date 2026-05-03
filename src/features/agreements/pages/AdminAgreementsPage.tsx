@@ -176,7 +176,7 @@ function AgreementForm({
   const [recipientName, setRecipientName] = useState(existing?.recipient_name ?? '');
   const [amount, setAmount] = useState(existing ? String(existing.amount) : '');
   const [currency, setCurrency] = useState(existing?.currency ?? 'USD');
-  const [title, setTitle] = useState(existing?.title ?? 'Token Sale Agreement');
+  const [title, setTitle] = useState(existing?.title ?? 'Property Service Accommodation Partnership Agreement');
   const [termsHtml, setTermsHtml] = useState(existing?.terms_html ?? '');
   const [status, setStatus] = useState(existing?.status ?? 'draft');
   const [propertyId, setPropertyId] = useState(existing?.property_id ? String(existing.property_id) : '');
