@@ -3,6 +3,10 @@ import { X, Loader2, FileSignature } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { toast } from 'sonner';
+import StageSelector from '@/features/smsv2/components/shared/StageSelector';
+import FollowupPromptModal from '@/features/smsv2/components/followups/FollowupPromptModal';
+import { useContactPersistence } from '@/features/smsv2/hooks/useContactPersistence';
+import { useSmsV2 } from '@/features/smsv2/store/SmsV2Store';
 
 interface Contact {
   id: string;
@@ -18,12 +22,17 @@ interface Props {
 
 export default function SendAgreementModal({ contact, onClose }: Props) {
   const { user } = useAuth();
+  const { moveToColumn } = useContactPersistence();
+  const { columns } = useSmsV2();
   const [amount, setAmount] = useState('');
   const [currency, setCurrency] = useState('USD');
   const [propertyId, setPropertyId] = useState('');
   const [properties, setProperties] = useState<Array<{ id: number; title: string }>>([]);
   const [channel, setChannel] = useState<'sms' | 'whatsapp' | 'email'>('whatsapp');
   const [sending, setSending] = useState(false);
+  const [stageId, setStageId] = useState<string>('');
+  const [stageError, setStageError] = useState(false);
+  const [showFollowup, setShowFollowup] = useState(false);
 
   const agentFirstName = (user?.user_metadata?.name ?? user?.email ?? '').split(' ')[0] || 'nfstay';
 
@@ -45,6 +54,13 @@ export default function SendAgreementModal({ contact, onClose }: Props) {
   }, []);
 
   const handleSend = useCallback(async () => {
+    if (!stageId) {
+      setStageError(true);
+      toast.error('Pick a pipeline outcome before sending');
+      return;
+    }
+    setStageError(false);
+
     if (!contact || !amount || !propertyId) return;
     setSending(true);
 
@@ -66,6 +82,9 @@ export default function SendAgreementModal({ contact, onClose }: Props) {
           updated_at: new Date().toISOString(),
         });
       if (insertErr) throw new Error(insertErr.message);
+
+      // Move contact to selected pipeline stage
+      await moveToColumn(contact.id, stageId);
 
       const propertyTitle = properties.find(p => String(p.id) === propertyId)?.title ?? 'the property';
       const firstName = (contact.name || '').split(' ')[0] || 'there';
@@ -97,15 +116,36 @@ export default function SendAgreementModal({ contact, onClose }: Props) {
       }
 
       toast.success(`Agreement sent to ${contact.name}`);
-      onClose();
+      // Open follow-up prompt — mandatory before closing
+      setShowFollowup(true);
     } catch (e) {
       toast.error(e instanceof Error ? e.message : 'Failed to send');
     } finally {
       setSending(false);
     }
-  }, [contact, amount, currency, propertyId, channel, properties, generateToken, onClose, agentFirstName]);
+  }, [contact, amount, currency, propertyId, channel, properties, generateToken, stageId, moveToColumn, agentFirstName]);
+
+  const selectedColumn = columns.find(c => c.id === stageId);
 
   if (!contact) return null;
+
+  // Follow-up modal (shown after send succeeds)
+  if (showFollowup) {
+    return (
+      <FollowupPromptModal
+        open={true}
+        onOpenChange={(open) => {
+          if (!open) onClose();
+        }}
+        contactId={contact.id}
+        contactName={contact.name}
+        columnId={stageId}
+        columnName={selectedColumn?.name ?? 'Agreement Sent'}
+        suggestedHoursAhead={48}
+        onSaved={onClose}
+      />
+    );
+  }
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
@@ -162,6 +202,23 @@ export default function SendAgreementModal({ contact, onClose }: Props) {
                 <option value="GBP">GBP</option>
                 <option value="EUR">EUR</option>
               </select>
+            </div>
+          </div>
+
+          {/* Pipeline Outcome — MANDATORY */}
+          <div>
+            <label className={`block text-sm font-medium mb-1 ${stageError ? 'text-[#EF4444]' : 'text-[#525252]'}`}>
+              Pipeline Outcome <span className="text-[#EF4444]">*</span>
+            </label>
+            <div className={`p-2.5 border rounded-lg ${stageError ? 'border-[#EF4444] bg-[#FEF2F2]' : 'border-[#E5E5E5]'}`}>
+              <StageSelector
+                value={stageId || undefined}
+                onChange={(id) => { setStageId(id); setStageError(false); }}
+                size="md"
+              />
+              {stageError && (
+                <p className="text-[11px] text-[#EF4444] mt-1">Required — where should this contact go in the pipeline?</p>
+              )}
             </div>
           </div>
 
