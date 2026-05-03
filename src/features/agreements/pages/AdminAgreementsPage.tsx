@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import { Plus, Copy, ExternalLink, Pencil, Loader2, Check, Send } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -183,11 +183,27 @@ function AgreementForm({
   const [title, setTitle] = useState(existing?.title ?? 'Token Sale Agreement');
   const [termsHtml, setTermsHtml] = useState(existing?.terms_html ?? '');
   const [status, setStatus] = useState(existing?.status ?? 'draft');
+  const [propertyId, setPropertyId] = useState(existing?.property_id ?? '');
+  const [properties, setProperties] = useState<Array<{ id: string; title: string }>>([]);
   const [saving, setSaving] = useState(false);
+
+  useEffect(() => {
+    (async () => {
+      const { data } = await (supabase.from('inv_properties' as any) as any)
+        .select('id, title')
+        .order('title', { ascending: true });
+      setProperties((data ?? []) as Array<{ id: string; title: string }>);
+      if (!propertyId && data?.length) setPropertyId(data[0].id);
+    })();
+  }, []);
 
   const handleSave = useCallback(async () => {
     if (!token.trim() || !amount) {
       toast.error('Token and amount are required');
+      return;
+    }
+    if (!propertyId) {
+      toast.error('Please select a property');
       return;
     }
     setSaving(true);
@@ -200,16 +216,9 @@ function AgreementForm({
         title: title.trim(),
         terms_html: termsHtml.trim() || null,
         status,
-        property_id: null as string | null,
+        property_id: propertyId,
         updated_at: new Date().toISOString(),
       };
-
-      // Link to Pembroke Place (property_id 1) by default
-      const { data: prop } = await (supabase.from('inv_properties' as any) as any)
-        .select('id')
-        .eq('blockchain_property_id', 1)
-        .maybeSingle();
-      if (prop?.id) payload.property_id = prop.id;
 
       if (editId) {
         const { error } = await (supabase.from('agreements' as any) as any)
@@ -229,7 +238,7 @@ function AgreementForm({
     } finally {
       setSaving(false);
     }
-  }, [token, recipientName, amount, currency, title, termsHtml, status, editId, onSaved]);
+  }, [token, recipientName, amount, currency, title, termsHtml, status, propertyId, editId, onSaved]);
 
   return (
     <Card className="mb-6 border-[#1E9A80]/30">
@@ -280,6 +289,19 @@ function AgreementForm({
               <option value="USD">USD</option>
               <option value="GBP">GBP</option>
               <option value="EUR">EUR</option>
+            </select>
+          </div>
+          <div>
+            <label className="block text-sm font-medium mb-1">Property</label>
+            <select
+              value={propertyId}
+              onChange={(e) => setPropertyId(e.target.value)}
+              className="w-full px-3 py-2 border border-input rounded-lg text-sm"
+            >
+              <option value="">Select a property...</option>
+              {properties.map((p) => (
+                <option key={p.id} value={p.id}>{p.title}</option>
+              ))}
             </select>
           </div>
           <div className="sm:col-span-2">
