@@ -183,8 +183,8 @@ function AgreementForm({
   const [title, setTitle] = useState(existing?.title ?? 'Token Sale Agreement');
   const [termsHtml, setTermsHtml] = useState(existing?.terms_html ?? '');
   const [status, setStatus] = useState(existing?.status ?? 'draft');
-  const [propertyId, setPropertyId] = useState(existing?.property_id ?? '');
-  const [properties, setProperties] = useState<Array<{ id: string; title: string }>>([]);
+  const [propertyId, setPropertyId] = useState(existing?.property_id ? String(existing.property_id) : '');
+  const [properties, setProperties] = useState<Array<{ id: number; title: string }>>([]);
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
@@ -192,8 +192,8 @@ function AgreementForm({
       const { data } = await (supabase.from('inv_properties' as any) as any)
         .select('id, title')
         .order('title', { ascending: true });
-      setProperties((data ?? []) as Array<{ id: string; title: string }>);
-      if (!propertyId && data?.length) setPropertyId(data[0].id);
+      setProperties((data ?? []) as Array<{ id: number; title: string }>);
+      if (!propertyId && data?.length) setPropertyId(String(data[0].id));
     })();
   }, []);
 
@@ -216,7 +216,7 @@ function AgreementForm({
         title: title.trim(),
         terms_html: termsHtml.trim() || null,
         status,
-        property_id: propertyId,
+        property_id: propertyId ? Number(propertyId) : null,
         updated_at: new Date().toISOString(),
       };
 

@@ -6,7 +6,7 @@ export interface Agreement {
   token: string;
   contact_id: string | null;
   user_id: string | null;
-  property_id: string | null;
+  property_id: number | null;
   title: string;
   recipient_name: string | null;
   amount: number;

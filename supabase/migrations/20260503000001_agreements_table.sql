@@ -6,7 +6,7 @@ CREATE TABLE IF NOT EXISTS agreements (
   token text UNIQUE NOT NULL,
   contact_id uuid REFERENCES wk_contacts(id) ON DELETE SET NULL,
   user_id uuid REFERENCES profiles(id) ON DELETE SET NULL,
-  property_id uuid REFERENCES inv_properties(id) ON DELETE SET NULL,
+  property_id integer REFERENCES inv_properties(id) ON DELETE SET NULL,
   title text NOT NULL DEFAULT 'Token Sale Agreement',
   recipient_name text,
   amount numeric NOT NULL,
