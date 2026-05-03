@@ -12,7 +12,7 @@ const SIGNATURE_KEY = 'nfstay_agreement_pending';
 const GBP_RATE = 0.79;
 
 function usdToGbp(usd: number) { return Math.round(usd * GBP_RATE); }
-function dualAmount(usd: number) { return `$${usd.toLocaleString()} USD ≈ £${usdToGbp(usd).toLocaleString()} GBP`; }
+function dualAmount(usd: number) { return `$${usd.toLocaleString()} USD ~ £${usdToGbp(usd).toLocaleString()} GBP`; }
 
 export default function AgreementPage() {
   const { token } = useParams<{ token: string }>();
@@ -258,7 +258,7 @@ export default function AgreementPage() {
                       <InfoCard label="Location" value={property.location} />
                       <InfoCard label="Type" value={property.type} />
                       <InfoCard label="Bedrooms" value={String(property.bedrooms)} />
-                      <InfoCard label="Deal Value" value={`$${property.property_value.toLocaleString()} ≈ £${usdToGbp(property.property_value).toLocaleString()}`} />
+                      <InfoCard label="Deal Value" value={`$${property.property_value.toLocaleString()} ~ £${usdToGbp(property.property_value).toLocaleString()}`} />
                       <InfoCard label="Deal Term" value="5 years" />
                     </div>
                     <p>{property.description}</p>
@@ -286,7 +286,7 @@ export default function AgreementPage() {
                       <div>
                         <p className="text-xs font-semibold text-[#9CA3AF] uppercase tracking-wider">Allocation Amount</p>
                         <p className="text-2xl font-bold text-[#1A1A1A]">${amountUsd.toLocaleString()}</p>
-                        <p className="text-sm text-[#6B7280]">≈ £{usdToGbp(amountUsd).toLocaleString()} GBP</p>
+                        <p className="text-sm text-[#6B7280]">~ £{usdToGbp(amountUsd).toLocaleString()} GBP</p>
                       </div>
                       <div>
                         <p className="text-xs font-semibold text-[#9CA3AF] uppercase tracking-wider">Deal Term</p>
@@ -296,7 +296,7 @@ export default function AgreementPage() {
                       <div>
                         <p className="text-xs font-semibold text-[#9CA3AF] uppercase tracking-wider">Allocation Share</p>
                         <p className="text-2xl font-bold text-[#1E9A80]">{amountUsd.toLocaleString()} units</p>
-                        <p className="text-sm text-[#6B7280]">$1 ≈ £{GBP_RATE} per unit</p>
+                        <p className="text-sm text-[#6B7280]">$1 ~ £{GBP_RATE} per unit</p>
                       </div>
                       <div>
                         <p className="text-xs font-semibold text-[#9CA3AF] uppercase tracking-wider">Projected Annual Yield</p>
@@ -332,7 +332,7 @@ export default function AgreementPage() {
                     <li>The Partner's income share is calculated as: (Partner's Allocation ÷ Total Allocations) × Net Rental Income.</li>
                     <li>Revenue distributions are paid directly into the Partner's bank account in their local currency, or in USDC (a stable digital currency pegged to the US dollar) at the Partner's election.</li>
                     <li>The Company charges a 10% operational fee from gross revenue before distributions. This fee covers property management, tenant relations, maintenance, and administrative expenses.</li>
-                    <li>The minimum contribution is $1,000 USD ≈ £{usdToGbp(1000).toLocaleString()} GBP. Contributions below this amount may not be accepted at the Company's sole discretion.</li>
+                    <li>The minimum contribution is $1,000 USD ~ £{usdToGbp(1000).toLocaleString()} GBP. Contributions below this amount may not be accepted at the Company's sole discretion.</li>
                     <li>The Company may accept contributions in USD, GBP, or EUR. The exchange rate at the time of purchase determines the allocation amount.</li>
                     <li>Allocations are tied to the 5-year deal term. Upon expiry of the deal term, no further rental income distributions will be made unless the underlying agreement is renewed.</li>
                     <li>Allocations are non-transferable. The Partner may not sell, assign, or transfer their allocation to any third party.</li>
