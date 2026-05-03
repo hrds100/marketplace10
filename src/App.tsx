@@ -57,6 +57,8 @@ import AdminInvestCommissionSettings from "./pages/admin/invest/AdminInvestCommi
 import AdminInvestPayouts from "./pages/admin/invest/AdminInvestPayouts";
 import AdminInvestProposals from "./pages/admin/invest/AdminInvestProposals";
 import AdminEndpoints from "./pages/admin/invest/AdminEndpoints";
+import AgreementPage from "@/features/agreements/pages/AgreementPage";
+import AdminAgreementsPage from "@/features/agreements/pages/AdminAgreementsPage";
 import AdminTestConsole from "./pages/admin/invest/AdminTestConsole";
 import AdminWorkspaceSelector from "@/features/admin-dashboard/AdminWorkspaceSelector";
 import AdminArchitecture from "@/features/admin-dashboard/AdminArchitecture";
@@ -200,6 +202,7 @@ const App = () => (
           <Route path="/inbox" element={<MagicLoginPage />} />
           <Route path="/deals/:id" element={<DealDetail />} />
           {/* Lead details — token-based access, no login required */}
+          <Route path="/agreement/:token" element={<AgreementPage />} />
           <Route path="/lead/:token" element={<LeadDetailsPage />} />
           <Route path="/lead/:token/nda" element={<LeadNDAPage />} />
           <Route path="/dashboard" element={<DashboardLayout />}>
@@ -269,6 +272,7 @@ const App = () => (
             <Route path="invest/commission-settings" element={<AdminInvestCommissionSettings />} />
             <Route path="invest/payouts" element={<AdminInvestPayouts />} />
             <Route path="invest/proposals" element={<AdminInvestProposals />} />
+            <Route path="invest/agreements" element={<AdminAgreementsPage />} />
             <Route path="invest/endpoints" element={<AdminEndpoints />} />
             <Route path="invest/test-console" element={<AdminTestConsole />} />
 
