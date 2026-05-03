@@ -5,7 +5,7 @@ import {
   CreditCard, HelpCircle, UserCheck, Settings, Bell,
   Building2, ShoppingCart, Coins, Sliders, Banknote, Vote, Rocket,
   Plug, Zap, Menu, X, MessageSquare,
-  BarChart3, Calendar,
+  BarChart3, Calendar, FileSignature,
 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
@@ -36,6 +36,7 @@ const investLinks = [
   { to: '/admin/invest/commission-settings', label: 'Rates', icon: Sliders },
   { to: '/admin/invest/payouts', label: 'Payouts', icon: Banknote },
   { to: '/admin/invest/proposals', label: 'Proposals', icon: Vote },
+  { to: '/admin/invest/agreements', label: 'Agreements', icon: FileSignature },
   { to: '/admin/invest/endpoints', label: 'Endpoints', icon: Plug },
 ];
 
