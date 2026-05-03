@@ -22,6 +22,7 @@
     { "source": "/brand", "has": [{ "type": "host", "value": "nfstay.com" }], "destination": "https://hub.nfstay.com/brand", "permanent": false },
     { "source": "/flow", "has": [{ "type": "host", "value": "nfstay.com" }], "destination": "https://hub.nfstay.com/flow", "permanent": false },
     { "source": "/sms/:path*", "has": [{ "type": "host", "value": "nfstay.com" }], "destination": "https://hub.nfstay.com/sms/:path*", "permanent": false },
+    { "source": "/agreement/:path*", "has": [{ "type": "host", "value": "nfstay.com" }], "destination": "https://hub.nfstay.com/agreement/:path*", "permanent": false },
     { "source": "/signin", "has": [{ "type": "host", "value": "www.nfstay.com" }], "destination": "https://hub.nfstay.com/signin", "permanent": false },
     { "source": "/signup", "has": [{ "type": "host", "value": "www.nfstay.com" }], "destination": "https://hub.nfstay.com/signup", "permanent": false },
     { "source": "/dashboard/:path*", "has": [{ "type": "host", "value": "www.nfstay.com" }], "destination": "https://hub.nfstay.com/dashboard/:path*", "permanent": false },
@@ -154,6 +155,10 @@
     },
     {
       "source": "/apply",
+      "destination": "/app.html"
+    },
+    {
+      "source": "/agreement/:path*",
       "destination": "/app.html"
     },
     {
