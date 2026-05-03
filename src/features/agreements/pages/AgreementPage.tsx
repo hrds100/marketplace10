@@ -207,9 +207,10 @@ export default function AgreementPage() {
                   <div className="bg-[#F3F3EE] rounded-xl p-5 space-y-3 mb-4">
                     <div>
                       <p className="text-xs font-semibold text-[#9CA3AF] uppercase tracking-wider">The Company</p>
-                      <p className="text-sm font-medium text-[#1A1A1A]">Nfstay Holdings FZE LLC</p>
-                      <p className="text-xs text-[#6B7280]">Trading as nfstay &middot; Registration No. 262581599888</p>
-                      <p className="text-xs text-[#6B7280]">Dubai, UAE</p>
+                      <p className="text-sm font-medium text-[#1A1A1A]">Airbrick Finance Ltd</p>
+                      <p className="text-xs text-[#6B7280]">Company No. 13806307 &middot; Trading as nfstay</p>
+                      <p className="text-xs text-[#6B7280] mt-2">Operated by Nfstay Holdings FZE LLC</p>
+                      <p className="text-xs text-[#6B7280]">Ajman NuVentures Centre Free Zone, UAE</p>
                     </div>
                     <div className="border-t border-[#E5E7EB] pt-3">
                       <p className="text-xs font-semibold text-[#9CA3AF] uppercase tracking-wider">The Partner</p>
@@ -494,9 +495,9 @@ export default function AgreementPage() {
                       {/* Company (pre-filled) */}
                       <div className="bg-[#F3F3EE] rounded-xl p-5">
                         <p className="text-xs font-semibold text-[#9CA3AF] uppercase tracking-wider mb-3">The Company</p>
-                        <p className="text-sm font-medium text-[#1A1A1A]">Nfstay Holdings FZE LLC</p>
-                        <p className="text-xs text-[#6B7280]">Trading as nfstay</p>
-                        <p className="text-xs text-[#6B7280]">Reg. No. 262581599888</p>
+                        <p className="text-sm font-medium text-[#1A1A1A]">Airbrick Finance Ltd</p>
+                        <p className="text-xs text-[#6B7280]">Company No. 13806307 &middot; Trading as nfstay</p>
+                        <p className="text-xs text-[#6B7280]">Nfstay Holdings FZE LLC &middot; Ajman NuVentures Centre Free Zone, UAE</p>
                         <div className="mt-4 pt-4 border-t border-[#E5E7EB]">
                           <p className="text-xs text-[#9CA3AF] mb-1">Authorised Signatory</p>
                           <p className="text-sm font-medium text-[#1A1A1A] italic font-serif">Hugo De Souza</p>
@@ -554,8 +555,8 @@ export default function AgreementPage() {
               {/* Footer */}
               <div className="border-t border-[#E5E7EB] px-8 sm:px-12 py-6 bg-[#F3F3EE]">
                 <div className="flex flex-col sm:flex-row items-center justify-between gap-3 text-xs text-[#9CA3AF]">
-                  <p>Nfstay Holdings FZE LLC &middot; Reg. No. 262581599888 &middot; Trading as nfstay</p>
-                  <p>Dubai, UAE &middot; legal@nfstay.com</p>
+                  <p>Airbrick Finance Ltd &middot; Company No. 13806307 &middot; Trading as nfstay</p>
+                  <p>Nfstay Holdings FZE LLC &middot; Ajman NuVentures Centre Free Zone, UAE &middot; legal@nfstay.com</p>
                 </div>
               </div>
             </div>
