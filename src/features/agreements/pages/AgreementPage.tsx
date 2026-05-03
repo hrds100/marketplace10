@@ -213,10 +213,11 @@ export default function AgreementPage() {
                     <div>
                       <p className="text-xs font-semibold text-[#9CA3AF] uppercase tracking-wider">The Company</p>
                       <p className="text-sm font-medium text-[#1A1A1A]">Airbrick Finance Ltd</p>
-                      <p className="text-xs text-[#6B7280]">Company No. 13806307 &middot; Trading as nfstay</p>
-                      <p className="text-xs text-[#6B7280]">Registered in England &amp; Wales</p>
-                      <p className="text-xs text-[#6B7280] mt-2">Operated by Nfstay Holdings FZE LLC</p>
+                      <p className="text-xs text-[#6B7280]">Company No. 13806307 &middot; Registered in England &amp; Wales</p>
+                      <p className="text-xs text-[#6B7280]">Property management and operations company, trading as nfstay</p>
+                      <p className="text-xs text-[#6B7280] mt-2 font-medium text-[#1A1A1A]">Nfstay Holdings FZE LLC</p>
                       <p className="text-xs text-[#6B7280]">Ajman NuVentures Centre Free Zone, UAE</p>
+                      <p className="text-xs text-[#6B7280]">Financial administration, partner allocations and treasury management</p>
                     </div>
                     <div className="border-t border-[#E5E7EB] pt-3">
                       <p className="text-xs font-semibold text-[#9CA3AF] uppercase tracking-wider">The Partner</p>
@@ -227,7 +228,10 @@ export default function AgreementPage() {
                     </div>
                   </div>
                   <p className="mb-3">
-                    nfstay operates a rent-to-rent service accommodation model. The Company leases properties from landlords for a fixed term and manages them as serviced accommodation. This Agreement sets out the terms under which the Partner allocates funds towards a specific property deal, entitling the Partner to a proportional share of net rental income generated during the deal term.
+                    Airbrick Finance Ltd is the UK-registered property management company responsible for sourcing deals, managing landlord relationships, and overseeing the day-to-day operations of each serviced accommodation property. Nfstay Holdings FZE LLC, based in the UAE, handles the financial administration of the partnership — including partner allocations, revenue distributions, treasury management, and international payment processing. Together, these two entities operate under the nfstay brand to deliver a fully managed rent-to-rent service accommodation model.
+                  </p>
+                  <p className="mb-3">
+                    This Agreement sets out the terms under which the Partner allocates funds towards a specific property deal, entitling the Partner to a proportional share of net rental income generated during the deal term.
                   </p>
                   <p className="mb-3">
                     By entering into this Agreement, the Partner acknowledges that this is an active partnership. The Partner does not acquire any form of property ownership. The Partner receives a contractual right to a share of net rental income as described herein for the duration of the deal term.
@@ -599,11 +603,14 @@ export default function AgreementPage() {
                     <Scale className="h-5 w-5 text-[#1E9A80]" />
                     <h2 className="text-lg font-bold text-[#1A1A1A]">11. Governing Law &amp; Dispute Resolution</h2>
                   </div>
+                  <p className="mb-3">
+                    Airbrick Finance Ltd (UK) manages property operations, while Nfstay Holdings FZE LLC (UAE) administers the financial and contractual aspects of the partnership. As the financial and contractual administration of this Agreement is managed by Nfstay Holdings FZE LLC, this Agreement is governed by the laws of the United Arab Emirates.
+                  </p>
                   <ol className="list-decimal list-inside space-y-2">
-                    <li>This Agreement shall be governed by and construed in accordance with the principles of international commercial law and the UNIDROIT Principles of International Commercial Contracts, without reference to any single national legal system.</li>
+                    <li>This Agreement shall be governed by and construed in accordance with the laws of the United Arab Emirates, as applied in the Emirate of Ajman.</li>
                     <li>In the event of any dispute arising out of or in connection with this Agreement, the parties shall first attempt to resolve the matter amicably through good-faith negotiation within 30 days of written notice.</li>
                     <li>If the dispute is not resolved through negotiation, it shall be referred to and finally resolved by arbitration administered by the International Chamber of Commerce (ICC) under its Rules of Arbitration. The arbitration shall be conducted by a single arbitrator appointed in accordance with those rules.</li>
-                    <li>The seat of arbitration shall be London, United Kingdom. The language of the arbitration shall be English.</li>
+                    <li>The seat of arbitration shall be the United Arab Emirates. The language of the arbitration shall be English.</li>
                     <li>The arbitrator's award shall be final and binding on both parties and may be enforced in any court of competent jurisdiction.</li>
                     <li>If any provision of this Agreement is found to be invalid or unenforceable, the remaining provisions shall continue in full force and effect.</li>
                     <li>This Agreement constitutes the entire agreement between the parties in relation to its subject matter and supersedes all prior agreements, representations, and understandings.</li>
@@ -728,33 +735,76 @@ function InfoCard({ label, value }: { label: string; value: string }) {
 function AuthPrompt({ token }: { token: string }) {
   const navigate = useNavigate();
   return (
-    <div className="min-h-screen bg-[#F3F3EE] flex items-center justify-center px-4">
-      <div className="bg-white rounded-2xl border border-[#E5E7EB] shadow-sm max-w-md w-full p-8 text-center">
-        <div className="flex items-center justify-center gap-1 mb-6">
-          <span className="inline-flex items-center justify-center w-8 h-8 border-2 border-[#0A0A0A] rounded-lg text-sm font-bold font-[Sora]">nf</span>
-          <span className="text-base font-normal tracking-[2px] font-[Sora] text-[#0A0A0A]">stay</span>
+    <div className="min-h-screen bg-[#F3F3EE] flex items-center justify-center px-4 py-12">
+      <div className="bg-white rounded-2xl border border-[#E8E5DF] shadow-sm max-w-4xl w-full overflow-hidden flex flex-col md:flex-row">
+        {/* Left — Sign in / Sign up */}
+        <div className="flex-1 p-8 sm:p-10">
+          <div className="flex items-center gap-1 mb-8">
+            <span className="inline-flex items-center justify-center w-8 h-8 border-2 border-[#0A0A0A] rounded-lg text-sm font-bold font-[Sora]">nf</span>
+            <span className="text-base font-normal tracking-[2px] font-[Sora] text-[#0A0A0A]">stay</span>
+          </div>
+
+          <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-[#ECFDF5] text-[#1E9A80] text-xs font-semibold mb-4">
+            <CheckCircle2 className="w-3.5 h-3.5" />
+            Agreement signed
+          </div>
+
+          <h2 className="text-2xl font-bold text-[#1A1A1A] mb-2">You're almost a partner</h2>
+          <p className="text-sm text-[#6B7280] mb-8">
+            Your signature has been captured. One last step — sign in or create your account to finalise the agreement and proceed to payment.
+          </p>
+
+          <div className="space-y-3">
+            <button
+              onClick={() => navigate(`/signin?redirect=/agreement/${encodeURIComponent(token)}`)}
+              className="w-full bg-[#1E9A80] text-white py-3.5 rounded-xl font-semibold text-sm hover:opacity-90 transition-opacity shadow-[0_4px_16px_rgba(30,154,128,0.35)]"
+            >
+              Sign In
+            </button>
+            <button
+              onClick={() => navigate(`/signup?redirect=/agreement/${encodeURIComponent(token)}`)}
+              className="w-full bg-white text-[#1A1A1A] py-3.5 rounded-xl font-semibold text-sm border border-[#E5E7EB] hover:bg-[#F3F3EE] transition-colors"
+            >
+              Create Account
+            </button>
+          </div>
+
+          <p className="text-xs text-[#9CA3AF] mt-6 text-center">
+            Your signed agreement is saved. After signing in, you'll go straight to payment.
+          </p>
         </div>
-        <h2 className="text-xl font-bold text-[#1A1A1A] mb-2">Sign in to complete your allocation</h2>
-        <p className="text-sm text-[#6B7280] mb-8">
-          Your signature has been captured. Sign in or create an account to finalise your partnership agreement.
-        </p>
-        <div className="space-y-3">
-          <button
-            onClick={() => navigate(`/signin?redirect=/agreement/${encodeURIComponent(token)}`)}
-            className="w-full bg-[#1E9A80] text-white py-3 rounded-xl font-semibold text-sm hover:opacity-90 transition-opacity"
-          >
-            Sign In
-          </button>
-          <button
-            onClick={() => navigate(`/signup?redirect=/agreement/${encodeURIComponent(token)}`)}
-            className="w-full bg-white text-[#1A1A1A] py-3 rounded-xl font-semibold text-sm border border-[#E5E7EB] hover:bg-[#F3F3EE] transition-colors"
-          >
-            Create Account
-          </button>
+
+        {/* Right — Feature panel */}
+        <div className="hidden md:flex flex-col justify-center flex-1 bg-gradient-to-br from-[#0f4f42] to-[#1E9A80] p-10 text-white">
+          <h3 className="text-xl font-bold mb-6">What happens next</h3>
+          <div className="space-y-5">
+            <div className="flex items-start gap-3">
+              <div className="w-7 h-7 rounded-full bg-white/20 flex items-center justify-center shrink-0 text-xs font-bold">1</div>
+              <div>
+                <p className="font-semibold text-sm">Sign in or create account</p>
+                <p className="text-xs text-white/70 mt-0.5">Quick and secure — takes 30 seconds</p>
+              </div>
+            </div>
+            <div className="flex items-start gap-3">
+              <div className="w-7 h-7 rounded-full bg-white/20 flex items-center justify-center shrink-0 text-xs font-bold">2</div>
+              <div>
+                <p className="font-semibold text-sm">Complete payment</p>
+                <p className="text-xs text-white/70 mt-0.5">Secure checkout to confirm your allocation</p>
+              </div>
+            </div>
+            <div className="flex items-start gap-3">
+              <div className="w-7 h-7 rounded-full bg-white/20 flex items-center justify-center shrink-0 text-xs font-bold">3</div>
+              <div>
+                <p className="font-semibold text-sm">Access your dashboard</p>
+                <p className="text-xs text-white/70 mt-0.5">Track your deal, revenue and distributions</p>
+              </div>
+            </div>
+          </div>
+          <div className="mt-8 pt-6 border-t border-white/20">
+            <p className="text-xs text-white/60">Airbrick Finance Ltd &middot; Company No. 13806307</p>
+            <p className="text-xs text-white/60">Nfstay Holdings FZE LLC &middot; UAE</p>
+          </div>
         </div>
-        <p className="text-xs text-[#9CA3AF] mt-6">
-          Your agreement will be waiting for you after sign-in.
-        </p>
       </div>
     </div>
   );
