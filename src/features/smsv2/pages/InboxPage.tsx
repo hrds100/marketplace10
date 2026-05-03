@@ -31,6 +31,8 @@ import { useCurrentAgent } from '../hooks/useCurrentAgent';
 import { interpolateTemplate } from '../lib/interpolateTemplate';
 import { supabase } from '@/integrations/supabase/client';
 import { useDialerProModal } from '../layout/DialerProModalContext';
+import SendAgreementModal from '@/features/agreements/components/SendAgreementModal';
+import { FileSignature } from 'lucide-react';
 import type { Contact } from '../types';
 
 interface SmsSendInvoke {
@@ -96,6 +98,7 @@ export default function InboxPage() {
   // intent is obvious.
   const [replyChannel, setReplyChannel] = useState<ChannelKindUI | null>(null);
   const [sending, setSending] = useState(false);
+  const [agreementTo, setAgreementTo] = useState<Contact | null>(null);
   const navigateTo = useNavigate();
   const { openDialerPro } = useDialerProModal();
   const threadScrollRef = useRef<HTMLDivElement>(null);
@@ -685,6 +688,16 @@ export default function InboxPage() {
                   </button>
                 ))}
               </div>
+              {activeContact && (
+                <button
+                  type="button"
+                  onClick={() => setAgreementTo(activeContact)}
+                  className="inline-flex items-center gap-1 px-2.5 py-1 text-[11px] font-semibold rounded-[6px] border border-[#1E9A80] text-[#1E9A80] hover:bg-[#ECFDF5] transition-colors"
+                >
+                  <FileSignature className="w-3 h-3" />
+                  Agreement
+                </button>
+              )}
               {replyChannel === null && (
                 <span className="text-[10px] font-semibold text-[#B45309] uppercase tracking-wide">
                   Pick a channel ↑
@@ -833,6 +846,10 @@ export default function InboxPage() {
             }
           });
       }}
+    />
+    <SendAgreementModal
+      contact={agreementTo}
+      onClose={() => setAgreementTo(null)}
     />
     </>
   );

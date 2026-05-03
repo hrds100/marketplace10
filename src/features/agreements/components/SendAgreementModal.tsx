@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { X, Loader2, FileSignature } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from '@/hooks/useAuth';
 import { toast } from 'sonner';
 
 interface Contact {
@@ -16,12 +17,15 @@ interface Props {
 }
 
 export default function SendAgreementModal({ contact, onClose }: Props) {
+  const { user } = useAuth();
   const [amount, setAmount] = useState('');
   const [currency, setCurrency] = useState('USD');
   const [propertyId, setPropertyId] = useState('');
   const [properties, setProperties] = useState<Array<{ id: number; title: string }>>([]);
-  const [channel, setChannel] = useState<'whatsapp' | 'email'>('whatsapp');
+  const [channel, setChannel] = useState<'sms' | 'whatsapp' | 'email'>('whatsapp');
   const [sending, setSending] = useState(false);
+
+  const agentFirstName = (user?.user_metadata?.name ?? user?.email ?? '').split(' ')[0] || 'nfstay';
 
   useEffect(() => {
     (async () => {
@@ -65,15 +69,22 @@ export default function SendAgreementModal({ contact, onClose }: Props) {
 
       const propertyTitle = properties.find(p => String(p.id) === propertyId)?.title ?? 'the property';
       const firstName = (contact.name || '').split(' ')[0] || 'there';
+      const signoff = `Best,\n${agentFirstName}\nnfstay`;
 
-      if (channel === 'whatsapp' && contact.phone) {
-        const body = `Hi ${firstName},\n\nFollowing our conversation, I've prepared your Partnership Agreement for the ${propertyTitle} opportunity.\n\nPlease review the terms and sign here:\n${agreementUrl}\n\nOnce signed, you'll be taken straight to the secure payment page.\n\nLet me know if you have any questions.\n\nnfstay`;
+      if (channel === 'sms' && contact.phone) {
+        const body = `Hi ${firstName},\n\nI've prepared your Partnership Agreement for the ${propertyTitle} opportunity.\n\nReview and sign here:\n${agreementUrl}\n\n${signoff}`;
+
+        await supabase.functions.invoke('wk-sms-send', {
+          body: { to: contact.phone, body, contact_id: contact.id },
+        });
+      } else if (channel === 'whatsapp' && contact.phone) {
+        const body = `Hi ${firstName},\n\nFollowing our conversation, I've prepared your Partnership Agreement for the ${propertyTitle} opportunity.\n\nPlease review the terms and sign here:\n${agreementUrl}\n\nOnce signed, you'll be taken straight to the secure payment page.\n\nLet me know if you have any questions.\n\n${signoff}`;
 
         await supabase.functions.invoke('unipile-send', {
           body: { contact_id: contact.id, body },
         });
       } else if (channel === 'email' && contact.email) {
-        const body = `Hi ${firstName},\n\nThank you for your interest in the ${propertyTitle} property.\n\nI've prepared a Partnership Agreement for your review. This document outlines the deal details, allocation terms, financial projections, and your rights as a partner.\n\nPlease review and sign the agreement here:\n${agreementUrl}\n\nAfter signing, you'll be redirected to complete your secure payment.\n\nnfstay | hub.nfstay.com`;
+        const body = `Hi ${firstName},\n\nThank you for your interest in the ${propertyTitle} property.\n\nI've prepared a Partnership Agreement for your review. This document outlines the deal details, allocation terms, financial projections, and your rights as a partner.\n\nPlease review and sign the agreement here:\n${agreementUrl}\n\nAfter signing, you'll be redirected to complete your secure payment.\n\n${signoff}\nhub.nfstay.com`;
 
         await supabase.functions.invoke('wk-email-send', {
           body: {
@@ -92,7 +103,7 @@ export default function SendAgreementModal({ contact, onClose }: Props) {
     } finally {
       setSending(false);
     }
-  }, [contact, amount, currency, propertyId, channel, properties, generateToken, onClose]);
+  }, [contact, amount, currency, propertyId, channel, properties, generateToken, onClose, agentFirstName]);
 
   if (!contact) return null;
 
@@ -157,6 +168,17 @@ export default function SendAgreementModal({ contact, onClose }: Props) {
           <div>
             <label className="block text-sm font-medium text-[#525252] mb-1">Send via</label>
             <div className="flex gap-2">
+              <button
+                onClick={() => setChannel('sms')}
+                disabled={!contact.phone}
+                className={`flex-1 py-2.5 rounded-lg text-sm font-medium border transition-colors ${
+                  channel === 'sms'
+                    ? 'bg-[#ECFDF5] text-[#1E9A80] border-[#1E9A80]'
+                    : 'bg-white text-[#6B7280] border-[#E5E7EB] hover:bg-[#F3F3EE]'
+                } disabled:opacity-40`}
+              >
+                SMS
+              </button>
               <button
                 onClick={() => setChannel('whatsapp')}
                 disabled={!contact.phone}
