@@ -9,6 +9,7 @@ import {
   Pencil,
   Plus,
   X,
+  FileSignature,
 } from 'lucide-react';
 import { MOCK_CALLS, MOCK_SMS, MOCK_ACTIVITIES, MOCK_TASKS } from '../data/mockCalls';
 import {
@@ -20,6 +21,7 @@ import {
 import StageSelector from '../components/shared/StageSelector';
 import ContactSmsModal from '../components/contacts/ContactSmsModal';
 import EditContactModal from '../components/contacts/EditContactModal';
+import SendAgreementModal from '@/features/agreements/components/SendAgreementModal';
 import EditableName from '../components/contacts/EditableName';
 import { useCurrentAgent } from '../hooks/useCurrentAgent';
 import { useSmsV2 } from '../store/SmsV2Store';
@@ -36,6 +38,7 @@ export default function ContactDetailPage() {
   const contact = getContact(id ?? '');
   const [editing, setEditing] = useState<Contact | null>(null);
   const [smsTo, setSmsTo] = useState<Contact | null>(null);
+  const [agreementTo, setAgreementTo] = useState<Contact | null>(null);
   const { firstName: agentFirstName } = useCurrentAgent();
   const [newTag, setNewTag] = useState('');
   const [newField, setNewField] = useState({ key: '', value: '' });
@@ -158,6 +161,12 @@ export default function ContactDetailPage() {
             data-testid="contact-detail-text-button"
           >
             <MessageSquare className="w-4 h-4" /> Text
+          </button>
+          <button
+            onClick={() => setAgreementTo(contact)}
+            className="flex items-center gap-1.5 border border-[#1E9A80] bg-[#ECFDF5] text-[#1E9A80] text-[13px] font-medium px-4 py-2 rounded-[10px] hover:bg-[#1E9A80] hover:text-white transition-colors"
+          >
+            <FileSignature className="w-4 h-4" /> Agreement
           </button>
         </div>
       </header>
@@ -384,6 +393,10 @@ export default function ContactDetailPage() {
         contact={smsTo}
         onClose={() => setSmsTo(null)}
         agentFirstName={agentFirstName ?? ''}
+      />
+      <SendAgreementModal
+        contact={agreementTo}
+        onClose={() => setAgreementTo(null)}
       />
     </div>
   );

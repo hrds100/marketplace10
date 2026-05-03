@@ -1,5 +1,5 @@
 import { useState, useCallback, useEffect } from 'react';
-import { Plus, Copy, ExternalLink, Pencil, Loader2, Check, Send } from 'lucide-react';
+import { Copy, ExternalLink, Pencil, Loader2, Check, Send } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
@@ -20,7 +20,6 @@ const BASE_URL = 'https://hub.nfstay.com/agreement/';
 
 export default function AdminAgreementsPage() {
   const { agreements, loading, reload } = useAgreementsList();
-  const [showCreate, setShowCreate] = useState(false);
   const [editId, setEditId] = useState<string | null>(null);
   const [copied, setCopied] = useState<string | null>(null);
 
@@ -48,20 +47,17 @@ export default function AdminAgreementsPage() {
             {counts.total} total &middot; {counts.draft} draft &middot; {counts.sent} sent &middot; {counts.signed} signed &middot; {counts.paid} paid
           </p>
         </div>
-        <button
-          onClick={() => { setShowCreate(true); setEditId(null); }}
-          className="flex items-center gap-2 bg-[#1E9A80] text-white px-4 py-2.5 rounded-xl text-sm font-medium hover:opacity-90 transition-opacity"
-        >
-          <Plus className="h-4 w-4" /> New Agreement
-        </button>
+        <p className="text-xs text-muted-foreground bg-muted px-3 py-1.5 rounded-lg">
+          Send agreements from CRM &rarr; Contact &rarr; Agreement
+        </p>
       </div>
 
-      {(showCreate || editId) && (
+      {editId && (
         <AgreementForm
           editId={editId}
-          existing={editId ? agreements.find(a => a.id === editId) : undefined}
-          onClose={() => { setShowCreate(false); setEditId(null); }}
-          onSaved={() => { setShowCreate(false); setEditId(null); reload(); }}
+          existing={agreements.find(a => a.id === editId)}
+          onClose={() => setEditId(null)}
+          onSaved={() => { setEditId(null); reload(); }}
         />
       )}
 
