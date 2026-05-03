@@ -7,7 +7,7 @@ import { buildSamcartPrefillParams } from '@/lib/invest/buildSamcartPrefillParam
 import AgreementNav from '../components/AgreementNav';
 import SignaturePad from '../components/SignaturePad';
 
-const SAMCART_URL = 'https://pay.nfstay.com/products/nfstay-jv-partner/';
+const SAMCART_URL = 'https://stay.samcart.com/products/1/';
 const SIGNATURE_KEY = 'nfstay_agreement_pending';
 const GBP_RATE = 0.79;
 
@@ -56,7 +56,7 @@ export default function AgreementPage() {
       lastName,
       email: user.email ?? '',
       wallet: '',
-      propertyId: 1,
+      propertyId: agreement.property_id ?? 1,
       investAmount: agreement.amount,
     });
     const qs = new URLSearchParams(params).toString();
