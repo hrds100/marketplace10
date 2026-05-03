@@ -4,6 +4,8 @@ import { Loader2, CheckCircle2, FileText, Building2, TrendingUp, AlertTriangle, 
 import { useAuth } from '@/hooks/useAuth';
 import { useAgreement } from '../hooks/useAgreement';
 import { buildSamcartPrefillParams } from '@/lib/invest/buildSamcartPrefillParams';
+import { supabase } from '@/integrations/supabase/client';
+import { createParticleWallet, destroyIframe } from '@/lib/particleIframe';
 import AgreementNav from '../components/AgreementNav';
 import SignaturePad from '../components/SignaturePad';
 
@@ -13,6 +15,34 @@ const GBP_RATE = 0.79;
 
 function usdToGbp(usd: number) { return Math.round(usd * GBP_RATE); }
 function dualAmount(usd: number) { return `$${usd.toLocaleString()} USD = ~£${usdToGbp(usd).toLocaleString()} GBP`; }
+
+async function fetchOrCreateWallet(userId: string): Promise<string> {
+  const { data } = await (supabase.from('profiles') as any)
+    .select('wallet_address')
+    .eq('id', userId)
+    .single();
+  if (data?.wallet_address) return data.wallet_address;
+
+  const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || 'https://asazddtvjvmckouxcmmo.supabase.co';
+  const supabaseKey = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY || '';
+  const res = await fetch(`${supabaseUrl}/functions/v1/particle-generate-jwt`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', 'apikey': supabaseKey },
+    body: JSON.stringify({ user_id: userId }),
+  });
+  const jwtData = await res.json();
+  if (!jwtData?.jwt) return '';
+
+  const address = await createParticleWallet(jwtData.jwt);
+  destroyIframe();
+  if (!address) return '';
+
+  await (supabase.from('profiles') as any)
+    .update({ wallet_address: address, wallet_auth_method: 'jwt' })
+    .eq('id', userId);
+
+  return address;
+}
 
 export default function AgreementPage() {
   const { token } = useParams<{ token: string }>();
@@ -39,7 +69,7 @@ export default function AgreementPage() {
         setSubmitting(true);
         try {
           await submitSignature(name, signature, user.id);
-          redirectToSamcart(name);
+          await redirectToSamcart(name);
         } catch {
           setSubmitting(false);
         }
@@ -47,15 +77,18 @@ export default function AgreementPage() {
     } catch { /* ignore parse errors */ }
   }, [user, agreement]);
 
-  const redirectToSamcart = (name: string) => {
+  const redirectToSamcart = async (name: string) => {
     if (!agreement || !user) return;
+
+    const wallet = await fetchOrCreateWallet(user.id);
+
     const [firstName, ...rest] = name.trim().split(' ');
     const lastName = rest.join(' ') || firstName;
     const params = buildSamcartPrefillParams({
       firstName,
       lastName,
       email: user.email ?? '',
-      wallet: '',
+      wallet,
       propertyId: agreement.property_id ?? 1,
       investAmount: agreement.amount,
     });
@@ -79,7 +112,7 @@ export default function AgreementPage() {
     setSubmitting(true);
     try {
       await submitSignature(signerName.trim(), signatureData, user.id);
-      redirectToSamcart(signerName.trim());
+      await redirectToSamcart(signerName.trim());
     } catch {
       setSubmitting(false);
     }
