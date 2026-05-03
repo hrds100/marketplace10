@@ -6,9 +6,12 @@ const sections = [
   { id: 'property', label: 'Deal Details' },
   { id: 'allocation', label: 'Allocation Terms' },
   { id: 'financials', label: 'Financial Projections' },
+  { id: 'management', label: 'Management & Governance' },
   { id: 'risks', label: 'Risk Factors' },
   { id: 'obligations', label: 'Partner Obligations' },
+  { id: 'tax', label: 'Tax Responsibility' },
   { id: 'disclaimer', label: 'Disclaimer' },
+  { id: 'termination', label: 'Termination' },
   { id: 'governing-law', label: 'Governing Law' },
   { id: 'signature', label: 'Signature' },
 ];
