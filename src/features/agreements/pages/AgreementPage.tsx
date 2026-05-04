@@ -229,7 +229,7 @@ export default function AgreementPage() {
                 <div className="bg-[#F3F3EE] rounded-xl p-5 text-xs text-[#9CA3AF] leading-relaxed">
                   <p className="uppercase tracking-wide mb-2 font-semibold">Preamble</p>
                   <p>
-                    This document is not a solicitation for investment and does not constitute an offer of digital currency, commodity, security, financial instrument, or any other form of investment, securities to the public or a collective investment scheme, nor does it require registration or approval from a regulatory authority in any jurisdiction. This Agreement is part of a reward-based partnership arrangement, and no financial instruments are issued to the Partner.
+                    This document is not a solicitation for investment and does not constitute an offer of securities, financial instruments, or any form of collective investment scheme, nor does it require registration or approval from a regulatory authority in any jurisdiction. This Agreement governs an active joint venture in which each Partner participates in governance decisions. No financial instruments, tokens, or units are issued to the Partner.
                   </p>
                 </div>
 
@@ -264,7 +264,10 @@ export default function AgreementPage() {
                     Airbrick Finance Ltd is the UK-registered property management company responsible for sourcing deals, managing landlord relationships, and overseeing the day-to-day operations of each serviced accommodation property. Nfstay Holdings FZE LLC, based in the UAE, handles the financial administration of the partnership — including partner allocations, revenue distributions, treasury management, and international payment processing. Together, these two entities operate under the nfstay brand to deliver a fully managed rent-to-rent service accommodation model.
                   </p>
                   <p className="mb-3">
-                    This Agreement sets out the terms under which the Partner allocates funds towards a specific property deal, entitling the Partner to a proportional share of net rental income generated during the deal term.
+                    This Agreement sets out the terms under which the Partner contributes funds towards a specific property deal as part of a joint venture, entitling the Partner to a proportional share of net rental income generated during the deal term.
+                  </p>
+                  <p className="mb-3">
+                    <strong className="text-[#1A1A1A]">This is an active joint venture, not a passive arrangement.</strong> Every Partner is required to participate in governance decisions — including votes on property management, pricing strategy, and operational matters — through the platform's voting system. Partners who do not actively participate in votes may have their income distributions suspended until they re-engage.
                   </p>
                   <p className="mb-3">
                     By entering into this Agreement, the Partner acknowledges that this is an active partnership. The Partner does not acquire any form of property ownership. The Partner receives a contractual right to a share of net rental income as described herein for the duration of the deal term.
@@ -295,7 +298,7 @@ export default function AgreementPage() {
                       <InfoCard label="Location" value={property.location} />
                       <InfoCard label="Type" value={property.type} />
                       <InfoCard label="Bedrooms" value={String(property.bedrooms)} />
-                      <InfoCard label="Deal Value" value={`$${property.property_value.toLocaleString()} = ~£${usdToGbp(property.property_value).toLocaleString()}`} />
+                      <InfoCard label="Total Project Cost" value={`$${property.property_value.toLocaleString()} = ~£${usdToGbp(property.property_value).toLocaleString()}`} />
                       <InfoCard label="Deal Term" value="5 years" />
                     </div>
                     <p>{property.description}</p>
@@ -312,16 +315,16 @@ export default function AgreementPage() {
                   </section>
                 )}
 
-                {/* 3. Allocation Terms */}
+                {/* 3. Partnership Contribution */}
                 <section id="allocation" className="scroll-mt-24">
                   <div className="flex items-center gap-2 mb-4">
                     <Handshake className="h-5 w-5 text-[#1E9A80]" />
-                    <h2 className="text-lg font-bold text-[#1A1A1A]">3. Allocation Terms</h2>
+                    <h2 className="text-lg font-bold text-[#1A1A1A]">3. Partnership Contribution</h2>
                   </div>
                   <div className="bg-[#F3F3EE] rounded-xl p-5 mb-5">
                     <div className="grid grid-cols-2 gap-4">
                       <div>
-                        <p className="text-xs font-semibold text-[#9CA3AF] uppercase tracking-wider">Allocation Amount</p>
+                        <p className="text-xs font-semibold text-[#9CA3AF] uppercase tracking-wider">Contribution Amount</p>
                         <p className="text-2xl font-bold text-[#1A1A1A]">${amountUsd.toLocaleString()}</p>
                         <p className="text-sm text-[#6B7280]">= ~£{usdToGbp(amountUsd).toLocaleString()} GBP</p>
                       </div>
@@ -331,14 +334,14 @@ export default function AgreementPage() {
                         <p className="text-sm text-[#6B7280]">From date of execution</p>
                       </div>
                       <div>
-                        <p className="text-xs font-semibold text-[#9CA3AF] uppercase tracking-wider">Allocation Share</p>
-                        <p className="text-2xl font-bold text-[#1E9A80]">{amountUsd.toLocaleString()} units</p>
-                        <p className="text-sm text-[#6B7280]">$1 = ~£{GBP_RATE} per unit</p>
+                        <p className="text-xs font-semibold text-[#9CA3AF] uppercase tracking-wider">Area Avg. Monthly Revenue</p>
+                        <p className="text-2xl font-bold text-[#1E9A80]">${(property?.monthly_rent ?? 0).toLocaleString()}</p>
+                        <p className="text-sm text-[#6B7280]">Market data — similar properties</p>
                       </div>
                       <div>
-                        <p className="text-xs font-semibold text-[#9CA3AF] uppercase tracking-wider">Projected Annual Yield</p>
+                        <p className="text-xs font-semibold text-[#9CA3AF] uppercase tracking-wider">Area Avg. Occupancy</p>
                         <p className="text-2xl font-bold text-[#1E9A80]">{property?.annual_yield ?? 0}%</p>
-                        <p className="text-sm text-[#6B7280]">Not guaranteed</p>
+                        <p className="text-sm text-[#6B7280]">Market data — not guaranteed income</p>
                       </div>
                     </div>
                   </div>
@@ -347,11 +350,11 @@ export default function AgreementPage() {
                   <ul className="space-y-2 mb-4">
                     <li className="flex items-start gap-2">
                       <span className="w-1.5 h-1.5 rounded-full bg-[#1A1A1A] mt-2 shrink-0" />
-                      <span><strong className="text-[#1A1A1A]">Rent-to-Rent Deal:</strong> A property management arrangement where the Company leases a property from a landlord for a fixed term and manages it as serviced accommodation. The Company facilitates the distribution of rental income to Partners through its automated platform.</span>
+                      <span><strong className="text-[#1A1A1A]">Rent-to-Rent Deal:</strong> A property management arrangement where the Company leases a property from a landlord for a fixed term and manages it as serviced accommodation. The Company manages the property and accounts for each Partner's share of net income.</span>
                     </li>
                     <li className="flex items-start gap-2">
                       <span className="w-1.5 h-1.5 rounded-full bg-[#1A1A1A] mt-2 shrink-0" />
-                      <span><strong className="text-[#1A1A1A]">Allocation:</strong> A contribution of funds by the Partner towards a specific property deal, representing a fractional interest in the net rental income generated during the deal term.</span>
+                      <span><strong className="text-[#1A1A1A]">Contribution:</strong> A financial contribution by the Partner towards a specific property deal, establishing their stake in the joint venture and entitling them to a proportional share of net rental income during the deal term.</span>
                     </li>
                     <li className="flex items-start gap-2">
                       <span className="w-1.5 h-1.5 rounded-full bg-[#1A1A1A] mt-2 shrink-0" />
@@ -359,33 +362,32 @@ export default function AgreementPage() {
                     </li>
                     <li className="flex items-start gap-2">
                       <span className="w-1.5 h-1.5 rounded-full bg-[#1A1A1A] mt-2 shrink-0" />
-                      <span><strong className="text-[#1A1A1A]">Hard Cap:</strong> The total number of allocation units issued will be determined by the funding required for the deal. The Hard Cap represents the maximum allocations available.</span>
+                      <span><strong className="text-[#1A1A1A]">Funding Requirement:</strong> The total funding needed for the deal. The maximum number of Partners is determined by the total funding requirement.</span>
                     </li>
                   </ul>
 
-                  <h3 className="text-sm font-semibold text-[#1A1A1A] mb-2">3.2 Terms of Allocation</h3>
+                  <h3 className="text-sm font-semibold text-[#1A1A1A] mb-2">3.2 Terms of Contribution</h3>
                   <ol className="list-decimal list-inside space-y-2">
-                    <li>Each allocation unit represents a fractional share of the net rental income generated by the property deal.</li>
-                    <li>The Partner's income share is calculated as: (Partner's Allocation ÷ Total Allocations) × Net Rental Income.</li>
-                    <li>Revenue distributions are paid directly into the Partner's bank account in their local currency, or in USDC (a stable digital currency pegged to the US dollar) at the Partner's election.</li>
+                    <li>Each Partner's share of net rental income is proportional to their contribution relative to the total funding for the deal.</li>
+                    <li>Income distributions are paid directly into the Partner's bank account in their local currency.</li>
                     <li>The Company charges a 10% operational fee from gross revenue before distributions. This fee covers property management, tenant relations, maintenance, and administrative expenses.</li>
                     <li>The minimum contribution is $1,000 USD = ~£{usdToGbp(1000).toLocaleString()} GBP. Contributions below this amount may not be accepted at the Company's sole discretion.</li>
-                    <li>The Company may accept contributions in USD, GBP, or EUR. The exchange rate at the time of purchase determines the allocation amount.</li>
-                    <li>Allocations are tied to the 5-year deal term. Upon expiry of the deal term, no further rental income distributions will be made unless the underlying agreement is renewed.</li>
-                    <li>Allocations are non-transferable. The Partner may not sell, assign, or transfer their allocation to any third party.</li>
+                    <li>The Company may accept contributions in USD, GBP, or EUR. The exchange rate at the time of contribution determines the amount.</li>
+                    <li>Contributions are tied to the 5-year deal term. Upon expiry of the deal term, no further rental income distributions will be made unless the underlying agreement is renewed.</li>
+                    <li>Contributions are non-transferable. The Partner may not sell, assign, or transfer their stake to any third party.</li>
                     <li>The Company shall not be obliged to accept contributions from Partners who do not provide the necessary identification documents.</li>
                   </ol>
                 </section>
 
-                {/* 4. Financial Projections */}
+                {/* 4. Market Data */}
                 {property?.financials && (
                   <section id="financials" className="scroll-mt-24">
                     <div className="flex items-center gap-2 mb-4">
                       <TrendingUp className="h-5 w-5 text-[#1E9A80]" />
-                      <h2 className="text-lg font-bold text-[#1A1A1A]">4. Financial Projections</h2>
+                      <h2 className="text-lg font-bold text-[#1A1A1A]">4. Market Data</h2>
                     </div>
                     <p className="mb-4 text-xs italic text-[#9CA3AF]">
-                      The figures below are projections based on current market conditions and do not constitute guaranteed returns. Actual results may vary significantly. The Company does not guarantee the performance, appreciation, or returns of any property deal.
+                      The figures below are market data for informational context only. They reflect current area conditions for similar properties and do not represent guaranteed or expected partner income. Actual results may vary significantly based on occupancy, costs, and market conditions.
                     </p>
                     {property.financials.transaction && (
                       <div className="mb-6">
@@ -473,7 +475,7 @@ export default function AgreementPage() {
 
                   <h3 className="text-sm font-semibold text-[#1A1A1A] mb-2">5.3 Income Distribution</h3>
                   <p className="mb-3">
-                    The Company's platform ensures that rental income is collected, rent and associated fees are paid, and the remaining funds are distributed to Partners in a transparent and automated manner. Partners receive their share of rental income directly into their bank account in their local currency, or in USDC at their election.
+                    The Company manages rental income collection, pays rent and associated fees, and distributes the remaining funds to Partners. Partners receive their share of rental income directly into their bank account in their local currency.
                   </p>
                   <p>
                     If Partners vote to use a third-party property management company, the Company is not liable if the chosen third party fails to pass funds from bookings or defaults on payments. Partners bear full responsibility for the selection of any third-party management company.
@@ -489,7 +491,7 @@ export default function AgreementPage() {
                   <div className="bg-amber-50 border border-amber-200 rounded-xl p-5 mb-4">
                     <p className="text-sm font-medium text-amber-800 mb-2">Important Notice</p>
                     <p className="text-sm text-amber-700">
-                      Past performance is not indicative of future results. You are at risk of earning less returns than predicted, or significantly more. You should only allocate funds you can afford to hold for the full 5-year deal term.
+                      Past performance is not indicative of future results. Income may vary significantly from market data shown. You should only contribute funds you can afford to hold for the full 5-year deal term.
                     </p>
                   </div>
                   <p className="mb-3">The Partner acknowledges and accepts that participating in this arrangement involves substantial risks, including but not limited to:</p>
@@ -500,7 +502,7 @@ export default function AgreementPage() {
                     </li>
                     <li className="flex items-start gap-2">
                       <span className="w-1.5 h-1.5 rounded-full bg-[#1A1A1A] mt-2 shrink-0" />
-                      <span><strong className="text-[#1A1A1A]">Liquidity Risk:</strong> Allocations are non-transferable and locked for the 5-year deal term. There is no secondary market for resale. The Partner must be able to sustain holding allocations for the full term and bear the risk of a total loss of their contribution.</span>
+                      <span><strong className="text-[#1A1A1A]">Liquidity Risk:</strong> Contributions are non-transferable and tied to the 5-year deal term. There is no secondary market or early exit. The Partner must be able to sustain their contribution for the full term and bear the risk of a total loss.</span>
                     </li>
                     <li className="flex items-start gap-2">
                       <span className="w-1.5 h-1.5 rounded-full bg-[#1A1A1A] mt-2 shrink-0" />
@@ -536,11 +538,11 @@ export default function AgreementPage() {
                     <li>They are at least 18 years of age and have full legal capacity to enter into this Agreement.</li>
                     <li>They have read, understood, and accept all the risk factors outlined in Section 6.</li>
                     <li>The funds used for this allocation are lawfully obtained and are not derived from criminal activity.</li>
-                    <li>They understand that allocations are non-refundable once payment is confirmed.</li>
-                    <li>They acknowledge that projected returns are estimates only and actual returns may vary significantly, including the possibility of receiving no returns.</li>
-                    <li>They are entering this partnership on their own behalf and not as a nominee or agent for any third party, unless explicitly authorised by the Company.</li>
+                    <li>They understand that contributions are non-refundable once payment is confirmed.</li>
+                    <li>They acknowledge that market data shown is for informational context only and actual income may vary significantly, including the possibility of receiving no income.</li>
+                    <li>They are entering this joint venture on their own behalf and not as a nominee or agent for any third party, unless explicitly authorised by the Company.</li>
                     <li>They have had the opportunity to obtain independent legal, financial, and tax advice and have done so to the extent they deem necessary.</li>
-                    <li>They understand this is an active partnership, not a passive arrangement, and they have a role in key decisions through the platform's voting system.</li>
+                    <li>They understand this is an active joint venture, not a passive arrangement, and they are required to participate in governance decisions through the platform's voting system.</li>
                     <li>They will actively participate in governance decisions, including votes on property management and operational matters. Failure to participate may result in the forfeiture of certain benefits.</li>
                     <li>They will provide accurate and up-to-date information when requested by the Company, including KYC (Know Your Customer) and AML (Anti-Money Laundering) documentation.</li>
                     <li>They acknowledge that the Company may, at its sole discretion, refuse to accept their contribution or revoke previously issued allocations if the Partner is found to have violated this Agreement or applicable laws.</li>
@@ -594,10 +596,10 @@ export default function AgreementPage() {
 
                   <h3 className="text-sm font-semibold text-[#1A1A1A] mb-2">9.1 General Disclaimer</h3>
                   <p className="mb-3">
-                    nfstay operates as a general partnership. Every Partner has a direct and ongoing role in managing the property through the platform's democratic voting system. This is not a passive arrangement.
+                    nfstay operates as an active joint venture. Every Partner has a direct and ongoing role in managing the property through the platform's democratic voting system. This is not a passive arrangement — participation in governance is mandatory.
                   </p>
                   <p className="mb-3">
-                    nfstay is not a registered investment adviser, broker-dealer, or financial planner. The content on this platform should not be interpreted as offers to sell, solicitations to buy, or recommendations regarding any security or financial product. Partners are solely responsible for determining whether an allocation aligns with their financial goals and risk tolerance.
+                    nfstay is not a registered investment adviser, broker-dealer, or financial planner. The content on this platform should not be interpreted as offers to sell, solicitations to buy, or recommendations regarding any security or financial product. Partners are solely responsible for determining whether a joint venture contribution aligns with their financial goals and risk tolerance.
                   </p>
                   <p className="mb-4">
                     nfstay does not guarantee the performance, appreciation, or returns of any property deal. By participating, Partners acknowledge the inherent risks, including fluctuations in rental income, tenant risks, regulatory changes, and broader economic factors.
