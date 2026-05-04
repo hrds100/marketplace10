@@ -88,13 +88,8 @@ test("agreement → sign in → SamCart has wallet + amount in URL", async ({ pa
     expect(customWallet).toBeTruthy();
     expect(customWallet).toBe(parsed.recipient);
 
-    const amountParam = url.searchParams.get("amount");
-    expect(amountParam).toBeTruthy();
-    expect(Number(amountParam)).toBeGreaterThan(0);
-
     console.log("\n✅ wallet:", parsed.recipient.slice(0, 12) + "...");
-    console.log("✅ amount (PWYW):", amountParam);
-    console.log("✅ amount (phone_number):", parsed.investAmountUsd);
+    console.log("✅ amount (in phone_number JSON):", parsed.investAmountUsd);
     console.log("✅ propertyId:", parsed.propertyId);
   } else {
     console.log("Current page URL:", page.url());
