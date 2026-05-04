@@ -11,7 +11,7 @@ import SignaturePad from '../components/SignaturePad';
 
 const SAMCART_URL = 'https://stay.samcart.com/products/1/';
 const SIGNATURE_KEY = 'nfstay_agreement_pending';
-const GBP_RATE = 0.79;
+const GBP_RATE = 0.74;
 
 function usdToGbp(usd: number) { return Math.round(usd * GBP_RATE); }
 function dualAmount(usd: number) { return `$${usd.toLocaleString()} USD = ~£${usdToGbp(usd).toLocaleString()} GBP`; }
@@ -229,7 +229,7 @@ export default function AgreementPage() {
                 <div className="bg-[#F3F3EE] rounded-xl p-5 text-xs text-[#9CA3AF] leading-relaxed">
                   <p className="uppercase tracking-wide mb-2 font-semibold">Preamble</p>
                   <p>
-                    This document is not a solicitation for investment and does not constitute an offer of securities, financial instruments, or any form of collective investment scheme, nor does it require registration or approval from a regulatory authority in any jurisdiction. This Agreement governs an active joint venture in which each Partner participates in governance decisions. No financial instruments, tokens, or units are issued to the Partner.
+                    This document is not a solicitation for investment and does not constitute an offer of securities or any form of collective investment scheme, nor does it require registration or approval from a regulatory authority in any jurisdiction. This is not a financial instrument. This Agreement governs an active joint venture in which each Partner participates in governance decisions.
                   </p>
                 </div>
 
@@ -336,7 +336,7 @@ export default function AgreementPage() {
                       <div>
                         <p className="text-xs font-semibold text-[#9CA3AF] uppercase tracking-wider">Area Avg. Monthly Revenue</p>
                         <p className="text-2xl font-bold text-[#1E9A80]">${(property?.monthly_rent ?? 0).toLocaleString()}</p>
-                        <p className="text-sm text-[#6B7280]">Market data — similar properties</p>
+                        <p className="text-sm text-[#6B7280]">= ~£{usdToGbp(property?.monthly_rent ?? 0).toLocaleString()} GBP &middot; Market data</p>
                       </div>
                       <div>
                         <p className="text-xs font-semibold text-[#9CA3AF] uppercase tracking-wider">Area Avg. Occupancy</p>
@@ -417,7 +417,7 @@ export default function AgreementPage() {
                     )}
                     {property.financials.rental && (
                       <div>
-                        <h3 className="text-sm font-semibold text-[#1A1A1A] mb-3">Rental Income Projections</h3>
+                        <h3 className="text-sm font-semibold text-[#1A1A1A] mb-3">Area Rental Market Data</h3>
                         <div className="border border-[#E5E7EB] rounded-xl overflow-hidden">
                           <table className="w-full text-sm">
                             <thead>
