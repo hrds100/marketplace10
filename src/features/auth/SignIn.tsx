@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
-import { Loader2, Eye, EyeOff, Mail, Lock } from 'lucide-react';
+import { Loader2, Eye, EyeOff, Mail, Lock, CheckCircle2 } from 'lucide-react';
 import { useConnect, useUserInfo } from '@particle-network/authkit';
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
@@ -61,6 +61,43 @@ function derivedPassword(uuid: string): string {
   return uuid.slice(0, 10) + '_NFsTay2!' + uuid.slice(-6);
 }
 
+function AgreementPanel() {
+  return (
+    <div data-feature="AUTH" className="relative w-1/2 h-full overflow-hidden rounded-3xl hidden lg:flex flex-shrink-0 bg-gradient-to-br from-[#0f4f42] to-[#1E9A80]">
+      <div className="flex flex-col justify-center w-full h-full p-10 text-white">
+        <h3 className="text-xl font-bold mb-6">What happens next</h3>
+        <div className="space-y-5">
+          <div className="flex items-start gap-3">
+            <div className="w-7 h-7 rounded-full bg-white/20 flex items-center justify-center shrink-0 text-xs font-bold">1</div>
+            <div>
+              <p className="font-semibold text-sm">Sign in or create account</p>
+              <p className="text-xs text-white/70 mt-0.5">Quick and secure — takes 30 seconds</p>
+            </div>
+          </div>
+          <div className="flex items-start gap-3">
+            <div className="w-7 h-7 rounded-full bg-white/20 flex items-center justify-center shrink-0 text-xs font-bold">2</div>
+            <div>
+              <p className="font-semibold text-sm">Complete payment</p>
+              <p className="text-xs text-white/70 mt-0.5">Secure checkout to confirm your allocation</p>
+            </div>
+          </div>
+          <div className="flex items-start gap-3">
+            <div className="w-7 h-7 rounded-full bg-white/20 flex items-center justify-center shrink-0 text-xs font-bold">3</div>
+            <div>
+              <p className="font-semibold text-sm">Access your dashboard</p>
+              <p className="text-xs text-white/70 mt-0.5">Track your deal, revenue and distributions</p>
+            </div>
+          </div>
+        </div>
+        <div className="mt-8 pt-6 border-t border-white/20">
+          <p className="text-xs text-white/60">Airbrick Finance Ltd &middot; Company No. 13806307</p>
+          <p className="text-xs text-white/60">Nfstay Holdings FZE LLC &middot; UAE</p>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export default function SignIn() {
   const { t } = useTranslation();
   const { signIn } = useAuth();
@@ -68,6 +105,7 @@ export default function SignIn() {
   const { userInfo } = useUserInfo();
   const [searchParams] = useSearchParams();
   const redirectTo = searchParams.get('redirect');
+  const isAgreementFlow = redirectTo?.startsWith('/agreement/') ?? false;
   const prefillEmail = searchParams.get('email');
   const [email, setEmail] = useState(prefillEmail || '');
   const [password, setPassword] = useState('');
@@ -371,8 +409,18 @@ export default function SignIn() {
           <div className="flex flex-col items-center justify-center w-full max-w-[480px] flex-1">
             {/* Heading */}
             <div className="text-center w-full" style={{ marginBottom: 'clamp(16px, 2.5vh, 32px)' }}>
-              <h2 className="font-semibold text-[#0a0a0a] leading-tight tracking-tight" style={{ fontSize: 'clamp(20px, 2.7vh, 30px)' }}>{t('auth.welcomeBack')}</h2>
-              <p className="text-base text-[#737373] text-center mt-1.5 leading-relaxed">{t('auth.signInSubtitle')}</p>
+              {isAgreementFlow && (
+                <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-[#ECFDF5] text-[#1E9A80] text-xs font-semibold mb-3">
+                  <CheckCircle2 className="w-3.5 h-3.5" />
+                  Agreement signed
+                </div>
+              )}
+              <h2 className="font-semibold text-[#0a0a0a] leading-tight tracking-tight" style={{ fontSize: 'clamp(20px, 2.7vh, 30px)' }}>
+                {isAgreementFlow ? "You're almost a partner" : t('auth.welcomeBack')}
+              </h2>
+              <p className="text-base text-[#737373] text-center mt-1.5 leading-relaxed">
+                {isAgreementFlow ? 'Sign in to finalise your agreement and proceed to payment.' : t('auth.signInSubtitle')}
+              </p>
             </div>
 
             {/* Tab switcher */}
@@ -476,7 +524,7 @@ export default function SignIn() {
         </div>
 
         {/* Right panel */}
-        <AuthSlidePanel />
+        {isAgreementFlow ? <AgreementPanel /> : <AuthSlidePanel />}
       </div>
     </div>
   );

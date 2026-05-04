@@ -21,42 +21,25 @@ test("agreement → sign in → SamCart has wallet + amount in URL", async ({ pa
     await page.mouse.up();
   }
 
-  // 3. Confirm → auth prompt → Sign In page
+  // 3. Confirm → redirects to /signin with agreement redirect param
   await page.locator("button:has-text('Confirm & Proceed to Payment')").click();
+  await page.waitForURL(/\/signin\?redirect=/, { timeout: 15000 });
   await expect(page.locator("text=You're almost a partner")).toBeVisible({ timeout: 10000 });
-  await page.locator("button:has-text('Sign In')").click();
-  await page.waitForURL(/\/signin/, { timeout: 10000 });
 
-  // 4. Fill admin credentials (known working account)
-  await page.waitForTimeout(2000);
-  await page.locator('input[placeholder="Enter your email"]').fill("admin@hub.nfstay.com");
-  await page.locator('input[placeholder="Enter your password"]').fill("Dgs58913347.");
-
-  // 5. Set up route interception to capture SamCart redirect URL
+  // 4. Set up route interception to capture SamCart redirect URL BEFORE signing in
   let capturedSamcartUrl = "";
   await page.route("**stay.samcart.com**", (route) => {
     capturedSamcartUrl = route.request().url();
     route.abort();
   });
 
-  // 6. Submit sign in (the form uses onSubmit, button type=submit not guaranteed)
-  await page.locator('button:has-text("Sign In")').last().click();
-  console.log("Sign-in submitted, waiting for redirect flow...");
+  // 5. Fill sign-in form on /signin page
+  await page.locator('input[type="email"]').fill("admin@hub.nfstay.com");
+  await page.locator('input[type="password"]').fill("Dgs58913347.");
+  await page.locator('form button[type="submit"]').click();
+  console.log("Sign-in submitted, waiting for redirect back to agreement + SamCart...");
 
-  // 7. Wait for redirect back to agreement page
-  try {
-    await page.waitForURL(/\/agreement\/mark/, { timeout: 30000 });
-    console.log("Redirected to agreement page, wallet fetch in progress...");
-  } catch {
-    const url = page.url();
-    console.log("Did not reach /agreement/. Current URL:", url);
-    await page.screenshot({ path: "e2e/screenshots/agreement-samcart-debug.png", fullPage: true });
-    if (!url.includes("agreement")) {
-      expect(url, "Should have redirected to /agreement/ after sign-in").toContain("agreement");
-    }
-  }
-
-  // 8. Wait for SamCart redirect to be intercepted (wallet fetch may take time)
+  // 6. Wait for redirect back to agreement page then SamCart
   const deadline = Date.now() + 50000;
   while (!capturedSamcartUrl && Date.now() < deadline) {
     await page.waitForTimeout(1000);
