@@ -250,7 +250,7 @@ export default function AgreementPage() {
                       <p className="text-xs text-[#6B7280]">Property management and operations company, trading as nfstay</p>
                       <p className="text-xs text-[#6B7280] mt-2 font-medium text-[#1A1A1A]">Nfstay Holdings FZE LLC</p>
                       <p className="text-xs text-[#6B7280]">Ajman NuVentures Centre Free Zone, UAE</p>
-                      <p className="text-xs text-[#6B7280]">Financial administration, partner allocations and treasury management</p>
+                      <p className="text-xs text-[#6B7280]">Financial administration, partner contributions and treasury management</p>
                     </div>
                     <div className="border-t border-[#E5E7EB] pt-3">
                       <p className="text-xs font-semibold text-[#9CA3AF] uppercase tracking-wider">The Partner</p>
@@ -261,7 +261,7 @@ export default function AgreementPage() {
                     </div>
                   </div>
                   <p className="mb-3">
-                    Airbrick Finance Ltd is the UK-registered property management company responsible for sourcing deals, managing landlord relationships, and overseeing the day-to-day operations of each serviced accommodation property. Nfstay Holdings FZE LLC, based in the UAE, handles the financial administration of the partnership — including partner allocations, revenue distributions, treasury management, and international payment processing. Together, these two entities operate under the nfstay brand to deliver a fully managed rent-to-rent service accommodation model.
+                    Airbrick Finance Ltd is the UK-registered property management company responsible for sourcing deals, managing landlord relationships, and overseeing the day-to-day operations of each serviced accommodation property. Nfstay Holdings FZE LLC, based in the UAE, handles the financial administration of the partnership — including partner contributions, revenue distributions, treasury management, and international payment processing. Together, these two entities operate under the nfstay brand to deliver a fully managed rent-to-rent service accommodation model.
                   </p>
                   <p className="mb-3">
                     This Agreement sets out the terms under which the Partner contributes funds towards a specific property deal as part of a joint venture, entitling the Partner to a proportional share of net rental income generated during the deal term.
@@ -464,7 +464,7 @@ export default function AgreementPage() {
                     Voting is a core obligation of every Partner. Active participation in governance decisions directly affects the performance of the deal and, by extension, the income distributed to all Partners. Partners who do not participate in votes may have their income distributions suspended until they re-engage with the governance process.
                   </p>
                   <ol className="list-decimal list-inside space-y-2 mb-4">
-                    <li>Each Partner's voting power is proportional to the number of allocation units held.</li>
+                    <li>Each Partner's voting power is proportional to their contribution relative to the total funding for the deal.</li>
                     <li>Regular proposals requiring Partner votes include decisions related to rental pricing strategy, property improvements, maintenance priorities, tenant selection criteria, and operational management changes.</li>
                     <li>Most proposals are decided by a simple majority (50% + 1 vote). Significant decisions — such as changing the property management company — may require a supermajority.</li>
                     <li>Partners may submit proposals related to the management of the property via the platform. The Company reserves the right, at its sole discretion, to accept or reject proposals before they are put to a vote, ensuring only meaningful and relevant proposals are presented.</li>
@@ -537,7 +537,7 @@ export default function AgreementPage() {
                   <ol className="list-decimal list-inside space-y-2 mb-6">
                     <li>They are at least 18 years of age and have full legal capacity to enter into this Agreement.</li>
                     <li>They have read, understood, and accept all the risk factors outlined in Section 6.</li>
-                    <li>The funds used for this allocation are lawfully obtained and are not derived from criminal activity.</li>
+                    <li>The funds used for this contribution are lawfully obtained and are not derived from criminal activity.</li>
                     <li>They understand that contributions are non-refundable once payment is confirmed.</li>
                     <li>They acknowledge that market data shown is for informational context only and actual income may vary significantly, including the possibility of receiving no income.</li>
                     <li>They are entering this joint venture on their own behalf and not as a nominee or agent for any third party, unless explicitly authorised by the Company.</li>
@@ -545,7 +545,7 @@ export default function AgreementPage() {
                     <li>They understand this is an active joint venture, not a passive arrangement, and they are required to participate in governance decisions through the platform's voting system.</li>
                     <li>They will actively participate in governance decisions, including votes on property management and operational matters. Failure to participate may result in the forfeiture of certain benefits.</li>
                     <li>They will provide accurate and up-to-date information when requested by the Company, including KYC (Know Your Customer) and AML (Anti-Money Laundering) documentation.</li>
-                    <li>They acknowledge that the Company may, at its sole discretion, refuse to accept their contribution or revoke previously issued allocations if the Partner is found to have violated this Agreement or applicable laws.</li>
+                    <li>They acknowledge that the Company may, at its sole discretion, refuse to accept their contribution or revoke previously accepted contributions if the Partner is found to have violated this Agreement or applicable laws.</li>
                     <li>They understand that the deal term is 5 years and that no further income distributions will be made after the expiry or termination of the deal.</li>
                   </ol>
 
@@ -579,7 +579,7 @@ export default function AgreementPage() {
                   <ol className="list-decimal list-inside space-y-2">
                     <li>The Partner is solely responsible for determining, understanding, and fulfilling any and all tax obligations arising from their participation in this Agreement, including but not limited to income tax, capital gains tax, value-added tax (VAT), or any other taxes or duties applicable under the laws of the Partner's jurisdiction.</li>
                     <li>The Company is not responsible for withholding, collecting, reporting, or remitting any taxes on behalf of the Partner. It is the Partner's obligation to report and remit any applicable taxes to the relevant tax authorities.</li>
-                    <li>The Partner acknowledges that the tax treatment of allocations and rental income may vary significantly across different jurisdictions. The Company makes no representations or guarantees regarding the applicability of any specific tax regime.</li>
+                    <li>The Partner acknowledges that the tax treatment of contributions and rental income may vary significantly across different jurisdictions. The Company makes no representations or guarantees regarding the applicability of any specific tax regime.</li>
                     <li>The Partner is strongly advised to consult with a qualified accountant or tax professional before entering into this Agreement and on an ongoing basis to understand and manage their tax obligations.</li>
                     <li>The Company does not provide tax, legal, or financial advice of any kind. Nothing in this Agreement or on the platform should be construed as tax advice.</li>
                     <li>The Partner agrees to indemnify and hold harmless the Company from and against any claims, damages, losses, penalties, or fines arising from the Partner's failure to comply with applicable tax laws and regulations.</li>
