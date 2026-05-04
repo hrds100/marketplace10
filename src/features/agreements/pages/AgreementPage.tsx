@@ -12,9 +12,24 @@ import SignaturePad from '../components/SignaturePad';
 const SAMCART_URL = 'https://stay.samcart.com/products/1/';
 const SIGNATURE_KEY = 'nfstay_agreement_pending';
 const GBP_RATE = 0.74;
+const USD_RATE = 1 / GBP_RATE;
 
 function usdToGbp(usd: number) { return Math.round(usd * GBP_RATE); }
+function gbpToUsd(gbp: number) { return Math.round(gbp * USD_RATE); }
 function dualAmount(usd: number) { return `$${usd.toLocaleString()} USD = ~£${usdToGbp(usd).toLocaleString()} GBP`; }
+
+function dualCurrency(value: string): string {
+  const num = parseFloat(value.replace(/[^0-9.]/g, ''));
+  if (!num || isNaN(num)) return value;
+  if (value.includes('%')) return value;
+  if (value.toUpperCase().includes('USD')) {
+    return `$${num.toLocaleString()} USD = ~£${usdToGbp(num).toLocaleString()} GBP`;
+  }
+  if (value.toUpperCase().includes('GBP')) {
+    return `£${num.toLocaleString()} GBP = ~$${gbpToUsd(num).toLocaleString()} USD`;
+  }
+  return value;
+}
 
 async function fetchOrCreateWallet(userId: string): Promise<string> {
   const { data } = await (supabase.from('profiles') as any)
@@ -261,13 +276,13 @@ export default function AgreementPage() {
                     </div>
                   </div>
                   <p className="mb-3">
-                    Airbrick Finance Ltd is the UK-registered property management company responsible for sourcing deals, managing landlord relationships, and overseeing the day-to-day operations of each serviced accommodation property. Nfstay Holdings FZE LLC, based in the UAE, handles the financial administration of the partnership — including partner contributions, revenue distributions, treasury management, and international payment processing. Together, these two entities operate under the nfstay brand to deliver a fully managed rent-to-rent service accommodation model.
+                    Airbrick Finance Ltd is the UK-registered property management company responsible for sourcing deals, managing landlord relationships, and overseeing the day-to-day operations of each serviced accommodation property. Nfstay Holdings FZE LLC, based in the UAE, handles the financial administration of the partnership, including partner contributions, revenue distributions, treasury management, and international payment processing. Together, these two entities operate under the nfstay brand to deliver a fully managed rent-to-rent service accommodation model.
                   </p>
                   <p className="mb-3">
                     This Agreement sets out the terms under which the Partner contributes funds towards a specific property deal as part of a joint venture, entitling the Partner to a proportional share of net rental income generated during the deal term.
                   </p>
                   <p className="mb-3">
-                    <strong className="text-[#1A1A1A]">This is an active joint venture, not a passive arrangement.</strong> Every Partner is required to participate in governance decisions — including votes on property management, pricing strategy, and operational matters — through the platform's voting system. Partners who do not actively participate in votes may have their income distributions suspended until they re-engage.
+                    <strong className="text-[#1A1A1A]">This is an active joint venture, not a passive arrangement.</strong> Every Partner is required to participate in governance decisions, including votes on property management, pricing strategy, and operational matters, through the platform's voting system. Partners who do not actively participate in votes may have their income distributions suspended until they re-engage.
                   </p>
                   <p className="mb-3">
                     By entering into this Agreement, the Partner acknowledges that this is an active partnership. The Partner does not acquire any form of property ownership. The Partner receives a contractual right to a share of net rental income as described herein for the duration of the deal term.
@@ -341,7 +356,7 @@ export default function AgreementPage() {
                       <div>
                         <p className="text-xs font-semibold text-[#9CA3AF] uppercase tracking-wider">Area Avg. Occupancy</p>
                         <p className="text-2xl font-bold text-[#1E9A80]">{property?.annual_yield ?? 0}%</p>
-                        <p className="text-sm text-[#6B7280]">Market data — not guaranteed income</p>
+                        <p className="text-sm text-[#6B7280]">Market data, not guaranteed income</p>
                       </div>
                     </div>
                   </div>
@@ -407,7 +422,7 @@ export default function AgreementPage() {
                                     <p className="font-medium text-[#1A1A1A]">{t.description}</p>
                                     <p className="text-xs text-[#9CA3AF]">{t.calculation_basis}</p>
                                   </td>
-                                  <td className="px-4 py-2.5 text-right font-medium text-[#1A1A1A] whitespace-nowrap">{t.amount}</td>
+                                  <td className="px-4 py-2.5 text-right font-medium text-[#1A1A1A] whitespace-nowrap">{dualCurrency(t.amount)}</td>
                                 </tr>
                               ))}
                             </tbody>
@@ -433,7 +448,7 @@ export default function AgreementPage() {
                                     <p className="font-medium text-[#1A1A1A]">{r.description}</p>
                                     <p className="text-xs text-[#9CA3AF]">{r.calculation_basis}</p>
                                   </td>
-                                  <td className="px-4 py-2.5 text-right font-medium text-[#1E9A80] whitespace-nowrap">{r.value}</td>
+                                  <td className="px-4 py-2.5 text-right font-medium text-[#1E9A80] whitespace-nowrap">{dualCurrency(r.value)}</td>
                                 </tr>
                               ))}
                             </tbody>
@@ -466,9 +481,9 @@ export default function AgreementPage() {
                   <ol className="list-decimal list-inside space-y-2 mb-4">
                     <li>Each Partner's voting power is proportional to their contribution relative to the total funding for the deal.</li>
                     <li>Regular proposals requiring Partner votes include decisions related to rental pricing strategy, property improvements, maintenance priorities, tenant selection criteria, and operational management changes.</li>
-                    <li>Most proposals are decided by a simple majority (50% + 1 vote). Significant decisions — such as changing the property management company — may require a supermajority.</li>
+                    <li>Most proposals are decided by a simple majority (50% + 1 vote). Significant decisions, such as changing the property management company, may require a supermajority.</li>
                     <li>Partners may submit proposals related to the management of the property via the platform. The Company reserves the right, at its sole discretion, to accept or reject proposals before they are put to a vote, ensuring only meaningful and relevant proposals are presented.</li>
-                    <li>Partners are expressly prohibited from proposing the sale of the property. The property is not owned by the Company or the Partners — only the rental income is shared during the deal term.</li>
+                    <li>Partners are expressly prohibited from proposing the sale of the property. The property is not owned by the Company or the Partners. Only the rental income is shared during the deal term.</li>
                     <li><strong className="text-[#1A1A1A]">Voting is mandatory to receive distributions.</strong> Partners must actively participate in governance votes to be eligible to collect their monthly rental income payments. Partners who do not vote on proposals during a given period will have their income distributions suspended until they re-engage with the governance process. At least one proposal is generated each month for Partners to vote on.</li>
                     <li>The Company will notify Partners of upcoming votes via the platform and email. Partners are expected to cast their votes within the designated voting period. All votes are recorded transparently, and approved decisions are executed promptly.</li>
                   </ol>
@@ -596,7 +611,7 @@ export default function AgreementPage() {
 
                   <h3 className="text-sm font-semibold text-[#1A1A1A] mb-2">9.1 General Disclaimer</h3>
                   <p className="mb-3">
-                    nfstay operates as an active joint venture. Every Partner has a direct and ongoing role in managing the property through the platform's democratic voting system. This is not a passive arrangement — participation in governance is mandatory.
+                    nfstay operates as an active joint venture. Every Partner has a direct and ongoing role in managing the property through the platform's democratic voting system. This is not a passive arrangement, participation in governance is mandatory.
                   </p>
                   <p className="mb-3">
                     nfstay is not a registered investment adviser, broker-dealer, or financial planner. The content on this platform should not be interpreted as offers to sell, solicitations to buy, or recommendations regarding any security or financial product. Partners are solely responsible for determining whether a joint venture contribution aligns with their financial goals and risk tolerance.
@@ -627,7 +642,7 @@ export default function AgreementPage() {
                     <li>This Agreement is for a fixed term of 5 (five) years from the date of execution. Upon expiry of the deal term, no further rental income distributions will be made unless the underlying rent-to-rent agreement is renewed by mutual consent.</li>
                     <li>The Company reserves the right to terminate this Agreement if the Partner has failed to comply with any terms or conditions, failed to provide necessary documentation, or engaged in activities that may compromise the integrity of the arrangement or violate applicable laws.</li>
                     <li>In the case of a dissolution event before the end of the deal term, the Company will refund an amount equal to the Partner's contribution, subject to the rights and privileges of creditors under applicable law. If the Company's remaining assets are insufficient to repay all Partners, available assets will be distributed pro-rata among Partners in proportion to their contributions.</li>
-                    <li>All provisions of this Agreement that by their nature should survive termination — including disclaimers, limitations of liability, and indemnity provisions — shall survive termination.</li>
+                    <li>All provisions of this Agreement that by their nature should survive termination, including disclaimers, limitations of liability, and indemnity provisions, shall survive termination.</li>
                     <li>Upon termination, the Partner agrees to immediately cease any use of the platform in a manner inconsistent with this Agreement.</li>
                   </ol>
                 </section>
