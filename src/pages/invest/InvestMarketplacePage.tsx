@@ -748,12 +748,12 @@ function InvestCardContent({
                 data-feature="INVEST__TOKEN_SALE_AGREEMENT"
                 onClick={(e) => e.stopPropagation()}
               >
-                Token Sale Agreement
+                Joint Venture Agreement
               </button>
             </DialogTrigger>
             <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto" data-feature="INVEST__TOKEN_SALE_CONTENT">
               <DialogHeader>
-                <DialogTitle>nfstay Token Sale Agreement</DialogTitle>
+                <DialogTitle>nfstay Joint Venture Agreement</DialogTitle>
                 <DialogDescription>Please read carefully before proceeding with your allocation.</DialogDescription>
               </DialogHeader>
               <div className="space-y-6 text-sm text-muted-foreground leading-relaxed">

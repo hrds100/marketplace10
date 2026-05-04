@@ -769,7 +769,7 @@ function AuthPrompt({ token }: { token: string }) {
   const navigate = useNavigate();
 
   useEffect(() => {
-    navigate(`/signin?redirect=/agreement/${encodeURIComponent(token)}`, { replace: true });
+    navigate('/signin?redirect=/dashboard/invest/marketplace', { replace: true });
   }, [navigate, token]);
 
   return (

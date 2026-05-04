@@ -26,7 +26,7 @@ test("anonymous user redirected to /signin with agreement messaging after signin
   // 3. Click confirm → should redirect to /signin with agreement redirect param
   await page.locator("button:has-text('Confirm & Proceed to Payment')").click();
   await page.waitForURL(/\/signin\?redirect=/, { timeout: 15000 });
-  expect(page.url()).toContain("redirect=/agreement/");
+  expect(page.url()).toContain("redirect=/dashboard/invest/marketplace");
   console.log("✅ Redirected to /signin with agreement redirect param");
 
   // 4. Verify agreement-specific messaging on /signin page

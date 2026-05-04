@@ -24,6 +24,7 @@ test("agreement → sign in → SamCart has wallet + amount in URL", async ({ pa
   // 3. Confirm → redirects to /signin with agreement redirect param
   await page.locator("button:has-text('Confirm & Proceed to Payment')").click();
   await page.waitForURL(/\/signin\?redirect=/, { timeout: 15000 });
+  expect(page.url()).toContain("redirect=/dashboard/invest/marketplace");
   await expect(page.locator("text=You're almost a partner")).toBeVisible({ timeout: 10000 });
 
   // 4. Set up route interception to capture SamCart redirect URL BEFORE signing in

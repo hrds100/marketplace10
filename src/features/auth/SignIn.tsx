@@ -64,34 +64,34 @@ function derivedPassword(uuid: string): string {
 function AgreementPanel() {
   return (
     <div data-feature="AUTH" className="relative w-1/2 h-full overflow-hidden rounded-3xl hidden lg:flex flex-shrink-0 bg-gradient-to-br from-[#0f4f42] to-[#1E9A80]">
-      <div className="flex flex-col justify-center w-full h-full p-10 text-white">
-        <h3 className="text-xl font-bold mb-6">What happens next</h3>
-        <div className="space-y-5">
-          <div className="flex items-start gap-3">
-            <div className="w-7 h-7 rounded-full bg-white/20 flex items-center justify-center shrink-0 text-xs font-bold">1</div>
+      <div className="flex flex-col justify-center w-full h-full p-12 text-white">
+        <h3 className="text-3xl font-bold mb-8">What happens next</h3>
+        <div className="space-y-7">
+          <div className="flex items-start gap-4">
+            <div className="w-9 h-9 rounded-full bg-white/20 flex items-center justify-center shrink-0 text-sm font-bold">1</div>
             <div>
-              <p className="font-semibold text-sm">Sign in or create account</p>
-              <p className="text-xs text-white/70 mt-0.5">Quick and secure — takes 30 seconds</p>
+              <p className="font-semibold text-lg">Sign in or create account</p>
+              <p className="text-sm text-white/70 mt-1">Quick and secure — takes 30 seconds</p>
             </div>
           </div>
-          <div className="flex items-start gap-3">
-            <div className="w-7 h-7 rounded-full bg-white/20 flex items-center justify-center shrink-0 text-xs font-bold">2</div>
+          <div className="flex items-start gap-4">
+            <div className="w-9 h-9 rounded-full bg-white/20 flex items-center justify-center shrink-0 text-sm font-bold">2</div>
             <div>
-              <p className="font-semibold text-sm">Complete payment</p>
-              <p className="text-xs text-white/70 mt-0.5">Secure checkout to confirm your allocation</p>
+              <p className="font-semibold text-lg">Complete payment</p>
+              <p className="text-sm text-white/70 mt-1">Secure checkout to confirm your allocation</p>
             </div>
           </div>
-          <div className="flex items-start gap-3">
-            <div className="w-7 h-7 rounded-full bg-white/20 flex items-center justify-center shrink-0 text-xs font-bold">3</div>
+          <div className="flex items-start gap-4">
+            <div className="w-9 h-9 rounded-full bg-white/20 flex items-center justify-center shrink-0 text-sm font-bold">3</div>
             <div>
-              <p className="font-semibold text-sm">Access your dashboard</p>
-              <p className="text-xs text-white/70 mt-0.5">Track your deal, revenue and distributions</p>
+              <p className="font-semibold text-lg">Access your dashboard</p>
+              <p className="text-sm text-white/70 mt-1">Track your deal, revenue and distributions</p>
             </div>
           </div>
         </div>
-        <div className="mt-8 pt-6 border-t border-white/20">
-          <p className="text-xs text-white/60">Airbrick Finance Ltd &middot; Company No. 13806307</p>
-          <p className="text-xs text-white/60">Nfstay Holdings FZE LLC &middot; UAE</p>
+        <div className="mt-10 pt-6 border-t border-white/20">
+          <p className="text-sm text-white/60">Airbrick Finance Ltd &middot; Company No. 13806307</p>
+          <p className="text-sm text-white/60">Nfstay Holdings FZE LLC &middot; UAE</p>
         </div>
       </div>
     </div>
@@ -105,7 +105,7 @@ export default function SignIn() {
   const { userInfo } = useUserInfo();
   const [searchParams] = useSearchParams();
   const redirectTo = searchParams.get('redirect');
-  const isAgreementFlow = redirectTo?.startsWith('/agreement/') ?? false;
+  const isAgreementFlow = (redirectTo?.startsWith('/agreement/') || redirectTo?.includes('/invest/marketplace')) ?? false;
   const prefillEmail = searchParams.get('email');
   const [email, setEmail] = useState(prefillEmail || '');
   const [password, setPassword] = useState('');
