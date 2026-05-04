@@ -92,6 +92,8 @@ export default function AgreementPage() {
       propertyId: agreement.property_id ?? 1,
       investAmount: agreement.amount,
     });
+    const amt = Number(agreement.amount);
+    if (Number.isFinite(amt) && amt > 0) params.amount = String(amt);
     const qs = new URLSearchParams(params).toString();
     window.location.href = `${SAMCART_URL}?${qs}`;
   };

@@ -61,7 +61,15 @@ export default function SendAgreementModal({ contact, onClose }: Props) {
     }
     setStageError(false);
 
-    if (!contact || !amount || !propertyId) return;
+    if (!contact) return;
+    if (!amount || isNaN(Number(amount)) || Number(amount) <= 0) {
+      toast.error('Enter a valid amount');
+      return;
+    }
+    if (!propertyId) {
+      toast.error('Select a property');
+      return;
+    }
     setSending(true);
 
     try {
@@ -93,19 +101,21 @@ export default function SendAgreementModal({ contact, onClose }: Props) {
       if (channel === 'sms' && contact.phone) {
         const body = `Hi ${firstName},\n\nI've prepared your Partnership Agreement for the ${propertyTitle} opportunity.\n\nReview and sign here:\n${agreementUrl}\n\n${signoff}`;
 
-        await supabase.functions.invoke('wk-sms-send', {
+        const { error: smsErr } = await supabase.functions.invoke('wk-sms-send', {
           body: { to: contact.phone, body, contact_id: contact.id },
         });
+        if (smsErr) throw new Error(smsErr.message ?? 'SMS send failed');
       } else if (channel === 'whatsapp' && contact.phone) {
         const body = `Hi ${firstName},\n\nFollowing our conversation, I've prepared your Partnership Agreement for the ${propertyTitle} opportunity.\n\nPlease review the terms and sign here:\n${agreementUrl}\n\nOnce signed, you'll be taken straight to the secure payment page.\n\nLet me know if you have any questions.\n\n${signoff}`;
 
-        await supabase.functions.invoke('unipile-send', {
+        const { error: waErr } = await supabase.functions.invoke('unipile-send', {
           body: { contact_id: contact.id, body },
         });
+        if (waErr) throw new Error(waErr.message ?? 'WhatsApp send failed');
       } else if (channel === 'email' && contact.email) {
         const body = `Hi ${firstName},\n\nThank you for your interest in the ${propertyTitle} property.\n\nI've prepared a Partnership Agreement for your review. This document outlines the deal details, allocation terms, financial projections, and your rights as a partner.\n\nPlease review and sign the agreement here:\n${agreementUrl}\n\nAfter signing, you'll be redirected to complete your secure payment.\n\n${signoff}\nhub.nfstay.com`;
 
-        await supabase.functions.invoke('wk-email-send', {
+        const { data: emailResp, error: emailErr } = await supabase.functions.invoke('wk-email-send', {
           body: {
             contact_id: contact.id,
             to: contact.email,
@@ -113,6 +123,10 @@ export default function SendAgreementModal({ contact, onClose }: Props) {
             body,
           },
         });
+        if (emailErr) throw new Error(emailErr.message ?? 'Email send failed');
+        if (emailResp?.error) throw new Error(emailResp.error);
+      } else {
+        throw new Error(`No ${channel} address for this contact`);
       }
 
       toast.success(`Agreement sent to ${contact.name}`);
@@ -184,9 +198,10 @@ export default function SendAgreementModal({ contact, onClose }: Props) {
             <div>
               <label className="block text-sm font-medium text-[#525252] mb-1">Amount</label>
               <input
-                type="number"
+                type="text"
+                inputMode="decimal"
                 value={amount}
-                onChange={(e) => setAmount(e.target.value)}
+                onChange={(e) => setAmount(e.target.value.replace(/[^0-9.]/g, ''))}
                 placeholder="5000"
                 className="w-full px-3 py-2.5 border border-[#E5E5E5] rounded-lg text-sm"
               />
@@ -265,7 +280,7 @@ export default function SendAgreementModal({ contact, onClose }: Props) {
         <div className="px-5 py-4 border-t border-[#E5E7EB]">
           <button
             onClick={handleSend}
-            disabled={!amount || sending}
+            disabled={sending}
             className="w-full bg-[#1E9A80] text-white py-3 rounded-xl font-semibold text-sm hover:opacity-90 transition-opacity disabled:opacity-40 shadow-[0_4px_16px_rgba(30,154,128,0.35)]"
           >
             {sending ? (
