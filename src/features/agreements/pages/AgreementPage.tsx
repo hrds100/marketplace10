@@ -371,7 +371,7 @@ export default function AgreementPage() {
                     <li>Each Partner's share of net rental income is proportional to their contribution relative to the total funding for the deal.</li>
                     <li>Income distributions are paid directly into the Partner's bank account in their local currency.</li>
                     <li>The Company charges a 10% operational fee from gross revenue before distributions. This fee covers property management, tenant relations, maintenance, and administrative expenses.</li>
-                    <li>The minimum contribution is $1,000 USD = ~£{usdToGbp(1000).toLocaleString()} GBP. Contributions below this amount may not be accepted at the Company's sole discretion.</li>
+                    <li>The minimum contribution is $500 USD = ~£{usdToGbp(500).toLocaleString()} GBP. Contributions below this amount may not be accepted at the Company's sole discretion.</li>
                     <li>The Company may accept contributions in USD, GBP, or EUR. The exchange rate at the time of contribution determines the amount.</li>
                     <li>Contributions are tied to the 5-year deal term. Upon expiry of the deal term, no further rental income distributions will be made unless the underlying agreement is renewed.</li>
                     <li>Contributions are non-transferable. The Partner may not sell, assign, or transfer their stake to any third party.</li>
