@@ -4,7 +4,7 @@ const AGREEMENT_URL = "https://hub.nfstay.com/agreement/mark-01";
 
 test.setTimeout(120000);
 
-test("agreement → sign in → SamCart has wallet + amount in URL", async ({ page }) => {
+test("agreement → sign in → lands on invest marketplace", async ({ page }) => {
   // 1. Load agreement
   await page.goto(AGREEMENT_URL, { waitUntil: "networkidle" });
   await expect(page.getByRole("heading", { name: "Property Service" })).toBeVisible({ timeout: 20000 });
@@ -21,63 +21,27 @@ test("agreement → sign in → SamCart has wallet + amount in URL", async ({ pa
     await page.mouse.up();
   }
 
-  // 3. Confirm → redirects to /signin with agreement redirect param
+  // 3. Confirm → redirects to /signin with marketplace redirect
   await page.locator("button:has-text('Confirm & Proceed to Payment')").click();
   await page.waitForURL(/\/signin\?redirect=/, { timeout: 15000 });
   expect(page.url()).toContain("redirect=/dashboard/invest/marketplace");
   await expect(page.locator("text=You're almost a partner")).toBeVisible({ timeout: 10000 });
+  console.log("✅ Redirected to /signin with marketplace redirect + agreement messaging");
 
-  // 4. Set up route interception to capture SamCart redirect URL BEFORE signing in
-  let capturedSamcartUrl = "";
-  await page.route("**stay.samcart.com**", (route) => {
-    capturedSamcartUrl = route.request().url();
-    route.abort();
-  });
-
-  // 5. Fill sign-in form on /signin page
+  // 4. Fill sign-in form
   await page.locator('input[type="email"]').fill("admin@hub.nfstay.com");
   await page.locator('input[type="password"]').fill("Dgs58913347.");
   await page.locator('form button[type="submit"]').click();
-  console.log("Sign-in submitted, waiting for redirect back to agreement + SamCart...");
+  console.log("✅ Sign-in submitted");
 
-  // 6. Wait for redirect back to agreement page then SamCart
-  const deadline = Date.now() + 50000;
-  while (!capturedSamcartUrl && Date.now() < deadline) {
-    await page.waitForTimeout(1000);
-  }
+  // 5. Wait for redirect to marketplace
+  await page.waitForURL(/\/dashboard\/invest\/marketplace/, { timeout: 30000 });
+  console.log("✅ Landed on /dashboard/invest/marketplace");
 
-  await page.screenshot({ path: "e2e/screenshots/agreement-samcart-final.png", fullPage: false });
+  // 6. Verify marketplace page loaded and "Joint Venture Agreement" text
+  await expect(page.locator("text=Joint Venture Agreement")).toBeVisible({ timeout: 15000 });
+  console.log("✅ 'Joint Venture Agreement' text visible on marketplace");
 
-  console.log("Captured SamCart URL:", capturedSamcartUrl ? capturedSamcartUrl.slice(0, 80) + "..." : "(none)");
-
-  if (capturedSamcartUrl) {
-    const url = new URL(capturedSamcartUrl);
-
-    expect(url.searchParams.get("first_name")).toBe("Hugo");
-    expect(url.searchParams.get("last_name")).toBe("De Souza");
-    expect(url.searchParams.get("email")).toContain("admin@hub.nfstay.com");
-
-    const phoneData = url.searchParams.get("phone_number");
-    expect(phoneData).toBeTruthy();
-    const parsed = JSON.parse(phoneData!);
-    console.log("phone_number payload:", JSON.stringify(parsed, null, 2));
-
-    expect(parsed.investAmountUsd).toBeGreaterThan(0);
-    expect(parsed.propertyId).toBeGreaterThan(0);
-    expect(parsed.recipient).toBeTruthy();
-    expect(typeof parsed.recipient).toBe("string");
-    expect(parsed.recipient.length).toBeGreaterThan(5);
-
-    const customWallet = url.searchParams.get("custom_0zdAJJKy");
-    expect(customWallet).toBeTruthy();
-    expect(customWallet).toBe(parsed.recipient);
-
-    console.log("\n✅ wallet:", parsed.recipient.slice(0, 12) + "...");
-    console.log("✅ amount (in phone_number JSON):", parsed.investAmountUsd);
-    console.log("✅ propertyId:", parsed.propertyId);
-  } else {
-    console.log("Current page URL:", page.url());
-    await page.screenshot({ path: "e2e/screenshots/agreement-samcart-debug.png", fullPage: true });
-    expect(capturedSamcartUrl, "SamCart redirect was not captured — wallet fetch may have failed").toBeTruthy();
-  }
+  await page.screenshot({ path: "e2e/screenshots/agreement-marketplace-final.png", fullPage: false });
+  console.log("✅ Screenshot saved");
 });
