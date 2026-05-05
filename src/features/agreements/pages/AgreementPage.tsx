@@ -14,8 +14,8 @@ const SIGNATURE_KEY = 'nfstay_agreement_pending';
 const GBP_RATE = 0.74;
 const USD_RATE = 1 / GBP_RATE;
 
-function usdToGbp(usd: number) { return Math.round(usd * GBP_RATE); }
-function gbpToUsd(gbp: number) { return Math.round(gbp * USD_RATE); }
+function usdToGbp(usd: number) { const v = usd * GBP_RATE; return v < 10 ? Math.round(v * 100) / 100 : Math.round(v); }
+function gbpToUsd(gbp: number) { const v = gbp * USD_RATE; return v < 10 ? Math.round(v * 100) / 100 : Math.round(v); }
 function dualAmount(usd: number) { return `$${usd.toLocaleString()} USD = ~£${usdToGbp(usd).toLocaleString()} GBP`; }
 
 function dualCurrency(value: string): string {
