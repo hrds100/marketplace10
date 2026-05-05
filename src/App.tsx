@@ -58,6 +58,7 @@ import AdminInvestPayouts from "./pages/admin/invest/AdminInvestPayouts";
 import AdminInvestProposals from "./pages/admin/invest/AdminInvestProposals";
 import AdminEndpoints from "./pages/admin/invest/AdminEndpoints";
 import AgreementPage from "@/features/agreements/pages/AgreementPage";
+import ScriptPage from "./pages/script/ScriptPage";
 import AdminAgreementsPage from "@/features/agreements/pages/AdminAgreementsPage";
 import AdminTestConsole from "./pages/admin/invest/AdminTestConsole";
 import AdminWorkspaceSelector from "@/features/admin-dashboard/AdminWorkspaceSelector";
@@ -198,6 +199,7 @@ const App = () => (
           <Route path="/ads" element={<AdsLibraryPage />} />
 
           <Route path="/apply" element={<ApplyPage />} />
+          <Route path="/script" element={<ScriptPage />} />
           {/* Magic link entry — GHL WhatsApp button uses hub.nfstay.com/inbox?token=... */}
           <Route path="/inbox" element={<MagicLoginPage />} />
           <Route path="/deals/:id" element={<DealDetail />} />
