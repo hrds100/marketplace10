@@ -1,10 +1,13 @@
-import { useState, useRef, useCallback } from 'react';
+import { useState, useRef, useCallback, useEffect } from 'react';
+import { supabase } from '@/integrations/supabase/client';
 import { SCRIPT_SECTIONS } from './scriptContent';
 
 interface Recording {
-  url: string;
-  blob: Blob;
-  timestamp: number;
+  id: string;
+  section_index: number;
+  audio_path: string;
+  audio_url: string;
+  created_at: string;
 }
 
 function PasswordGate({ onUnlock }: { onUnlock: () => void }) {
@@ -50,10 +53,15 @@ function PasswordGate({ onUnlock }: { onUnlock: () => void }) {
   );
 }
 
-function AudioRecorder({ sectionIndex }: { sectionIndex: number }) {
-  const [recordings, setRecordings] = useState<Recording[]>([]);
+function AudioRecorder({ sectionIndex, recordings, onNewRecording, onDelete }: {
+  sectionIndex: number;
+  recordings: Recording[];
+  onNewRecording: (blob: Blob) => Promise<void>;
+  onDelete: (rec: Recording) => void;
+}) {
   const [isRecording, setIsRecording] = useState(false);
-  const [playingIndex, setPlayingIndex] = useState<number | null>(null);
+  const [uploading, setUploading] = useState(false);
+  const [playingId, setPlayingId] = useState<string | null>(null);
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const chunksRef = useRef<Blob[]>([]);
   const audioRef = useRef<HTMLAudioElement | null>(null);
@@ -69,11 +77,12 @@ function AudioRecorder({ sectionIndex }: { sectionIndex: number }) {
         if (e.data.size > 0) chunksRef.current.push(e.data);
       };
 
-      mediaRecorder.onstop = () => {
+      mediaRecorder.onstop = async () => {
         const blob = new Blob(chunksRef.current, { type: 'audio/webm' });
-        const url = URL.createObjectURL(blob);
-        setRecordings((prev) => [...prev, { url, blob, timestamp: Date.now() }]);
         stream.getTracks().forEach((t) => t.stop());
+        setUploading(true);
+        await onNewRecording(blob);
+        setUploading(false);
       };
 
       mediaRecorder.start();
@@ -81,7 +90,7 @@ function AudioRecorder({ sectionIndex }: { sectionIndex: number }) {
     } catch {
       alert('Microphone access denied. Please allow microphone access to record.');
     }
-  }, []);
+  }, [onNewRecording]);
 
   const stopRecording = useCallback(() => {
     if (mediaRecorderRef.current && mediaRecorderRef.current.state === 'recording') {
@@ -90,14 +99,14 @@ function AudioRecorder({ sectionIndex }: { sectionIndex: number }) {
     }
   }, []);
 
-  const playRecording = (index: number) => {
+  const playRecording = (rec: Recording) => {
     if (audioRef.current) {
       audioRef.current.pause();
     }
-    const audio = new Audio(recordings[index].url);
+    const audio = new Audio(rec.audio_url);
     audioRef.current = audio;
-    setPlayingIndex(index);
-    audio.onended = () => setPlayingIndex(null);
+    setPlayingId(rec.id);
+    audio.onended = () => setPlayingId(null);
     audio.play();
   };
 
@@ -106,25 +115,22 @@ function AudioRecorder({ sectionIndex }: { sectionIndex: number }) {
       audioRef.current.pause();
       audioRef.current.currentTime = 0;
     }
-    setPlayingIndex(null);
+    setPlayingId(null);
   };
 
-  const deleteRecording = (index: number) => {
-    if (playingIndex === index) stopPlayback();
-    URL.revokeObjectURL(recordings[index].url);
-    setRecordings((prev) => prev.filter((_, i) => i !== index));
-  };
+  const sectionRecordings = recordings.filter((r) => r.section_index === sectionIndex);
 
   return (
-    <div className="border-t border-[#E5E7EB] pt-4 mt-6">
+    <div className="border-b border-[#E5E7EB] pb-6 mb-8">
       <div className="flex items-center gap-3 mb-3">
         {!isRecording ? (
           <button
             onClick={startRecording}
-            className="flex items-center gap-2 bg-[#1E9A80] text-white text-sm font-medium rounded-full px-4 py-2 hover:opacity-90 transition-opacity"
+            disabled={uploading}
+            className="flex items-center gap-2 bg-[#1E9A80] text-white text-sm font-medium rounded-full px-4 py-2 hover:opacity-90 transition-opacity disabled:opacity-50"
           >
             <span className="w-3 h-3 rounded-full bg-white" />
-            Record Section {sectionIndex + 1}
+            {uploading ? 'Saving...' : `Record Section ${sectionIndex + 1}`}
           </button>
         ) : (
           <button
@@ -135,22 +141,25 @@ function AudioRecorder({ sectionIndex }: { sectionIndex: number }) {
             Stop Recording
           </button>
         )}
-        {recordings.length > 0 && (
-          <span className="text-xs text-[#6B7280]">{recordings.length} take{recordings.length > 1 ? 's' : ''}</span>
+        {sectionRecordings.length > 0 && (
+          <span className="text-xs text-[#6B7280]">{sectionRecordings.length} take{sectionRecordings.length > 1 ? 's' : ''}</span>
         )}
       </div>
 
-      {recordings.length > 0 && (
+      {sectionRecordings.length > 0 && (
         <div className="space-y-2">
-          {recordings.map((rec, i) => (
-            <div key={rec.timestamp} className="flex items-center gap-3 bg-[#F3F3EE] rounded-lg px-3 py-2">
+          {sectionRecordings.map((rec, i) => (
+            <div key={rec.id} className="flex items-center gap-3 bg-[#F3F3EE] rounded-lg px-3 py-2">
               <span className="text-xs text-[#6B7280] w-16">Take {i + 1}</span>
-              {playingIndex === i ? (
+              <span className="text-xs text-[#9CA3AF]">
+                {new Date(rec.created_at).toLocaleString('en-GB', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })}
+              </span>
+              {playingId === rec.id ? (
                 <button onClick={stopPlayback} className="text-xs font-medium text-[#1E9A80] hover:underline">Stop</button>
               ) : (
-                <button onClick={() => playRecording(i)} className="text-xs font-medium text-[#1E9A80] hover:underline">Play</button>
+                <button onClick={() => playRecording(rec)} className="text-xs font-medium text-[#1E9A80] hover:underline">Play</button>
               )}
-              <button onClick={() => deleteRecording(i)} className="text-xs font-medium text-red-500 hover:underline ml-auto">Delete</button>
+              <button onClick={() => { stopPlayback(); onDelete(rec); }} className="text-xs font-medium text-red-500 hover:underline ml-auto">Delete</button>
             </div>
           ))}
         </div>
@@ -163,6 +172,44 @@ export default function ScriptPage() {
   const [unlocked, setUnlocked] = useState(false);
   const [activeSection, setActiveSection] = useState(0);
   const [editedContent, setEditedContent] = useState<Record<number, string>>({});
+  const [recordings, setRecordings] = useState<Recording[]>([]);
+
+  useEffect(() => {
+    if (!unlocked) return;
+    loadRecordings();
+  }, [unlocked]);
+
+  const loadRecordings = async () => {
+    const { data } = await (supabase.from('script_recordings' as any) as any)
+      .select('id, section_index, audio_path, created_at')
+      .order('created_at', { ascending: true });
+    if (!data) return;
+
+    const mapped: Recording[] = (data as any[]).map((r) => {
+      const { data: urlData } = supabase.storage.from('script-recordings').getPublicUrl(r.audio_path);
+      return { ...r, audio_url: urlData.publicUrl };
+    });
+    setRecordings(mapped);
+  };
+
+  const handleNewRecording = useCallback(async (blob: Blob, sectionIndex: number) => {
+    const filename = `section-${sectionIndex}-${Date.now()}.webm`;
+    const { error: uploadErr } = await supabase.storage
+      .from('script-recordings')
+      .upload(filename, blob, { contentType: 'audio/webm' });
+    if (uploadErr) { alert('Upload failed: ' + uploadErr.message); return; }
+
+    await (supabase.from('script_recordings' as any) as any)
+      .insert({ section_index: sectionIndex, audio_path: filename });
+
+    await loadRecordings();
+  }, []);
+
+  const handleDelete = useCallback(async (rec: Recording) => {
+    await supabase.storage.from('script-recordings').remove([rec.audio_path]);
+    await (supabase.from('script_recordings' as any) as any).delete().eq('id', rec.id);
+    setRecordings((prev) => prev.filter((r) => r.id !== rec.id));
+  }, []);
 
   if (!unlocked) return <PasswordGate onUnlock={() => setUnlocked(true)} />;
 
@@ -180,33 +227,45 @@ export default function ScriptPage() {
           <p className="text-xs text-[#6B7280] mt-2">Recording Studio</p>
         </div>
         <nav className="p-2">
-          {SCRIPT_SECTIONS.map((section, i) => (
-            <button
-              key={i}
-              onClick={() => setActiveSection(i)}
-              className={`w-full text-left px-3 py-2 rounded-lg text-sm mb-1 transition-colors ${
-                activeSection === i
-                  ? 'bg-white text-[#1A1A1A] font-medium shadow-sm border border-[#E5E7EB]'
-                  : 'text-[#6B7280] hover:bg-white/60'
-              }`}
-            >
-              <span className="text-xs text-[#9CA3AF] mr-2">{i + 1}.</span>
-              {section.title}
-            </button>
-          ))}
+          {SCRIPT_SECTIONS.map((section, i) => {
+            const hasRecording = recordings.some((r) => r.section_index === i);
+            return (
+              <button
+                key={i}
+                onClick={() => setActiveSection(i)}
+                className={`w-full text-left px-3 py-2 rounded-lg text-sm mb-1 transition-colors ${
+                  activeSection === i
+                    ? 'bg-white text-[#1A1A1A] font-medium shadow-sm border border-[#E5E7EB]'
+                    : 'text-[#6B7280] hover:bg-white/60'
+                }`}
+              >
+                <span className="text-xs text-[#9CA3AF] mr-2">{i + 1}.</span>
+                {section.title}
+                {hasRecording && <span className="ml-2 inline-block w-2 h-2 rounded-full bg-[#1E9A80]" />}
+              </button>
+            );
+          })}
         </nav>
       </aside>
 
-      {/* Main content — teleprompter + recorder */}
+      {/* Main content — recorder at top, then script */}
       <main className="flex-1 overflow-y-auto h-screen">
         <div className="max-w-3xl mx-auto px-8 py-12">
           {/* Section header */}
-          <div className="mb-8">
+          <div className="mb-6">
             <p className="text-xs font-semibold text-[#1E9A80] uppercase tracking-wider mb-1">
               Section {activeSection + 1} of {SCRIPT_SECTIONS.length}
             </p>
             <h1 className="text-3xl font-bold text-[#1A1A1A]">{SCRIPT_SECTIONS[activeSection].title}</h1>
           </div>
+
+          {/* Audio recorder — AT THE TOP */}
+          <AudioRecorder
+            sectionIndex={activeSection}
+            recordings={recordings}
+            onNewRecording={(blob) => handleNewRecording(blob, activeSection)}
+            onDelete={handleDelete}
+          />
 
           {/* Editable script content */}
           <div
@@ -219,9 +278,6 @@ export default function ScriptPage() {
           >
             {currentContent}
           </div>
-
-          {/* Audio recorder */}
-          <AudioRecorder sectionIndex={activeSection} />
 
           {/* Navigation */}
           <div className="flex justify-between items-center mt-10 pt-6 border-t border-[#E5E7EB]">
