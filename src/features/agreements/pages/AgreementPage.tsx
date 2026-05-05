@@ -225,7 +225,7 @@ export default function AgreementPage() {
                       <span className="inline-flex items-center justify-center w-8 h-8 border-2 border-[#0A0A0A] rounded-lg text-sm font-bold font-[Sora]">nf</span>
                       <span className="text-base font-normal tracking-[2px] font-[Sora] text-[#0A0A0A]">stay</span>
                     </div>
-                    <h1 className="text-2xl sm:text-3xl font-bold text-[#1A1A1A] mb-1">Property Service Accommodation Partnership Agreement</h1>
+                    <h1 className="text-2xl sm:text-3xl font-bold text-[#1A1A1A] mb-1">Property Serviced Accommodation Partnership Agreement</h1>
                     <p className="text-sm text-[#6B7280]">
                       {property?.title ?? 'Property'} &middot; {dualAmount(amountUsd)}
                     </p>
@@ -240,11 +240,14 @@ export default function AgreementPage() {
               {/* Document Body */}
               <div className="px-8 sm:px-12 py-10 space-y-12 text-sm leading-relaxed text-[#6B7280]">
 
-                {/* Preamble */}
+                {/* Important Notice */}
                 <div className="bg-[#F3F3EE] rounded-xl p-5 text-xs text-[#9CA3AF] leading-relaxed">
-                  <p className="uppercase tracking-wide mb-2 font-semibold">Preamble</p>
+                  <p className="uppercase tracking-wide mb-2 font-semibold">Important Notice</p>
+                  <p className="mb-2">
+                    This document summarises the key terms of the Property Serviced Accommodation Partnership for the deal identified above. By confirming your allocation, you agree to be bound by the full Property Serviced Accommodation Partnership Agreement available at docs.nfstay.com/legal/property-service-accommodation-joint-venture-agreement, which prevails over this summary in the event of any inconsistency.
+                  </p>
                   <p>
-                    This document is not a solicitation for investment and does not constitute an offer of securities or any form of collective investment scheme, nor does it require registration or approval from a regulatory authority in any jurisdiction. This is not a financial instrument. This Agreement governs an active joint venture in which each Partner participates in governance decisions.
+                    This is an active project-specific partnership. It is not a token sale, cryptocurrency, security, share in nfstay or Airbrick, ownership of the property, or a passive investment.
                   </p>
                 </div>
 
@@ -255,40 +258,43 @@ export default function AgreementPage() {
                     <h2 className="text-lg font-bold text-[#1A1A1A]">1. Overview</h2>
                   </div>
                   <p className="mb-3">
-                    This Property Service Accommodation Partnership Agreement (the "<strong className="text-[#1A1A1A]">Agreement</strong>") is made as of the date of acceptance by the Partner:
+                    This Property Serviced Accommodation Partnership Agreement (the "<strong className="text-[#1A1A1A]">Agreement</strong>") is made as of the date of acceptance by the Partner.
                   </p>
                   <div className="bg-[#F3F3EE] rounded-xl p-5 space-y-3 mb-4">
                     <div>
-                      <p className="text-xs font-semibold text-[#9CA3AF] uppercase tracking-wider">The Company</p>
+                      <p className="text-xs font-semibold text-[#9CA3AF] uppercase tracking-wider">The Company — Property Manager</p>
                       <p className="text-sm font-medium text-[#1A1A1A]">Airbrick Finance Ltd</p>
                       <p className="text-xs text-[#6B7280]">Company No. 13806307 &middot; Registered in England &amp; Wales</p>
-                      <p className="text-xs text-[#6B7280]">Property management and operations company, trading as nfstay</p>
-                      <p className="text-xs text-[#6B7280] mt-2 font-medium text-[#1A1A1A]">Nfstay Holdings FZE LLC</p>
-                      <p className="text-xs text-[#6B7280]">Ajman NuVentures Centre Free Zone, UAE</p>
-                      <p className="text-xs text-[#6B7280]">Financial administration, partner contributions and treasury management</p>
+                      <p className="text-xs text-[#6B7280]">Property management and operational company, acting as Property Manager under appointment by Nfstay Holdings FZE LLC.</p>
+                    </div>
+                    <div className="border-t border-[#E5E7EB] pt-3">
+                      <p className="text-xs font-semibold text-[#9CA3AF] uppercase tracking-wider">Platform Operator</p>
+                      <p className="text-sm font-medium text-[#1A1A1A]">Nfstay Holdings FZE LLC</p>
+                      <p className="text-xs text-[#6B7280]">Free zone limited liability company registered in the United Arab Emirates.</p>
+                      <p className="text-xs text-[#6B7280]">Operates the platform and facilitates partner onboarding, governance, allocation, treasury, and distribution.</p>
                     </div>
                     <div className="border-t border-[#E5E7EB] pt-3">
                       <p className="text-xs font-semibold text-[#9CA3AF] uppercase tracking-wider">The Partner</p>
                       <p className="text-sm font-medium text-[#1A1A1A]">
                         {agreement.recipient_name || 'As identified at signing'}
                       </p>
-                      <p className="text-xs text-[#6B7280]">(Hereinafter referred to as the "Partner")</p>
+                      <p className="text-xs text-[#6B7280]">The natural or legal person who confirms this Agreement and is allocated a Contribution in this deal. Referred to throughout as the "Partner".</p>
                     </div>
                   </div>
                   <p className="mb-3">
-                    Airbrick Finance Ltd is the UK-registered property management company responsible for sourcing deals, managing landlord relationships, and overseeing the day-to-day operations of each serviced accommodation property. Nfstay Holdings FZE LLC, based in the UAE, handles the financial administration of the partnership, including partner contributions, revenue distributions, treasury management, and international payment processing. Together, these two entities operate under the nfstay brand to deliver a fully managed rent-to-rent service accommodation model.
+                    Airbrick Finance Ltd is the UK-registered property management company responsible for sourcing deals, managing landlord relationships, and overseeing the day-to-day operation of each serviced accommodation property. Nfstay Holdings FZE LLC, based in the UAE, handles the financial administration of the partnership, including partner contributions, revenue distributions, treasury management, and international payment processing. Together, these two entities operate under the nfstay brand to deliver a fully managed end-to-end serviced accommodation model.
                   </p>
                   <p className="mb-3">
-                    This Agreement sets out the terms under which the Partner contributes funds towards a specific property deal as part of a joint venture, entitling the Partner to a proportional share of net rental income generated during the deal term.
+                    This Agreement sets out the terms under which the Partner contributes capital towards a specific property deal as part of a joint venture, entitling the Partner to a proportional share of net rental income generated during the deal term.
                   </p>
                   <p className="mb-3">
-                    <strong className="text-[#1A1A1A]">This is an active joint venture, not a passive arrangement.</strong> Every Partner is required to participate in governance decisions, including votes on property management, pricing strategy, and operational matters, through the platform's voting system. Partners who do not actively participate in votes may have their income distributions suspended until they re-engage.
+                    <strong className="text-[#1A1A1A]">This is an active joint venture, not a passive investment.</strong> Every Partner is required to participate in governance decisions, including votes on property management, pricing strategy, and operational matters. By entering into this Agreement, the Partner acknowledges that they do not acquire any form of property ownership, equity in nfstay or Airbrick, or any token, security, or financial instrument. The Partner receives a contractual right to a share of net rental income as described herein for the duration of the deal term.
                   </p>
                   <p className="mb-3">
-                    By entering into this Agreement, the Partner acknowledges that this is an active partnership. The Partner does not acquire any form of property ownership. The Partner receives a contractual right to a share of net rental income as described herein for the duration of the deal term.
-                  </p>
-                  <p>
                     The Company retains all intellectual property rights associated with the platform, including trademarks, copyrights, and proprietary technology. No intellectual property rights are transferred to the Partner through this Agreement.
+                  </p>
+                  <p className="text-xs italic text-[#9CA3AF]">
+                    → Full clauses on parties, structure, and the role of Nfstay Holdings vs. Airbrick are set out in Sections 1, 8 and 23 of the full Agreement at docs.nfstay.com.
                   </p>
                 </section>
 
@@ -315,8 +321,19 @@ export default function AgreementPage() {
                       <InfoCard label="Bedrooms" value={String(property.bedrooms)} />
                       <InfoCard label="Total Project Cost" value={`$${property.property_value.toLocaleString()} = ~£${usdToGbp(property.property_value).toLocaleString()}`} />
                       <InfoCard label="Deal Term" value="5 years" />
+                      <InfoCard label="Occupancy Target" value={`${property.annual_yield ?? 0}%`} />
+                      <InfoCard label="Minimum Contribution" value={dualAmount(500)} />
                     </div>
-                    <p>{property.description}</p>
+                    <p className="mb-3">{property.description}</p>
+                    <p className="mb-3">
+                      The property is operated as a fully licensed and insured serviced accommodation unit under the nfstay brand. Operational control sits with the Property Manager, subject to Partner governance under Section 5.
+                    </p>
+                    <p className="mb-3">
+                      The Partner does not acquire title, leasehold, or any direct interest in the property. The Partner's economic interest is solely a contractual right to a proportional share of Net Income from this specific deal. Contributions to this deal are not pooled with any other deal on the platform; each deal is funded, accounted for, operated, and settled separately.
+                    </p>
+                    <p className="text-xs italic text-[#9CA3AF]">
+                      → See Sections 2, 4 and 13 of the full Agreement for landlord, lease and third-party risk detail.
+                    </p>
                     {property.highlights?.length > 0 && (
                       <ul className="mt-3 space-y-1">
                         {property.highlights.map((h, i) => (
@@ -337,7 +354,7 @@ export default function AgreementPage() {
                     <h2 className="text-lg font-bold text-[#1A1A1A]">3. Partnership Contribution</h2>
                   </div>
                   <div className="bg-[#F3F3EE] rounded-xl p-5 mb-5">
-                    <div className="grid grid-cols-2 gap-4">
+                    <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
                       <div>
                         <p className="text-xs font-semibold text-[#9CA3AF] uppercase tracking-wider">Contribution Amount</p>
                         <p className="text-2xl font-bold text-[#1A1A1A]">${amountUsd.toLocaleString()}</p>
@@ -349,49 +366,46 @@ export default function AgreementPage() {
                         <p className="text-sm text-[#6B7280]">From date of execution</p>
                       </div>
                       <div>
-                        <p className="text-xs font-semibold text-[#9CA3AF] uppercase tracking-wider">Area Avg. Monthly Revenue</p>
-                        <p className="text-2xl font-bold text-[#1E9A80]">${(property?.monthly_rent ?? 0).toLocaleString()}</p>
-                        <p className="text-sm text-[#6B7280]">= ~£{usdToGbp(property?.monthly_rent ?? 0).toLocaleString()} GBP &middot; Market data</p>
-                      </div>
-                      <div>
-                        <p className="text-xs font-semibold text-[#9CA3AF] uppercase tracking-wider">Area Avg. Occupancy</p>
+                        <p className="text-xs font-semibold text-[#9CA3AF] uppercase tracking-wider">Indicative Net Yield</p>
                         <p className="text-2xl font-bold text-[#1E9A80]">{property?.annual_yield ?? 0}%</p>
-                        <p className="text-sm text-[#6B7280]">Market data, not guaranteed income</p>
+                        <p className="text-sm text-[#6B7280]">Market data, not guaranteed</p>
                       </div>
                     </div>
                   </div>
 
-                  <h3 className="text-sm font-semibold text-[#1A1A1A] mb-2">3.1 Definitions</h3>
-                  <ul className="space-y-2 mb-4">
-                    <li className="flex items-start gap-2">
-                      <span className="w-1.5 h-1.5 rounded-full bg-[#1A1A1A] mt-2 shrink-0" />
-                      <span><strong className="text-[#1A1A1A]">Rent-to-Rent Deal:</strong> A property management arrangement where the Company leases a property from a landlord for a fixed term and manages it as serviced accommodation. The Company manages the property and accounts for each Partner's share of net income.</span>
-                    </li>
-                    <li className="flex items-start gap-2">
-                      <span className="w-1.5 h-1.5 rounded-full bg-[#1A1A1A] mt-2 shrink-0" />
-                      <span><strong className="text-[#1A1A1A]">Contribution:</strong> A financial contribution by the Partner towards a specific property deal, establishing their stake in the joint venture and entitling them to a proportional share of net rental income during the deal term.</span>
-                    </li>
-                    <li className="flex items-start gap-2">
-                      <span className="w-1.5 h-1.5 rounded-full bg-[#1A1A1A] mt-2 shrink-0" />
-                      <span><strong className="text-[#1A1A1A]">Deal Term:</strong> The fixed period of 5 (five) years from the date of this Agreement, unless the underlying rent-to-rent agreement is terminated earlier by the landlord or extended by mutual consent.</span>
-                    </li>
-                    <li className="flex items-start gap-2">
-                      <span className="w-1.5 h-1.5 rounded-full bg-[#1A1A1A] mt-2 shrink-0" />
-                      <span><strong className="text-[#1A1A1A]">Funding Requirement:</strong> The total funding needed for the deal. The maximum number of Partners is determined by the total funding requirement.</span>
-                    </li>
-                  </ul>
+                  <h3 className="text-sm font-semibold text-[#1A1A1A] mb-2">3.1 Rent-to-Rent Deal</h3>
+                  <p className="mb-4">
+                    A property management arrangement under which the Company leases the property from a landlord for a fixed term and operates it as serviced accommodation. The Company manages the property and accounts for each Partner's share of net income.
+                  </p>
 
-                  <h3 className="text-sm font-semibold text-[#1A1A1A] mb-2">3.2 Terms of Contribution</h3>
+                  <h3 className="text-sm font-semibold text-[#1A1A1A] mb-2">3.2 Contribution</h3>
+                  <p className="mb-4">
+                    A financial contribution by the Partner toward this specific property deal, establishing the Partner's stake in the joint venture and entitling the Partner to a proportional share of net rental income during the deal term.
+                  </p>
+
+                  <h3 className="text-sm font-semibold text-[#1A1A1A] mb-2">3.3 Deal Term</h3>
+                  <p className="mb-4">
+                    The fixed period of 5 (five) years from the date of this Agreement, unless the underlying rent-to-rent agreement is terminated earlier by the landlord or extended by mutual consent.
+                  </p>
+
+                  <h3 className="text-sm font-semibold text-[#1A1A1A] mb-2">3.4 Funding Requirement</h3>
+                  <p className="mb-4">
+                    The total funding needed for the deal, as set out on the deal page on the nfstay platform. The maximum number of Partner Contributions accepted is determined by the total funding requirement.
+                  </p>
+
+                  <h3 className="text-sm font-semibold text-[#1A1A1A] mb-2">3.5 Terms of Contribution</h3>
                   <ol className="list-decimal list-inside space-y-2">
-                    <li>Each Partner's share of net rental income is proportional to their contribution relative to the total funding for the deal.</li>
-                    <li>Income distributions are paid directly into the Partner's bank account in their local currency.</li>
-                    <li>The Company charges a 10% operational fee from gross revenue before distributions. This fee covers property management, tenant relations, maintenance, and administrative expenses.</li>
-                    <li>The minimum contribution is $500 USD = ~£{usdToGbp(500).toLocaleString()} GBP. Contributions below this amount may not be accepted at the Company's sole discretion.</li>
-                    <li>The Company may accept contributions in USD, GBP, or EUR. The exchange rate at the time of contribution determines the amount.</li>
-                    <li>Contributions are tied to the 5-year deal term. Upon expiry of the deal term, no further rental income distributions will be made unless the underlying agreement is renewed.</li>
-                    <li>Contributions are non-transferable. The Partner may not sell, assign, or transfer their stake to any third party.</li>
-                    <li>The Company shall not be obliged to accept contributions from Partners who do not provide the necessary identification documents.</li>
+                    <li>Each Partner's share of net rental income is proportional to their Contribution relative to the total funding for the deal.</li>
+                    <li>Income distributions are paid directly to the Partner's bank account in their local currency, or via another supported method elected by the Partner.</li>
+                    <li>The Company charges a 10% operational fee from gross revenue before distribution. This fee covers property management, tenant relations, maintenance, and administrative expenses.</li>
+                    <li>The Company may accept Contributions in USD, GBP, or EUR. The exchange rate at the time of Contribution determines the recorded amount.</li>
+                    <li>Contributions are final and locked for the deal term. Upon expiry, no further distributions are made unless the underlying agreement is renewed.</li>
+                    <li>Contributions are non-transferable. The Partner may not sell, assign, or transfer their stake to any third party without the prior written consent of the Company.</li>
+                    <li>The Company is not obliged to accept Contributions from Partners who do not provide the necessary identification documents (see Section 7).</li>
                   </ol>
+                  <p className="text-xs italic text-[#9CA3AF] mt-3">
+                    → See Sections 5, 6, 15 and 19 of the full Agreement for use of funds, lock-up, transfer, and KYC detail.
+                  </p>
                 </section>
 
                 {/* 4. Market Data */}
@@ -402,7 +416,7 @@ export default function AgreementPage() {
                       <h2 className="text-lg font-bold text-[#1A1A1A]">4. Market Data</h2>
                     </div>
                     <p className="mb-4 text-xs italic text-[#9CA3AF]">
-                      The figures below are market data for informational context only. They reflect current area conditions for similar properties and do not represent guaranteed or expected partner income. Actual results may vary significantly based on occupancy, costs, and market conditions.
+                      The figures below reflect current market conditions for comparable properties in the area at the time of publication and are provided to help the Partner understand the local market. These figures are illustrative only. They are not a forecast, projection, or guarantee of Partner income. Actual performance may differ materially.
                     </p>
                     {property.financials.transaction && (
                       <div className="mb-6">
@@ -456,6 +470,9 @@ export default function AgreementPage() {
                         </div>
                       </div>
                     )}
+                    <p className="text-xs italic text-[#9CA3AF] mt-4">
+                      → Risk factors and the full no-guarantee position are set out in Sections 12 and 22 of the full Agreement.
+                    </p>
                   </section>
                 )}
 
@@ -468,10 +485,7 @@ export default function AgreementPage() {
 
                   <h3 className="text-sm font-semibold text-[#1A1A1A] mb-2">5.1 Day-to-Day Management</h3>
                   <p className="mb-3">
-                    By default, the Company will handle the day-to-day management of the property, including tenant relations, maintenance, and rental collection. The Company will charge a 10% operational fee from the gross revenue generated by the property.
-                  </p>
-                  <p className="mb-4">
-                    Partners may vote to replace the Company as the property management firm. Any such decision will require a majority vote of the Partners. A separate property management agreement will be drafted to outline the terms of the new management arrangement.
+                    By default, the Company handles the day-to-day management of the property, including tenant relations, maintenance, and rental collection. The Company charges a 10% operational fee from gross revenue. Partners may vote to replace the Company as Property Manager by majority vote. If replaced, a separate property management agreement will be drafted to outline the terms of the new arrangement, and Nfstay Holdings will continue to administer governance and distributions.
                   </p>
 
                   <h3 className="text-sm font-semibold text-[#1A1A1A] mb-2">5.2 Governance &amp; Voting Rights</h3>
@@ -490,10 +504,10 @@ export default function AgreementPage() {
 
                   <h3 className="text-sm font-semibold text-[#1A1A1A] mb-2">5.3 Income Distribution</h3>
                   <p className="mb-3">
-                    The Company manages rental income collection, pays rent and associated fees, and distributes the remaining funds to Partners. Partners receive their share of rental income directly into their bank account in their local currency.
+                    The Company manages rental income collection, pays rent and associated fees, and distributes the remaining funds to Partners. If Partners vote to use a third-party property management company, the Company is not liable if the chosen third party fails to pass funds from bookings or defaults on payments. Partners bear full responsibility for the selection of any third-party manager appointed by Partner vote.
                   </p>
-                  <p>
-                    If Partners vote to use a third-party property management company, the Company is not liable if the chosen third party fails to pass funds from bookings or defaults on payments. Partners bear full responsibility for the selection of any third-party management company.
+                  <p className="text-xs italic text-[#9CA3AF]">
+                    → Full governance thresholds, replacement-of-manager mechanics, and the consequences of replacement (Airbrick out / Nfstay Holdings continuing) are in Sections 7 and 8 of the full Agreement.
                   </p>
                 </section>
 
@@ -537,9 +551,20 @@ export default function AgreementPage() {
                     </li>
                     <li className="flex items-start gap-2">
                       <span className="w-1.5 h-1.5 rounded-full bg-[#1A1A1A] mt-2 shrink-0" />
-                      <span><strong className="text-[#1A1A1A]">Operational History Risk:</strong> The Company and its associated entities may have limited operational history. The Partner understands that their participation is in a development-stage arrangement and that there are inherent uncertainties.</span>
+                      <span><strong className="text-[#1A1A1A]">Operational / Industry Risk:</strong> The Company and its associated entities may have limited operational history. The Partner understands that there are inherent uncertainties.</span>
+                    </li>
+                    <li className="flex items-start gap-2">
+                      <span className="w-1.5 h-1.5 rounded-full bg-[#1A1A1A] mt-2 shrink-0" />
+                      <span><strong className="text-[#1A1A1A]">Force Majeure:</strong> Performance may be delayed or prevented by events beyond reasonable control, including natural disasters, pandemics, government action, sanctions, cyber events, or supplier failure.</span>
+                    </li>
+                    <li className="flex items-start gap-2">
+                      <span className="w-1.5 h-1.5 rounded-full bg-[#1A1A1A] mt-2 shrink-0" />
+                      <span><strong className="text-[#1A1A1A]">No Reliance on Informal Communications:</strong> The Partner has not relied on any forecast, WhatsApp message, social media post, video, or informal statement when deciding to participate. The Partner has decided to participate based on independent judgment.</span>
                     </li>
                   </ul>
+                  <p className="text-xs italic text-[#9CA3AF] mt-3">
+                    → The full risk disclosure, force majeure regime, and no-reliance representations are set out in Sections 12, 13, 21 and 22 of the full Agreement.
+                  </p>
                 </section>
 
                 {/* 7. Partner Obligations */}
@@ -548,27 +573,28 @@ export default function AgreementPage() {
                     <Shield className="h-5 w-5 text-[#1E9A80]" />
                     <h2 className="text-lg font-bold text-[#1A1A1A]">7. Partner Obligations, Representations &amp; Warranties</h2>
                   </div>
+                  <h3 className="text-sm font-semibold text-[#1A1A1A] mb-2">7.1 Eligibility &amp; Acknowledgements</h3>
                   <p className="mb-3">By signing this Agreement, the Partner represents and warrants that:</p>
                   <ol className="list-decimal list-inside space-y-2 mb-6">
                     <li>They are at least 18 years of age and have full legal capacity to enter into this Agreement.</li>
                     <li>They have read, understood, and accept all the risk factors outlined in Section 6.</li>
-                    <li>The funds used for this contribution are lawfully obtained and are not derived from criminal activity.</li>
-                    <li>They understand that contributions are non-refundable once payment is confirmed.</li>
-                    <li>They acknowledge that market data shown is for informational context only and actual income may vary significantly, including the possibility of receiving no income.</li>
+                    <li>The funds used for this Contribution are lawfully obtained and not derived from criminal activity.</li>
+                    <li>They understand that Contributions are non-refundable once payment is confirmed.</li>
+                    <li>They acknowledge that market data is for informational purposes only and that actual income may vary significantly, including the possibility of receiving no income.</li>
                     <li>They are entering this joint venture on their own behalf and not as a nominee or agent for any third party, unless explicitly authorised by the Company.</li>
                     <li>They have had the opportunity to obtain independent legal, financial, and tax advice and have done so to the extent they deem necessary.</li>
                     <li>They understand this is an active joint venture, not a passive arrangement, and they are required to participate in governance decisions through the platform's voting system.</li>
-                    <li>They will actively participate in governance decisions, including votes on property management and operational matters. Failure to participate may result in the forfeiture of certain benefits.</li>
-                    <li>They will provide accurate and up-to-date information when requested by the Company, including KYC (Know Your Customer) and AML (Anti-Money Laundering) documentation.</li>
-                    <li>They acknowledge that the Company may, at its sole discretion, refuse to accept their contribution or revoke previously accepted contributions if the Partner is found to have violated this Agreement or applicable laws.</li>
-                    <li>They understand that the deal term is 5 years and that no further income distributions will be made after the expiry or termination of the deal.</li>
+                    <li>They will provide accurate and up-to-date information when requested, including KYC and AML documentation.</li>
+                    <li>They acknowledge that the Company may, at its sole discretion, refuse to accept their Contribution or revoke previously accepted Contributions if the Partner is found to have violated this Agreement or applicable laws.</li>
+                    <li>They understand that no further distributions will be made after expiry or termination of the deal.</li>
+                    <li>They acknowledge that this is not a token sale, cryptocurrency, security, share, or pooled investment. Their Contribution is recorded as a contractual allocation in this specific deal only and is not pooled with other deals.</li>
                   </ol>
 
-                  <h3 className="text-sm font-semibold text-[#1A1A1A] mb-2">7.1 Partner Responsibilities</h3>
+                  <h3 className="text-sm font-semibold text-[#1A1A1A] mb-2">7.2 Partner Responsibilities</h3>
                   <ul className="space-y-2">
                     <li className="flex items-start gap-2">
                       <span className="w-1.5 h-1.5 rounded-full bg-[#1A1A1A] mt-2 shrink-0" />
-                      <span>Ensuring the accuracy of all information provided during the KYC/AML process.</span>
+                      <span>Ensuring the accuracy of all information provided during KYC/AML.</span>
                     </li>
                     <li className="flex items-start gap-2">
                       <span className="w-1.5 h-1.5 rounded-full bg-[#1A1A1A] mt-2 shrink-0" />
@@ -582,7 +608,14 @@ export default function AgreementPage() {
                       <span className="w-1.5 h-1.5 rounded-full bg-[#1A1A1A] mt-2 shrink-0" />
                       <span>Notifying the Company promptly of any changes to their personal or banking information.</span>
                     </li>
+                    <li className="flex items-start gap-2">
+                      <span className="w-1.5 h-1.5 rounded-full bg-[#1A1A1A] mt-2 shrink-0" />
+                      <span>Keeping payment and bank details current and secure. The Company is not liable for losses caused by incorrect or outdated payment details provided by the Partner.</span>
+                    </li>
                   </ul>
+                  <p className="text-xs italic text-[#9CA3AF] mt-3">
+                    → Full Partner representations are in Section 16 of the full Agreement.
+                  </p>
                 </section>
 
                 {/* 8. Tax Responsibility */}
@@ -591,15 +624,24 @@ export default function AgreementPage() {
                     <FileText className="h-5 w-5 text-[#1E9A80]" />
                     <h2 className="text-lg font-bold text-[#1A1A1A]">8. Tax Responsibility</h2>
                   </div>
-                  <ol className="list-decimal list-inside space-y-2">
+                  <ol className="list-decimal list-inside space-y-2 mb-4">
                     <li>The Partner is solely responsible for determining, understanding, and fulfilling any and all tax obligations arising from their participation in this Agreement, including but not limited to income tax, capital gains tax, value-added tax (VAT), or any other taxes or duties applicable under the laws of the Partner's jurisdiction.</li>
-                    <li>The Company is not responsible for withholding, collecting, reporting, or remitting any taxes on behalf of the Partner. It is the Partner's obligation to report and remit any applicable taxes to the relevant tax authorities.</li>
-                    <li>The Partner acknowledges that the tax treatment of contributions and rental income may vary significantly across different jurisdictions. The Company makes no representations or guarantees regarding the applicability of any specific tax regime.</li>
-                    <li>The Partner is strongly advised to consult with a qualified accountant or tax professional before entering into this Agreement and on an ongoing basis to understand and manage their tax obligations.</li>
-                    <li>The Company does not provide tax, legal, or financial advice of any kind. Nothing in this Agreement or on the platform should be construed as tax advice.</li>
-                    <li>The Partner agrees to indemnify and hold harmless the Company from and against any claims, damages, losses, penalties, or fines arising from the Partner's failure to comply with applicable tax laws and regulations.</li>
-                    <li>Any penalties, fines, or liabilities imposed by tax authorities due to non-compliance or errors in the Partner's tax filings shall be borne exclusively by the Partner.</li>
+                    <li>The Company is not responsible for withholding, collecting, reporting, or remitting any taxes on behalf of the Partner.</li>
+                    <li>The Partner acknowledges that the tax treatment of Contributions and rental income may vary significantly across different jurisdictions. The Company makes no representations or guarantees regarding the applicability of any specific tax regime.</li>
+                    <li>The Partner is strongly advised to consult with a qualified tax professional before entering into this Agreement and on an ongoing basis.</li>
+                    <li>The Company does not provide tax, legal, or financial advice of any kind.</li>
+                    <li>The Partner agrees to defend, indemnify, and hold the Company harmless from any claims, damages, losses, or penalties arising from the Partner's failure to comply with applicable tax laws or any inaccurate tax-related information provided by the Partner.</li>
+                    <li>Any penalties, fines, or other liabilities imposed by tax authorities due to non-compliance or errors in the Partner's tax filings shall be borne exclusively by the Partner.</li>
                   </ol>
+                  <div className="bg-[#F3F3EE] rounded-xl p-4">
+                    <p className="text-xs font-semibold text-[#1A1A1A] mb-1">No crypto or token tax treatment.</p>
+                    <p className="text-xs text-[#6B7280]">
+                      The Partner's allocation is a contractual share of rental income, not a token, digital asset, or cryptocurrency. There is no exposure to cryptocurrency price movement. Any technology used by the Company in the background (such as digital ledger or smart-contract infrastructure) is purely an operational record-keeping and distribution tool. It does not change the underlying nature of the Partner's interest, which is real-world rental income from a specific property.
+                    </p>
+                  </div>
+                  <p className="text-xs italic text-[#9CA3AF] mt-3">
+                    → Full tax and indemnity wording is in Section 18 of the full Agreement.
+                  </p>
                 </section>
 
                 {/* 9. Disclaimer & Limitation of Liability */}
@@ -611,10 +653,7 @@ export default function AgreementPage() {
 
                   <h3 className="text-sm font-semibold text-[#1A1A1A] mb-2">9.1 General Disclaimer</h3>
                   <p className="mb-3">
-                    nfstay operates as an active joint venture. Every Partner has a direct and ongoing role in managing the property through the platform's democratic voting system. This is not a passive arrangement, participation in governance is mandatory.
-                  </p>
-                  <p className="mb-3">
-                    nfstay is not a registered investment adviser, broker-dealer, or financial planner. The content on this platform should not be interpreted as offers to sell, solicitations to buy, or recommendations regarding any security or financial product. Partners are solely responsible for determining whether a joint venture contribution aligns with their financial goals and risk tolerance.
+                    nfstay operates as an active joint venture. Every Partner takes a direct and ongoing role in managing the property through the platform's governance and voting system. This is not a passive investment, a regulated investment scheme, a fund, or a financial product. The Company is not authorised to provide financial advice, and no representation is made that Contributions will result in any specific level of return.
                   </p>
                   <p className="mb-4">
                     nfstay does not guarantee the performance, appreciation, or returns of any property deal. By participating, Partners acknowledge the inherent risks, including fluctuations in rental income, tenant risks, regulatory changes, and broader economic factors.
@@ -622,13 +661,22 @@ export default function AgreementPage() {
 
                   <h3 className="text-sm font-semibold text-[#1A1A1A] mb-2">9.2 Limitation of Liability</h3>
                   <p className="mb-3">
-                    The platform and all services are provided "as is" and "as available" without warranties of any kind, whether express or implied, including but not limited to warranties of merchantability, fitness for a particular purpose, or non-infringement.
+                    The platform and all services are provided "as is" and "as available" without warranties of any kind, whether express or implied, including warranties of merchantability, fitness for a particular purpose, or non-infringement.
                   </p>
                   <p className="mb-3">
-                    To the fullest extent permissible under applicable law, the Company and its directors, officers, employees, agents, and affiliates shall not be held liable for any direct, indirect, incidental, special, punitive, or consequential damages, including loss of business, revenue, profits, or data arising from the use of the platform or participation in this arrangement.
+                    To the fullest extent permitted under applicable law, the Company and its directors, officers, employees, agents, and affiliates shall not be held liable for any direct, indirect, incidental, special, punitive, or consequential damages, including loss of business, revenue, profits, or data arising from: use of the platform; participation in this arrangement; acts of any third-party manager appointed by Partner vote; landlord-driven termination; regulatory change; third-party supplier or payment processor failure; blockchain or technology infrastructure failure; force majeure; or the Partner's reliance on informal communications, projections, or marketing material.
+                  </p>
+                  <p className="mb-3">
+                    <strong className="text-[#1A1A1A]">Liability cap.</strong> The aggregate liability of the Company to the Partner under or in connection with this Agreement shall not exceed the amount of the Partner's Contribution to this specific deal, less any distributions already received.
+                  </p>
+                  <p className="mb-3">
+                    <strong className="text-[#1A1A1A]">Carve-out.</strong> Nothing in this Agreement excludes or limits liability for fraud, fraudulent misrepresentation, wilful misconduct, death or personal injury caused by negligence, or any other liability that cannot lawfully be excluded.
                   </p>
                   <p>
-                    The Company shall not be liable for any delay or failure to perform any obligation under this Agreement if such delay or failure results from causes beyond its reasonable control, including but not limited to natural disasters, government actions, acts of war, pandemics, or technical failures (force majeure).
+                    The Company shall not be liable for any delay or failure to perform any obligation due to events beyond its reasonable control, including natural disasters, pandemics, government actions, sanctions, acts of war, cyberattacks, technical failures, or third-party platform outages.
+                  </p>
+                  <p className="text-xs italic text-[#9CA3AF] mt-3">
+                    → Full liability and force majeure terms are in Sections 20 and 21 of the full Agreement.
                   </p>
                 </section>
 
@@ -638,13 +686,24 @@ export default function AgreementPage() {
                     <FileText className="h-5 w-5 text-[#1E9A80]" />
                     <h2 className="text-lg font-bold text-[#1A1A1A]">10. Termination &amp; Dissolution</h2>
                   </div>
-                  <ol className="list-decimal list-inside space-y-2">
-                    <li>This Agreement is for a fixed term of 5 (five) years from the date of execution. Upon expiry of the deal term, no further rental income distributions will be made unless the underlying rent-to-rent agreement is renewed by mutual consent.</li>
-                    <li>The Company reserves the right to terminate this Agreement if the Partner has failed to comply with any terms or conditions, failed to provide necessary documentation, or engaged in activities that may compromise the integrity of the arrangement or violate applicable laws.</li>
-                    <li>In the case of a dissolution event before the end of the deal term, the Company will refund an amount equal to the Partner's contribution, subject to the rights and privileges of creditors under applicable law. If the Company's remaining assets are insufficient to repay all Partners, available assets will be distributed pro-rata among Partners in proportion to their contributions.</li>
-                    <li>All provisions of this Agreement that by their nature should survive termination, including disclaimers, limitations of liability, and indemnity provisions, shall survive termination.</li>
-                    <li>Upon termination, the Partner agrees to immediately cease any use of the platform in a manner inconsistent with this Agreement.</li>
-                  </ol>
+                  <p className="mb-3">
+                    This Agreement is for the fixed Deal Term. Upon expiry, no further distributions are made unless the underlying rent-to-rent agreement is renewed by mutual consent.
+                  </p>
+                  <p className="mb-3">
+                    The Company reserves the right to terminate this Agreement if the Partner has failed to comply with any of its terms, has provided false information, or has engaged in activities that may compromise the integrity of the platform or violate applicable laws.
+                  </p>
+                  <p className="mb-3">
+                    In the case of a dissolution event before the end of the deal term, the Company will refund an amount based on the Partner's Contribution proportional to the value of the remaining assets after liquidation. If, immediately prior to such dissolution, the assets of the Company that remain legally available for distribution are insufficient to permit payment to all Partners of their respective Contributions, the remaining assets will be distributed pro-rata among Partners in proportion to their Contribution amounts.
+                  </p>
+                  <p className="mb-3">
+                    All provisions of this Agreement that by their nature should survive termination, including disclaimers, limitations of liability, and indemnity provisions, shall survive.
+                  </p>
+                  <p className="mb-3">
+                    Upon termination, the Partner agrees to immediately cease use of the platform in any manner inconsistent with this Agreement.
+                  </p>
+                  <p className="text-xs italic text-[#9CA3AF]">
+                    → Full term, rollover, extension, insolvency waterfall, and final settlement mechanics are in Section 14 of the full Agreement.
+                  </p>
                 </section>
 
                 {/* 11. Governing Law */}
@@ -654,19 +713,25 @@ export default function AgreementPage() {
                     <h2 className="text-lg font-bold text-[#1A1A1A]">11. Governing Law &amp; Dispute Resolution</h2>
                   </div>
                   <p className="mb-3">
-                    Airbrick Finance Ltd (UK) manages property operations, while Nfstay Holdings FZE LLC (UAE) administers the financial and contractual aspects of the partnership. As the financial and contractual administration of this Agreement is managed by Nfstay Holdings FZE LLC, this Agreement is governed by the laws of the United Arab Emirates.
+                    Airbrick Finance Ltd manages property operations from the United Kingdom, while Nfstay Holdings FZE LLC administers the financial and contractual aspects of the partnership from the United Arab Emirates. As the financial and contractual administrator of this Agreement is Nfstay Holdings FZE LLC, this Agreement is governed by the laws of the United Arab Emirates, as applied in the Emirate of Ajman.
+                  </p>
+                  <p className="mb-3">
+                    In the event of any dispute arising out of or in connection with this Agreement, the parties shall first attempt to resolve the matter amicably through good-faith negotiation, within 30 days of written notice.
+                  </p>
+                  <p className="mb-3">
+                    If the dispute is not resolved through negotiation, it shall be referred to binding arbitration administered by the International Chamber of Commerce (ICC) under the ICC Rules of Arbitration. The arbitration shall be conducted by a single arbitrator appointed in accordance with those rules.
                   </p>
                   <ol className="list-decimal list-inside space-y-2">
-                    <li>This Agreement shall be governed by and construed in accordance with the laws of the United Arab Emirates, as applied in the Emirate of Ajman.</li>
-                    <li>In the event of any dispute arising out of or in connection with this Agreement, the parties shall first attempt to resolve the matter amicably through good-faith negotiation within 30 days of written notice.</li>
-                    <li>If the dispute is not resolved through negotiation, it shall be referred to and finally resolved by arbitration administered by the International Chamber of Commerce (ICC) under its Rules of Arbitration. The arbitration shall be conducted by a single arbitrator appointed in accordance with those rules.</li>
-                    <li>The seat of arbitration shall be the United Arab Emirates. The language of the arbitration shall be English.</li>
-                    <li>The arbitrator's award shall be final and binding on both parties and may be enforced in any court of competent jurisdiction.</li>
-                    <li>If any provision of this Agreement is found to be invalid or unenforceable, the remaining provisions shall continue in full force and effect.</li>
+                    <li>The arbitration shall take place in Dubai, United Arab Emirates, and shall be conducted in English.</li>
+                    <li>The arbitrator's decision shall be final and binding on both parties; judgment on the award may be entered in any court of competent jurisdiction.</li>
+                    <li>If any provision of this Agreement is determined to be invalid or unenforceable, the remaining provisions shall continue in full force and effect.</li>
                     <li>This Agreement constitutes the entire agreement between the parties in relation to its subject matter and supersedes all prior agreements, representations, and understandings.</li>
-                    <li>No amendment to this Agreement shall be effective unless made in writing and signed by both parties.</li>
+                    <li>Any amendment to this Agreement shall only become effective when made in writing and signed by both parties, or when notified through the platform in accordance with Section 24 of the full Agreement.</li>
                     <li>The Partner may not assign or transfer any rights or obligations under this Agreement without the prior written consent of the Company.</li>
                   </ol>
+                  <p className="text-xs italic text-[#9CA3AF] mt-3">
+                    → Full arbitration mechanics, including seat, language, costs, confidentiality, and interim relief, are in Section 26 of the full Agreement.
+                  </p>
                 </section>
 
                 {/* Custom Terms */}
@@ -752,6 +817,9 @@ export default function AgreementPage() {
                       </button>
                       <p className="text-xs text-[#9CA3AF] mt-3">
                         By clicking confirm, you agree to the terms above and will be redirected to complete payment.
+                      </p>
+                      <p className="text-xs text-[#9CA3AF] mt-2">
+                        Where this Agreement is accepted electronically through the nfstay platform, the Partner's confirmation, timestamp, and authentication record shall constitute a binding electronic signature with the same legal effect as a handwritten signature, in accordance with applicable electronic-transaction law.
                       </p>
                     </div>
                   </div>

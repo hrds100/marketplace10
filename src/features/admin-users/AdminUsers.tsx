@@ -1,5 +1,5 @@
-import { useState } from 'react';
-import { MessageCircle, ChevronLeft, ChevronRight, AlertTriangle, Trash2, Wallet } from 'lucide-react';
+import { useState, useCallback, useEffect } from 'react';
+import { MessageCircle, ChevronLeft, ChevronRight, AlertTriangle, Trash2, Wallet, FileSignature, Copy, CheckCircle2, Loader2 } from 'lucide-react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { tierDisplayName } from '@/lib/ghl';
@@ -46,6 +46,13 @@ export default function AdminUsers() {
   const [bulkPin, setBulkPin] = useState('');
   const [editTarget, setEditTarget] = useState<Profile | null>(null);
   const [editForm, setEditForm] = useState({ name: '', whatsapp: '', email: '' });
+  const [agreementTarget, setAgreementTarget] = useState<Profile | null>(null);
+  const [agreementAmount, setAgreementAmount] = useState('');
+  const [agreementPropertyId, setAgreementPropertyId] = useState('');
+  const [agreementCurrency, setAgreementCurrency] = useState('USD');
+  const [agreementGenerating, setAgreementGenerating] = useState(false);
+  const [agreementUrl, setAgreementUrl] = useState('');
+  const [agreementProperties, setAgreementProperties] = useState<Array<{ id: number; title: string }>>([]);
 
   // Fetch profiles
   const { data: allProfiles = [], isLoading } = useQuery({
@@ -59,6 +66,23 @@ export default function AdminUsers() {
       return (data || []) as Profile[];
     },
   });
+
+  // Fetch agreements for signed status
+  const { data: agreements = [] } = useQuery({
+    queryKey: ['admin-agreements'],
+    queryFn: async () => {
+      const { data } = await (supabase.from('agreements' as any) as any)
+        .select('id, token, user_id, status, recipient_name, amount');
+      return (data || []) as Array<{ id: string; token: string; user_id: string | null; status: string; recipient_name: string | null; amount: number }>;
+    },
+  });
+
+  const agreementsByUserId = new Map<string, typeof agreements[0]>();
+  for (const a of agreements) {
+    if (a.user_id && (a.status === 'signed' || a.status === 'paid')) {
+      agreementsByUserId.set(a.user_id, a);
+    }
+  }
 
   // Filter by tier
   const filtered = tierFilter === 'all'
@@ -214,6 +238,76 @@ export default function AdminUsers() {
     onError: (err: unknown) => toast.error((err as Error).message || 'Failed to update'),
   });
 
+  const openAgreementModal = useCallback(async (profile: Profile) => {
+    setAgreementTarget(profile);
+    setAgreementAmount('');
+    setAgreementUrl('');
+    setAgreementCurrency('USD');
+    if (agreementProperties.length === 0) {
+      const { data } = await (supabase.from('inv_properties' as any) as any)
+        .select('id, title')
+        .order('title', { ascending: true });
+      const props = (data ?? []) as Array<{ id: number; title: string }>;
+      setAgreementProperties(props);
+      if (props.length) setAgreementPropertyId(String(props[0].id));
+    }
+  }, [agreementProperties.length]);
+
+  const generateAgreement = useCallback(async (send: boolean) => {
+    if (!agreementTarget) return;
+    if (!agreementAmount || isNaN(Number(agreementAmount)) || Number(agreementAmount) <= 0) {
+      toast.error('Enter a valid amount');
+      return;
+    }
+    setAgreementGenerating(true);
+    try {
+      const name = agreementTarget.name || agreementTarget.email || 'partner';
+      const slug = name.toLowerCase().replace(/[^a-z0-9]/g, '-').replace(/-+/g, '-').replace(/^-|-$/g, '').slice(0, 20);
+      const num = String(Math.floor(Math.random() * 99) + 1).padStart(2, '0');
+      const token = `${slug}-${num}`;
+      const url = `hub.nfstay.com/agreement/${token}`;
+
+      const { error: insertErr } = await (supabase.from('agreements' as any) as any)
+        .insert({
+          token,
+          user_id: agreementTarget.id,
+          property_id: agreementPropertyId ? Number(agreementPropertyId) : null,
+          recipient_name: agreementTarget.name,
+          amount: Number(agreementAmount),
+          currency: agreementCurrency,
+          title: 'Property Serviced Accommodation Partnership Agreement',
+          status: send ? 'sent' : 'draft',
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+        });
+      if (insertErr) throw new Error(insertErr.message);
+
+      if (send && agreementTarget.email) {
+        const firstName = (agreementTarget.name || '').split(' ')[0] || 'there';
+        const propertyTitle = agreementProperties.find(p => String(p.id) === agreementPropertyId)?.title ?? 'the property';
+        await supabase.functions.invoke('wk-email-send', {
+          body: {
+            to: agreementTarget.email,
+            subject: `Your Partnership Agreement — ${propertyTitle}`,
+            body: `Hi ${firstName},\n\nI've prepared your Partnership Agreement for the ${propertyTitle} opportunity.\n\nPlease review and sign here:\n${url}\n\nBest,\nnfstay\nhub.nfstay.com`,
+          },
+        });
+        toast.success(`Agreement sent to ${agreementTarget.name}`);
+        setAgreementTarget(null);
+      } else {
+        setAgreementUrl(url);
+        toast.success('Agreement generated');
+      }
+
+      queryClient.invalidateQueries({ queryKey: ['admin-agreements'] });
+      if (adminUser) logAdminAction(adminUser.id, { action: 'generate_agreement', target_table: 'agreements', target_id: token, metadata: { amount: agreementAmount, send } });
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : 'Failed to generate');
+    } finally {
+      setAgreementGenerating(false);
+    }
+  }, [agreementTarget, agreementAmount, agreementCurrency, agreementPropertyId, agreementProperties, adminUser, queryClient]);
+
   const tierBadge = (tier: string | null) => {
     const t = tier || 'free';
     const styles: Record<string, string> = {
@@ -355,6 +449,18 @@ export default function AdminUsers() {
                         >
                           <Wallet className="w-3 h-3" /> Wallet
                         </button>
+                        {agreementsByUserId.has(u.id) ? (
+                          <span className="text-[11px] font-semibold px-2.5 py-1 rounded-lg bg-[#ECFDF5] text-[#1E9A80] inline-flex items-center gap-1">
+                            <CheckCircle2 className="w-3 h-3" /> Signed
+                          </span>
+                        ) : (
+                          <button
+                            onClick={() => openAgreementModal(u)}
+                            className="text-xs font-medium px-2.5 py-1 rounded-lg border border-[#1E9A80] text-[#1E9A80] hover:bg-[#ECFDF5] transition-colors inline-flex items-center gap-1"
+                          >
+                            <FileSignature className="w-3 h-3" /> Agreement
+                          </button>
+                        )}
                       </div>
                     </td>
                   </tr>
@@ -574,6 +680,106 @@ export default function AdminUsers() {
                 {editUserMutation.isPending ? 'Saving...' : 'Save Changes'}
               </button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* Agreement Generation Modal */}
+      {agreementTarget && (
+        <div className="fixed inset-0 z-[200] bg-black/50 flex items-center justify-center p-4" onClick={() => setAgreementTarget(null)}>
+          <div className="bg-card rounded-2xl border border-border p-6 w-full max-w-[420px]" onClick={e => e.stopPropagation()}>
+            <div className="flex items-center gap-3 mb-4">
+              <div className="w-10 h-10 rounded-full bg-[#ECFDF5] flex items-center justify-center">
+                <FileSignature className="w-5 h-5 text-[#1E9A80]" />
+              </div>
+              <div>
+                <h3 className="text-base font-bold text-foreground">Generate Agreement</h3>
+                <p className="text-xs text-muted-foreground">{agreementTarget.name || agreementTarget.email}</p>
+              </div>
+            </div>
+
+            {agreementUrl ? (
+              <div className="space-y-4">
+                <div className="bg-[#F3F3EE] rounded-xl p-4">
+                  <p className="text-xs font-semibold text-[#9CA3AF] uppercase tracking-wider mb-1">Agreement URL</p>
+                  <p className="text-sm font-medium text-[#1A1A1A] break-all">hub.nfstay.com/agreement/{agreementUrl.split('/agreement/')[1]}</p>
+                </div>
+                <button
+                  onClick={() => {
+                    navigator.clipboard.writeText(`https://${agreementUrl}`);
+                    toast.success('Link copied');
+                  }}
+                  className="w-full h-11 rounded-lg border border-border text-sm font-medium text-foreground hover:bg-secondary transition-colors inline-flex items-center justify-center gap-2"
+                >
+                  <Copy className="w-4 h-4" /> Copy Link
+                </button>
+                <button
+                  onClick={() => setAgreementTarget(null)}
+                  className="w-full h-11 rounded-lg bg-[#1E9A80] text-white text-sm font-semibold hover:opacity-90 transition-opacity"
+                >
+                  Done
+                </button>
+              </div>
+            ) : (
+              <div className="space-y-4">
+                <div>
+                  <label className="text-xs font-semibold text-foreground block mb-1.5">Property</label>
+                  <select
+                    value={agreementPropertyId}
+                    onChange={e => setAgreementPropertyId(e.target.value)}
+                    className="w-full h-11 px-3 rounded-lg border border-border bg-background text-sm focus:outline-none focus:ring-2 focus:ring-[#1E9A80]"
+                  >
+                    {agreementProperties.map(p => (
+                      <option key={p.id} value={p.id}>{p.title}</option>
+                    ))}
+                  </select>
+                </div>
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="text-xs font-semibold text-foreground block mb-1.5">Amount</label>
+                    <input
+                      type="text"
+                      inputMode="decimal"
+                      value={agreementAmount}
+                      onChange={e => setAgreementAmount(e.target.value.replace(/[^0-9.]/g, ''))}
+                      placeholder="5000"
+                      className="w-full h-11 px-3 rounded-lg border border-border bg-background text-sm focus:outline-none focus:ring-2 focus:ring-[#1E9A80]"
+                    />
+                  </div>
+                  <div>
+                    <label className="text-xs font-semibold text-foreground block mb-1.5">Currency</label>
+                    <select
+                      value={agreementCurrency}
+                      onChange={e => setAgreementCurrency(e.target.value)}
+                      className="w-full h-11 px-3 rounded-lg border border-border bg-background text-sm focus:outline-none focus:ring-2 focus:ring-[#1E9A80]"
+                    >
+                      <option value="USD">USD</option>
+                      <option value="GBP">GBP</option>
+                      <option value="EUR">EUR</option>
+                    </select>
+                  </div>
+                </div>
+                <div className="flex gap-3">
+                  <button
+                    onClick={() => generateAgreement(false)}
+                    disabled={agreementGenerating}
+                    className="flex-1 h-11 rounded-lg border border-[#1E9A80] text-[#1E9A80] text-sm font-semibold hover:bg-[#ECFDF5] transition-colors disabled:opacity-50 inline-flex items-center justify-center gap-1.5"
+                  >
+                    {agreementGenerating ? <Loader2 className="w-4 h-4 animate-spin" /> : <Copy className="w-4 h-4" />}
+                    Generate Link
+                  </button>
+                  <button
+                    onClick={() => generateAgreement(true)}
+                    disabled={agreementGenerating || !agreementTarget.email}
+                    className="flex-1 h-11 rounded-lg bg-[#1E9A80] text-white text-sm font-semibold hover:opacity-90 transition-opacity disabled:opacity-50 inline-flex items-center justify-center gap-1.5"
+                    title={!agreementTarget.email ? 'No email on file' : undefined}
+                  >
+                    {agreementGenerating ? <Loader2 className="w-4 h-4 animate-spin" /> : <FileSignature className="w-4 h-4" />}
+                    Send via Email
+                  </button>
+                </div>
+              </div>
+            )}
           </div>
         </div>
       )}
