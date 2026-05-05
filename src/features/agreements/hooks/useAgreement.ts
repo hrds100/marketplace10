@@ -42,6 +42,8 @@ export interface AgreementProperty {
     transaction?: Array<{ description: string; amount: string; calculation_basis: string }>;
     rental?: Array<{ description: string; value: string; calculation_basis: string }>;
   };
+  lease_start_date: string | null;
+  lease_term_years: number | null;
 }
 
 export function useAgreement(token: string | undefined) {
@@ -72,7 +74,7 @@ export function useAgreement(token: string | undefined) {
 
       if (ag.property_id) {
         const { data: prop } = await (supabase.from('inv_properties' as any) as any)
-          .select('id, title, location, image, images, price_per_share, total_shares, shares_sold, annual_yield, monthly_rent, property_value, rent_cost, type, bedrooms, description, highlights, financials')
+          .select('id, title, location, image, images, price_per_share, total_shares, shares_sold, annual_yield, monthly_rent, property_value, rent_cost, type, bedrooms, description, highlights, financials, lease_start_date, lease_term_years')
           .eq('id', ag.property_id)
           .maybeSingle();
         if (prop) setProperty(prop as AgreementProperty);
