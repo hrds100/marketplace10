@@ -387,7 +387,7 @@ export default function AgreementPage() {
                     </div>
                   </div>
 
-                  <h3 className="text-sm font-semibold text-[#1A1A1A] mb-2">3.1 Rent-to-Rent Deal</h3>
+                  <h3 className="text-sm font-semibold text-[#1A1A1A] mb-2">3.1 Rent-to-Serviced Accommodation Deal</h3>
                   <p className="mb-4">
                     A property management arrangement under which the Company leases the property from a landlord for a fixed term and operates it as serviced accommodation. The Company manages the property and accounts for each Partner's share of net income.
                   </p>
@@ -403,7 +403,7 @@ export default function AgreementPage() {
                     {property?.lease_start_date
                       ? ` commencing ${new Date(property.lease_start_date).toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' })}`
                       : ' from the date of this Agreement'}
-                    , unless the underlying rent-to-rent agreement is terminated earlier by the landlord or extended by mutual consent.
+                    , unless the underlying rent-to-serviced accommodation agreement is terminated earlier by the landlord or extended by mutual consent.
                   </p>
 
                   <h3 className="text-sm font-semibold text-[#1A1A1A] mb-2">3.4 Funding Requirement</h3>
@@ -561,7 +561,7 @@ export default function AgreementPage() {
                     </li>
                     <li className="flex items-start gap-2">
                       <span className="w-1.5 h-1.5 rounded-full bg-[#1A1A1A] mt-2 shrink-0" />
-                      <span><strong className="text-[#1A1A1A]">Deal Termination Risk.</strong> Each nfstay deal is structured around a robust rent-to-rent agreement with the landlord, supported by professional management, regular reporting, and direct landlord engagement throughout the deal term. In the rare event that a landlord acts in bad faith, breaches the underlying agreement, or otherwise causes the deal to end before its natural expiry, the Company will use reasonable efforts to recover any sums owed and to mitigate the impact on Partners. However, the Partner acknowledges that the Company is not the property owner and cannot guarantee the conduct of any third-party landlord. Where loss is caused by landlord misconduct, breach, or default, Partners retain the right to pursue legal action against the landlord directly, and the Company will provide reasonable cooperation and documentation to support such claims. Upon natural expiry of the deal term, no further distributions are made unless the underlying agreement is renewed by mutual consent.</span>
+                      <span><strong className="text-[#1A1A1A]">Deal Termination Risk.</strong> Each nfstay deal is structured around a robust rent-to-serviced accommodation agreement with the landlord, supported by professional management, regular reporting, and direct landlord engagement throughout the deal term. In the rare event that a landlord acts in bad faith, breaches the underlying agreement, or otherwise causes the deal to end before its natural expiry, the Company will use reasonable efforts to recover any sums owed and to mitigate the impact on Partners. However, the Partner acknowledges that the Company is not the property owner and cannot guarantee the conduct of any third-party landlord. Where loss is caused by landlord misconduct, breach, or default, Partners retain the right to pursue legal action against the landlord directly, and the Company will provide reasonable cooperation and documentation to support such claims. Upon natural expiry of the deal term, no further distributions are made unless the underlying agreement is renewed by mutual consent.</span>
                     </li>
                     <li className="flex items-start gap-2">
                       <span className="w-1.5 h-1.5 rounded-full bg-[#1A1A1A] mt-2 shrink-0" />
@@ -705,7 +705,7 @@ export default function AgreementPage() {
                     <h2 className="text-lg font-bold text-[#1A1A1A]">10. Termination &amp; Dissolution</h2>
                   </div>
                   <p className="mb-3">
-                    This Agreement is for the fixed Deal Term. Upon expiry, no further distributions are made unless the underlying rent-to-rent agreement is renewed by mutual consent.
+                    This Agreement is for the fixed Deal Term. Upon expiry, no further distributions are made unless the underlying rent-to-serviced accommodation agreement is renewed by mutual consent.
                   </p>
                   <p className="mb-3">
                     The Company reserves the right to terminate this Agreement if the Partner has failed to comply with any of its terms, has provided false information, or has engaged in activities that may compromise the integrity of the platform or violate applicable laws.
