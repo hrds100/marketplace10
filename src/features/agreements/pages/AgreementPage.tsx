@@ -320,7 +320,7 @@ export default function AgreementPage() {
                       <InfoCard label="Type" value={property.type} />
                       <InfoCard label="Bedrooms" value={String(property.bedrooms)} />
                       <InfoCard label="Total Project Cost" value={`$${property.property_value.toLocaleString()} = ~£${usdToGbp(property.property_value).toLocaleString()}`} />
-                      <InfoCard label="Deal Term" value="5 years" />
+                      <InfoCard label="Deal Term" value={`${property.lease_term_years ?? 5} years${property.lease_start_date ? ` (from ${new Date(property.lease_start_date).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })})` : ''}`} />
                       <InfoCard label="Occupancy Target" value={`${property.annual_yield ?? 0}%`} />
                       <InfoCard label="Minimum Contribution" value={dualAmount(500)} />
                     </div>
@@ -362,8 +362,22 @@ export default function AgreementPage() {
                       </div>
                       <div>
                         <p className="text-xs font-semibold text-[#9CA3AF] uppercase tracking-wider">Deal Term</p>
-                        <p className="text-2xl font-bold text-[#1A1A1A]">5 years</p>
-                        <p className="text-sm text-[#6B7280]">From date of execution</p>
+                        <p className="text-2xl font-bold text-[#1A1A1A]">{property?.lease_term_years ?? 5} years</p>
+                        {property?.lease_start_date ? (
+                          <p className="text-sm text-[#6B7280]">
+                            {new Date(property.lease_start_date).toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' })}
+                            {' — '}
+                            {(() => {
+                              const start = new Date(property.lease_start_date!);
+                              const end = new Date(start);
+                              end.setFullYear(end.getFullYear() + (property.lease_term_years ?? 5));
+                              end.setDate(end.getDate() - 1);
+                              return end.toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' });
+                            })()}
+                          </p>
+                        ) : (
+                          <p className="text-sm text-[#6B7280]">From date of execution</p>
+                        )}
                       </div>
                       <div>
                         <p className="text-xs font-semibold text-[#9CA3AF] uppercase tracking-wider">Indicative Net Yield</p>
@@ -385,7 +399,11 @@ export default function AgreementPage() {
 
                   <h3 className="text-sm font-semibold text-[#1A1A1A] mb-2">3.3 Deal Term</h3>
                   <p className="mb-4">
-                    The fixed period of 5 (five) years from the date of this Agreement, unless the underlying rent-to-rent agreement is terminated earlier by the landlord or extended by mutual consent.
+                    The fixed period of {property?.lease_term_years ?? 5} ({property?.lease_term_years === 5 ? 'five' : property?.lease_term_years ?? 5}) years
+                    {property?.lease_start_date
+                      ? ` commencing ${new Date(property.lease_start_date).toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' })}`
+                      : ' from the date of this Agreement'}
+                    , unless the underlying rent-to-rent agreement is terminated earlier by the landlord or extended by mutual consent.
                   </p>
 
                   <h3 className="text-sm font-semibold text-[#1A1A1A] mb-2">3.4 Funding Requirement</h3>
