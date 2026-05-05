@@ -25,7 +25,7 @@ import { supabase } from '@/integrations/supabase/client';
 
 // Mirrors src/core/auth/useAuth.ts ADMIN_EMAILS and the SQL helper
 // wk_is_admin() in migration 20260425000002. Keep in sync.
-const ADMIN_EMAILS = ['admin@hub.nfstay.com', 'hugo@nfstay.com', 'chris@nfstay.com'];
+const ADMIN_EMAILS = ['admin@hub.nfstay.com', 'hugo@nfstay.com', 'chris@nfstay.com', 'elijah@mail.nfstay.com'];
 
 export type ChannelKind = 'sms' | 'whatsapp' | 'email';
 
