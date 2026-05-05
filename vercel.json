@@ -162,6 +162,10 @@
       "destination": "/app.html"
     },
     {
+      "source": "/script",
+      "destination": "/app.html"
+    },
+    {
       "source": "/(pt-br|ar|es|it|fr)/:path*",
       "destination": "/app.html"
     }
