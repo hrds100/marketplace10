@@ -267,12 +267,14 @@ export default function ScriptPage() {
             onDelete={handleDelete}
           />
 
-          {/* Editable script content */}
+          {/* Editable script content — key forces remount on section change */}
           <div
+            key={activeSection}
             contentEditable
             suppressContentEditableWarning
             onBlur={(e) => {
-              setEditedContent((prev) => ({ ...prev, [activeSection]: e.currentTarget.innerText }));
+              const text = e.currentTarget?.innerText;
+              if (text != null) setEditedContent((prev) => ({ ...prev, [activeSection]: text }));
             }}
             className="text-xl leading-relaxed text-[#1A1A1A] whitespace-pre-wrap focus:outline-none focus:ring-2 focus:ring-[#1E9A80]/20 rounded-xl p-4 -mx-4 min-h-[300px]"
           >
