@@ -84,7 +84,7 @@ export default function SendAgreementModal({ contact, onClose }: Props) {
           recipient_name: contact.name,
           amount: Number(amount),
           currency,
-          title: 'Property Service Accommodation Partnership Agreement',
+          title: 'Property Serviced Accommodation Partnership Agreement',
           status: 'sent',
           created_at: new Date().toISOString(),
           updated_at: new Date().toISOString(),

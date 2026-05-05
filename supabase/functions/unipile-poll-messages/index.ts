@@ -169,31 +169,23 @@ serve(async (req: Request) => {
       continue;
     }
 
-    // PR 84 (Hugo 2026-04-27 — "I just connected a new WhatsApp but it's
-    // not reflecting on the channels"): self-heal wk_numbers on every
-    // poll cycle. Unipile's hosted-auth notify_url callback isn't firing
-    // for our endpoint (same upstream bug as message_received webhooks),
-    // so newly-paired accounts never auto-create their row. Polling +
-    // upserting fixes this with no agent intervention.
-    const phoneFromUnipile = acct.connection_params?.im?.phone_number ?? '';
-    const accountE164 = phoneFromUnipile
-      ? digitsToE164(phoneFromUnipile)
-      : `unipile:${accountId}`;
-    await supa
+    // Only poll accounts already registered in wk_numbers.
+    // Unregistered accounts are skipped to prevent data leaks.
+    const { data: registeredRow } = await supa
       .from('wk_numbers')
-      .upsert(
-        {
-          e164: accountE164,
-          channel: 'whatsapp',
-          provider: 'unipile',
-          external_id: accountId,
-          is_active: true,
-          voice_enabled: false,
-          sms_enabled: false,
-          recording_enabled: false,
-        },
-        { onConflict: 'channel,external_id', ignoreDuplicates: false }
-      );
+      .select('id, e164')
+      .eq('provider', 'unipile')
+      .eq('external_id', accountId)
+      .eq('channel', 'whatsapp')
+      .maybeSingle();
+
+    if (!registeredRow) {
+      summary.push({
+        account_id: accountId, type: acct.type, pulled: 0, inserted: 0,
+        skipped_old: 0, skipped_dup: 0, skipped_nophone: 0, error: 'account not registered in wk_numbers',
+      });
+      continue;
+    }
 
     const mr = await fetch(
       `https://${UNIPILE_DSN}/api/v1/messages?account_id=${accountId}&limit=100`,
@@ -209,13 +201,7 @@ serve(async (req: Request) => {
     const mj = (await mr.json()) as { items?: UnipileMessage[] };
     const msgs = mj.items ?? [];
 
-    const { data: numRow } = await supa
-      .from('wk_numbers')
-      .select('id, e164')
-      .eq('provider', 'unipile')
-      .eq('external_id', accountId)
-      .maybeSingle();
-    const ourNumberE164 = (numRow as { e164?: string } | null)?.e164 ?? '';
+    const ourNumberE164 = (registeredRow as { e164?: string }).e164 ?? '';
 
     let inserted = 0;
     let skipped_old = 0;

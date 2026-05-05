@@ -201,6 +201,21 @@ serve(async (req: Request) => {
       console.log(`[unipile-webhook] ignoring event for account_type=${ev.account_type}`);
       return ok({ note: 'ignored account_type' });
     }
+
+    // Validate account_id is registered — reject messages from unknown accounts
+    const { data: accountRow } = await supa
+      .from('wk_numbers')
+      .select('id, e164')
+      .eq('provider', 'unipile')
+      .eq('external_id', ev.account_id)
+      .eq('channel', channel)
+      .maybeSingle();
+
+    if (!accountRow) {
+      console.error(`[unipile-webhook] REJECTED: unregistered account_id=${ev.account_id} channel=${channel}`);
+      return ok({ note: 'account not registered' });
+    }
+
     const senderProviderId = ev.sender?.provider_id ?? '';
     const fromE164 = toE164(senderProviderId);
     if (!fromE164) return ok({ note: 'no sender' });
@@ -244,7 +259,7 @@ serve(async (req: Request) => {
         body: ev.message.text ?? '',
         external_id: ev.message.id,
         from_e164: fromE164,
-        to_e164: null,
+        to_e164: accountRow.e164,
         media_urls: [],
         status: 'received',
       });
