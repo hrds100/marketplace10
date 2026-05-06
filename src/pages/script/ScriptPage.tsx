@@ -12,12 +12,23 @@ function splitIntoBlocks(text: string, count: number): string[] {
     while (blocks.length < count) blocks.push('');
     return blocks;
   }
-  const perBlock = Math.ceil(paragraphs.length / count);
+  const totalLen = paragraphs.reduce((sum, p) => sum + p.length, 0);
+  const targetLen = totalLen / count;
   const blocks: string[] = [];
-  for (let i = 0; i < count; i++) {
-    const slice = paragraphs.slice(i * perBlock, (i + 1) * perBlock);
-    blocks.push(slice.join('\n\n'));
+  let current: string[] = [];
+  let currentLen = 0;
+
+  for (const p of paragraphs) {
+    current.push(p.trim());
+    currentLen += p.length;
+    if (blocks.length < count - 1 && currentLen >= targetLen) {
+      blocks.push(current.join('\n\n'));
+      current = [];
+      currentLen = 0;
+    }
   }
+  if (current.length > 0) blocks.push(current.join('\n\n'));
+  while (blocks.length < count) blocks.push('');
   return blocks;
 }
 
