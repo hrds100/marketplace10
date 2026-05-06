@@ -2,6 +2,8 @@ import { useState, useRef, useCallback, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { SCRIPT_SECTIONS } from './scriptContent';
 
+const PIN_STORAGE_KEY = 'nfstay-script-pin';
+
 interface Recording {
   id: string;
   section_index: number;
@@ -14,9 +16,15 @@ function PasswordGate({ onUnlock }: { onUnlock: () => void }) {
   const [pin, setPin] = useState('');
   const [error, setError] = useState(false);
 
+  useEffect(() => {
+    const stored = localStorage.getItem(PIN_STORAGE_KEY);
+    if (stored === '5891') onUnlock();
+  }, [onUnlock]);
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (pin === '5891') {
+      localStorage.setItem(PIN_STORAGE_KEY, pin);
       onUnlock();
     } else {
       setError(true);
@@ -51,6 +59,23 @@ function PasswordGate({ onUnlock }: { onUnlock: () => void }) {
       </div>
     </div>
   );
+}
+
+async function downloadAudio(url: string, filename: string) {
+  try {
+    const res = await fetch(url);
+    const blob = await res.blob();
+    const blobUrl = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = blobUrl;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(blobUrl);
+  } catch {
+    window.open(url, '_blank');
+  }
 }
 
 function AudioRecorder({ sectionIndex, recordings, onNewRecording, onDelete }: {
@@ -159,7 +184,7 @@ function AudioRecorder({ sectionIndex, recordings, onNewRecording, onDelete }: {
               ) : (
                 <button onClick={() => playRecording(rec)} className="text-xs font-medium text-[#1E9A80] hover:underline">Play</button>
               )}
-              <a href={rec.audio_url} download={`section-${sectionIndex + 1}-take-${i + 1}.webm`} className="text-xs font-medium text-[#1A1A1A] hover:underline">Download</a>
+              <button onClick={() => downloadAudio(rec.audio_url, `section-${sectionIndex + 1}-take-${i + 1}.webm`)} className="text-xs font-medium text-[#1A1A1A] hover:underline">Download</button>
               <button onClick={() => { stopPlayback(); onDelete(rec); }} className="text-xs font-medium text-red-500 hover:underline ml-auto">Delete</button>
             </div>
           ))}
@@ -174,10 +199,14 @@ export default function ScriptPage() {
   const [activeSection, setActiveSection] = useState(0);
   const [editedContent, setEditedContent] = useState<Record<number, string>>({});
   const [recordings, setRecordings] = useState<Recording[]>([]);
+  const [saving, setSaving] = useState(false);
+  const [savedIndicator, setSavedIndicator] = useState(false);
+  const contentRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     if (!unlocked) return;
     loadRecordings();
+    loadEdits();
   }, [unlocked]);
 
   const loadRecordings = async () => {
@@ -191,6 +220,17 @@ export default function ScriptPage() {
       return { ...r, audio_url: urlData.publicUrl };
     });
     setRecordings(mapped);
+  };
+
+  const loadEdits = async () => {
+    const { data } = await (supabase.from('script_edits' as any) as any)
+      .select('section_index, content');
+    if (!data) return;
+    const map: Record<number, string> = {};
+    (data as any[]).forEach((row: { section_index: number; content: string }) => {
+      map[row.section_index] = row.content;
+    });
+    setEditedContent(map);
   };
 
   const handleNewRecording = useCallback(async (blob: Blob, sectionIndex: number) => {
@@ -212,13 +252,29 @@ export default function ScriptPage() {
     setRecordings((prev) => prev.filter((r) => r.id !== rec.id));
   }, []);
 
+  const handleSave = async () => {
+    const text = contentRef.current?.innerText;
+    if (text == null) return;
+
+    setSaving(true);
+    const updated = { ...editedContent, [activeSection]: text };
+    setEditedContent(updated);
+
+    await (supabase.from('script_edits' as any) as any)
+      .upsert({ section_index: activeSection, content: text, updated_at: new Date().toISOString() }, { onConflict: 'section_index' });
+
+    setSaving(false);
+    setSavedIndicator(true);
+    setTimeout(() => setSavedIndicator(false), 2000);
+  };
+
   if (!unlocked) return <PasswordGate onUnlock={() => setUnlocked(true)} />;
 
   const currentContent = editedContent[activeSection] ?? SCRIPT_SECTIONS[activeSection]?.content ?? '';
 
   return (
     <div className="min-h-screen bg-white flex">
-      {/* Sidebar — section list */}
+      {/* Sidebar */}
       <aside className="w-72 border-r border-[#E5E7EB] bg-[#F3F3EE] overflow-y-auto h-screen sticky top-0">
         <div className="p-4 border-b border-[#E5E7EB]">
           <div className="flex items-center gap-2">
@@ -230,6 +286,7 @@ export default function ScriptPage() {
         <nav className="p-2">
           {SCRIPT_SECTIONS.map((section, i) => {
             const hasRecording = recordings.some((r) => r.section_index === i);
+            const hasEdit = editedContent[i] !== undefined;
             return (
               <button
                 key={i}
@@ -243,24 +300,37 @@ export default function ScriptPage() {
                 <span className="text-xs text-[#9CA3AF] mr-2">{i + 1}.</span>
                 {section.title}
                 {hasRecording && <span className="ml-2 inline-block w-2 h-2 rounded-full bg-[#1E9A80]" />}
+                {hasEdit && <span className="ml-1 inline-block w-2 h-2 rounded-full bg-[#6B7280]" />}
               </button>
             );
           })}
         </nav>
       </aside>
 
-      {/* Main content — recorder at top, then script */}
+      {/* Main content */}
       <main className="flex-1 overflow-y-auto h-screen">
         <div className="max-w-3xl mx-auto px-8 py-12">
-          {/* Section header */}
-          <div className="mb-6">
-            <p className="text-xs font-semibold text-[#1E9A80] uppercase tracking-wider mb-1">
-              Section {activeSection + 1} of {SCRIPT_SECTIONS.length}
-            </p>
-            <h1 className="text-3xl font-bold text-[#1A1A1A]">{SCRIPT_SECTIONS[activeSection].title}</h1>
+          {/* Section header + Save button */}
+          <div className="mb-6 flex items-start justify-between">
+            <div>
+              <p className="text-xs font-semibold text-[#1E9A80] uppercase tracking-wider mb-1">
+                Section {activeSection + 1} of {SCRIPT_SECTIONS.length}
+              </p>
+              <h1 className="text-3xl font-bold text-[#1A1A1A]">{SCRIPT_SECTIONS[activeSection].title}</h1>
+            </div>
+            <div className="flex items-center gap-3">
+              {savedIndicator && <span className="text-xs text-[#1E9A80] font-medium">Saved</span>}
+              <button
+                onClick={handleSave}
+                disabled={saving}
+                className="bg-[#1A1A1A] text-white text-sm font-medium rounded-full px-5 py-2 hover:opacity-90 transition-opacity disabled:opacity-50"
+              >
+                {saving ? 'Saving...' : 'Save Changes'}
+              </button>
+            </div>
           </div>
 
-          {/* Audio recorder — AT THE TOP */}
+          {/* Audio recorder */}
           <AudioRecorder
             sectionIndex={activeSection}
             recordings={recordings}
@@ -268,15 +338,12 @@ export default function ScriptPage() {
             onDelete={handleDelete}
           />
 
-          {/* Editable script content — key forces remount on section change */}
+          {/* Editable script content */}
           <div
             key={activeSection}
+            ref={contentRef}
             contentEditable
             suppressContentEditableWarning
-            onBlur={(e) => {
-              const text = e.currentTarget?.innerText;
-              if (text != null) setEditedContent((prev) => ({ ...prev, [activeSection]: text }));
-            }}
             className="text-xl leading-relaxed text-[#1A1A1A] whitespace-pre-wrap focus:outline-none focus:ring-2 focus:ring-[#1E9A80]/20 rounded-xl p-4 -mx-4 min-h-[300px]"
           >
             {currentContent}
