@@ -159,6 +159,7 @@ function AudioRecorder({ sectionIndex, recordings, onNewRecording, onDelete }: {
               ) : (
                 <button onClick={() => playRecording(rec)} className="text-xs font-medium text-[#1E9A80] hover:underline">Play</button>
               )}
+              <a href={rec.audio_url} download={`section-${sectionIndex + 1}-take-${i + 1}.webm`} className="text-xs font-medium text-[#1A1A1A] hover:underline">Download</a>
               <button onClick={() => { stopPlayback(); onDelete(rec); }} className="text-xs font-medium text-red-500 hover:underline ml-auto">Delete</button>
             </div>
           ))}
