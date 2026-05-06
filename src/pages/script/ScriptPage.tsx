@@ -3,10 +3,28 @@ import { supabase } from '@/integrations/supabase/client';
 import { SCRIPT_SECTIONS } from './scriptContent';
 
 const PIN_STORAGE_KEY = 'nfstay-script-pin';
+const BLOCKS_PER_SECTION = 4;
+
+function splitIntoBlocks(text: string, count: number): string[] {
+  const paragraphs = text.split(/\n\n+/).filter((p) => p.trim());
+  if (paragraphs.length <= count) {
+    const blocks = paragraphs.map((p) => p.trim());
+    while (blocks.length < count) blocks.push('');
+    return blocks;
+  }
+  const perBlock = Math.ceil(paragraphs.length / count);
+  const blocks: string[] = [];
+  for (let i = 0; i < count; i++) {
+    const slice = paragraphs.slice(i * perBlock, (i + 1) * perBlock);
+    blocks.push(slice.join('\n\n'));
+  }
+  return blocks;
+}
 
 interface Recording {
   id: string;
   section_index: number;
+  block_index: number;
   audio_path: string;
   audio_url: string;
   created_at: string;
@@ -78,8 +96,9 @@ async function downloadAudio(url: string, filename: string) {
   }
 }
 
-function AudioRecorder({ sectionIndex, recordings, onNewRecording, onDelete }: {
+function BlockRecorder({ sectionIndex, blockIndex, recordings, onNewRecording, onDelete }: {
   sectionIndex: number;
+  blockIndex: number;
   recordings: Recording[];
   onNewRecording: (blob: Blob) => Promise<void>;
   onDelete: (rec: Recording) => void;
@@ -125,9 +144,7 @@ function AudioRecorder({ sectionIndex, recordings, onNewRecording, onDelete }: {
   }, []);
 
   const playRecording = (rec: Recording) => {
-    if (audioRef.current) {
-      audioRef.current.pause();
-    }
+    if (audioRef.current) audioRef.current.pause();
     const audio = new Audio(rec.audio_url);
     audioRef.current = audio;
     setPlayingId(rec.id);
@@ -143,39 +160,41 @@ function AudioRecorder({ sectionIndex, recordings, onNewRecording, onDelete }: {
     setPlayingId(null);
   };
 
-  const sectionRecordings = recordings.filter((r) => r.section_index === sectionIndex);
+  const blockRecordings = recordings.filter(
+    (r) => r.section_index === sectionIndex && r.block_index === blockIndex
+  );
 
   return (
-    <div className="border-b border-[#E5E7EB] pb-6 mb-8">
-      <div className="flex items-center gap-3 mb-3">
+    <div className="mb-2">
+      <div className="flex items-center gap-3 mb-2">
         {!isRecording ? (
           <button
             onClick={startRecording}
             disabled={uploading}
-            className="flex items-center gap-2 bg-[#1E9A80] text-white text-sm font-medium rounded-full px-4 py-2 hover:opacity-90 transition-opacity disabled:opacity-50"
+            className="flex items-center gap-2 bg-[#1E9A80] text-white text-xs font-medium rounded-full px-3 py-1.5 hover:opacity-90 transition-opacity disabled:opacity-50"
           >
-            <span className="w-3 h-3 rounded-full bg-white" />
-            {uploading ? 'Saving...' : `Record Section ${sectionIndex + 1}`}
+            <span className="w-2.5 h-2.5 rounded-full bg-white" />
+            {uploading ? 'Saving...' : `Record Part ${blockIndex + 1}`}
           </button>
         ) : (
           <button
             onClick={stopRecording}
-            className="flex items-center gap-2 bg-red-500 text-white text-sm font-medium rounded-full px-4 py-2 hover:opacity-90 transition-opacity animate-pulse"
+            className="flex items-center gap-2 bg-red-500 text-white text-xs font-medium rounded-full px-3 py-1.5 hover:opacity-90 transition-opacity animate-pulse"
           >
-            <span className="w-3 h-3 rounded-sm bg-white" />
-            Stop Recording
+            <span className="w-2.5 h-2.5 rounded-sm bg-white" />
+            Stop
           </button>
         )}
-        {sectionRecordings.length > 0 && (
-          <span className="text-xs text-[#6B7280]">{sectionRecordings.length} take{sectionRecordings.length > 1 ? 's' : ''}</span>
+        {blockRecordings.length > 0 && (
+          <span className="text-xs text-[#6B7280]">{blockRecordings.length} take{blockRecordings.length > 1 ? 's' : ''}</span>
         )}
       </div>
 
-      {sectionRecordings.length > 0 && (
-        <div className="space-y-2">
-          {sectionRecordings.map((rec, i) => (
-            <div key={rec.id} className="flex items-center gap-3 bg-[#F3F3EE] rounded-lg px-3 py-2">
-              <span className="text-xs text-[#6B7280] w-16">Take {i + 1}</span>
+      {blockRecordings.length > 0 && (
+        <div className="space-y-1 mb-3">
+          {blockRecordings.map((rec, i) => (
+            <div key={rec.id} className="flex items-center gap-3 bg-[#F3F3EE] rounded-lg px-3 py-1.5">
+              <span className="text-xs text-[#6B7280] w-14">Take {i + 1}</span>
               <span className="text-xs text-[#9CA3AF]">
                 {new Date(rec.created_at).toLocaleString('en-GB', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })}
               </span>
@@ -184,7 +203,7 @@ function AudioRecorder({ sectionIndex, recordings, onNewRecording, onDelete }: {
               ) : (
                 <button onClick={() => playRecording(rec)} className="text-xs font-medium text-[#1E9A80] hover:underline">Play</button>
               )}
-              <button onClick={() => downloadAudio(rec.audio_url, `section-${sectionIndex + 1}-take-${i + 1}.webm`)} className="text-xs font-medium text-[#1A1A1A] hover:underline">Download</button>
+              <button onClick={() => downloadAudio(rec.audio_url, `section-${sectionIndex + 1}-part-${blockIndex + 1}-take-${i + 1}.webm`)} className="text-xs font-medium text-[#1A1A1A] hover:underline">Download</button>
               <button onClick={() => { stopPlayback(); onDelete(rec); }} className="text-xs font-medium text-red-500 hover:underline ml-auto">Delete</button>
             </div>
           ))}
@@ -201,7 +220,7 @@ export default function ScriptPage() {
   const [recordings, setRecordings] = useState<Recording[]>([]);
   const [saving, setSaving] = useState(false);
   const [savedIndicator, setSavedIndicator] = useState(false);
-  const contentRef = useRef<HTMLDivElement>(null);
+  const blockRefs = useRef<(HTMLDivElement | null)[]>([]);
 
   useEffect(() => {
     if (!unlocked) return;
@@ -211,13 +230,13 @@ export default function ScriptPage() {
 
   const loadRecordings = async () => {
     const { data } = await (supabase.from('script_recordings' as any) as any)
-      .select('id, section_index, audio_path, created_at')
+      .select('id, section_index, block_index, audio_path, created_at')
       .order('created_at', { ascending: true });
     if (!data) return;
 
     const mapped: Recording[] = (data as any[]).map((r) => {
       const { data: urlData } = supabase.storage.from('script-recordings').getPublicUrl(r.audio_path);
-      return { ...r, audio_url: urlData.publicUrl };
+      return { ...r, block_index: r.block_index ?? 0, audio_url: urlData.publicUrl };
     });
     setRecordings(mapped);
   };
@@ -233,15 +252,15 @@ export default function ScriptPage() {
     setEditedContent(map);
   };
 
-  const handleNewRecording = useCallback(async (blob: Blob, sectionIndex: number) => {
-    const filename = `section-${sectionIndex}-${Date.now()}.webm`;
+  const handleNewRecording = useCallback(async (blob: Blob, sectionIndex: number, blockIndex: number) => {
+    const filename = `section-${sectionIndex}-block-${blockIndex}-${Date.now()}.webm`;
     const { error: uploadErr } = await supabase.storage
       .from('script-recordings')
       .upload(filename, blob, { contentType: 'audio/webm' });
     if (uploadErr) { alert('Upload failed: ' + uploadErr.message); return; }
 
     await (supabase.from('script_recordings' as any) as any)
-      .insert({ section_index: sectionIndex, audio_path: filename });
+      .insert({ section_index: sectionIndex, block_index: blockIndex, audio_path: filename });
 
     await loadRecordings();
   }, []);
@@ -253,15 +272,17 @@ export default function ScriptPage() {
   }, []);
 
   const handleSave = async () => {
-    const text = contentRef.current?.innerText;
-    if (text == null) return;
+    const allText = blockRefs.current
+      .map((ref) => ref?.innerText?.trim() ?? '')
+      .filter((t) => t)
+      .join('\n\n');
 
     setSaving(true);
-    const updated = { ...editedContent, [activeSection]: text };
+    const updated = { ...editedContent, [activeSection]: allText };
     setEditedContent(updated);
 
     await (supabase.from('script_edits' as any) as any)
-      .upsert({ section_index: activeSection, content: text, updated_at: new Date().toISOString() }, { onConflict: 'section_index' });
+      .upsert({ section_index: activeSection, content: allText, updated_at: new Date().toISOString() }, { onConflict: 'section_index' });
 
     setSaving(false);
     setSavedIndicator(true);
@@ -271,6 +292,7 @@ export default function ScriptPage() {
   if (!unlocked) return <PasswordGate onUnlock={() => setUnlocked(true)} />;
 
   const currentContent = editedContent[activeSection] ?? SCRIPT_SECTIONS[activeSection]?.content ?? '';
+  const blocks = splitIntoBlocks(currentContent, BLOCKS_PER_SECTION);
 
   return (
     <div className="min-h-screen bg-white flex">
@@ -311,7 +333,7 @@ export default function ScriptPage() {
       <main className="flex-1 overflow-y-auto h-screen">
         <div className="max-w-3xl mx-auto px-8 py-12">
           {/* Section header + Save button */}
-          <div className="mb-6 flex items-start justify-between">
+          <div className="mb-8 flex items-start justify-between">
             <div>
               <p className="text-xs font-semibold text-[#1E9A80] uppercase tracking-wider mb-1">
                 Section {activeSection + 1} of {SCRIPT_SECTIONS.length}
@@ -330,24 +352,34 @@ export default function ScriptPage() {
             </div>
           </div>
 
-          {/* Audio recorder */}
-          <AudioRecorder
-            sectionIndex={activeSection}
-            recordings={recordings}
-            onNewRecording={(blob) => handleNewRecording(blob, activeSection)}
-            onDelete={handleDelete}
-          />
+          {/* 4 blocks: each has recorder → text */}
+          {blocks.map((blockText, blockIdx) => (
+            <div key={`${activeSection}-${blockIdx}`} className="mb-10">
+              <div className="flex items-center gap-2 mb-3">
+                <span className="text-xs font-semibold text-[#9CA3AF] uppercase tracking-wider">
+                  Part {blockIdx + 1} of {BLOCKS_PER_SECTION}
+                </span>
+                <div className="flex-1 border-t border-[#E5E7EB]" />
+              </div>
 
-          {/* Editable script content */}
-          <div
-            key={activeSection}
-            ref={contentRef}
-            contentEditable
-            suppressContentEditableWarning
-            className="text-xl leading-relaxed text-[#1A1A1A] whitespace-pre-wrap focus:outline-none focus:ring-2 focus:ring-[#1E9A80]/20 rounded-xl p-4 -mx-4 min-h-[300px]"
-          >
-            {currentContent}
-          </div>
+              <BlockRecorder
+                sectionIndex={activeSection}
+                blockIndex={blockIdx}
+                recordings={recordings}
+                onNewRecording={(blob) => handleNewRecording(blob, activeSection, blockIdx)}
+                onDelete={handleDelete}
+              />
+
+              <div
+                ref={(el) => { blockRefs.current[blockIdx] = el; }}
+                contentEditable
+                suppressContentEditableWarning
+                className="text-xl leading-relaxed text-[#1A1A1A] whitespace-pre-wrap focus:outline-none focus:ring-2 focus:ring-[#1E9A80]/20 rounded-xl p-4 -mx-4 min-h-[80px] border border-transparent hover:border-[#E5E7EB] transition-colors"
+              >
+                {blockText}
+              </div>
+            </div>
+          ))}
 
           {/* Navigation */}
           <div className="flex justify-between items-center mt-10 pt-6 border-t border-[#E5E7EB]">
