@@ -634,9 +634,9 @@ export default function InvestPayoutsPage() {
   // Check KYC status on mount
   useEffect(() => { checkKyc(); }, [checkKyc]);
 
-  // F4: Fetch payout_claims from Supabase for history amount fallback
+  // F4: Fetch payout_claims from Supabase for history amount fallback + pending claim guard
   const [dbPayoutClaims, setDbPayoutClaims] = useState<any[]>([]);
-  useEffect(() => {
+  const refetchPayoutClaims = () => {
     if (!user?.id) return;
     (supabase.from('payout_claims') as any)
       .select('*')
@@ -645,7 +645,8 @@ export default function InvestPayoutsPage() {
       .then(({ data }: { data: any[] | null }) => {
         if (data) setDbPayoutClaims(data);
       });
-  }, [user?.id]);
+  };
+  useEffect(() => { refetchPayoutClaims(); }, [user?.id]);
 
   // Map merged payouts to PayoutItem[]
   // F4: For history rows where blockchain amount is 0, try to find a matching payout_claims row
@@ -714,7 +715,10 @@ export default function InvestPayoutsPage() {
     setClaimModalOpen(true);
   };
 
-  const claimable = payouts.filter((p) => p.status === 'claimable');
+  const hasPendingClaim = dbPayoutClaims.some(
+    (c) => c.status === 'pending' || c.status === 'processing'
+  );
+  const claimable = hasPendingClaim ? [] : payouts.filter((p) => p.status === 'claimable');
   const totalClaimable = claimable.reduce((sum, p) => sum + p.amount, 0);
   const history = payouts.filter((p) => p.status !== 'claimable');
 
@@ -865,6 +869,21 @@ export default function InvestPayoutsPage() {
 
         {/* Right main area */}
         <div className="flex-1 space-y-6">
+          {/* Pending claim banner */}
+          {hasPendingClaim && (
+            <Card className="border-amber-500/20 bg-amber-500/5">
+              <CardContent className="py-4">
+                <div className="flex items-center gap-3">
+                  <Clock className="h-5 w-5 text-amber-500" />
+                  <div>
+                    <p className="text-sm font-medium">You have a pending claim being processed</p>
+                    <p className="text-xs text-muted-foreground">New claims are available once your current claim is completed or cancelled.</p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          )}
+
           {/* Claimable Payouts Section */}
           <h2 className="text-xl font-bold">{t('invest.claimablePayouts')}</h2>
           <div className="space-y-3">
@@ -976,7 +995,7 @@ export default function InvestPayoutsPage() {
         onBuyStayTokens={buyStayTokens}
         onBuyLpTokens={buyLpTokens}
         onClaimSuccess={() => {
-          // Auto-refresh payouts after successful claim
+          refetchPayoutClaims();
           setTimeout(() => refetchRentData(), 2000);
         }}
         kycStatus={kycStatus}

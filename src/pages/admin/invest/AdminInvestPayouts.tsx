@@ -220,14 +220,37 @@ export default function AdminInvestPayouts() {
     }
   };
 
-  // Approve All = Pay all pending claims
+  // Approve All = Pay all pending claims (deduplicated — one per user)
   const handleApproveAll = async () => {
     const pending = payouts.filter((p) => p.status === 'pending');
     if (pending.length === 0) { toast.error('No pending claims'); return; }
+
+    // Deduplicate: keep only the earliest pending claim per user_id
+    const seenUsers = new Set<string>();
+    const deduplicated: PayoutClaim[] = [];
+    const duplicates: PayoutClaim[] = [];
+    for (const p of pending) {
+      if (seenUsers.has(p.user_id)) {
+        duplicates.push(p);
+      } else {
+        seenUsers.add(p.user_id);
+        deduplicated.push(p);
+      }
+    }
+
+    if (duplicates.length > 0) {
+      toast.warning(`${duplicates.length} duplicate claim(s) detected and skipped. Auto-cancelling duplicates.`);
+      for (const d of duplicates) {
+        await (supabase.from('payout_claims') as any)
+          .update({ status: 'cancelled' })
+          .eq('id', d.id);
+      }
+    }
+
     setBatchTriggered(true);
     let success = 0;
     let failed = 0;
-    for (const p of pending) {
+    for (const p of deduplicated) {
       try {
         const { data, error } = await supabase.functions.invoke('revolut-pay', {
           body: { claim_id: p.id },

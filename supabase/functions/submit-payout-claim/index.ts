@@ -45,6 +45,22 @@ serve(async (req) => {
       return new Response(JSON.stringify({ error: 'No bank details found. Please add bank details first.' }), { status: 400, headers: corsHeaders })
     }
 
+    // GUARD: Reject if user already has a pending or processing claim
+    const { data: existingClaim } = await supabase
+      .from('payout_claims')
+      .select('id, status')
+      .eq('user_id', user_id)
+      .in('status', ['pending', 'processing'])
+      .limit(1)
+      .maybeSingle()
+
+    if (existingClaim) {
+      return new Response(
+        JSON.stringify({ error: 'You already have a pending claim being processed. Please wait for it to complete.' }),
+        { status: 400, headers: corsHeaders }
+      )
+    }
+
     // Amount from frontend (read from blockchain getRentDetails)
     // Falls back to inv_payouts table if not provided
     let amount = Number(clientAmount) || 0
@@ -75,7 +91,15 @@ serve(async (req) => {
 
     const week_ref = getISOWeek()
 
-    // Create claim — multiple claims per week allowed (all batched on Tuesday)
+    // Move failed/cancelled claims out of the way so the UNIQUE(user_id, week_ref) allows a fresh claim
+    await supabase
+      .from('payout_claims')
+      .update({ week_ref: `${week_ref}-void-${Date.now()}` })
+      .eq('user_id', user_id)
+      .eq('week_ref', week_ref)
+      .in('status', ['failed', 'cancelled'])
+
+    // Create claim — one per user per week (UNIQUE constraint enforced at DB level)
     const { data: claim, error } = await supabase
       .from('payout_claims')
       .insert({
@@ -84,12 +108,19 @@ serve(async (req) => {
         amount_entitled: amount,
         currency,
         bank_account_id: bank.id,
-        week_ref: `${week_ref}-${Date.now()}`,
+        week_ref,
       })
       .select()
       .single()
 
     if (error) {
+      // UNIQUE constraint violation = race condition (two simultaneous claims)
+      if (error.code === '23505') {
+        return new Response(
+          JSON.stringify({ error: 'You already have a pending claim being processed. Please wait for it to complete.' }),
+          { status: 400, headers: corsHeaders }
+        )
+      }
       throw error
     }
 
