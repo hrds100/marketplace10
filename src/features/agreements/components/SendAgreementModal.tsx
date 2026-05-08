@@ -45,27 +45,40 @@ export default function SendAgreementModal({ contact, onClose }: Props) {
 
   const fetchFullContact = useCallback(async () => {
     if (!contact) return;
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const { data } = await (supabase.from('wk_contacts' as any) as any)
-      .select('id, name, phone, email, owner_agent_id, pipeline_column_id, tags, is_hot, deal_value_pence, custom_fields, created_at, last_contact_at')
-      .eq('id', contact.id)
-      .maybeSingle();
-    if (data) {
-      setFullContact({
-        id: data.id,
-        name: data.name ?? '',
-        phone: data.phone ?? '',
-        email: data.email ?? undefined,
-        ownerAgentId: data.owner_agent_id ?? undefined,
-        pipelineColumnId: data.pipeline_column_id ?? undefined,
-        tags: data.tags ?? [],
-        isHot: data.is_hot ?? false,
-        dealValuePence: data.deal_value_pence ?? undefined,
-        customFields: data.custom_fields ?? {},
-        createdAt: data.created_at ?? new Date().toISOString(),
-        lastContactAt: data.last_contact_at ?? undefined,
-      });
-    }
+    try {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const { data } = await (supabase.from('wk_contacts' as any) as any)
+        .select('id, name, phone, email, owner_agent_id, pipeline_column_id, tags, is_hot, deal_value_pence, custom_fields, created_at, last_contact_at')
+        .eq('id', contact.id)
+        .maybeSingle();
+      if (data) {
+        setFullContact({
+          id: data.id,
+          name: data.name ?? '',
+          phone: data.phone ?? '',
+          email: data.email ?? undefined,
+          ownerAgentId: data.owner_agent_id ?? undefined,
+          pipelineColumnId: data.pipeline_column_id ?? undefined,
+          tags: data.tags ?? [],
+          isHot: data.is_hot ?? false,
+          dealValuePence: data.deal_value_pence ?? undefined,
+          customFields: data.custom_fields ?? {},
+          createdAt: data.created_at ?? new Date().toISOString(),
+          lastContactAt: data.last_contact_at ?? undefined,
+        });
+        return;
+      }
+    } catch { /* fall through to fallback */ }
+    setFullContact({
+      id: contact.id,
+      name: contact.name ?? '',
+      phone: contact.phone ?? '',
+      email: contact.email ?? undefined,
+      tags: [],
+      isHot: false,
+      customFields: {},
+      createdAt: new Date().toISOString(),
+    });
   }, [contact]);
 
   const openEditContact = useCallback(async () => {
