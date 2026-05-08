@@ -105,7 +105,7 @@ export default function SignIn() {
   const { userInfo } = useUserInfo();
   const [searchParams] = useSearchParams();
   const redirectTo = searchParams.get('redirect');
-  const isAgreementFlow = (redirectTo?.startsWith('/agreement/') || redirectTo?.includes('/invest/marketplace')) ?? false;
+  const isAgreementFlow = redirectTo?.startsWith('/agreement/') ?? false;
   const prefillEmail = searchParams.get('email');
   const [email, setEmail] = useState(prefillEmail || '');
   const [password, setPassword] = useState('');
