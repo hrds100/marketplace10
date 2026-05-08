@@ -615,7 +615,7 @@ async function streamCoachInternal(args: {
       // PR 65 (Hugo 2026-04-27): bumped v14→v15. RETURNS examples
       // dropped the "exit by selling allocations" line — there is
       // no early exit. Material prompt change → invalidate cache.
-      prompt_cache_key: 'nfstay-coach-v15',
+      prompt_cache_key: 'nfstay-coach-v16',
       messages: [
         ...systemMessages
           .filter((m): m is string => typeof m === 'string' && m.trim().length > 0)
@@ -1012,6 +1012,7 @@ serve(async (req: Request) => {
             campaignRes,
             campaignAiRes,
             campaignFactsRes,
+            columnRes,
           ] = await Promise.all([
             supa
               .from('wk_live_transcripts')
@@ -1043,7 +1044,7 @@ serve(async (req: Request) => {
             call.contact_id
               ? supa
                   .from('wk_contacts')
-                  .select('name')
+                  .select('name, pipeline_column_id')
                   .eq('id', call.contact_id)
                   .maybeSingle()
               : Promise.resolve({ data: null, error: null }),
@@ -1084,6 +1085,9 @@ serve(async (req: Request) => {
                   .eq('is_active', true)
                   .order('sort_order', { ascending: true })
               : Promise.resolve({ data: null, error: null }),
+            // v16: pipeline column script/coach pin — deferred lookup
+            // placeholder (resolved after contact query returns column ID)
+            Promise.resolve({ data: null, error: null }),
           ]);
           const ctx = (recentRes.data ?? [])
             .reverse()
@@ -1174,8 +1178,9 @@ serve(async (req: Request) => {
           const campStyle = (campAi?.coach_style_prompt ?? '').trim();
           const campScript = (campAi?.coach_script_prompt ?? '').trim();
           const campModel = (campAi?.live_coach_model ?? '').trim();
-          const dbStyle = campStyle.length > 0 ? campStyle : wsStyle;
-          const dbScript = campScript.length > 0 ? campScript : wsScript;
+          // v16: cascade column > campaign > workspace for style/script prompts
+          const dbStyle = columnStyle.length > 0 ? columnStyle : campStyle.length > 0 ? campStyle : wsStyle;
+          const dbScript = columnScript.length > 0 ? columnScript : campScript.length > 0 ? campScript : wsScript;
           const legacyPrompt = (ai.live_coach_system_prompt as string | null) ?? '';
           // PR 8 (2026-04-26): the AGENT'S CALL SCRIPT is now a separate
           // layer the coach can see. Resolution priority mirrors the
@@ -1195,15 +1200,54 @@ serve(async (req: Request) => {
             ? (defaultScriptRes.data[0] as { name: string; body_md: string } | undefined)
             : undefined;
 
+          // v16 (Hugo 2026-05-02): pipeline column script pin.
+          // The contact's pipeline_column_id tells us which stage they're
+          // in. If that column has a call_script_id, it slots between
+          // own > COLUMN > campaign > default.
+          const contactData = (contactRes.data ?? null) as
+            | { name?: string | null; pipeline_column_id?: string | null }
+            | null;
+          const pipelineColumnId = contactData?.pipeline_column_id ?? null;
+          let columnScriptRow:
+            | { name: string; body_md: string }
+            | undefined;
+          let columnStyle = '';
+          let columnScript = '';
+          if (!ownScriptRow && pipelineColumnId) {
+            const { data: colRow } = await supa
+              .from('wk_pipeline_columns')
+              .select('call_script_id, coach_style_prompt, coach_script_prompt')
+              .eq('id', pipelineColumnId)
+              .maybeSingle();
+            const colData = colRow as {
+              call_script_id: string | null;
+              coach_style_prompt: string | null;
+              coach_script_prompt: string | null;
+            } | null;
+            columnStyle = (colData?.coach_style_prompt ?? '').trim();
+            columnScript = (colData?.coach_script_prompt ?? '').trim();
+            const colScriptId = colData?.call_script_id ?? null;
+            if (colScriptId) {
+              const { data: pinned } = await supa
+                .from('wk_call_scripts')
+                .select('name, body_md')
+                .eq('id', colScriptId)
+                .maybeSingle();
+              if (pinned) {
+                columnScriptRow = pinned as { name: string; body_md: string };
+              }
+            }
+          }
+
           // PR 56: campaign-pinned script lookup. If the campaign has
           // call_script_id set, fetch that row and slot it between
-          // own > campaign > default in the resolution chain.
+          // column > campaign > default in the resolution chain.
           let campaignScriptRow:
             | { name: string; body_md: string }
             | undefined;
           const campRow = (campaignRes.data ?? null) as { call_script_id: string | null } | null;
           const pinnedScriptId = campRow?.call_script_id ?? null;
-          if (!ownScriptRow && pinnedScriptId) {
+          if (!ownScriptRow && !columnScriptRow && pinnedScriptId) {
             const { data: pinned } = await supa
               .from('wk_call_scripts')
               .select('name, body_md')
@@ -1214,13 +1258,16 @@ serve(async (req: Request) => {
             }
           }
 
+          // Resolution chain: own > column > campaign > default
           const resolvedAgentScript =
-            ownScriptRow ?? campaignScriptRow ?? defaultScriptRow ?? null;
-          const agentScriptSource: 'own' | 'campaign' | 'default' | 'none' = ownScriptRow
+            ownScriptRow ?? columnScriptRow ?? campaignScriptRow ?? defaultScriptRow ?? null;
+          const agentScriptSource: 'own' | 'column' | 'campaign' | 'default' | 'none' = ownScriptRow
             ? 'own'
-            : campaignScriptRow
-              ? 'campaign'
-              : defaultScriptRow
+            : columnScriptRow
+              ? 'column'
+              : campaignScriptRow
+                ? 'campaign'
+                : defaultScriptRow
                 ? 'default'
                 : 'none';
 
@@ -1228,9 +1275,7 @@ serve(async (req: Request) => {
             (agentProfileRes.data as { name?: string | null } | null)?.name ?? ''
           ).trim();
           const agentFirstName = agentName.split(/\s+/)[0] || 'the agent';
-          const contactName = (
-            (contactRes.data as { name?: string | null } | null)?.name ?? ''
-          ).trim();
+          const contactName = (contactData?.name ?? '').trim();
           const contactFirstName = contactName.split(/\s+/)[0] || 'the caller';
 
           // PR 87: accept both {x} and {{x}} so single-brace templates

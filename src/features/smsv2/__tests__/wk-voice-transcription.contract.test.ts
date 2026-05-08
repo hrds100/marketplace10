@@ -248,7 +248,7 @@ describe('wk-voice-transcription — OpenAI request contract', () => {
   });
 
   it('v8 — OpenAI request tagged with prompt_cache_key for prefix caching', () => {
-    expect(source).toMatch(/prompt_cache_key:\s*['"]nfstay-coach-v(?:8|9|10|11|12|13|14|15)['"]/);
+    expect(source).toMatch(/prompt_cache_key:\s*['"]nfstay-coach-v(?:8|9|10|11|12|13|14|15|16)['"]/);
   });
 
   it('v8 — script prompt is intent-based with USE FRESH WORDING + EARNED-PITCH + JUST EXPLORING', () => {
@@ -352,5 +352,29 @@ describe('wk-voice-transcription — OpenAI request contract', () => {
     // agent UI.
     expect(source).toMatch(/\\\{\\\{\?\\s\*first_name\\s\*\\\}\?\\\}/);
     expect(source).toMatch(/\\\{\\\{\?\\s\*agent_first_name\\s\*\\\}\?\\\}/);
+  });
+
+  it('v16 — resolves script from contact pipeline column (own > column > campaign > default)', () => {
+    // Hugo 2026-05-02: each pipeline column can pin a script so leads
+    // in "Follow-Up" get a different script than "New Leads". The edge
+    // function must fetch the contact's pipeline_column_id, then look up
+    // wk_pipeline_columns.call_script_id for that column.
+    expect(source).toContain('pipeline_column_id');
+    // Must query wk_pipeline_columns to resolve the column-pinned script
+    expect(source).toMatch(/from\(['"]wk_pipeline_columns['"]\)/);
+    expect(source).toMatch(/call_script_id/);
+    // The resolution chain must include 'column' as a source
+    expect(source).toContain("'column'");
+  });
+
+  it('v16 — wk-calls-create source persists campaign_id on INSERT', () => {
+    // Bug fix: campaign_id was parsed from request body but not written
+    // to the wk_calls row. The transcription function reads it back to
+    // resolve campaign-level overrides.
+    const createSource = readFileSync(
+      resolve(__dirname, '../../../../supabase/functions/wk-calls-create/index.ts'),
+      'utf8'
+    );
+    expect(createSource).toMatch(/campaign_id.*campaignId|campaign_id:\s*campaignId/);
   });
 });
