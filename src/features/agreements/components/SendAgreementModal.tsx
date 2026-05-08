@@ -1,5 +1,5 @@
-import { useState, useEffect, useCallback } from 'react';
-import { X, Loader2, FileSignature } from 'lucide-react';
+import { useState, useEffect, useCallback, useRef } from 'react';
+import { X, Loader2, FileSignature, Pencil, Check } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { toast } from 'sonner';
@@ -33,8 +33,37 @@ export default function SendAgreementModal({ contact, onClose }: Props) {
   const [stageId, setStageId] = useState<string>('');
   const [stageError, setStageError] = useState(false);
   const [showFollowup, setShowFollowup] = useState(false);
+  const [editingName, setEditingName] = useState(false);
+  const [editName, setEditName] = useState(contact?.name ?? '');
+  const [displayName, setDisplayName] = useState(contact?.name ?? '');
+  const nameInputRef = useRef<HTMLInputElement>(null);
 
   const agentFirstName = (user?.user_metadata?.name ?? user?.email ?? '').split(' ')[0] || 'nfstay';
+
+  const saveName = useCallback(async () => {
+    const trimmed = editName.trim();
+    if (!trimmed || trimmed === displayName || !contact) {
+      setEditName(displayName);
+      setEditingName(false);
+      return;
+    }
+    try {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      await (supabase.from('wk_contacts' as any) as any)
+        .update({ name: trimmed })
+        .eq('id', contact.id);
+      setDisplayName(trimmed);
+      toast.success('Name updated');
+    } catch {
+      toast.error('Failed to update name');
+      setEditName(displayName);
+    }
+    setEditingName(false);
+  }, [editName, displayName, contact]);
+
+  useEffect(() => {
+    if (editingName) nameInputRef.current?.focus();
+  }, [editingName]);
 
   useEffect(() => {
     (async () => {
@@ -73,7 +102,7 @@ export default function SendAgreementModal({ contact, onClose }: Props) {
     setSending(true);
 
     try {
-      const token = generateToken(contact.name);
+      const token = generateToken(displayName);
       const agreementUrl = `hub.nfstay.com/agreement/${token}`;
 
       const { error: insertErr } = await (supabase.from('agreements' as any) as any)
@@ -81,7 +110,7 @@ export default function SendAgreementModal({ contact, onClose }: Props) {
           token,
           contact_id: contact.id,
           property_id: Number(propertyId),
-          recipient_name: contact.name,
+          recipient_name: displayName,
           amount: Number(amount),
           currency,
           title: 'Property Serviced Accommodation Partnership Agreement',
@@ -95,7 +124,7 @@ export default function SendAgreementModal({ contact, onClose }: Props) {
       await moveToColumn(contact.id, stageId);
 
       const propertyTitle = properties.find(p => String(p.id) === propertyId)?.title ?? 'the property';
-      const firstName = (contact.name || '').split(' ')[0] || 'there';
+      const firstName = (displayName || '').split(' ')[0] || 'there';
       const signoff = `Best,\n${agentFirstName}\nnfstay`;
 
       if (channel === 'sms' && contact.phone) {
@@ -129,7 +158,7 @@ export default function SendAgreementModal({ contact, onClose }: Props) {
         throw new Error(`No ${channel} address for this contact`);
       }
 
-      toast.success(`Agreement sent to ${contact.name}`);
+      toast.success(`Agreement sent to ${displayName}`);
       // Open follow-up prompt — mandatory before closing
       setShowFollowup(true);
     } catch (e) {
@@ -137,7 +166,7 @@ export default function SendAgreementModal({ contact, onClose }: Props) {
     } finally {
       setSending(false);
     }
-  }, [contact, amount, currency, propertyId, channel, properties, generateToken, stageId, moveToColumn, agentFirstName]);
+  }, [contact, amount, currency, propertyId, channel, properties, generateToken, stageId, moveToColumn, agentFirstName, displayName]);
 
   const selectedColumn = columns.find(c => c.id === stageId);
 
@@ -177,7 +206,27 @@ export default function SendAgreementModal({ contact, onClose }: Props) {
         <div className="px-5 py-4 space-y-4">
           <div className="bg-[#F3F3EE] rounded-xl p-3">
             <p className="text-xs font-semibold text-[#9CA3AF] uppercase tracking-wider">Recipient</p>
-            <p className="text-sm font-medium text-[#1A1A1A]">{contact.name}</p>
+            {editingName ? (
+              <div className="flex items-center gap-1.5 mt-0.5">
+                <input
+                  ref={nameInputRef}
+                  value={editName}
+                  onChange={(e) => setEditName(e.target.value)}
+                  onKeyDown={(e) => { if (e.key === 'Enter') saveName(); if (e.key === 'Escape') { setEditName(displayName); setEditingName(false); } }}
+                  className="flex-1 px-2 py-1 text-sm font-medium text-[#1A1A1A] bg-white border border-[#1E9A80] rounded-md focus:outline-none focus:ring-1 focus:ring-[#1E9A80]"
+                />
+                <button onClick={saveName} className="p-1 rounded hover:bg-[#ECFDF5]">
+                  <Check className="w-3.5 h-3.5 text-[#1E9A80]" />
+                </button>
+              </div>
+            ) : (
+              <div className="flex items-center gap-1.5 mt-0.5">
+                <p className="text-sm font-medium text-[#1A1A1A]">{displayName}</p>
+                <button onClick={() => { setEditName(displayName); setEditingName(true); }} className="p-0.5 rounded hover:bg-white/60">
+                  <Pencil className="w-3 h-3 text-[#9CA3AF] hover:text-[#1E9A80]" />
+                </button>
+              </div>
+            )}
             {contact.phone && <p className="text-xs text-[#6B7280]">{contact.phone}</p>}
           </div>
 
@@ -288,7 +337,7 @@ export default function SendAgreementModal({ contact, onClose }: Props) {
                 <Loader2 className="h-4 w-4 animate-spin" /> Sending...
               </span>
             ) : (
-              `Send Agreement to ${contact.name}`
+              `Send Agreement to ${displayName}`
             )}
           </button>
         </div>
