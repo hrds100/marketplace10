@@ -105,6 +105,7 @@ export interface PipelineColumn {
    *  persistent banner UI (PR 19) until done or dismissed. */
   requiresFollowup?: boolean;
   callScriptId?: string;
+  coachProfileId?: string;
   automation: ColumnAutomation;
 }
 

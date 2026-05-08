@@ -109,6 +109,9 @@ export function useColumnPersistence(): ColumnPersistAPI {
       if ('callScriptId' in patch) {
         dbPatch.call_script_id = patch.callScriptId ?? null;
       }
+      if ('coachProfileId' in patch) {
+        dbPatch.coach_profile_id = patch.coachProfileId ?? null;
+      }
       if (Object.keys(dbPatch).length === 0) return true;
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const { error } = await (supabase.from('wk_pipeline_columns' as any) as any)

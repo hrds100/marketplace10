@@ -615,7 +615,7 @@ async function streamCoachInternal(args: {
       // PR 65 (Hugo 2026-04-27): bumped v14→v15. RETURNS examples
       // dropped the "exit by selling allocations" line — there is
       // no early exit. Material prompt change → invalidate cache.
-      prompt_cache_key: 'nfstay-coach-v16',
+      prompt_cache_key: 'nfstay-coach-v17',
       messages: [
         ...systemMessages
           .filter((m): m is string => typeof m === 'string' && m.trim().length > 0)
@@ -1064,7 +1064,7 @@ serve(async (req: Request) => {
             campaignId
               ? supa
                   .from('wk_dialer_campaigns')
-                  .select('call_script_id')
+                  .select('call_script_id, coach_profile_id')
                   .eq('id', campaignId)
                   .maybeSingle()
               : Promise.resolve({ data: null, error: null }),
@@ -1200,10 +1200,10 @@ serve(async (req: Request) => {
             ? (defaultScriptRes.data[0] as { name: string; body_md: string } | undefined)
             : undefined;
 
-          // v16 (Hugo 2026-05-02): pipeline column script pin.
-          // The contact's pipeline_column_id tells us which stage they're
-          // in. If that column has a call_script_id, it slots between
-          // own > COLUMN > campaign > default.
+          // v17 (Hugo 2026-05-08): coach profiles — pipeline column or
+          // campaign can reference a wk_coach_profiles row that bundles
+          // script + style + script prompt. Resolution chain:
+          //   own > column profile > campaign profile > workspace default profile
           const contactData = (contactRes.data ?? null) as
             | { name?: string | null; pipeline_column_id?: string | null }
             | null;
@@ -1216,45 +1216,108 @@ serve(async (req: Request) => {
           if (!ownScriptRow && pipelineColumnId) {
             const { data: colRow } = await supa
               .from('wk_pipeline_columns')
-              .select('call_script_id, coach_style_prompt, coach_script_prompt')
+              .select('call_script_id, coach_style_prompt, coach_script_prompt, coach_profile_id')
               .eq('id', pipelineColumnId)
               .maybeSingle();
             const colData = colRow as {
               call_script_id: string | null;
               coach_style_prompt: string | null;
               coach_script_prompt: string | null;
+              coach_profile_id: string | null;
             } | null;
-            columnStyle = (colData?.coach_style_prompt ?? '').trim();
-            columnScript = (colData?.coach_script_prompt ?? '').trim();
-            const colScriptId = colData?.call_script_id ?? null;
-            if (colScriptId) {
-              const { data: pinned } = await supa
-                .from('wk_call_scripts')
-                .select('name, body_md')
-                .eq('id', colScriptId)
+            // v17: if column has a coach_profile_id, load the profile and
+            // use its bundled script + prompts (overrides individual fields).
+            const colProfileId = colData?.coach_profile_id ?? null;
+            if (colProfileId) {
+              const { data: profile } = await supa
+                .from('wk_coach_profiles')
+                .select('call_script_id, coach_style_prompt, coach_script_prompt')
+                .eq('id', colProfileId)
                 .maybeSingle();
-              if (pinned) {
-                columnScriptRow = pinned as { name: string; body_md: string };
+              const profData = profile as {
+                call_script_id: string | null;
+                coach_style_prompt: string | null;
+                coach_script_prompt: string | null;
+              } | null;
+              if (profData) {
+                columnStyle = (profData.coach_style_prompt ?? '').trim();
+                columnScript = (profData.coach_script_prompt ?? '').trim();
+                if (profData.call_script_id) {
+                  const { data: pinned } = await supa
+                    .from('wk_call_scripts')
+                    .select('name, body_md')
+                    .eq('id', profData.call_script_id)
+                    .maybeSingle();
+                  if (pinned) {
+                    columnScriptRow = pinned as { name: string; body_md: string };
+                  }
+                }
+              }
+            } else {
+              // Fallback: direct column fields (v16 compat)
+              columnStyle = (colData?.coach_style_prompt ?? '').trim();
+              columnScript = (colData?.coach_script_prompt ?? '').trim();
+              const colScriptId = colData?.call_script_id ?? null;
+              if (colScriptId) {
+                const { data: pinned } = await supa
+                  .from('wk_call_scripts')
+                  .select('name, body_md')
+                  .eq('id', colScriptId)
+                  .maybeSingle();
+                if (pinned) {
+                  columnScriptRow = pinned as { name: string; body_md: string };
+                }
               }
             }
           }
 
-          // PR 56: campaign-pinned script lookup. If the campaign has
-          // call_script_id set, fetch that row and slot it between
-          // column > campaign > default in the resolution chain.
+          // Campaign-level: check coach_profile_id first, then legacy call_script_id.
           let campaignScriptRow:
             | { name: string; body_md: string }
             | undefined;
-          const campRow = (campaignRes.data ?? null) as { call_script_id: string | null } | null;
-          const pinnedScriptId = campRow?.call_script_id ?? null;
-          if (!ownScriptRow && !columnScriptRow && pinnedScriptId) {
-            const { data: pinned } = await supa
-              .from('wk_call_scripts')
-              .select('name, body_md')
-              .eq('id', pinnedScriptId)
-              .maybeSingle();
-            if (pinned) {
-              campaignScriptRow = pinned as { name: string; body_md: string };
+          const campRow = (campaignRes.data ?? null) as {
+            call_script_id: string | null;
+            coach_profile_id?: string | null;
+          } | null;
+          if (!ownScriptRow && !columnScriptRow) {
+            const campProfileId = campRow?.coach_profile_id ?? null;
+            if (campProfileId && !campStyle.length && !campScript.length) {
+              const { data: profile } = await supa
+                .from('wk_coach_profiles')
+                .select('call_script_id, coach_style_prompt, coach_script_prompt')
+                .eq('id', campProfileId)
+                .maybeSingle();
+              const profData = profile as {
+                call_script_id: string | null;
+                coach_style_prompt: string | null;
+                coach_script_prompt: string | null;
+              } | null;
+              if (profData) {
+                if (!campStyle.length) campStyle = (profData.coach_style_prompt ?? '').trim();
+                if (!campScript.length) campScript = (profData.coach_script_prompt ?? '').trim();
+                if (profData.call_script_id) {
+                  const { data: pinned } = await supa
+                    .from('wk_call_scripts')
+                    .select('name, body_md')
+                    .eq('id', profData.call_script_id)
+                    .maybeSingle();
+                  if (pinned) {
+                    campaignScriptRow = pinned as { name: string; body_md: string };
+                  }
+                }
+              }
+            } else {
+              const pinnedScriptId = campRow?.call_script_id ?? null;
+              if (pinnedScriptId) {
+                const { data: pinned } = await supa
+                  .from('wk_call_scripts')
+                  .select('name, body_md')
+                  .eq('id', pinnedScriptId)
+                  .maybeSingle();
+                if (pinned) {
+                  campaignScriptRow = pinned as { name: string; body_md: string };
+                }
+              }
             }
           }
 

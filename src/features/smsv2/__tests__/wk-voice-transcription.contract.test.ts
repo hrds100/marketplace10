@@ -248,7 +248,7 @@ describe('wk-voice-transcription — OpenAI request contract', () => {
   });
 
   it('v8 — OpenAI request tagged with prompt_cache_key for prefix caching', () => {
-    expect(source).toMatch(/prompt_cache_key:\s*['"]nfstay-coach-v(?:8|9|10|11|12|13|14|15|16)['"]/);
+    expect(source).toMatch(/prompt_cache_key:\s*['"]nfstay-coach-v(?:8|9|10|11|12|13|14|15|16|17)['"]/);
   });
 
   it('v8 — script prompt is intent-based with USE FRESH WORDING + EARNED-PITCH + JUST EXPLORING', () => {
@@ -365,6 +365,12 @@ describe('wk-voice-transcription — OpenAI request contract', () => {
     expect(source).toMatch(/call_script_id/);
     // The resolution chain must include 'column' as a source
     expect(source).toContain("'column'");
+  });
+
+  it('v17 — resolves coach profiles from wk_coach_profiles table', () => {
+    expect(source).toMatch(/from\(['"]wk_coach_profiles['"]\)/);
+    expect(source).toContain('coach_profile_id');
+    expect(source).toMatch(/nfstay-coach-v17/);
   });
 
   it('v16 — wk-calls-create source persists campaign_id on INSERT', () => {

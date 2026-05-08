@@ -100,9 +100,7 @@ const TABS = [
   { id: 'campaigns', label: 'Campaigns', icon: Megaphone },
   { id: 'pipelines', label: 'Pipelines & outcomes', icon: Kanban },
   { id: 'templates', label: 'Templates (SMS / WA / Email)', icon: MessageSquare },
-  { id: 'ai', label: 'AI coach', icon: Bot },
-  { id: 'kb', label: 'Coach facts', icon: Brain },
-  { id: 'glossary', label: 'Glossary', icon: BookOpen },
+  { id: 'ai', label: 'AI Coach', icon: Bot },
   { id: 'agents', label: 'Agents & spend', icon: Users },
   { id: 'numbers', label: 'Numbers', icon: Phone },
   { id: 'channels', label: 'Channels', icon: Radio },
@@ -129,7 +127,7 @@ const COLOUR_PALETTE = [
 // Campaigns / Agents / Numbers / Pipelines / Templates remain
 // workspace-level. We pass selectedCampaignId only to the cascade-
 // aware tabs.
-const CAMPAIGN_SCOPED_TABS = new Set(['ai', 'kb', 'glossary']);
+const CAMPAIGN_SCOPED_TABS = new Set(['ai']);
 
 // PR 56: a tiny inline pill that reflects whether a field is
 // inheriting a workspace default ('inherited') or has a per-campaign
@@ -213,18 +211,14 @@ type Scope =
 const WORKSPACE_BUNDLE_TABS = [
   { id: 'pipelines', label: 'Pipeline & outcomes', icon: Kanban },
   { id: 'templates', label: 'Templates (SMS / WA / Email)', icon: MessageSquare },
-  { id: 'ai', label: 'AI coach', icon: Bot },
-  { id: 'kb', label: 'Coach facts', icon: Brain },
-  { id: 'glossary', label: 'Glossary', icon: BookOpen },
+  { id: 'ai', label: 'AI Coach', icon: Bot },
 ] as const;
 
 const CAMPAIGN_BUNDLE_TABS = [
   { id: 'overview', label: 'Overview', icon: Megaphone },
   { id: 'pipelines', label: 'Pipeline', icon: Kanban },
   { id: 'templates', label: 'Templates (SMS / WA / Email)', icon: MessageSquare },
-  { id: 'ai', label: 'AI coach', icon: Bot },
-  { id: 'kb', label: 'Coach facts', icon: Brain },
-  { id: 'glossary', label: 'Glossary', icon: BookOpen },
+  { id: 'ai', label: 'AI Coach', icon: Bot },
   { id: 'agents', label: 'Assigned agents', icon: Users },
   { id: 'numbers', label: 'Assigned channels (SMS/WA/Email)', icon: Phone },
   { id: 'leads', label: 'Upload leads (CSV)', icon: Plus },
@@ -494,9 +488,7 @@ function WorkspaceBundle({ tab, onTabChange }: { tab: string; onTabChange: (t: s
       </div>
       {validTab === 'pipelines' && <PipelinesTab />}
       {validTab === 'templates' && <TemplatesTab />}
-      {validTab === 'ai' && <AITab campaignId={null} />}
-      {validTab === 'kb' && <KnowledgeBaseTab campaignId={null} />}
-      {validTab === 'glossary' && <GlossaryTab campaignId={null} />}
+      {validTab === 'ai' && <UnifiedCoachTab campaignId={null} />}
     </>
   );
 }
@@ -553,9 +545,7 @@ function CampaignBundle({
       {validTab === 'overview' && <CampaignOverviewTab campaignId={campaignId} />}
       {validTab === 'pipelines' && <PipelinesTab />}
       {validTab === 'templates' && <TemplatesTab campaignId={campaignId} />}
-      {validTab === 'ai' && <AITab campaignId={campaignId} />}
-      {validTab === 'kb' && <KnowledgeBaseTab campaignId={campaignId} />}
-      {validTab === 'glossary' && <GlossaryTab campaignId={campaignId} />}
+      {validTab === 'ai' && <UnifiedCoachTab campaignId={campaignId} />}
       {validTab === 'agents' && <CampaignAgentsPanelStandalone campaignId={campaignId} />}
       {validTab === 'numbers' && <CampaignNumbersPanelStandalone campaignId={campaignId} />}
       {validTab === 'leads' && <CampaignLeadsCsvPanel campaignId={campaignId} campaignName={camp.name} />}
@@ -921,15 +911,15 @@ function PipelinesTab() {
   // PR 90: real templates from wk_sms_templates (was iterating MOCK_TEMPLATES,
   // so admin couldn't see actual templates in the stage-automation dropdown).
   const { items: realTemplates } = useSmsTemplates();
-  // v16: load all call scripts for the per-column script dropdown.
-  const [allScripts, setAllScripts] = useState<{ id: string; name: string }[]>([]);
+  // v17: load all coach profiles for the per-column profile dropdown.
+  const [allProfiles, setAllProfiles] = useState<{ id: string; name: string }[]>([]);
   useEffect(() => {
     (async () => {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const { data } = await (supabase.from('wk_call_scripts' as any) as any)
+      const { data } = await (supabase.from('wk_coach_profiles' as any) as any)
         .select('id, name')
         .order('name', { ascending: true });
-      if (data) setAllScripts(data as { id: string; name: string }[]);
+      if (data) setAllProfiles(data as { id: string; name: string }[]);
     })();
   }, []);
 
@@ -1192,24 +1182,24 @@ function PipelinesTab() {
                       </span>
                     </label>
 
-                    {/* Call script pin */}
+                    {/* Coach profile selector */}
                     <div>
                       <div className="text-[11px] font-medium text-[#6B7280] mb-1">
-                        Call script for leads in this column
+                        AI Coach profile for leads in this column
                       </div>
                       <select
-                        value={col.callScriptId ?? ''}
+                        value={col.coachProfileId ?? ''}
                         onChange={(e) =>
                           update(col.id, {
-                            callScriptId: e.target.value || undefined,
+                            coachProfileId: e.target.value || undefined,
                           })
                         }
                         className="px-2 py-1.5 text-[12px] border border-[#E5E7EB] rounded-[8px] bg-white w-full"
                       >
                         <option value="">Inherit (campaign or default)</option>
-                        {allScripts.map((s) => (
-                          <option key={s.id} value={s.id}>
-                            {s.name}
+                        {allProfiles.map((p) => (
+                          <option key={p.id} value={p.id}>
+                            {p.name}
                           </option>
                         ))}
                       </select>
@@ -2970,6 +2960,363 @@ function NumbersTab() {
         )}
       </Card>
     </>
+  );
+}
+
+// ─── Unified Coach Tab — profiles + facts + glossary on one page ───
+interface CoachProfile {
+  id: string;
+  name: string;
+  call_script_id: string | null;
+  coach_style_prompt: string | null;
+  coach_script_prompt: string | null;
+  is_default: boolean;
+}
+
+function UnifiedCoachTab({ campaignId = null }: { campaignId?: string | null } = {}) {
+  const [profiles, setProfiles] = useState<CoachProfile[]>([]);
+  const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [loadingProfiles, setLoadingProfiles] = useState(true);
+  const [scripts, setScripts] = useState<{ id: string; name: string; body_md: string }[]>([]);
+
+  const loadProfiles = useCallback(async () => {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { data } = await (supabase.from('wk_coach_profiles' as any) as any)
+      .select('id, name, call_script_id, coach_style_prompt, coach_script_prompt, is_default')
+      .order('is_default', { ascending: false });
+    if (data) {
+      const rows = data as CoachProfile[];
+      setProfiles(rows);
+      if (!selectedId && rows.length > 0) setSelectedId(rows[0].id);
+    }
+    setLoadingProfiles(false);
+  }, [selectedId]);
+
+  const loadScripts = useCallback(async () => {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { data } = await (supabase.from('wk_call_scripts' as any) as any)
+      .select('id, name, body_md')
+      .order('name', { ascending: true });
+    if (data) setScripts(data as { id: string; name: string; body_md: string }[]);
+  }, []);
+
+  useEffect(() => { void loadProfiles(); void loadScripts(); }, [loadProfiles, loadScripts]);
+
+  const selected = profiles.find((p) => p.id === selectedId) ?? null;
+
+  const saveProfile = async (id: string, patch: Partial<CoachProfile>) => {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    await (supabase.from('wk_coach_profiles' as any) as any)
+      .update(patch)
+      .eq('id', id);
+    setProfiles((prev) => prev.map((p) => (p.id === id ? { ...p, ...patch } : p)));
+  };
+
+  const addProfile = async () => {
+    const name = prompt('Profile name (e.g. "Follow-up", "Warm lead")');
+    if (!name?.trim()) return;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { data } = await (supabase.from('wk_coach_profiles' as any) as any)
+      .insert({ name: name.trim(), is_default: false })
+      .select('id, name, call_script_id, coach_style_prompt, coach_script_prompt, is_default')
+      .single();
+    if (data) {
+      const row = data as CoachProfile;
+      setProfiles((prev) => [...prev, row]);
+      setSelectedId(row.id);
+    }
+  };
+
+  const deleteProfile = async (id: string) => {
+    const p = profiles.find((x) => x.id === id);
+    if (!p || p.is_default) return;
+    if (!confirm(`Delete profile "${p.name}"? Pipeline columns using it will fall back to the default.`)) return;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    await (supabase.from('wk_coach_profiles' as any) as any).delete().eq('id', id);
+    setProfiles((prev) => prev.filter((x) => x.id !== id));
+    if (selectedId === id) setSelectedId(profiles.find((x) => x.id !== id)?.id ?? null);
+  };
+
+  return (
+    <>
+      {/* Profile selector pills */}
+      <div className="flex items-center gap-1.5 mb-4 flex-wrap">
+        {profiles.map((p) => (
+          <button
+            key={p.id}
+            onClick={() => setSelectedId(p.id)}
+            className={cn(
+              'px-3 py-1.5 rounded-[10px] text-[12px] font-medium transition-colors',
+              selectedId === p.id
+                ? 'bg-[#1E9A80] text-white shadow-sm'
+                : 'bg-[#F3F3EE] text-[#6B7280] hover:bg-[#E5E7EB]'
+            )}
+          >
+            {p.name}
+            {p.is_default && <span className="ml-1 text-[10px] opacity-70">(default)</span>}
+          </button>
+        ))}
+        <button
+          onClick={() => void addProfile()}
+          className="px-3 py-1.5 rounded-[10px] text-[12px] font-medium text-[#1E9A80] border border-dashed border-[#1E9A80] hover:bg-[#ECFDF5]"
+        >
+          + New profile
+        </button>
+      </div>
+
+      {/* Selected profile editor */}
+      {selected && (
+        <ProfileEditor
+          key={selected.id}
+          profile={selected}
+          scripts={scripts}
+          onSave={(patch) => void saveProfile(selected.id, patch)}
+          onDelete={selected.is_default ? undefined : () => void deleteProfile(selected.id)}
+          onScriptsChanged={loadScripts}
+        />
+      )}
+
+      {loadingProfiles && (
+        <div className="text-[12px] text-[#9CA3AF] py-4 text-center">Loading profiles…</div>
+      )}
+
+      {/* Shared sections: AI settings + facts + glossary */}
+      <div className="mt-6 border-t border-[#E5E7EB] pt-4">
+        <div className="text-[13px] font-semibold text-[#1A1A1A] mb-3">
+          Shared settings (all profiles)
+        </div>
+        <AITab campaignId={campaignId} />
+      </div>
+
+      <div className="mt-6 border-t border-[#E5E7EB] pt-4">
+        <div className="text-[13px] font-semibold text-[#1A1A1A] mb-3">
+          Knowledge base (shared across all profiles)
+        </div>
+        <KnowledgeBaseTab campaignId={campaignId} />
+      </div>
+
+      <div className="mt-6 border-t border-[#E5E7EB] pt-4">
+        <div className="text-[13px] font-semibold text-[#1A1A1A] mb-3">
+          Glossary (shared across all profiles)
+        </div>
+        <GlossaryTab campaignId={campaignId} />
+      </div>
+    </>
+  );
+}
+
+function ProfileEditor({
+  profile,
+  scripts,
+  onSave,
+  onDelete,
+  onScriptsChanged,
+}: {
+  profile: CoachProfile;
+  scripts: { id: string; name: string; body_md: string }[];
+  onSave: (patch: Partial<CoachProfile>) => void;
+  onDelete?: () => void;
+  onScriptsChanged: () => void;
+}) {
+  const [name, setName] = useState(profile.name);
+  const [stylePrompt, setStylePrompt] = useState(profile.coach_style_prompt ?? '');
+  const [scriptPrompt, setScriptPrompt] = useState(profile.coach_script_prompt ?? '');
+  const [scriptId, setScriptId] = useState(profile.call_script_id ?? '');
+  const [dirty, setDirty] = useState(false);
+  const [saved, setSaved] = useState(false);
+  const [editingScript, setEditingScript] = useState(false);
+  const [scriptBody, setScriptBody] = useState('');
+  const [scriptName, setScriptName] = useState('');
+
+  const selectedScript = scripts.find((s) => s.id === scriptId);
+
+  useEffect(() => {
+    if (selectedScript) {
+      setScriptBody(selectedScript.body_md);
+      setScriptName(selectedScript.name);
+    }
+  }, [selectedScript]);
+
+  const save = () => {
+    onSave({
+      name,
+      coach_style_prompt: stylePrompt || null,
+      coach_script_prompt: scriptPrompt || null,
+      call_script_id: scriptId || null,
+    });
+    setDirty(false);
+    setSaved(true);
+    setTimeout(() => setSaved(false), 2000);
+  };
+
+  const saveScript = async () => {
+    if (!scriptId) return;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    await (supabase.from('wk_call_scripts' as any) as any)
+      .update({ name: scriptName, body_md: scriptBody })
+      .eq('id', scriptId);
+    setEditingScript(false);
+    onScriptsChanged();
+  };
+
+  const createScript = async () => {
+    const n = prompt('Script name', `${profile.name} script`);
+    if (!n?.trim()) return;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { data } = await (supabase.from('wk_call_scripts' as any) as any)
+      .insert({ name: n.trim(), body_md: '', is_default: false })
+      .select('id')
+      .single();
+    if (data) {
+      const newId = (data as { id: string }).id;
+      setScriptId(newId);
+      onSave({ call_script_id: newId });
+      onScriptsChanged();
+    }
+  };
+
+  return (
+    <Card
+      title={
+        <div className="flex items-center gap-2">
+          <input
+            value={name}
+            onChange={(e) => { setName(e.target.value); setDirty(true); }}
+            className="text-[14px] font-semibold bg-transparent border-b border-dashed border-[#E5E7EB] focus:border-[#1E9A80] outline-none px-0 py-0.5 w-48"
+          />
+          {profile.is_default && (
+            <span className="text-[10px] text-[#1E9A80] bg-[#ECFDF5] px-2 py-0.5 rounded-full">
+              Default
+            </span>
+          )}
+        </div>
+      }
+      hint="Bundled script + coach prompts. Assign this profile to pipeline columns."
+    >
+      <div className="space-y-4">
+        {/* Agent script selector */}
+        <div>
+          <Label>Agent call script</Label>
+          <div className="flex gap-2 items-center">
+            <select
+              value={scriptId}
+              onChange={(e) => { setScriptId(e.target.value); setDirty(true); }}
+              className="flex-1 px-2 py-1.5 text-[12px] border border-[#E5E7EB] rounded-[8px] bg-white"
+            >
+              <option value="">No script</option>
+              {scripts.map((s) => (
+                <option key={s.id} value={s.id}>{s.name}</option>
+              ))}
+            </select>
+            <button
+              onClick={() => void createScript()}
+              className="text-[11px] text-[#1E9A80] hover:underline whitespace-nowrap"
+            >
+              + New script
+            </button>
+          </div>
+          {selectedScript && !editingScript && (
+            <div className="mt-2 border border-[#E5E7EB] rounded-lg p-2 bg-[#F9FAFB]">
+              <div className="flex items-center justify-between mb-1">
+                <span className="text-[11px] font-medium text-[#1A1A1A]">{selectedScript.name}</span>
+                <button
+                  onClick={() => setEditingScript(true)}
+                  className="text-[10px] text-[#1E9A80] hover:underline"
+                >
+                  Edit script
+                </button>
+              </div>
+              <pre className="text-[10px] text-[#6B7280] whitespace-pre-wrap font-mono max-h-32 overflow-y-auto">
+                {selectedScript.body_md || '(empty)'}
+              </pre>
+            </div>
+          )}
+          {editingScript && (
+            <div className="mt-2 border border-[#1E9A80] rounded-lg p-2 bg-white">
+              <input
+                value={scriptName}
+                onChange={(e) => setScriptName(e.target.value)}
+                className="w-full text-[12px] font-semibold border-b border-[#E5E7EB] mb-2 pb-1 outline-none"
+              />
+              <textarea
+                value={scriptBody}
+                onChange={(e) => setScriptBody(e.target.value)}
+                rows={10}
+                className="w-full text-[11px] font-mono border border-[#E5E7EB] rounded-[8px] p-2"
+              />
+              <div className="flex gap-2 mt-2">
+                <button
+                  onClick={() => void saveScript()}
+                  className="bg-[#1E9A80] text-white text-[11px] font-semibold px-3 py-1.5 rounded-[8px]"
+                >
+                  Save script
+                </button>
+                <button
+                  onClick={() => setEditingScript(false)}
+                  className="text-[11px] text-[#6B7280] hover:underline"
+                >
+                  Cancel
+                </button>
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* Style prompt */}
+        <div>
+          <Label>Style / voice prompt</Label>
+          <div className="text-[10px] text-[#9CA3AF] mb-1">
+            How the AI coach sounds during calls using this profile.
+          </div>
+          <textarea
+            value={stylePrompt}
+            onChange={(e) => { setStylePrompt(e.target.value); setDirty(true); }}
+            rows={6}
+            placeholder="Leave empty to inherit the workspace default."
+            className="w-full text-[11px] font-mono border border-[#E5E7EB] rounded-[8px] p-2"
+          />
+        </div>
+
+        {/* Script prompt */}
+        <div>
+          <Label>Call logic / script prompt</Label>
+          <div className="text-[10px] text-[#9CA3AF] mb-1">
+            Call stages, objection handling, closing gates for this profile.
+          </div>
+          <textarea
+            value={scriptPrompt}
+            onChange={(e) => { setScriptPrompt(e.target.value); setDirty(true); }}
+            rows={8}
+            placeholder="Leave empty to inherit the workspace default."
+            className="w-full text-[11px] font-mono border border-[#E5E7EB] rounded-[8px] p-2"
+          />
+        </div>
+
+        {/* Save / delete */}
+        <div className="flex items-center gap-3 pt-2 border-t border-[#E5E7EB]">
+          <button
+            onClick={save}
+            disabled={!dirty}
+            className={cn(
+              'text-[12px] font-semibold px-4 py-2 rounded-[10px] transition-colors',
+              dirty
+                ? 'bg-[#1E9A80] text-white hover:bg-[#1E9A80]/90'
+                : 'bg-[#F3F3EE] text-[#9CA3AF] cursor-not-allowed'
+            )}
+          >
+            {saved ? 'Saved ✓' : 'Save profile'}
+          </button>
+          {onDelete && (
+            <button
+              onClick={onDelete}
+              className="text-[11px] text-[#EF4444] hover:underline"
+            >
+              Delete profile
+            </button>
+          )}
+        </div>
+      </div>
+    </Card>
   );
 }
 
