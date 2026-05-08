@@ -569,6 +569,12 @@ export function DialerProContent({ autoCallContactId, pipelineColumnId, onAutoCa
                     agentFirstName={agentFirstName}
                     campaignId={camp?.id ?? null}
                   />
+                  <button
+                    onClick={() => setShowAgreement(true)}
+                    className="w-full flex items-center justify-center gap-2 border border-[#1E9A80] text-[#1E9A80] bg-[#ECFDF5] rounded-xl px-3 py-2.5 text-[12px] font-semibold hover:bg-[#1E9A80]/10 transition-colors"
+                  >
+                    <FileSignature className="w-4 h-4" /> Send Agreement
+                  </button>
                   <CallTimeline callId={state.currentCallId} />
                 </div>
               </>
