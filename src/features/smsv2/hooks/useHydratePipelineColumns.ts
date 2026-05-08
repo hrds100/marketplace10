@@ -93,7 +93,7 @@ export function useHydratePipelineColumns(): void {
           .select(
             'id, pipeline_id, name, colour, icon, position, is_default_on_timeout, requires_followup, call_script_id, coach_profile_id'
           )
-          .order('sort_order', { ascending: true }),
+          .order('position', { ascending: true }),
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         (supabase.from('wk_pipeline_automations' as any) as any).select(
           'column_id, send_sms, sms_template_id, create_task, task_title, task_due_in_hours, retry_dial, retry_in_hours, add_tag, tag, move_to_pipeline_id'

@@ -285,8 +285,14 @@ export function DialerProContent({ autoCallContactId, pipelineColumnId, onAutoCa
       const col = outcomeColumns.find((c) => c.name.toLowerCase().includes('voicemail'));
       if (col) return col.id;
     }
+    // Fall back to the contact's current stage so the agent sees where
+    // the lead is in the pipeline before picking a new disposition.
+    const currentColId = contact?.pipelineColumnId ?? pipelineColumnId ?? null;
+    if (currentColId && outcomeColumns.some((c) => c.id === currentColId)) {
+      return currentColId;
+    }
     return null;
-  }, [state.phase, state.endReason, state.durationSec, outcomeColumns]);
+  }, [state.phase, state.endReason, state.durationSec, outcomeColumns, contact?.pipelineColumnId, pipelineColumnId]);
 
   // Start dialer
   const startDialer = useCallback(async () => {
