@@ -888,7 +888,7 @@ function Card({
   hint,
   children,
 }: {
-  title: string;
+  title: React.ReactNode;
   hint?: string;
   children: React.ReactNode;
 }) {
@@ -2979,30 +2979,47 @@ function UnifiedCoachTab({ campaignId = null }: { campaignId?: string | null } =
   const [loadingProfiles, setLoadingProfiles] = useState(true);
   const [scripts, setScripts] = useState<{ id: string; name: string; body_md: string }[]>([]);
 
-  const loadProfiles = useCallback(async () => {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const { data } = await (supabase.from('wk_coach_profiles' as any) as any)
-      .select('id, name, call_script_id, coach_style_prompt, coach_script_prompt, is_default')
-      .order('is_default', { ascending: false });
-    if (data) {
-      const rows = data as CoachProfile[];
-      setProfiles(rows);
-      if (!selectedId && rows.length > 0) setSelectedId(rows[0].id);
-    }
-    setLoadingProfiles(false);
-  }, [selectedId]);
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const [profRes, scriptRes] = await Promise.all([
+          (supabase.from('wk_coach_profiles' as any) as any)
+            .select('id, name, call_script_id, coach_style_prompt, coach_script_prompt, is_default')
+            .order('is_default', { ascending: false }),
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          (supabase.from('wk_call_scripts' as any) as any)
+            .select('id, name, body_md')
+            .order('name', { ascending: true }),
+        ]);
+        if (cancelled) return;
+        if (profRes.data) {
+          const rows = profRes.data as CoachProfile[];
+          setProfiles(rows);
+          setSelectedId((prev) => prev ?? (rows[0]?.id ?? null));
+        }
+        if (scriptRes.data) {
+          setScripts(scriptRes.data as { id: string; name: string; body_md: string }[]);
+        }
+      } catch (e) {
+        console.warn('[UnifiedCoachTab] load failed', e);
+      } finally {
+        if (!cancelled) setLoadingProfiles(false);
+      }
+    })();
+    return () => { cancelled = true; };
+  }, []);
 
-  const loadScripts = useCallback(async () => {
+  const selected = profiles.find((p) => p.id === selectedId) ?? null;
+
+  const reloadScripts = async () => {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const { data } = await (supabase.from('wk_call_scripts' as any) as any)
       .select('id, name, body_md')
       .order('name', { ascending: true });
     if (data) setScripts(data as { id: string; name: string; body_md: string }[]);
-  }, []);
-
-  useEffect(() => { void loadProfiles(); void loadScripts(); }, [loadProfiles, loadScripts]);
-
-  const selected = profiles.find((p) => p.id === selectedId) ?? null;
+  };
 
   const saveProfile = async (id: string, patch: Partial<CoachProfile>) => {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -3033,8 +3050,11 @@ function UnifiedCoachTab({ campaignId = null }: { campaignId?: string | null } =
     if (!confirm(`Delete profile "${p.name}"? Pipeline columns using it will fall back to the default.`)) return;
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     await (supabase.from('wk_coach_profiles' as any) as any).delete().eq('id', id);
-    setProfiles((prev) => prev.filter((x) => x.id !== id));
-    if (selectedId === id) setSelectedId(profiles.find((x) => x.id !== id)?.id ?? null);
+    setProfiles((prev) => {
+      const next = prev.filter((x) => x.id !== id);
+      if (selectedId === id) setSelectedId(next[0]?.id ?? null);
+      return next;
+    });
   };
 
   return (
@@ -3072,7 +3092,7 @@ function UnifiedCoachTab({ campaignId = null }: { campaignId?: string | null } =
           scripts={scripts}
           onSave={(patch) => void saveProfile(selected.id, patch)}
           onDelete={selected.is_default ? undefined : () => void deleteProfile(selected.id)}
-          onScriptsChanged={loadScripts}
+          onScriptsChanged={reloadScripts}
         />
       )}
 
