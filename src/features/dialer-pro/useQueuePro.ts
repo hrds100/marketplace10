@@ -36,7 +36,7 @@ function rowToLead(row: QueueRow): QueueLead | null {
   };
 }
 
-export function useQueuePro(campaignId: string | null, pipelineColumnId?: string | null) {
+export function useQueuePro(campaignId: string | null) {
   const [queue, setQueue] = useState<QueueLead[]>([]);
   const [totalCount, setTotalCount] = useState(0);
   const [loading, setLoading] = useState(true);
@@ -70,18 +70,14 @@ export function useQueuePro(campaignId: string | null, pipelineColumnId?: string
       return;
     }
 
-    let leads = ((rows ?? []) as QueueRow[])
+    const leads = ((rows ?? []) as QueueRow[])
       .map(rowToLead)
       .filter((l): l is QueueLead => l !== null);
 
-    if (pipelineColumnId) {
-      leads = leads.filter((l) => l.pipelineColumnId === pipelineColumnId);
-    }
-
     setQueue(leads);
-    setTotalCount(pipelineColumnId ? leads.length : (count ?? leads.length));
+    setTotalCount(count ?? leads.length);
     setLoading(false);
-  }, [campaignId, pipelineColumnId]);
+  }, [campaignId]);
 
   useEffect(() => {
     void fetchQueue();

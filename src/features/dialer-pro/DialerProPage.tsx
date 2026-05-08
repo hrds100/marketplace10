@@ -128,7 +128,7 @@ export function DialerProContent({ autoCallContactId, pipelineColumnId, onAutoCa
   }, [state.phase, queryClient]);
 
   // Queue
-  const { queue, refresh: refreshQueue, removeLocal: removeFromQueue } = useQueuePro(camp?.id ?? null, pipelineColumnId);
+  const { queue, refresh: refreshQueue, removeLocal: removeFromQueue } = useQueuePro(camp?.id ?? null);
 
   // Auto-dial: when ?call=<contactId> is in the URL, look up the contact
   // and start calling them as soon as the device is ready.
@@ -374,25 +374,44 @@ export function DialerProContent({ autoCallContactId, pipelineColumnId, onAutoCa
       .eq('id', contactId);
   }, []);
 
-  // When opened from a pipeline column, fetch contact IDs in that column
-  // so "Next call" advances through the same column.
+  // When opened from a pipeline column, fetch contacts in that column
+  // so "Next call" advances through the same column AND the queue list
+  // shows them properly (wk_dialer_queue may not have these rows).
   const columnContactsRef = useRef<string[]>([]);
   const columnIndexRef = useRef(0);
+  const [columnLeads, setColumnLeads] = useState<QueueLead[]>([]);
   useEffect(() => {
-    if (!pipelineColumnId) { columnContactsRef.current = []; return; }
+    if (!pipelineColumnId) { columnContactsRef.current = []; setColumnLeads([]); return; }
     void (async () => {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const { data } = await (supabase.from('wk_contacts' as any) as any)
-        .select('id')
+        .select('id, name, phone, pipeline_column_id')
         .eq('pipeline_column_id', pipelineColumnId)
         .order('created_at', { ascending: true });
-      columnContactsRef.current = (data ?? []).map((r: { id: string }) => r.id);
+      const rows = (data ?? []) as { id: string; name: string | null; phone: string | null; pipeline_column_id: string | null }[];
+      columnContactsRef.current = rows.map((r) => r.id);
+      const leads: QueueLead[] = rows
+        .filter((r) => r.phone)
+        .map((r) => ({
+          id: r.id,
+          contactId: r.id,
+          phone: r.phone!,
+          name: r.name ?? r.phone!,
+          priority: 0,
+          attempts: 0,
+          scheduledFor: null,
+          status: 'pending' as const,
+          campaignId: camp?.id ?? '',
+          pipelineColumnId: r.pipeline_column_id ?? null,
+          queueRowId: r.id,
+        }));
+      setColumnLeads(leads);
       if (autoCallContactId) {
         const idx = columnContactsRef.current.indexOf(autoCallContactId);
         columnIndexRef.current = idx >= 0 ? idx : 0;
       }
     })();
-  }, [pipelineColumnId, autoCallContactId]);
+  }, [pipelineColumnId, autoCallContactId, camp?.id]);
 
   const dialColumnContact = useCallback(async (contactId: string) => {
     if (!camp) return;
@@ -809,7 +828,9 @@ export function DialerProContent({ autoCallContactId, pipelineColumnId, onAutoCa
           <div className="flex flex-col overflow-hidden" style={{ width: `${queuePct}%` }}>
             <div className="flex items-center gap-1.5 px-2.5 py-1.5 border-b border-[#E5E7EB]/60 bg-[#F3F3EE]/50">
               <span className="text-[10px] font-semibold text-[#6B7280] uppercase tracking-wide">Queue</span>
-              <span className="text-[10px] text-[#9CA3AF]">({queue.length})</span>
+              <span className="text-[10px] text-[#9CA3AF]">
+                ({pipelineColumnId ? columnLeads.length : queue.length})
+              </span>
               {pipelineColumnId && (
                 <span className="text-[9px] bg-[#ECFDF5] text-[#1E9A80] px-1.5 py-0.5 rounded-full font-medium">
                   {outcomeColumns.find((c) => c.id === pipelineColumnId)?.name ?? 'Column'}
@@ -817,7 +838,12 @@ export function DialerProContent({ autoCallContactId, pipelineColumnId, onAutoCa
               )}
             </div>
             <div className="overflow-y-auto" style={{ maxHeight: 200 }}>
-              <QueueManagerPro queue={queue} campaignId={camp?.id ?? null} onRefresh={refreshQueue} onToast={onToast} />
+              <QueueManagerPro
+                queue={pipelineColumnId ? columnLeads : queue}
+                campaignId={camp?.id ?? null}
+                onRefresh={refreshQueue}
+                onToast={onToast}
+              />
             </div>
           </div>
           {/* Resize handle */}
