@@ -122,14 +122,17 @@ export function useAgentScript(opts: { campaignId?: string | null; pipelineColum
           }
         }
 
-        // v16: 2. Column-pinned script via wk_pipeline_columns.call_script_id.
+        // v17: 2. Column — check direct call_script_id, then coach_profile_id.
         if (pipelineColumnId) {
           // eslint-disable-next-line @typescript-eslint/no-explicit-any
           const { data: colRow } = await (supabase.from('wk_pipeline_columns' as any) as any)
-            .select('call_script_id')
+            .select('call_script_id, coach_profile_id')
             .eq('id', pipelineColumnId)
             .maybeSingle();
           const colScriptId = colRow?.call_script_id as string | null | undefined;
+          const colProfileId = colRow?.coach_profile_id as string | null | undefined;
+
+          // 2a. Direct call_script_id (legacy v16)
           if (colScriptId) {
             const { data: pinned } = await client
               .from('wk_call_scripts')
@@ -147,16 +150,46 @@ export function useAgentScript(opts: { campaignId?: string | null; pipelineColum
               return;
             }
           }
+
+          // 2b. Coach profile → profile's call_script_id (v17)
+          if (colProfileId) {
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            const { data: profile } = await (supabase.from('wk_coach_profiles' as any) as any)
+              .select('call_script_id')
+              .eq('id', colProfileId)
+              .maybeSingle();
+            const profileScriptId = profile?.call_script_id as string | null | undefined;
+            if (profileScriptId) {
+              const { data: pinned } = await client
+                .from('wk_call_scripts')
+                .select('id, name, body_md, owner_agent_id, is_default')
+                .eq('id', profileScriptId)
+                .limit(1);
+              if (cancelled) return;
+              if (pinned && pinned.length > 0) {
+                setScript({
+                  id: pinned[0].id,
+                  source: 'column',
+                  name: pinned[0].name,
+                  body_md: pinned[0].body_md,
+                });
+                return;
+              }
+            }
+          }
         }
 
-        // PR 56: 3. Campaign-pinned script via wk_dialer_campaigns.call_script_id.
+        // v17: 3. Campaign — check direct call_script_id, then coach_profile_id.
         if (campaignId) {
           // eslint-disable-next-line @typescript-eslint/no-explicit-any
           const { data: campRow } = await (supabase.from('wk_dialer_campaigns' as any) as any)
-            .select('call_script_id')
+            .select('call_script_id, coach_profile_id')
             .eq('id', campaignId)
             .maybeSingle();
           const pinnedId = campRow?.call_script_id as string | null | undefined;
+          const campProfileId = campRow?.coach_profile_id as string | null | undefined;
+
+          // 3a. Direct call_script_id
           if (pinnedId) {
             const { data: pinned } = await client
               .from('wk_call_scripts')
@@ -172,6 +205,33 @@ export function useAgentScript(opts: { campaignId?: string | null; pipelineColum
                 body_md: pinned[0].body_md,
               });
               return;
+            }
+          }
+
+          // 3b. Coach profile → profile's call_script_id (v17)
+          if (campProfileId) {
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            const { data: profile } = await (supabase.from('wk_coach_profiles' as any) as any)
+              .select('call_script_id')
+              .eq('id', campProfileId)
+              .maybeSingle();
+            const profileScriptId = profile?.call_script_id as string | null | undefined;
+            if (profileScriptId) {
+              const { data: pinned } = await client
+                .from('wk_call_scripts')
+                .select('id, name, body_md, owner_agent_id, is_default')
+                .eq('id', profileScriptId)
+                .limit(1);
+              if (cancelled) return;
+              if (pinned && pinned.length > 0) {
+                setScript({
+                  id: pinned[0].id,
+                  source: 'campaign',
+                  name: pinned[0].name,
+                  body_md: pinned[0].body_md,
+                });
+                return;
+              }
             }
           }
         }

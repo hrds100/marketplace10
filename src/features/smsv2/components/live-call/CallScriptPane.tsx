@@ -30,14 +30,20 @@ interface Props {
   contactFirstName: string;
   /** Agent first name, used for {{agent_first_name}} substitution. */
   agentFirstName: string;
+  /** Campaign ID — used for script resolution chain. */
+  campaignId?: string | null;
+  /** Pipeline column ID — used for script resolution chain. */
+  pipelineColumnId?: string | null;
 }
 
 export default function CallScriptPane({
   callId,
   contactFirstName,
   agentFirstName,
+  campaignId,
+  pipelineColumnId,
 }: Props) {
-  const { script, loading, error, saving, save, resetToDefault } = useAgentScript();
+  const { script, loading, error, saving, save, resetToDefault } = useAgentScript({ campaignId, pipelineColumnId });
   const [editing, setEditing] = useState(false);
 
   const rendered = useMemo(() => {

@@ -597,6 +597,8 @@ export function DialerProContent({ autoCallContactId, pipelineColumnId, onAutoCa
               callId={state.currentCallId}
               contactFirstName={contactFirstName}
               agentFirstName={agentFirstName}
+              campaignId={camp?.id}
+              pipelineColumnId={contact?.pipelineColumnId ?? pipelineColumnId}
             />
           </ResizablePanel>
 
