@@ -97,6 +97,7 @@ export interface PipelineColumn {
   position: number;
   isDefaultOnTimeout?: boolean;
   requiresFollowup?: boolean;
+  callScriptId?: string;
   automation: ColumnAutomation;
 }
 

@@ -104,6 +104,7 @@ export interface PipelineColumn {
    *  a contact is moved into them. The follow-up surfaces in the
    *  persistent banner UI (PR 19) until done or dismissed. */
   requiresFollowup?: boolean;
+  callScriptId?: string;
   automation: ColumnAutomation;
 }
 
