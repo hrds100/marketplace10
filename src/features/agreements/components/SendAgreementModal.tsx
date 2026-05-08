@@ -1,5 +1,5 @@
-import { useState, useEffect, useCallback, useRef } from 'react';
-import { X, Loader2, FileSignature, Pencil, Check } from 'lucide-react';
+import { useState, useEffect, useCallback } from 'react';
+import { X, Loader2, FileSignature, Pencil } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { toast } from 'sonner';
@@ -7,6 +7,8 @@ import StageSelector from '@/features/smsv2/components/shared/StageSelector';
 import FollowupPromptModal from '@/features/smsv2/components/followups/FollowupPromptModal';
 import { useContactPersistence } from '@/features/smsv2/hooks/useContactPersistence';
 import { useSmsV2 } from '@/features/smsv2/store/SmsV2Store';
+import EditContactModal from '@/features/smsv2/components/contacts/EditContactModal';
+import type { Contact as FullContact } from '@/features/smsv2/types';
 
 interface Contact {
   id: string;
@@ -33,37 +35,43 @@ export default function SendAgreementModal({ contact, onClose }: Props) {
   const [stageId, setStageId] = useState<string>('');
   const [stageError, setStageError] = useState(false);
   const [showFollowup, setShowFollowup] = useState(false);
-  const [editingName, setEditingName] = useState(false);
-  const [editName, setEditName] = useState(contact?.name ?? '');
   const [displayName, setDisplayName] = useState(contact?.name ?? '');
-  const nameInputRef = useRef<HTMLInputElement>(null);
+  const [displayPhone, setDisplayPhone] = useState(contact?.phone ?? '');
+  const [displayEmail, setDisplayEmail] = useState(contact?.email ?? '');
+  const [showEditContact, setShowEditContact] = useState(false);
+  const [fullContact, setFullContact] = useState<FullContact | null>(null);
 
   const agentFirstName = (user?.user_metadata?.name ?? user?.email ?? '').split(' ')[0] || 'nfstay';
 
-  const saveName = useCallback(async () => {
-    const trimmed = editName.trim();
-    if (!trimmed || trimmed === displayName || !contact) {
-      setEditName(displayName);
-      setEditingName(false);
-      return;
+  const fetchFullContact = useCallback(async () => {
+    if (!contact) return;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { data } = await (supabase.from('wk_contacts' as any) as any)
+      .select('id, name, phone, email, owner_agent_id, pipeline_column_id, tags, is_hot, deal_value_pence, custom_fields, created_at, last_contact_at')
+      .eq('id', contact.id)
+      .maybeSingle();
+    if (data) {
+      setFullContact({
+        id: data.id,
+        name: data.name ?? '',
+        phone: data.phone ?? '',
+        email: data.email ?? undefined,
+        ownerAgentId: data.owner_agent_id ?? undefined,
+        pipelineColumnId: data.pipeline_column_id ?? undefined,
+        tags: data.tags ?? [],
+        isHot: data.is_hot ?? false,
+        dealValuePence: data.deal_value_pence ?? undefined,
+        customFields: data.custom_fields ?? {},
+        createdAt: data.created_at ?? new Date().toISOString(),
+        lastContactAt: data.last_contact_at ?? undefined,
+      });
     }
-    try {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      await (supabase.from('wk_contacts' as any) as any)
-        .update({ name: trimmed })
-        .eq('id', contact.id);
-      setDisplayName(trimmed);
-      toast.success('Name updated');
-    } catch {
-      toast.error('Failed to update name');
-      setEditName(displayName);
-    }
-    setEditingName(false);
-  }, [editName, displayName, contact]);
+  }, [contact]);
 
-  useEffect(() => {
-    if (editingName) nameInputRef.current?.focus();
-  }, [editingName]);
+  const openEditContact = useCallback(async () => {
+    await fetchFullContact();
+    setShowEditContact(true);
+  }, [fetchFullContact]);
 
   useEffect(() => {
     (async () => {
@@ -127,27 +135,27 @@ export default function SendAgreementModal({ contact, onClose }: Props) {
       const firstName = (displayName || '').split(' ')[0] || 'there';
       const signoff = `Best,\n${agentFirstName}\nnfstay`;
 
-      if (channel === 'sms' && contact.phone) {
+      if (channel === 'sms' && displayPhone) {
         const body = `Hi ${firstName},\n\nI've prepared your Partnership Agreement for the ${propertyTitle} opportunity.\n\nReview and sign here:\n${agreementUrl}\n\n${signoff}`;
 
         const { error: smsErr } = await supabase.functions.invoke('wk-sms-send', {
-          body: { to: contact.phone, body, contact_id: contact.id },
+          body: { to: displayPhone, body, contact_id: contact.id },
         });
         if (smsErr) throw new Error(smsErr.message ?? 'SMS send failed');
-      } else if (channel === 'whatsapp' && contact.phone) {
+      } else if (channel === 'whatsapp' && displayPhone) {
         const body = `Hi ${firstName},\n\nFollowing our conversation, I've prepared your Partnership Agreement for the ${propertyTitle} opportunity.\n\nPlease review the terms and sign here:\n${agreementUrl}\n\nOnce signed, you'll be taken straight to the secure payment page.\n\nLet me know if you have any questions.\n\n${signoff}`;
 
         const { error: waErr } = await supabase.functions.invoke('unipile-send', {
           body: { contact_id: contact.id, body },
         });
         if (waErr) throw new Error(waErr.message ?? 'WhatsApp send failed');
-      } else if (channel === 'email' && contact.email) {
+      } else if (channel === 'email' && displayEmail) {
         const body = `Hi ${firstName},\n\nThank you for your interest in the ${propertyTitle} property.\n\nI've prepared a Partnership Agreement for your review. This document outlines the deal details, allocation terms, financial projections, and your rights as a partner.\n\nPlease review and sign the agreement here:\n${agreementUrl}\n\nAfter signing, you'll be redirected to complete your secure payment.\n\n${signoff}\nhub.nfstay.com`;
 
         const { data: emailResp, error: emailErr } = await supabase.functions.invoke('wk-email-send', {
           body: {
             contact_id: contact.id,
-            to: contact.email,
+            to: displayEmail,
             subject: `Your Partnership Agreement — ${propertyTitle}`,
             body,
           },
@@ -159,20 +167,18 @@ export default function SendAgreementModal({ contact, onClose }: Props) {
       }
 
       toast.success(`Agreement sent to ${displayName}`);
-      // Open follow-up prompt — mandatory before closing
       setShowFollowup(true);
     } catch (e) {
       toast.error(e instanceof Error ? e.message : 'Failed to send');
     } finally {
       setSending(false);
     }
-  }, [contact, amount, currency, propertyId, channel, properties, generateToken, stageId, moveToColumn, agentFirstName, displayName]);
+  }, [contact, amount, currency, propertyId, channel, properties, generateToken, stageId, moveToColumn, agentFirstName, displayName, displayPhone, displayEmail]);
 
   const selectedColumn = columns.find(c => c.id === stageId);
 
   if (!contact) return null;
 
-  // Follow-up modal (shown after send succeeds)
   if (showFollowup) {
     return (
       <FollowupPromptModal
@@ -181,11 +187,26 @@ export default function SendAgreementModal({ contact, onClose }: Props) {
           if (!open) onClose();
         }}
         contactId={contact.id}
-        contactName={contact.name}
+        contactName={displayName}
         columnId={stageId}
         columnName={selectedColumn?.name ?? 'Agreement Sent'}
         suggestedHoursAhead={48}
         onSaved={onClose}
+      />
+    );
+  }
+
+  if (showEditContact && fullContact) {
+    return (
+      <EditContactModal
+        contact={fullContact}
+        onClose={() => setShowEditContact(false)}
+        onSave={(updated) => {
+          setDisplayName(updated.name);
+          setDisplayPhone(updated.phone ?? '');
+          setDisplayEmail(updated.email ?? '');
+          setShowEditContact(false);
+        }}
       />
     );
   }
@@ -204,30 +225,20 @@ export default function SendAgreementModal({ contact, onClose }: Props) {
         </div>
 
         <div className="px-5 py-4 space-y-4">
-          <div className="bg-[#F3F3EE] rounded-xl p-3">
-            <p className="text-xs font-semibold text-[#9CA3AF] uppercase tracking-wider">Recipient</p>
-            {editingName ? (
-              <div className="flex items-center gap-1.5 mt-0.5">
-                <input
-                  ref={nameInputRef}
-                  value={editName}
-                  onChange={(e) => setEditName(e.target.value)}
-                  onKeyDown={(e) => { if (e.key === 'Enter') saveName(); if (e.key === 'Escape') { setEditName(displayName); setEditingName(false); } }}
-                  className="flex-1 px-2 py-1 text-sm font-medium text-[#1A1A1A] bg-white border border-[#1E9A80] rounded-md focus:outline-none focus:ring-1 focus:ring-[#1E9A80]"
-                />
-                <button onClick={saveName} className="p-1 rounded hover:bg-[#ECFDF5]">
-                  <Check className="w-3.5 h-3.5 text-[#1E9A80]" />
-                </button>
-              </div>
-            ) : (
-              <div className="flex items-center gap-1.5 mt-0.5">
-                <p className="text-sm font-medium text-[#1A1A1A]">{displayName}</p>
-                <button onClick={() => { setEditName(displayName); setEditingName(true); }} className="p-0.5 rounded hover:bg-white/60">
-                  <Pencil className="w-3 h-3 text-[#9CA3AF] hover:text-[#1E9A80]" />
-                </button>
-              </div>
-            )}
-            {contact.phone && <p className="text-xs text-[#6B7280]">{contact.phone}</p>}
+          <div className="bg-[#F3F3EE] rounded-xl p-3 flex items-start justify-between">
+            <div>
+              <p className="text-xs font-semibold text-[#9CA3AF] uppercase tracking-wider">Recipient</p>
+              <p className="text-sm font-medium text-[#1A1A1A] mt-0.5">{displayName}</p>
+              {displayPhone && <p className="text-xs text-[#6B7280]">{displayPhone}</p>}
+              {displayEmail && <p className="text-xs text-[#6B7280]">{displayEmail}</p>}
+            </div>
+            <button
+              onClick={openEditContact}
+              className="p-1.5 rounded-lg hover:bg-white/80 text-[#9CA3AF] hover:text-[#1E9A80] transition-colors"
+              title="Edit contact"
+            >
+              <Pencil className="w-3.5 h-3.5" />
+            </button>
           </div>
 
           <div>
@@ -269,7 +280,6 @@ export default function SendAgreementModal({ contact, onClose }: Props) {
             </div>
           </div>
 
-          {/* Pipeline Outcome — MANDATORY */}
           <div>
             <label className={`block text-sm font-medium mb-1 ${stageError ? 'text-[#EF4444]' : 'text-[#525252]'}`}>
               Pipeline Outcome <span className="text-[#EF4444]">*</span>
@@ -291,7 +301,7 @@ export default function SendAgreementModal({ contact, onClose }: Props) {
             <div className="flex gap-2">
               <button
                 onClick={() => setChannel('sms')}
-                disabled={!contact.phone}
+                disabled={!displayPhone}
                 className={`flex-1 py-2.5 rounded-lg text-sm font-medium border transition-colors ${
                   channel === 'sms'
                     ? 'bg-[#ECFDF5] text-[#1E9A80] border-[#1E9A80]'
@@ -302,7 +312,7 @@ export default function SendAgreementModal({ contact, onClose }: Props) {
               </button>
               <button
                 onClick={() => setChannel('whatsapp')}
-                disabled={!contact.phone}
+                disabled={!displayPhone}
                 className={`flex-1 py-2.5 rounded-lg text-sm font-medium border transition-colors ${
                   channel === 'whatsapp'
                     ? 'bg-[#ECFDF5] text-[#1E9A80] border-[#1E9A80]'
@@ -313,7 +323,7 @@ export default function SendAgreementModal({ contact, onClose }: Props) {
               </button>
               <button
                 onClick={() => setChannel('email')}
-                disabled={!contact.email}
+                disabled={!displayEmail}
                 className={`flex-1 py-2.5 rounded-lg text-sm font-medium border transition-colors ${
                   channel === 'email'
                     ? 'bg-[#ECFDF5] text-[#1E9A80] border-[#1E9A80]'
