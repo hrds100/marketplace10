@@ -132,6 +132,16 @@ export function useDialerMachine({ userId, campaignId, pipelineId, onToast }: Us
     return () => { cancelled = true; setDeviceReady(false); };
   }, []);
 
+  // Disconnect any active call on unmount (e.g. modal close). Without
+  // this, a Call left on the shared Device singleton becomes a zombie
+  // that blocks subsequent dials with "A Call is already active".
+  useEffect(() => {
+    return () => {
+      try { twilioCallRef.current?.disconnect(); } catch { /* ignore */ }
+      twilioCallRef.current = null;
+    };
+  }, []);
+
   useEffect(() => {
     return addTokenRefreshFailListener((retry) => {
       onToast('Phone offline — refreshing connection…', 'error');
@@ -162,13 +172,12 @@ export function useDialerMachine({ userId, campaignId, pipelineId, onToast }: Us
     async (lead: QueueLead) => {
       if (phaseRef.current !== 'idle' && phaseRef.current !== 'paused') return;
 
-      // Disconnect zombie calls
-      try {
-        const stale = getDeviceCalls();
-        if (stale.length > 0) await disconnectAllCallsAndWait(800);
-      } catch {
-        try { disconnectAllCalls(); } catch { /* ignore */ }
-      }
+      // PR 46 (Hugo 2026-04-26) regression match: pre-dial
+      // disconnectAllCalls killed the just-connecting Twilio Call on the
+      // shared Device singleton, producing "hung up immediately" with
+      // twilio_call_sid=NULL. Same root cause as ActiveCallContext line
+      // 350. Zombie cleanup now only happens on hangUp / unmount.
+      twilioCallRef.current = null;
 
       // Claim queue row
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -231,6 +240,7 @@ export function useDialerMachine({ userId, campaignId, pipelineId, onToast }: Us
         twilioCall.on('disconnect', () => {
           if (!isThisCall()) return;
           twilioCallRef.current = null;
+          void updateQueueStatus(lead.queueRowId, 'done');
           dispatch({ type: 'CALL_ENDED', reason: 'hangup' });
         });
         twilioCall.on('cancel', () => {
