@@ -70,6 +70,7 @@ serve(async (req: Request) => {
     }
     const phone = (body.to_phone ?? '').trim();
     const contactId = body.contact_id ?? null;
+    const campaignId = body.campaign_id ?? null;
     if (!phone) {
       return jsonResponse(400, { error: 'to_phone required' });
     }
@@ -168,6 +169,7 @@ serve(async (req: Request) => {
       .insert({
         agent_id: agentId,
         contact_id: resolvedContactId,
+        campaign_id: campaignId,
         number_id: numberId,
         direction: 'outbound',
         status: 'queued',

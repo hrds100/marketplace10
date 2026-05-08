@@ -10,9 +10,10 @@
 //
 // Resolution priority on read:
 //   1. Row WHERE owner_agent_id = auth.uid()       (agent's own)
-//   2. Campaign-pinned via wk_dialer_campaigns.call_script_id  (PR 56)
-//   3. Row WHERE is_default = true                  (workspace default)
-//   4. Empty (CallScriptPane shows hardcoded fallback)
+//   2. Column-pinned via wk_pipeline_columns.call_script_id  (v16)
+//   3. Campaign-pinned via wk_dialer_campaigns.call_script_id  (PR 56)
+//   4. Row WHERE is_default = true                  (workspace default)
+//   5. Empty (CallScriptPane shows hardcoded fallback)
 //
 // On save:
 //   - If the agent already has a row, UPDATE it.
@@ -25,7 +26,7 @@ import { supabase } from '@/integrations/supabase/client';
 
 export interface AgentScript {
   id: string | null;
-  source: 'own' | 'campaign' | 'default' | 'empty';
+  source: 'own' | 'column' | 'campaign' | 'default' | 'empty';
   name: string;
   body_md: string;
 }
@@ -83,8 +84,8 @@ interface ScriptsTable {
   };
 }
 
-export function useAgentScript(opts: { campaignId?: string | null } = {}) {
-  const { campaignId = null } = opts;
+export function useAgentScript(opts: { campaignId?: string | null; pipelineColumnId?: string | null } = {}) {
+  const { campaignId = null, pipelineColumnId = null } = opts;
   const [script, setScript] = useState<AgentScript>(EMPTY);
   const [agentId, setAgentId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
@@ -121,7 +122,34 @@ export function useAgentScript(opts: { campaignId?: string | null } = {}) {
           }
         }
 
-        // PR 56: 2. Campaign-pinned script via wk_dialer_campaigns.call_script_id.
+        // v16: 2. Column-pinned script via wk_pipeline_columns.call_script_id.
+        if (pipelineColumnId) {
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          const { data: colRow } = await (supabase.from('wk_pipeline_columns' as any) as any)
+            .select('call_script_id')
+            .eq('id', pipelineColumnId)
+            .maybeSingle();
+          const colScriptId = colRow?.call_script_id as string | null | undefined;
+          if (colScriptId) {
+            const { data: pinned } = await client
+              .from('wk_call_scripts')
+              .select('id, name, body_md, owner_agent_id, is_default')
+              .eq('id', colScriptId)
+              .limit(1);
+            if (cancelled) return;
+            if (pinned && pinned.length > 0) {
+              setScript({
+                id: pinned[0].id,
+                source: 'column',
+                name: pinned[0].name,
+                body_md: pinned[0].body_md,
+              });
+              return;
+            }
+          }
+        }
+
+        // PR 56: 3. Campaign-pinned script via wk_dialer_campaigns.call_script_id.
         if (campaignId) {
           // eslint-disable-next-line @typescript-eslint/no-explicit-any
           const { data: campRow } = await (supabase.from('wk_dialer_campaigns' as any) as any)
@@ -176,7 +204,7 @@ export function useAgentScript(opts: { campaignId?: string | null } = {}) {
     return () => {
       cancelled = true;
     };
-  }, [campaignId]);
+  }, [campaignId, pipelineColumnId]);
 
   const setField = useCallback(
     <K extends keyof AgentScript>(k: K, v: AgentScript[K]) => {
