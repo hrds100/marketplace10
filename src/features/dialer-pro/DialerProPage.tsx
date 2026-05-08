@@ -128,7 +128,7 @@ export function DialerProContent({ autoCallContactId, pipelineColumnId, onAutoCa
   }, [state.phase, queryClient]);
 
   // Queue
-  const { queue, refresh: refreshQueue, removeLocal: removeFromQueue } = useQueuePro(camp?.id ?? null);
+  const { queue, refresh: refreshQueue, removeLocal: removeFromQueue } = useQueuePro(camp?.id ?? null, pipelineColumnId);
 
   // Auto-dial: when ?call=<contactId> is in the URL, look up the contact
   // and start calling them as soon as the device is ready.
@@ -810,6 +810,11 @@ export function DialerProContent({ autoCallContactId, pipelineColumnId, onAutoCa
             <div className="flex items-center gap-1.5 px-2.5 py-1.5 border-b border-[#E5E7EB]/60 bg-[#F3F3EE]/50">
               <span className="text-[10px] font-semibold text-[#6B7280] uppercase tracking-wide">Queue</span>
               <span className="text-[10px] text-[#9CA3AF]">({queue.length})</span>
+              {pipelineColumnId && (
+                <span className="text-[9px] bg-[#ECFDF5] text-[#1E9A80] px-1.5 py-0.5 rounded-full font-medium">
+                  {outcomeColumns.find((c) => c.id === pipelineColumnId)?.name ?? 'Column'}
+                </span>
+              )}
             </div>
             <div className="overflow-y-auto" style={{ maxHeight: 200 }}>
               <QueueManagerPro queue={queue} campaignId={camp?.id ?? null} onRefresh={refreshQueue} onToast={onToast} />

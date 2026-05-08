@@ -36,7 +36,7 @@ function rowToLead(row: QueueRow): QueueLead | null {
   };
 }
 
-export function useQueuePro(campaignId: string | null) {
+export function useQueuePro(campaignId: string | null, pipelineColumnId?: string | null) {
   const [queue, setQueue] = useState<QueueLead[]>([]);
   const [totalCount, setTotalCount] = useState(0);
   const [loading, setLoading] = useState(true);
@@ -56,7 +56,7 @@ export function useQueuePro(campaignId: string | null) {
       .order('scheduled_for', { ascending: true, nullsFirst: true })
       .order('attempts', { ascending: true })
       .order('created_at', { ascending: true })
-      .limit(200);
+      .limit(1000);
 
     if (campaignId && campaignId.trim() !== '') {
       q = q.eq('campaign_id', campaignId);
@@ -70,14 +70,18 @@ export function useQueuePro(campaignId: string | null) {
       return;
     }
 
-    const leads = ((rows ?? []) as QueueRow[])
+    let leads = ((rows ?? []) as QueueRow[])
       .map(rowToLead)
       .filter((l): l is QueueLead => l !== null);
 
+    if (pipelineColumnId) {
+      leads = leads.filter((l) => l.pipelineColumnId === pipelineColumnId);
+    }
+
     setQueue(leads);
-    setTotalCount(count ?? leads.length);
+    setTotalCount(pipelineColumnId ? leads.length : (count ?? leads.length));
     setLoading(false);
-  }, [campaignId]);
+  }, [campaignId, pipelineColumnId]);
 
   useEffect(() => {
     void fetchQueue();
