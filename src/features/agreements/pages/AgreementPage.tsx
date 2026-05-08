@@ -804,11 +804,13 @@ export default function AgreementPage() {
                             <p className="text-xs text-[#9CA3AF] mb-1">Authorised Signatory</p>
                             <p className="text-[28px] text-[#1A1A1A] leading-tight" style={{ fontFamily: "'Dancing Script', cursive" }}>Hugo Souza</p>
                             <p className="text-xs text-[#6B7280] mt-1">Director</p>
+                            <p className="text-xs text-[#9CA3AF] mt-1">Date: 8 May 2026</p>
                           </div>
                           <div>
                             <p className="text-xs text-[#9CA3AF] mb-1">Authorised Signatory</p>
                             <p className="text-[28px] text-[#1A1A1A] leading-tight" style={{ fontFamily: "'Dancing Script', cursive" }}>Chris Germano</p>
                             <p className="text-xs text-[#6B7280] mt-1">Director</p>
+                            <p className="text-xs text-[#9CA3AF] mt-1">Date: 8 May 2026</p>
                           </div>
                         </div>
                       </div>
@@ -852,14 +854,22 @@ export default function AgreementPage() {
                     </div>
 
                     {isSigned ? (
-                      <div className="text-center print:hidden">
+                      <div className="text-center print:hidden space-y-3">
                         <button
                           onClick={() => window.print()}
                           className="inline-flex items-center gap-2 bg-[#1A1A1A] text-white px-8 py-3 rounded-xl font-semibold text-sm hover:opacity-90 transition-opacity"
                         >
                           <Download className="h-4 w-4" /> Download as PDF
                         </button>
-                        <p className="text-xs text-[#9CA3AF] mt-3">
+                        {agreement.status === 'signed' && user && (
+                          <button
+                            onClick={() => redirectToSamcart(agreement.signer_name ?? '')}
+                            className="block mx-auto bg-[#1E9A80] text-white px-8 py-3 rounded-xl font-semibold text-sm hover:opacity-90 transition-opacity shadow-[0_4px_16px_rgba(30,154,128,0.35)]"
+                          >
+                            Complete Payment
+                          </button>
+                        )}
+                        <p className="text-xs text-[#9CA3AF]">
                           Use your browser's "Save as PDF" option to download a copy of this signed agreement.
                         </p>
                       </div>

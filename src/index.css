@@ -342,5 +342,4 @@ html[data-invest-sheet='open'] [data-radix-dialog-content] {
   body { background: white !important; }
   header, aside, .print\:hidden { display: none !important; }
   main { max-width: 100% !important; }
-  section { break-inside: avoid; }
 }
