@@ -4,7 +4,7 @@ import ReactDOM from 'react-dom';
 import {
   Phone, PhoneOff, Mic, MicOff, Pause as PauseIcon, Play, Square,
   SkipForward, Pencil, Flame, Maximize2, Minus,
-  MessageSquare, FileText, PhoneForwarded, Hash, Circle,
+  MessageSquare, FileText, FileSignature, PhoneForwarded, Hash, Circle,
   ChevronDown,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
@@ -36,6 +36,7 @@ import { useCurrentAgent } from '@/features/smsv2/hooks/useCurrentAgent';
 import { useSmsV2 } from '@/features/smsv2/store/SmsV2Store';
 import { useContactPersistence } from '@/features/smsv2/hooks/useContactPersistence';
 import EditableName from '@/features/smsv2/components/contacts/EditableName';
+import SendAgreementModal from '@/features/agreements/components/SendAgreementModal';
 import { useDialerMachine } from './useDialerMachine';
 import { useQueuePro } from './useQueuePro';
 import type { QueueLead } from './types';
@@ -245,6 +246,9 @@ export function DialerProContent({ autoCallContactId, pipelineColumnId, onAutoCa
 
   // Edit contact modal
   const [editing, setEditing] = useState<Contact | null>(null);
+
+  // Send Agreement modal (wrap-up action)
+  const [showAgreement, setShowAgreement] = useState(false);
 
   const openEditContactById = useCallback(async (contactId: string) => {
     const [contactRes, tagsRes] = await Promise.all([
@@ -819,6 +823,7 @@ export function DialerProContent({ autoCallContactId, pipelineColumnId, onAutoCa
               onSkip={machine.skip}
               onRedial={handleWrapUpRedial}
               onPause={handleWrapUpPause}
+              onSendAgreement={() => setShowAgreement(true)}
               onDragStart={onDragStart}
               onDragMove={onDragMove}
               onDragEnd={onDragEnd}
@@ -919,6 +924,12 @@ export function DialerProContent({ autoCallContactId, pipelineColumnId, onAutoCa
         </div>,
         document.body,
       )}
+      {showAgreement && contact && (
+        <SendAgreementModal
+          contact={{ id: contact.id, name: contact.name, phone: contact.phone || null, email: contact.email || null }}
+          onClose={() => setShowAgreement(false)}
+        />
+      )}
     </div>
   );
 }
@@ -939,13 +950,14 @@ interface WrapUpCardProps {
   onSkip: () => void;
   onRedial: (columnId: string | null, notes: string) => void;
   onPause: (columnId: string | null, notes: string) => void;
+  onSendAgreement: () => void;
   onDragStart: (e: React.PointerEvent) => void;
   onDragMove: (e: React.PointerEvent) => void;
   onDragEnd: (e: React.PointerEvent) => void;
   onMinimize: () => void;
 }
 
-function WrapUpCard({ lead, endReason, durationSec, columns, suggestedId, applying, onNext, onSkip, onRedial, onPause, onDragStart, onDragMove, onDragEnd, onMinimize }: WrapUpCardProps) {
+function WrapUpCard({ lead, endReason, durationSec, columns, suggestedId, applying, onNext, onSkip, onRedial, onPause, onSendAgreement, onDragStart, onDragMove, onDragEnd, onMinimize }: WrapUpCardProps) {
   const [pickedId, setPickedId] = useState<string | null>(suggestedId);
   const [notes, setNotes] = useState('');
   const [showMore, setShowMore] = useState(false);
@@ -1055,6 +1067,14 @@ function WrapUpCard({ lead, endReason, durationSec, columns, suggestedId, applyi
             placeholder="Notes (optional)\u2026"
             className="w-full text-[13px] border border-[#E5E7EB] rounded-lg px-3 py-2 resize-none focus:outline-none focus:ring-1 focus:ring-[#1E9A80]/30 focus:border-[#1E9A80]"
             rows={2} />
+        </div>
+
+        {/* Send Agreement */}
+        <div className="px-4 pb-3">
+          <button onClick={onSendAgreement}
+            className="w-full flex items-center justify-center gap-2 border border-[#1E9A80] text-[#1E9A80] bg-[#ECFDF5] rounded-lg px-4 py-2.5 text-[13px] font-semibold hover:bg-[#1E9A80]/10 transition-colors">
+            <FileSignature className="w-4 h-4" /> Send Agreement
+          </button>
         </div>
 
         {/* Action buttons: Redial | Next -> | Pause */}
