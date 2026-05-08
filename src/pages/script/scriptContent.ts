@@ -148,32 +148,6 @@ So for the most part this is it. But we can definitely explore more features of 
 So we hope this helps, but let us know if you have any questions.`,
   },
   {
-    title: `6A. Airbnb UI Overview (v2)`,
-    content: `All right, everyone.
-
-This is the Airbnb overview video, so let's go ahead and jump right in.
-
-So we're going to switch to the hosting side of Airbnb because obviously we are interested in this here. You can see once you start getting reservations, that's where they will pop up. You can see all upcoming reservations right here, and this is kind of your main home tab where you get quick access to the reservations and some next steps.
-
-But most of the time you don't really need this as much.
-
-Now what you typically will need once you have your listing live is definitely the Messages tab, and especially if you are just working with Airbnb as a single platform. The Messages is where you definitely want to make sure you are checking all the messages from your guests and you can also set up scheduled messages.
-
-This is where you can also do quick replies if you want to save some quick replies or scheduled messages for this property.
-
-But we do have scheduled messages for our properties — a thank you message, check-in instructions with all the rules, house rules, the address, the code, a guest mood check-in during their stay, and check-out instructions.
-
-The Calendar - this section allows you to adjust the base price, weekend price, and many other options such as discounts and promotions.
-
-From the Additional Charges section, you can also adjust the cleaning fee, pet fee, and any other additional fees you want to add.
-
-Insights — you can definitely keep an eye on this one. You can also see your trends and conversions and impressions data too.
-
-So for the most part this is it. But we can definitely explore more features of the Airbnb user interface once we get to creating a new listing from scratch and all that.
-
-So we hope this helps, but let us know if you have any questions.`,
-  },
-  {
     title: `7. Booking.com UI Overview`,
     content: `All right, everyone.
 
@@ -202,30 +176,6 @@ The photos for the property are here, rooms and spaces with square footage, acce
 Video tours — if you can work with a professional videographer for a virtual tour, that's a bonus. Booking.com allows you to upload a URL and have a video tour.
 
 When you're setting up a new property, most of the time you will be working with all these details. Once you launch it and list on both Airbnb and Booking.com, then we recommend doing everything through iGMS and Wheelhouse and just automating everything so you don't have to worry about going back and forth between platforms.
-
-Keep it short, simple and automated for that nice source of passive income instead of managing everything manually.
-
-So this is the Booking.com user interface. If you have any questions, let us know.`,
-  },
-  {
-    title: `7A. Booking.com UI Overview (v2)`,
-    content: `All right, everyone.
-
-This is the Booking.com overview from the host perspective. In the UK, Booking.com is your second most important platform after Airbnb, so it's worth understanding how it works.
-
-If you have multiple properties, this is typically the view that you will land on — the dashboard. But let's go ahead and jump into a property, for example.
-
-For the most part, we don't spend much time on Booking.com other than when we first launch a listing. They do have the inbox section, the calendar tab, and on the calendar tab this is where you will see pretty much everything that you need. Our bookings come through a mix of Airbnb and Booking.com. Here you can also do base rate adjustments, minimum night stay, booking window, fees, damage protection, and payment terms.
-
-Now, the property details section is important because this is typically what you will see when you're making a new listing. You also have the immediate opportunities tab where they suggest adding additional details. You can see all these questions and details that you could add to your property just to give you an understanding of what you're working with.
-
-Essentially on Booking.com, it's very similar to Airbnb in terms of amenities — kitchen items, toaster, all that kind of thing.
-
-The description section — we have a few paragraphs, nice and short and sweet. We also include our compliance details just in case, so nobody can complain.
-
-The photos for the property are here, rooms and spaces with square footage, accessibility details — all of that added so people can easily see what they're getting.
-
-When you're setting up a new property, most of the time you will be working with all these details.
 
 Keep it short, simple and automated for that nice source of passive income instead of managing everything manually.
 
@@ -334,32 +284,6 @@ You can also explore Facebook Marketplace and SpareRoom for leads, but we've fou
 So that's how you would typically approach this. Let us know if you have any questions.`,
   },
   {
-    title: `11A. Live Example – Rightmove (v2)`,
-    content: `All right, everyone.
-
-So first things first. We actually have our little Google Sheet that we used before. This is just a template, and you can go ahead and reuse it because it's pretty straightforward.
-
-What we have is: platform (most of the time we find properties on Rightmove and OpenRent), the URL of the property, status (contacted, not contacted, application sent, etc.), location, name of the contact, their phone number, and date of contact.
-
-This will also help you make sure you don't double contact the same person and annoy them.
-
-So let's go to Rightmove and see an example. We're going to search in Manchester, but you need to do your own research depending on the local rules.
-
-We like our criteria to be no more than £1,200 for a two-bedroom flat. So we'll just do that and show you a few examples.
-
-Now in Manchester, the rules are more relaxed than London. There's no 90-day cap here, which is great. But you still need to do all your compliance — Gas Safety Certificate, EPC, fire risk assessment, register with HMRC, and so on.
-
-So say for example, this property here — two-bedroom flat, £1,100 per month. It's listed by a private landlord. This is exactly the kind of property we would look at.
-
-So we would go ahead and mark this on our sheet. Copy the URL, note "not contacted" in the status, note the landlord's name and phone number, and today's date.
-
-What you're going to do is request a viewing. You don't necessarily have to apply straight away. Just request the viewing, see the property in person, make sure the bedrooms and windows are fine, and check your local fire safety requirements.
-
-You can also explore Facebook Marketplace and SpareRoom for leads, but we've found most of our properties through Rightmove and OpenRent.
-
-So that's how you would typically approach this. Let us know if you have any questions.`,
-  },
-  {
     title: `12. Finding Profitable Markets & Properties with AirDNA – Part 2`,
     content: `All right.
 
@@ -448,30 +372,6 @@ Here's another property — lower price at £90 per night. More basic decor, ama
 Their response rate is only 86%. Airbnb penalises hosts who don't respond quickly, and it pushes them down in search results.
 
 Now this one — professional photos, nice interior design. You can see the difference immediately. £100 per night and they're well-booked. This is an example of working with an interior designer who knows what they're doing. Colours stand out, nice decor touches — wine bottle, wine glasses. It's the small things that matter.
-
-Overall, this neighbourhood looks promising. You'd want to note the best-performing properties, share those URLs with your interior designer, and make sure you set competitive nightly rates — even undercut your competition initially.
-
-This has been a longer section, but we wanted to analyse some properties in real time. Let us know if you have any questions.`,
-  },
-  {
-    title: `15A. Live Example – Neighbourhood Research (v2)`,
-    content: `All right, everyone.
-
-So let's check out a few examples of the neighbourhood research. We've touched on this a bit already, but let's go ahead and see some live examples.
-
-We typically do a few test searches — today's date, three nights or so, two adults. Then we zoom in and see what's available in the neighbourhood we've identified.
-
-So if this neighbourhood is allowed for serviced accommodation, and we've already checked a few properties on Rightmove in this area, we would definitely go ahead and start looking at the listings.
-
-You can see some of them already have the "Guest Favourite" badge, which is very good. We want to see properties with many reviews and that badge — it means they're getting booked regularly.
-
-Let's click through a few properties. Here, we can view the property details and check the calendar.
-
-You can also see the reviews and ratings, as well as the recent reviews from the current and previous month.
-
-Now look at the photos — professional photos, good lighting, the unit looks nice and bright. That's really important. Properties with professional photography consistently get more bookings.
-
-Here's another property — professional photos, nice interior design. You can see the difference immediately. This is an example of working with an interior designer who knows what they're doing. Colours stand out, nice decor touches — wine bottle, wine glasses. It's the small things that matter.
 
 Overall, this neighbourhood looks promising. You'd want to note the best-performing properties, share those URLs with your interior designer, and make sure you set competitive nightly rates — even undercut your competition initially.
 
