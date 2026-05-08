@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
-import { Loader2, CheckCircle2, FileText, Building2, TrendingUp, AlertTriangle, Scale, Shield, Handshake, Users } from 'lucide-react';
+import { Loader2, CheckCircle2, FileText, Building2, TrendingUp, AlertTriangle, Scale, Shield, Handshake, Users, Download } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import { useAgreement } from '../hooks/useAgreement';
 import { buildSamcartPrefillParams } from '@/lib/invest/buildSamcartPrefillParams';
@@ -153,7 +153,10 @@ export default function AgreementPage() {
     );
   }
 
-  if (agreement.status === 'signed' || agreement.status === 'paid') {
+  const isSigned = agreement.status === 'signed' || agreement.status === 'paid';
+  const viewFull = searchParams.get('view') === 'full';
+
+  if (isSigned && !viewFull) {
     return (
       <div className="min-h-screen bg-[#F3F3EE] flex items-center justify-center">
         <div className="text-center max-w-md">
@@ -164,14 +167,22 @@ export default function AgreementPage() {
               ? 'This agreement has been signed and payment has been received.'
               : 'This agreement has been signed. Complete your payment to finalise.'}
           </p>
-          {agreement.status === 'signed' && user && (
-            <button
-              onClick={() => redirectToSamcart(agreement.signer_name ?? '')}
-              className="bg-[#1E9A80] text-white px-8 py-3 rounded-xl font-semibold text-sm hover:opacity-90 transition-opacity"
+          <div className="flex flex-col gap-3">
+            {agreement.status === 'signed' && user && (
+              <button
+                onClick={() => redirectToSamcart(agreement.signer_name ?? '')}
+                className="bg-[#1E9A80] text-white px-8 py-3 rounded-xl font-semibold text-sm hover:opacity-90 transition-opacity"
+              >
+                Complete Payment
+              </button>
+            )}
+            <a
+              href={`/agreement/${token}?view=full`}
+              className="inline-flex items-center justify-center gap-2 bg-white text-[#1A1A1A] border border-[#E5E7EB] px-8 py-3 rounded-xl font-semibold text-sm hover:bg-[#F3F3EE] transition-colors"
             >
-              Complete Payment
-            </button>
-          )}
+              <Download className="h-4 w-4" /> View &amp; Download Agreement
+            </a>
+          </div>
         </div>
       </div>
     );
@@ -197,7 +208,15 @@ export default function AgreementPage() {
             <span className="text-[#E5E7EB] mx-2">|</span>
             <span className="text-sm font-medium text-[#6B7280]">Partnership Agreement</span>
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 print:hidden">
+            {isSigned && (
+              <button
+                onClick={() => window.print()}
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium bg-[#1A1A1A] text-white hover:opacity-90 transition-opacity"
+              >
+                <Download className="h-3.5 w-3.5" /> Download PDF
+              </button>
+            )}
             <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold bg-[#ECFDF5] text-[#1E9A80]">
               {agreement.status === 'opened' ? 'Ready to Sign' : agreement.status.charAt(0).toUpperCase() + agreement.status.slice(1)}
             </span>
@@ -795,51 +814,78 @@ export default function AgreementPage() {
                       </div>
 
                       {/* Partner */}
-                      <div className="bg-white border-2 border-dashed border-[#1E9A80] rounded-xl p-5">
-                        <p className="text-xs font-semibold text-[#1E9A80] uppercase tracking-wider mb-3">The Partner</p>
-                        <div className="space-y-4">
-                          <div>
-                            <label className="block text-xs font-medium text-[#525252] mb-1">Full Legal Name</label>
-                            <input
-                              type="text"
-                              value={signerName}
-                              onChange={(e) => setSignerName(e.target.value)}
-                              placeholder="Enter your full name"
-                              className="w-full px-3 py-2.5 border border-[#E5E5E5] rounded-lg text-sm text-[#0A0A0A] focus:outline-none focus:ring-2 focus:ring-[#1E9A80] focus:border-transparent"
-                            />
-                          </div>
-                          <div>
-                            <label className="block text-xs font-medium text-[#525252] mb-1">Signature</label>
-                            <SignaturePad onSignature={setSignatureData} />
-                          </div>
-                          <p className="text-xs text-[#9CA3AF]">
-                            Date: {today}
+                      {isSigned ? (
+                        <div className="bg-[#ECFDF5] border-2 border-[#1E9A80] rounded-xl p-5">
+                          <p className="text-xs font-semibold text-[#1E9A80] uppercase tracking-wider mb-3">The Partner — Signed</p>
+                          <p className="text-sm font-medium text-[#1A1A1A]">{agreement.signer_name}</p>
+                          {agreement.signature_png && (
+                            <img src={agreement.signature_png} alt="Partner signature" className="h-16 mt-3" />
+                          )}
+                          <p className="text-xs text-[#6B7280] mt-3">
+                            Signed: {agreement.signed_at ? new Date(agreement.signed_at).toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric', hour: '2-digit', minute: '2-digit' }) : '—'}
                           </p>
                         </div>
-                      </div>
+                      ) : (
+                        <div className="bg-white border-2 border-dashed border-[#1E9A80] rounded-xl p-5">
+                          <p className="text-xs font-semibold text-[#1E9A80] uppercase tracking-wider mb-3">The Partner</p>
+                          <div className="space-y-4">
+                            <div>
+                              <label className="block text-xs font-medium text-[#525252] mb-1">Full Legal Name</label>
+                              <input
+                                type="text"
+                                value={signerName}
+                                onChange={(e) => setSignerName(e.target.value)}
+                                placeholder="Enter your full name"
+                                className="w-full px-3 py-2.5 border border-[#E5E5E5] rounded-lg text-sm text-[#0A0A0A] focus:outline-none focus:ring-2 focus:ring-[#1E9A80] focus:border-transparent"
+                              />
+                            </div>
+                            <div>
+                              <label className="block text-xs font-medium text-[#525252] mb-1">Signature</label>
+                              <SignaturePad onSignature={setSignatureData} />
+                            </div>
+                            <p className="text-xs text-[#9CA3AF]">
+                              Date: {today}
+                            </p>
+                          </div>
+                        </div>
+                      )}
                     </div>
 
-                    <div className="text-center">
-                      <button
-                        onClick={handleConfirm}
-                        disabled={!signerName.trim() || !signatureData || submitting}
-                        className="bg-[#1E9A80] text-white px-12 py-4 rounded-xl font-semibold text-base hover:opacity-90 transition-opacity disabled:opacity-40 disabled:cursor-not-allowed shadow-[0_4px_16px_rgba(30,154,128,0.35)]"
-                      >
-                        {submitting ? (
-                          <span className="flex items-center gap-2">
-                            <Loader2 className="h-4 w-4 animate-spin" /> Processing...
-                          </span>
-                        ) : (
-                          'Confirm & Proceed to Payment'
-                        )}
-                      </button>
-                      <p className="text-xs text-[#9CA3AF] mt-3">
-                        By clicking confirm, you agree to the terms above and will be redirected to complete payment.
-                      </p>
-                      <p className="text-xs text-[#9CA3AF] mt-2">
-                        Where this Agreement is accepted electronically through the nfstay platform, the Partner's confirmation, timestamp, and authentication record shall constitute a binding electronic signature with the same legal effect as a handwritten signature, in accordance with applicable electronic-transaction law.
-                      </p>
-                    </div>
+                    {isSigned ? (
+                      <div className="text-center print:hidden">
+                        <button
+                          onClick={() => window.print()}
+                          className="inline-flex items-center gap-2 bg-[#1A1A1A] text-white px-8 py-3 rounded-xl font-semibold text-sm hover:opacity-90 transition-opacity"
+                        >
+                          <Download className="h-4 w-4" /> Download as PDF
+                        </button>
+                        <p className="text-xs text-[#9CA3AF] mt-3">
+                          Use your browser's "Save as PDF" option to download a copy of this signed agreement.
+                        </p>
+                      </div>
+                    ) : (
+                      <div className="text-center">
+                        <button
+                          onClick={handleConfirm}
+                          disabled={!signerName.trim() || !signatureData || submitting}
+                          className="bg-[#1E9A80] text-white px-12 py-4 rounded-xl font-semibold text-base hover:opacity-90 transition-opacity disabled:opacity-40 disabled:cursor-not-allowed shadow-[0_4px_16px_rgba(30,154,128,0.35)]"
+                        >
+                          {submitting ? (
+                            <span className="flex items-center gap-2">
+                              <Loader2 className="h-4 w-4 animate-spin" /> Processing...
+                            </span>
+                          ) : (
+                            'Confirm & Proceed to Payment'
+                          )}
+                        </button>
+                        <p className="text-xs text-[#9CA3AF] mt-3">
+                          By clicking confirm, you agree to the terms above and will be redirected to complete payment.
+                        </p>
+                        <p className="text-xs text-[#9CA3AF] mt-2">
+                          Where this Agreement is accepted electronically through the nfstay platform, the Partner's confirmation, timestamp, and authentication record shall constitute a binding electronic signature with the same legal effect as a handwritten signature, in accordance with applicable electronic-transaction law.
+                        </p>
+                      </div>
+                    )}
                   </div>
                 </section>
               </div>

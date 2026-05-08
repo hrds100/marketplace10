@@ -1,5 +1,5 @@
 import { useState, useCallback, useEffect } from 'react';
-import { Copy, ExternalLink, Pencil, Loader2, Check, Send } from 'lucide-react';
+import { Copy, ExternalLink, Pencil, Loader2, Check, Send, Download } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
@@ -119,6 +119,17 @@ export default function AdminAgreementsPage() {
                         >
                           <ExternalLink className="h-4 w-4" />
                         </a>
+                        {(a.status === 'signed' || a.status === 'paid') && (
+                          <a
+                            href={`/agreement/${a.token}?view=full`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="p-1.5 rounded-lg hover:bg-emerald-50 text-emerald-600 hover:text-emerald-700"
+                            title="Download signed agreement"
+                          >
+                            <Download className="h-4 w-4" />
+                          </a>
+                        )}
                         <button
                           onClick={() => setEditId(a.id)}
                           className="p-1.5 rounded-lg hover:bg-muted text-muted-foreground hover:text-foreground"
