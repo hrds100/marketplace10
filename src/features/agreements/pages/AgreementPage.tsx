@@ -169,15 +169,17 @@ export default function AgreementPage() {
           </p>
           <div className="flex flex-col gap-3">
             {agreement.status === 'signed' && user && (
-              <button
-                onClick={() => redirectToSamcart(agreement.signer_name ?? '')}
-                className="bg-[#1E9A80] text-white px-8 py-3 rounded-xl font-semibold text-sm hover:opacity-90 transition-opacity"
+              <a
+                href="/dashboard/invest/marketplace"
+                className="inline-flex items-center justify-center bg-[#1E9A80] text-white px-8 py-3 rounded-xl font-semibold text-sm hover:opacity-90 transition-opacity"
               >
                 Complete Payment
-              </button>
+              </a>
             )}
             <a
               href={`/agreement/${token}?view=full`}
+              target="_blank"
+              rel="noopener noreferrer"
               className="inline-flex items-center justify-center gap-2 bg-white text-[#1A1A1A] border border-[#E5E7EB] px-8 py-3 rounded-xl font-semibold text-sm hover:bg-[#F3F3EE] transition-colors"
             >
               <Download className="h-4 w-4" /> View &amp; Download Agreement
@@ -862,12 +864,12 @@ export default function AgreementPage() {
                           <Download className="h-4 w-4" /> Download as PDF
                         </button>
                         {agreement.status === 'signed' && user && (
-                          <button
-                            onClick={() => redirectToSamcart(agreement.signer_name ?? '')}
+                          <a
+                            href="/dashboard/invest/marketplace"
                             className="block mx-auto bg-[#1E9A80] text-white px-8 py-3 rounded-xl font-semibold text-sm hover:opacity-90 transition-opacity shadow-[0_4px_16px_rgba(30,154,128,0.35)]"
                           >
                             Complete Payment
-                          </button>
+                          </a>
                         )}
                         <p className="text-xs text-[#9CA3AF]">
                           Use your browser's "Save as PDF" option to download a copy of this signed agreement.
