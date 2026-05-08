@@ -921,6 +921,17 @@ function PipelinesTab() {
   // PR 90: real templates from wk_sms_templates (was iterating MOCK_TEMPLATES,
   // so admin couldn't see actual templates in the stage-automation dropdown).
   const { items: realTemplates } = useSmsTemplates();
+  // v16: load all call scripts for the per-column script dropdown.
+  const [allScripts, setAllScripts] = useState<{ id: string; name: string }[]>([]);
+  useEffect(() => {
+    (async () => {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const { data } = await (supabase.from('wk_call_scripts' as any) as any)
+        .select('id, name')
+        .order('name', { ascending: true });
+      if (data) setAllScripts(data as { id: string; name: string }[]);
+    })();
+  }, []);
 
   // PR 84: every store mutation also persists to wk_pipeline_columns +
   // wk_pipeline_automations so changes survive a refresh. Previously the
@@ -1180,6 +1191,29 @@ function PipelinesTab() {
                         Default outcome when auto-advance timer expires
                       </span>
                     </label>
+
+                    {/* Call script pin */}
+                    <div>
+                      <div className="text-[11px] font-medium text-[#6B7280] mb-1">
+                        Call script for leads in this column
+                      </div>
+                      <select
+                        value={col.callScriptId ?? ''}
+                        onChange={(e) =>
+                          update(col.id, {
+                            callScriptId: e.target.value || undefined,
+                          })
+                        }
+                        className="px-2 py-1.5 text-[12px] border border-[#E5E7EB] rounded-[8px] bg-white w-full"
+                      >
+                        <option value="">Inherit (campaign or default)</option>
+                        {allScripts.map((s) => (
+                          <option key={s.id} value={s.id}>
+                            {s.name}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
 
                     {/* Automations */}
                     <div className="border border-[#E5E7EB] rounded-xl bg-white p-3 space-y-3">

@@ -106,6 +106,9 @@ export function useColumnPersistence(): ColumnPersistAPI {
       if ('requiresFollowup' in patch) {
         dbPatch.requires_followup = patch.requiresFollowup;
       }
+      if ('callScriptId' in patch) {
+        dbPatch.call_script_id = patch.callScriptId ?? null;
+      }
       if (Object.keys(dbPatch).length === 0) return true;
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const { error } = await (supabase.from('wk_pipeline_columns' as any) as any)
