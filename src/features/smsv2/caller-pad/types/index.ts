@@ -98,6 +98,7 @@ export interface PipelineColumn {
   isDefaultOnTimeout?: boolean;
   requiresFollowup?: boolean;
   callScriptId?: string;
+  coachProfileId?: string;
   automation: ColumnAutomation;
 }
 
