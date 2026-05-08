@@ -25,6 +25,7 @@ interface WkCallRow {
 interface WkRecordingRow {
   call_id: string;
   storage_path: string | null;
+  twilio_media_url: string | null;
   status: string;
 }
 
@@ -65,7 +66,8 @@ export function rowToCall(
     status: STATUS_MAP[row.status] ?? 'completed',
     startedAt: row.started_at ?? new Date().toISOString(),
     durationSec: row.duration_sec ?? 0,
-    recordingUrl: recording?.storage_path ?? undefined,
+    recordingUrl: recording?.storage_path
+      ?? (recording?.twilio_media_url ? `${recording.twilio_media_url}.mp3` : undefined),
     hasTranscript: false,
     aiSummary: intel?.summary ?? undefined,
     costPence: cost?.total_pence ?? 0,
@@ -99,7 +101,7 @@ export function useCalls(): UseCallsResult {
           .order('started_at', { ascending: false })
           .limit(200),
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        (supabase.from('wk_recordings' as any) as any).select('call_id, storage_path, status'),
+        (supabase.from('wk_recordings' as any) as any).select('call_id, storage_path, twilio_media_url, status'),
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         (supabase.from('wk_call_intelligence' as any) as any).select('call_id, summary'),
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
