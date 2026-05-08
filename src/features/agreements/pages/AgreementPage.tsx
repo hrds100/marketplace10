@@ -780,16 +780,16 @@ export default function AgreementPage() {
                         <p className="text-sm font-medium text-[#1A1A1A]">Airbrick Finance Ltd</p>
                         <p className="text-xs text-[#6B7280]">Company No. 13806307 &middot; Trading as nfstay</p>
                         <p className="text-xs text-[#6B7280]">Nfstay Holdings FZE LLC &middot; Ajman NuVentures Centre Free Zone, UAE</p>
-                        <div className="mt-4 pt-4 border-t border-[#E5E7EB] space-y-3">
+                        <div className="mt-4 pt-4 border-t border-[#E5E7EB] space-y-4">
                           <div>
                             <p className="text-xs text-[#9CA3AF] mb-1">Authorised Signatory</p>
-                            <p className="text-sm font-medium text-[#1A1A1A] italic font-serif">Hugo De Souza</p>
-                            <p className="text-xs text-[#6B7280]">Director</p>
+                            <p className="text-[28px] text-[#1A1A1A] leading-tight" style={{ fontFamily: "'Dancing Script', cursive" }}>Hugo Souza</p>
+                            <p className="text-xs text-[#6B7280] mt-1">Director</p>
                           </div>
                           <div>
                             <p className="text-xs text-[#9CA3AF] mb-1">Authorised Signatory</p>
-                            <p className="text-sm font-medium text-[#1A1A1A] italic font-serif">Chris Germano</p>
-                            <p className="text-xs text-[#6B7280]">Director</p>
+                            <p className="text-[28px] text-[#1A1A1A] leading-tight" style={{ fontFamily: "'Dancing Script', cursive" }}>Chris Germano</p>
+                            <p className="text-xs text-[#6B7280] mt-1">Director</p>
                           </div>
                         </div>
                       </div>
@@ -872,7 +872,7 @@ function AuthPrompt({ token }: { token: string }) {
   const navigate = useNavigate();
 
   useEffect(() => {
-    navigate('/signin?redirect=/dashboard/invest/marketplace', { replace: true });
+    navigate(`/signin?redirect=/agreement/${token}`, { replace: true });
   }, [navigate, token]);
 
   return (
