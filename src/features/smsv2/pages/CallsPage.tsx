@@ -471,11 +471,18 @@ export default function CallsPage() {
                                 <span className="ml-auto tabular-nums text-[11px]">
                                   {p.durationSec > 0 ? formatDuration(p.durationSec) : '—'}
                                 </span>
-                                {p.recordingUrl && (
-                                  <button className="p-1 text-[#1E9A80] hover:bg-[#ECFDF5] rounded">
-                                    <Play className="w-3 h-3" />
-                                  </button>
-                                )}
+                                {p.recordingUrl && (() => {
+                                  const isPPlaying = playing === p.id;
+                                  return (
+                                    <button
+                                      onClick={() => setPlaying(isPPlaying ? null : p.id)}
+                                      className="flex items-center gap-1 px-2 py-1 text-[11px] font-medium text-[#1E9A80] bg-[#ECFDF5] hover:bg-[#1E9A80] hover:text-white rounded-[8px] transition-colors"
+                                      title="Play recording"
+                                    >
+                                      {isPPlaying ? <Pause className="w-3 h-3" /> : <Play className="w-3 h-3" />}
+                                    </button>
+                                  );
+                                })()}
                               </div>
                             );
                           })}
