@@ -9,6 +9,7 @@ import {
   Kanban,
   BarChart3,
   Trophy,
+  FileText,
   Settings,
   ChevronLeft,
   ChevronRight,
@@ -36,6 +37,7 @@ const NAV_ITEMS = [
   { label: 'Reports', path: '/crm/reports', icon: BarChart3 },
   { label: 'Leaderboard', path: '/crm/leaderboard', icon: Trophy },
   { label: 'Call history', path: '/crm/calls', icon: PhoneCall },
+  { label: 'Templates', path: '/crm/templates', icon: FileText },
   { label: 'Settings', path: '/crm/settings', icon: Settings, adminOnly: true },
 ] as const;
 
