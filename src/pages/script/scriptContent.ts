@@ -1217,4 +1217,40 @@ There's also a small workspace tucked in the corner — a black desk, a cushione
 
 And that wraps up the tour — kitchen, lounge, and bedrooms all tied together by that lovely ambient lighting. Ready to welcome your next guest.`,
   },
+  {
+    title: `51. Finding Cleaners for Your Properties`,
+    content: `All right, everyone.
+
+Now we want to quickly talk about how we find cleaners for our serviced accommodation properties.
+
+There are hundreds of cleaning companies out there, but personally, we prefer hiring cleaners directly whenever possible.
+
+The reason is simple. It's usually cheaper, communication is easier, and you have much more flexibility when managing your operations.
+
+In the beginning, most cleaners are perfectly happy being paid per job or per turnover.
+
+Then later on, once you scale to five or more properties, it may start making more sense to hire somebody full-time.
+
+One of the easiest ways to find reliable cleaners is through local Facebook community groups. For example: Latinos in Manchester, Filipinos in Manchester, Europeans in Manchester, Brazilians in Manchester.
+
+There are communities like this in almost every city.
+
+A lot of people inside these groups are actively looking for cleaning work, flexible jobs, or referrals.
+
+This method has worked really well for us because you can usually find reliable people much faster than going through large cleaning agencies.
+
+Once you've joined a few local groups, simply create a very straightforward post. Mention your city or area, that you manage Airbnb or serviced accommodation properties, that you're looking for turnover cleaners, and that payment is per job.
+
+Keep the post simple and clear. You don't need anything complicated.
+
+Here's a simple example of the kind of post we would normally use. You can customise it depending on your city and your needs, but the main goal is just to attract reliable people who already have cleaning experience or are interested in flexible work.
+
+Usually you'll start getting replies and messages fairly quickly, especially in active local groups.
+
+When you're first starting, paying cleaners per turnover is usually the best option. But once you grow your portfolio to five or more properties, it may become more efficient to hire a dedicated cleaner full-time.
+
+That can help improve consistency, availability, and overall operations.
+
+The important thing is to start lean, keep costs controlled, and scale your team gradually as the business grows.`,
+  },
 ];
