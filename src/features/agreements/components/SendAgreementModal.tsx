@@ -10,6 +10,17 @@ import { useSmsV2 } from '@/features/smsv2/store/SmsV2Store';
 import EditContactModal from '@/features/smsv2/components/contacts/EditContactModal';
 import type { Contact as FullContact } from '@/features/smsv2/types';
 
+interface AgreementMsgTemplate {
+  body_md: string;
+  subject: string | null;
+}
+
+const AGREEMENT_TEMPLATE_NAMES: Record<string, string> = {
+  sms: 'Agreement — SMS',
+  whatsapp: 'Agreement — WhatsApp',
+  email: 'Agreement — Email',
+};
+
 interface Contact {
   id: string;
   name: string;
@@ -42,6 +53,23 @@ export default function SendAgreementModal({ contact, onClose }: Props) {
   const [fullContact, setFullContact] = useState<FullContact | null>(null);
 
   const agentFirstName = (user?.user_metadata?.name ?? user?.email ?? '').split(' ')[0] || 'nfstay';
+
+  const [msgTemplates, setMsgTemplates] = useState<Record<string, AgreementMsgTemplate>>({});
+  useEffect(() => {
+    (async () => {
+      try {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const { data } = await (supabase.from('wk_sms_templates' as any) as any)
+          .select('name, body_md, subject')
+          .in('name', Object.values(AGREEMENT_TEMPLATE_NAMES));
+        const map: Record<string, AgreementMsgTemplate> = {};
+        for (const row of (data ?? []) as Array<{ name: string; body_md: string; subject: string | null }>) {
+          map[row.name] = { body_md: row.body_md, subject: row.subject };
+        }
+        setMsgTemplates(map);
+      } catch { /* fallback to hardcoded */ }
+    })();
+  }, []);
 
   const fetchFullContact = useCallback(async () => {
     if (!contact) return;
@@ -148,28 +176,48 @@ export default function SendAgreementModal({ contact, onClose }: Props) {
       const firstName = (displayName || '').split(' ')[0] || 'there';
       const signoff = `Best,\n${agentFirstName}\nnfstay`;
 
+      const fillTemplate = (text: string) =>
+        text
+          .replace(/\{first_name\}/g, firstName)
+          .replace(/\{agent_first_name\}/g, agentFirstName)
+          .replace(/\{property_title\}/g, propertyTitle)
+          .replace(/\{agreement_url\}/g, agreementUrl);
+
+      const tplName = AGREEMENT_TEMPLATE_NAMES[channel];
+      const tpl = tplName ? msgTemplates[tplName] : undefined;
+
       if (channel === 'sms' && displayPhone) {
-        const body = `Hi ${firstName},\n\nI've prepared your Partnership Agreement for the ${propertyTitle} opportunity.\n\nReview and sign here:\n${agreementUrl}\n\n${signoff}`;
+        const body = tpl
+          ? fillTemplate(tpl.body_md)
+          : `Hi ${firstName},\n\nI've prepared your Partnership Agreement for the ${propertyTitle} opportunity.\n\nReview and sign here:\n${agreementUrl}\n\n${signoff}`;
 
         const { error: smsErr } = await supabase.functions.invoke('wk-sms-send', {
           body: { to: displayPhone, body, contact_id: contact.id },
         });
         if (smsErr) throw new Error(smsErr.message ?? 'SMS send failed');
       } else if (channel === 'whatsapp' && displayPhone) {
-        const body = `Hi ${firstName},\n\nFollowing our conversation, I've prepared your Partnership Agreement for the ${propertyTitle} opportunity.\n\nPlease review the terms and sign here:\n${agreementUrl}\n\nOnce signed, you'll be taken straight to the secure payment page.\n\nLet me know if you have any questions.\n\n${signoff}`;
+        const body = tpl
+          ? fillTemplate(tpl.body_md)
+          : `Hi ${firstName},\n\nFollowing our conversation, I've prepared your Partnership Agreement for the ${propertyTitle} opportunity.\n\nPlease review the terms and sign here:\n${agreementUrl}\n\nOnce signed, you'll be taken straight to the secure payment page.\n\nLet me know if you have any questions.\n\n${signoff}`;
 
         const { error: waErr } = await supabase.functions.invoke('unipile-send', {
           body: { contact_id: contact.id, body },
         });
         if (waErr) throw new Error(waErr.message ?? 'WhatsApp send failed');
       } else if (channel === 'email' && displayEmail) {
-        const body = `Hi ${firstName},\n\nThank you for your interest in the ${propertyTitle} property.\n\nI've prepared a Partnership Agreement for your review. This document outlines the deal details, allocation terms, financial projections, and your rights as a partner.\n\nPlease review and sign the agreement here:\n${agreementUrl}\n\nAfter signing, you'll be redirected to complete your secure payment.\n\n${signoff}\nhub.nfstay.com`;
+        const body = tpl
+          ? fillTemplate(tpl.body_md)
+          : `Hi ${firstName},\n\nThank you for your interest in the ${propertyTitle} property.\n\nI've prepared a Partnership Agreement for your review. This document outlines the deal details, allocation terms, financial projections, and your rights as a partner.\n\nPlease review and sign the agreement here:\n${agreementUrl}\n\nAfter signing, you'll be redirected to complete your secure payment.\n\n${signoff}\nhub.nfstay.com`;
+
+        const subject = tpl?.subject
+          ? fillTemplate(tpl.subject)
+          : `Your Partnership Agreement — ${propertyTitle}`;
 
         const { data: emailResp, error: emailErr } = await supabase.functions.invoke('wk-email-send', {
           body: {
             contact_id: contact.id,
             to: displayEmail,
-            subject: `Your Partnership Agreement — ${propertyTitle}`,
+            subject,
             body,
           },
         });
