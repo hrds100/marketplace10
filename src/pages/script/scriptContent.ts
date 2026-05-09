@@ -1137,4 +1137,84 @@ Overall, this neighbourhood looks promising. You'd want to note the best-perform
 
 This has been a longer section, but we wanted to analyse some properties in real time. Let us know if you have any questions.`,
   },
+  {
+    title: `49. Video Tour – Property 1`,
+    content: `We're starting our tour right at the front door, just turning the handle to step inside the apartment.
+
+As we walk in, we're greeted by a bright entrance hallway with a large round mirror and a fresh floral arrangement on the side table.
+
+You can see the layout opening up here — straight ahead leads through to the main living area, with the bathroom tucked just to the side.
+
+Let's step into the bathroom first. We've got a clean modern setup, plenty of light, and a full mirror above the vanity.
+
+Inside, you'll find a full-size bathtub with a glass screen, a sleek white vanity, and a wall-mounted mirror — everything you need for a comfortable stay.
+
+Taking a closer look at the shower-bath combo here, the tiling is neutral grey and the finishes are nice and modern.
+
+Coming back out, we'll move toward the open-plan living and kitchen space — and you can already see how much natural light flows through.
+
+This is the heart of the apartment. Tall windows, a stylish black pendant light, and a dining table set up for two right by the window.
+
+The kitchen is fully equipped — sink, dish rack, plenty of counter space, and a clock right on the wall above.
+
+Over here we have the cooking area with the oven, hob, and extractor hood, all set against a bright window for that nice airy feel.
+
+Back to the dining table — set with blue placemats and a small lavender centerpiece, looking out over the street.
+
+And just across, you'll spot the TV unit, a guitar in the corner, and the cozy living area starting to come into view.
+
+Here's the lounge — a comfortable green sofa with a mustard throw, a round wooden coffee table, and a soft Berber-style rug.
+
+From the lounge you can see straight through to the first bedroom, which is right next to it.
+
+Stepping into the master bedroom, we've got a king-size bed dressed up with two towel swans forming a welcoming heart, framed celestial wall art, and bedside lamps on both sides.
+
+There's a second bedroom too, with a single bed, a window seat, and books left out as a nice touch — perfect for a guest or a child.
+
+Plenty of storage in here as well — a clothing rack and laundry baskets ready for guests to settle in.
+
+And as we head back out, you get one final look at the open-plan living space — bright, modern, and fully ready to welcome your next stay.`,
+  },
+  {
+    title: `50. Video Tour – Property 2`,
+    content: `We're opening the front door and stepping straight into the apartment.
+
+Right away you can see the open-plan layout — a stylish living room with grey sofa, modern artwork on the wall, and a signature red LED strip running across the ceiling.
+
+Let's start with the bathroom on the right. The door swings open to a sleek setup with dark grey tiled walls.
+
+Here's the vanity — a round backlit mirror, a dark wood cabinet, and the basics laid out neatly on the counter.
+
+And right beside it, a walk-in shower, fully enclosed with a glass door and modern black fixtures.
+
+Stepping back into the main space, let's take a closer look at the kitchen.
+
+The kitchen has a bold modern feel — black subway tile backsplash, dark grey cabinets, and a row of coffee canisters lined up on the shelf.
+
+You can see the stainless steel sink with the gooseneck tap and plenty of prep space underneath.
+
+On the cooking side, we've got an induction hob with four burners and a built-in microwave above.
+
+And here's a lovely touch — a small breakfast bar with two adjustable stools and pendant lights overhead.
+
+Back to the lounge — the grey sofa is the centerpiece, paired with a striking black-and-white splatter painting on the wall.
+
+You'll also find a wall-mounted TV, a glass coffee table, and a fresh green plant adding some life to the space.
+
+And right above the sofa, this iconic New York City print really stands out — giving the whole room a city loft vibe.
+
+There's also a cocktails-themed gallery wall by the dining nook, adding character and a fun touch to the décor.
+
+Now let's head into the first bedroom — opening this yellow door and stepping inside.
+
+Cozy and well-lit, with a double bed dressed in patterned bedding and a folded towel ready on top.
+
+You'll notice a tall floor mirror leaning against the wall, framed art above the headboard, and a clothing rail for hanging up outfits during your stay.
+
+Now we're heading into the second bedroom, which features a double bed with warm brown linen and a clean minimalist look.
+
+There's also a small workspace tucked in the corner — a black desk, a cushioned chair, and a soft white accent chair beside the curtain.
+
+And that wraps up the tour — kitchen, lounge, and bedrooms all tied together by that lovely ambient lighting. Ready to welcome your next guest.`,
+  },
 ];
