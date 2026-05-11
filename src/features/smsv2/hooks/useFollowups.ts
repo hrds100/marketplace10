@@ -24,6 +24,8 @@ export interface Followup {
   status: FollowupStatus;
   created_at: string;
   updated_at: string;
+  contact_name: string | null;
+  contact_phone: string | null;
 }
 
 interface FollowupsTable {
@@ -77,14 +79,20 @@ export function useFollowups() {
   const reload = useCallback(async (uid: string) => {
     try {
       const client = supabase as unknown as FollowupsTable;
-      const { data, error: e } = await client
+      const { data: raw, error: e } = await client
         .from('wk_contact_followups')
         .select(
-          'id, contact_id, agent_id, column_id, call_id, due_at, note, status, created_at, updated_at'
+          'id, contact_id, agent_id, column_id, call_id, due_at, note, status, created_at, updated_at, wk_contacts(name, phone)'
         )
         .eq('agent_id', uid)
         .in('status', ACTIVE_STATUSES)
         .order('due_at', { ascending: true });
+      const data = (raw as any[] | null)?.map((r: any) => ({
+        ...r,
+        contact_name: r.wk_contacts?.name ?? null,
+        contact_phone: r.wk_contacts?.phone ?? null,
+        wk_contacts: undefined,
+      })) as Followup[] | null;
       if (e) {
         setError(e.message);
       } else {
