@@ -158,7 +158,7 @@ export default function InboxPage() {
       const c = contactById.get(t.contactId);
       out.push({
         id: t.contactId,
-        name: c?.name ?? t.contactName,
+        name: c?.name || t.contactName || t.contactPhone || 'Unknown',
         phone: c?.phone ?? t.contactPhone,
         pipelineColumnId: c?.pipelineColumnId,
         lastMessageBody: t.lastMessageBody,
