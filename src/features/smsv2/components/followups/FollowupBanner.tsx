@@ -75,7 +75,7 @@ export default function FollowupBanner() {
     : undefined;
 
   return (
-    <div className="bg-[#FFFBEB] border-b border-[#F59E0B]/40 px-4 py-1.5 flex-shrink-0">
+    <div className="bg-[#FFFBEB] border-b border-[#F59E0B]/40 px-4 py-1.5 flex-shrink-0 relative z-10">
       <div className="flex items-center gap-2 max-w-[1280px] mx-auto">
         <Bell className="w-3.5 h-3.5 text-[#B45309] flex-shrink-0" strokeWidth={2.4} />
         <span className="text-[11px] font-bold uppercase tracking-wide text-[#B45309]">

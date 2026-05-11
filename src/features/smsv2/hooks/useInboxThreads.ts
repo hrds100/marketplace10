@@ -157,7 +157,7 @@ export function useInboxThreads(): { threads: InboxThread[]; loading: boolean; r
       const c = contactById.get(m.contact_id);
       out.push({
         contactId: m.contact_id,
-        contactName: c?.name ?? 'Unknown',
+        contactName: c?.name || c?.phone || 'Unknown',
         contactPhone: c?.phone ?? '',
         lastMessageBody: m.body,
         lastMessageAt: m.created_at,
