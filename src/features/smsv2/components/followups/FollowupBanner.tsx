@@ -69,6 +69,7 @@ export default function FollowupBanner() {
 
   const next = due[0];
   const nextContact = contacts.find((c) => c.id === next.contact_id);
+  const nextDisplayName = nextContact?.name || next.contact_name || next.contact_phone || 'Unknown contact';
   const nextStage = next.column_id
     ? columns.find((c) => c.id === next.column_id)
     : undefined;
@@ -80,9 +81,9 @@ export default function FollowupBanner() {
         <span className="text-[11px] font-bold uppercase tracking-wide text-[#B45309]">
           {due.length} follow-up{due.length > 1 ? 's' : ''} due
         </span>
-        {!open && nextContact && (
+        {!open && (
           <span className="text-[12px] text-[#1A1A1A] truncate">
-            <span className="font-semibold">{nextContact.name}</span>
+            <span className="font-semibold">{nextDisplayName}</span>
             {nextStage ? (
               <>
                 {' '}
@@ -115,6 +116,7 @@ export default function FollowupBanner() {
         <div className="max-w-[1280px] mx-auto mt-2 space-y-1 max-h-[260px] overflow-y-auto pr-1">
           {due.map((f) => {
             const contact = contacts.find((c) => c.id === f.contact_id);
+            const displayName = contact?.name || f.contact_name || f.contact_phone || 'Unknown contact';
             const stage = f.column_id
               ? columns.find((c) => c.id === f.column_id)
               : undefined;
@@ -126,12 +128,12 @@ export default function FollowupBanner() {
               >
                 <button
                   onClick={() => {
-                    if (contact) navigate(`/crm/contacts/${contact.id}`);
+                    if (f.contact_id) navigate(`/crm/contacts/${f.contact_id}`);
                   }}
                   className="text-[12px] font-semibold text-[#1A1A1A] hover:underline truncate flex-1 text-left"
                   title={f.note ?? ''}
                 >
-                  {contact?.name ?? 'Unknown contact'}
+                  {displayName}
                 </button>
                 {stage && (
                   <span

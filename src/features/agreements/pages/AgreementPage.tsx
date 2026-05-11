@@ -3,13 +3,9 @@ import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
 import { Loader2, CheckCircle2, FileText, Building2, TrendingUp, AlertTriangle, Scale, Shield, Handshake, Users, Download } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import { useAgreement } from '../hooks/useAgreement';
-import { buildSamcartPrefillParams } from '@/lib/invest/buildSamcartPrefillParams';
-import { supabase } from '@/integrations/supabase/client';
-import { createParticleWallet, destroyIframe } from '@/lib/particleIframe';
 import AgreementNav from '../components/AgreementNav';
 import SignaturePad from '../components/SignaturePad';
 
-const SAMCART_URL = 'https://stay.samcart.com/products/1/';
 const SIGNATURE_KEY = 'nfstay_agreement_pending';
 const GBP_RATE = 0.74;
 const USD_RATE = 1 / GBP_RATE;
@@ -29,34 +25,6 @@ function dualCurrency(value: string): string {
     return `£${num.toLocaleString()} GBP = ~$${gbpToUsd(num).toLocaleString()} USD`;
   }
   return value;
-}
-
-async function fetchOrCreateWallet(userId: string): Promise<string> {
-  const { data } = await (supabase.from('profiles') as any)
-    .select('wallet_address')
-    .eq('id', userId)
-    .single();
-  if (data?.wallet_address) return data.wallet_address;
-
-  const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || 'https://asazddtvjvmckouxcmmo.supabase.co';
-  const supabaseKey = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY || '';
-  const res = await fetch(`${supabaseUrl}/functions/v1/particle-generate-jwt`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json', 'apikey': supabaseKey },
-    body: JSON.stringify({ user_id: userId }),
-  });
-  const jwtData = await res.json();
-  if (!jwtData?.jwt) return '';
-
-  const address = await createParticleWallet(jwtData.jwt);
-  destroyIframe();
-  if (!address) return '';
-
-  await (supabase.from('profiles') as any)
-    .update({ wallet_address: address, wallet_auth_method: 'jwt' })
-    .eq('id', userId);
-
-  return address;
 }
 
 export default function AgreementPage() {
@@ -84,32 +52,13 @@ export default function AgreementPage() {
         setSubmitting(true);
         try {
           await submitSignature(name, signature, user.id);
-          await redirectToSamcart(name);
+          setSubmitted(true);
         } catch {
           setSubmitting(false);
         }
       })();
     } catch { /* ignore parse errors */ }
   }, [user, agreement]);
-
-  const redirectToSamcart = async (name: string) => {
-    if (!agreement || !user) return;
-
-    const wallet = await fetchOrCreateWallet(user.id);
-
-    const [firstName, ...rest] = name.trim().split(' ');
-    const lastName = rest.join(' ') || firstName;
-    const params = buildSamcartPrefillParams({
-      firstName,
-      lastName,
-      email: user.email ?? '',
-      wallet,
-      propertyId: agreement.property_id ?? 1,
-      investAmount: agreement.amount,
-    });
-    const qs = new URLSearchParams(params).toString();
-    window.location.href = `${SAMCART_URL}?${qs}`;
-  };
 
   const handleConfirm = async () => {
     if (!signerName.trim() || !signatureData || !agreement) return;
@@ -127,7 +76,7 @@ export default function AgreementPage() {
     setSubmitting(true);
     try {
       await submitSignature(signerName.trim(), signatureData, user.id);
-      await redirectToSamcart(signerName.trim());
+      setSubmitted(true);
     } catch {
       setSubmitting(false);
     }
@@ -156,26 +105,22 @@ export default function AgreementPage() {
   const isSigned = agreement.status === 'signed' || agreement.status === 'paid';
   const viewFull = searchParams.get('view') === 'full';
 
-  if (isSigned && !viewFull) {
+  if ((isSigned || submitted) && !viewFull) {
     return (
       <div className="min-h-screen bg-[#F3F3EE] flex items-center justify-center">
         <div className="text-center max-w-md">
           <CheckCircle2 className="h-16 w-16 text-[#1E9A80] mx-auto mb-4" />
           <h1 className="text-2xl font-bold text-[#1A1A1A] mb-2">Agreement Signed</h1>
           <p className="text-sm text-[#6B7280] mb-6">
-            {agreement.status === 'paid'
-              ? 'This agreement has been signed and payment has been received.'
-              : 'This agreement has been signed. Complete your payment to finalise.'}
+            Your agreement has been signed successfully. You can now browse the marketplace or download your signed agreement.
           </p>
           <div className="flex flex-col gap-3">
-            {agreement.status === 'signed' && user && (
-              <a
-                href="/dashboard/invest/marketplace"
-                className="inline-flex items-center justify-center bg-[#1E9A80] text-white px-8 py-3 rounded-xl font-semibold text-sm hover:opacity-90 transition-opacity"
-              >
-                Complete Payment
-              </a>
-            )}
+            <a
+              href="/dashboard/deals"
+              className="inline-flex items-center justify-center bg-[#1E9A80] text-white px-8 py-3 rounded-xl font-semibold text-sm hover:opacity-90 transition-opacity"
+            >
+              Go to Marketplace
+            </a>
             <a
               href={`/agreement/${token}?view=full`}
               target="_blank"
@@ -863,14 +808,12 @@ export default function AgreementPage() {
                         >
                           <Download className="h-4 w-4" /> Download as PDF
                         </button>
-                        {agreement.status === 'signed' && user && (
-                          <a
-                            href="/dashboard/invest/marketplace"
-                            className="block mx-auto bg-[#1E9A80] text-white px-8 py-3 rounded-xl font-semibold text-sm hover:opacity-90 transition-opacity shadow-[0_4px_16px_rgba(30,154,128,0.35)]"
-                          >
-                            Complete Payment
-                          </a>
-                        )}
+                        <a
+                          href="/dashboard/deals"
+                          className="block mx-auto bg-[#1E9A80] text-white px-8 py-3 rounded-xl font-semibold text-sm hover:opacity-90 transition-opacity shadow-[0_4px_16px_rgba(30,154,128,0.35)]"
+                        >
+                          Go to Marketplace
+                        </a>
                         <p className="text-xs text-[#9CA3AF]">
                           Use your browser's "Save as PDF" option to download a copy of this signed agreement.
                         </p>
@@ -887,11 +830,11 @@ export default function AgreementPage() {
                               <Loader2 className="h-4 w-4 animate-spin" /> Processing...
                             </span>
                           ) : (
-                            'Confirm & Proceed to Payment'
+                            'Confirm & Sign Agreement'
                           )}
                         </button>
                         <p className="text-xs text-[#9CA3AF] mt-3">
-                          By clicking confirm, you agree to the terms above and will be redirected to complete payment.
+                          By clicking confirm, you agree to the terms above.
                         </p>
                         <p className="text-xs text-[#9CA3AF] mt-2">
                           Where this Agreement is accepted electronically through the nfstay platform, the Partner's confirmation, timestamp, and authentication record shall constitute a binding electronic signature with the same legal effect as a handwritten signature, in accordance with applicable electronic-transaction law.
