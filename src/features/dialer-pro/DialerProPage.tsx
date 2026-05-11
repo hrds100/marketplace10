@@ -472,6 +472,10 @@ export function DialerProContent({ autoCallContactId, pipelineColumnId, onAutoCa
       void saveNotesToContact(lead.contactId, notes);
       removeFromQueue(lead.contactId);
     }
+    if (state.pauseAfterCall) {
+      setTimeout(() => machine.pause(), 200);
+      return;
+    }
     setTimeout(async () => {
       if (pipelineColumnId && columnContactsRef.current.length > 0) {
         columnIndexRef.current += 1;
@@ -486,7 +490,7 @@ export function DialerProContent({ autoCallContactId, pipelineColumnId, onAutoCa
       if (next) void machine.dialLead(next);
       else onToast('Queue empty', 'info');
     }, 200);
-  }, [machine, queue, onToast, state.currentLead, saveNotesToContact, removeFromQueue, pipelineColumnId, dialColumnContact]);
+  }, [machine, queue, onToast, state.currentLead, state.pauseAfterCall, saveNotesToContact, removeFromQueue, pipelineColumnId, dialColumnContact]);
 
   const handleWrapUpRedial = useCallback(async (colId: string | null, notes: string) => {
     const lead = state.currentLead;

@@ -9,6 +9,8 @@ import {
 import { mapTwilioError } from '@/features/smsv2/caller-pad/lib/twilioErrorMap';
 import type { DialerState, DialerAction, QueueLead } from './types';
 
+const LS_KEY = 'nfstay_pause_speed_dialer';
+
 const INITIAL: DialerState = {
   phase: 'idle',
   currentLead: null,
@@ -18,7 +20,7 @@ const INITIAL: DialerState = {
   durationSec: null,
   isMuted: false,
   isOnHold: false,
-  pauseAfterCall: false,
+  pauseAfterCall: typeof window !== 'undefined' && localStorage.getItem(LS_KEY) === 'true',
   campaignId: null,
   autoPace: true,
   pacingDelaySec: 5,
@@ -150,6 +152,15 @@ export function useDialerMachine({ userId, campaignId, pipelineId, onToast }: Us
       });
     });
   }, [onToast]);
+
+  useEffect(() => {
+    const onToggle = () => {
+      const v = localStorage.getItem(LS_KEY) === 'true';
+      dispatch({ type: 'PAUSE_AFTER_CALL', value: v });
+    };
+    window.addEventListener('nfstay-pause-dialer', onToggle);
+    return () => window.removeEventListener('nfstay-pause-dialer', onToggle);
+  }, []);
 
   // Queue status helper
   const updateQueueStatus = useCallback(

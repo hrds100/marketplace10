@@ -1,5 +1,5 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
-import { Bot, Bell, Circle, Mail, MessageSquare, Phone, Trophy } from 'lucide-react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { Bot, Bell, Circle, Mail, MessageSquare, Phone, PhoneOff, Trophy } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { cn } from '@/lib/utils';
 import { useSpendLimit } from '../hooks/useSpendLimit';
@@ -178,6 +178,9 @@ export default function Smsv2StatusBar() {
         )}
       </div>
 
+      {/* Speed dialer pause toggle */}
+      <SpeedDialerToggle />
+
       {/* AI coach toggle */}
       <button
         onClick={() => ks.toggle('aiCoach')}
@@ -327,5 +330,36 @@ export default function Smsv2StatusBar() {
         )}
       </div>
     </div>
+  );
+}
+
+const PAUSE_LS_KEY = 'nfstay_pause_speed_dialer';
+
+function SpeedDialerToggle() {
+  const [paused, setPaused] = useState(
+    () => localStorage.getItem(PAUSE_LS_KEY) === 'true'
+  );
+
+  const toggle = useCallback(() => {
+    const next = !paused;
+    setPaused(next);
+    localStorage.setItem(PAUSE_LS_KEY, String(next));
+    window.dispatchEvent(new Event('nfstay-pause-dialer'));
+  }, [paused]);
+
+  return (
+    <button
+      onClick={toggle}
+      className={cn(
+        'flex items-center gap-1.5 text-[11px] font-medium px-2 py-0.5 rounded-full transition-colors',
+        paused
+          ? 'bg-[#FEF2F2] text-[#DC2626] hover:bg-[#FEE2E2]'
+          : 'bg-[#ECFDF5] text-[#1E9A80] hover:bg-[#1E9A80]/15'
+      )}
+      title={paused ? 'Speed dialer paused — press Next to advance' : 'Speed dialer active — auto-advances after each call'}
+    >
+      <PhoneOff className="w-3 h-3" strokeWidth={2} />
+      Speed: {paused ? 'OFF' : 'ON'}
+    </button>
   );
 }
