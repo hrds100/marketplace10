@@ -14,7 +14,11 @@ import {
   Download,
   MessageSquare,
   ExternalLink,
+  CalendarDays,
 } from 'lucide-react';
+import { format, startOfDay, endOfDay, subDays, startOfYesterday, endOfYesterday } from 'date-fns';
+import { Calendar } from '@/components/ui/calendar';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import CallTranscriptModal from '../components/calls/CallTranscriptModal';
 import StageSelector from '../components/shared/StageSelector';
 import EditContactModal from '../components/contacts/EditContactModal';
@@ -37,14 +41,14 @@ const STATUS_ICON = {
 };
 
 type DurationBucket = 'all' | 'short' | 'medium' | 'long';
-type DateBucket = 'all' | 'today' | '7d' | '30d';
 
 export default function CallsPage() {
   // PR 110: filters in URL so browser tab switch + back/forward preserve.
   const [searchParams, setSearchParams] = useSearchParams();
   const search = searchParams.get('q') ?? '';
   const duration = (searchParams.get('duration') ?? 'all') as DurationBucket;
-  const dateRange = (searchParams.get('range') ?? 'all') as DateBucket;
+  const dateFrom = searchParams.get('from') ?? '';
+  const dateTo = searchParams.get('to') ?? '';
   const agentFilter = searchParams.get('agent') ?? '';
   const setSp = (key: string, value: string, fallback: string = '') => {
     const sp = new URLSearchParams(searchParams);
@@ -52,10 +56,18 @@ export default function CallsPage() {
     else sp.delete(key);
     setSearchParams(sp, { replace: true });
   };
+  const setMultiSp = (updates: Record<string, string>) => {
+    const sp = new URLSearchParams(searchParams);
+    for (const [k, v] of Object.entries(updates)) {
+      if (v) sp.set(k, v);
+      else sp.delete(k);
+    }
+    setSearchParams(sp, { replace: true });
+  };
   const setSearch = (v: string) => setSp('q', v);
   const setDuration = (v: DurationBucket) => setSp('duration', v, 'all');
-  const setDateRange = (v: DateBucket) => setSp('range', v, 'all');
   const setAgentFilter = (v: string) => setSp('agent', v);
+  const [datePickerOpen, setDatePickerOpen] = useState(false);
   const [expandedContactId, setExpandedContactId] = useState<string | null>(null);
   const [playing, setPlaying] = useState<string | null>(null);
   const [signedUrl, setSignedUrl] = useState<string | null>(null);
@@ -122,8 +134,17 @@ export default function CallsPage() {
   }, [calls]);
 
   // Filter at the call level → most-recent per contact group
+  const dateLabel = useMemo(() => {
+    if (!dateFrom && !dateTo) return 'All time';
+    if (dateFrom && dateTo && dateFrom === dateTo) return format(new Date(dateFrom + 'T00:00:00'), 'd MMM yyyy');
+    if (dateFrom && dateTo) return `${format(new Date(dateFrom + 'T00:00:00'), 'd MMM')} – ${format(new Date(dateTo + 'T00:00:00'), 'd MMM yyyy')}`;
+    if (dateFrom) return `From ${format(new Date(dateFrom + 'T00:00:00'), 'd MMM yyyy')}`;
+    return `Until ${format(new Date(dateTo + 'T00:00:00'), 'd MMM yyyy')}`;
+  }, [dateFrom, dateTo]);
+
   const filteredCalls = useMemo(() => {
-    const now = Date.now();
+    const fromTs = dateFrom ? startOfDay(new Date(dateFrom + 'T00:00:00')).getTime() : null;
+    const toTs = dateTo ? endOfDay(new Date(dateTo + 'T00:00:00')).getTime() : null;
     return calls.filter((c) => {
       const contact = contacts.find((x) => x.id === c.contactId);
       if (!contact) return false;
@@ -142,15 +163,14 @@ export default function CallsPage() {
           return false;
         if (duration === 'long' && c.durationSec <= 300) return false;
       }
-      if (dateRange !== 'all') {
-        const age = now - +new Date(c.startedAt);
-        if (dateRange === 'today' && age > 86_400_000) return false;
-        if (dateRange === '7d' && age > 7 * 86_400_000) return false;
-        if (dateRange === '30d' && age > 30 * 86_400_000) return false;
+      if (fromTs || toTs) {
+        const callTs = +new Date(c.startedAt);
+        if (fromTs && callTs < fromTs) return false;
+        if (toTs && callTs > toTs) return false;
       }
       return true;
     });
-  }, [calls, contacts, search, duration, dateRange, agentFilter]);
+  }, [calls, contacts, search, duration, dateFrom, dateTo, agentFilter]);
 
   return (
     <div className="p-6 max-w-[1400px] mx-auto space-y-5">
@@ -177,16 +197,81 @@ export default function CallsPage() {
             className="w-full pl-7 pr-2 py-1.5 text-[12px] bg-[#F3F3EE] border-0 rounded-[10px] focus:outline-none focus:ring-1 focus:ring-[#1E9A80]/30"
           />
         </div>
-        <select
-          value={dateRange}
-          onChange={(e) => setDateRange(e.target.value as DateBucket)}
-          className="text-[12px] px-2 py-1.5 bg-[#F3F3EE] border border-[#E5E7EB] rounded-[10px]"
-        >
-          <option value="all">All time</option>
-          <option value="today">Today</option>
-          <option value="7d">Last 7 days</option>
-          <option value="30d">Last 30 days</option>
-        </select>
+        <Popover open={datePickerOpen} onOpenChange={setDatePickerOpen}>
+          <PopoverTrigger asChild>
+            <button className={cn(
+              'flex items-center gap-1.5 text-[12px] px-2 py-1.5 border rounded-[10px] transition-colors',
+              dateFrom || dateTo
+                ? 'bg-[#ECFDF5] border-[#1E9A80]/30 text-[#1E9A80] font-medium'
+                : 'bg-[#F3F3EE] border-[#E5E7EB] text-[#1A1A1A]'
+            )}>
+              <CalendarDays className="w-3.5 h-3.5" />
+              {dateLabel}
+            </button>
+          </PopoverTrigger>
+          <PopoverContent align="start" className="w-auto p-0" sideOffset={8}>
+            <div className="p-3 space-y-3">
+              <div className="flex flex-wrap gap-1.5">
+                {[
+                  { label: 'Today', from: format(new Date(), 'yyyy-MM-dd'), to: format(new Date(), 'yyyy-MM-dd') },
+                  { label: 'Yesterday', from: format(startOfYesterday(), 'yyyy-MM-dd'), to: format(endOfYesterday(), 'yyyy-MM-dd') },
+                  { label: 'Last 7 days', from: format(subDays(new Date(), 6), 'yyyy-MM-dd'), to: format(new Date(), 'yyyy-MM-dd') },
+                  { label: 'Last 30 days', from: format(subDays(new Date(), 29), 'yyyy-MM-dd'), to: format(new Date(), 'yyyy-MM-dd') },
+                ].map((preset) => (
+                  <button
+                    key={preset.label}
+                    onClick={() => {
+                      setMultiSp({ from: preset.from, to: preset.to });
+                      setDatePickerOpen(false);
+                    }}
+                    className={cn(
+                      'px-2 py-1 text-[11px] font-medium rounded-[8px] transition-colors',
+                      dateFrom === preset.from && dateTo === preset.to
+                        ? 'bg-[#1E9A80] text-white'
+                        : 'bg-[#F3F3EE] text-[#1A1A1A] hover:bg-[#E5E7EB]'
+                    )}
+                  >
+                    {preset.label}
+                  </button>
+                ))}
+                {(dateFrom || dateTo) && (
+                  <button
+                    onClick={() => {
+                      setMultiSp({ from: '', to: '' });
+                      setDatePickerOpen(false);
+                    }}
+                    className="px-2 py-1 text-[11px] font-medium text-[#EF4444] hover:bg-[#FEF2F2] rounded-[8px] transition-colors"
+                  >
+                    Clear
+                  </button>
+                )}
+              </div>
+              <div className="flex gap-2 items-center text-[11px] text-[#6B7280]">
+                <div className="flex flex-col gap-1">
+                  <span className="font-medium text-[#1A1A1A]">From</span>
+                  <input
+                    type="date"
+                    value={dateFrom}
+                    max={dateTo || undefined}
+                    onChange={(e) => setSp('from', e.target.value)}
+                    className="px-2 py-1 text-[12px] border border-[#E5E7EB] rounded-[8px] bg-white focus:outline-none focus:ring-1 focus:ring-[#1E9A80]/30"
+                  />
+                </div>
+                <span className="mt-5">–</span>
+                <div className="flex flex-col gap-1">
+                  <span className="font-medium text-[#1A1A1A]">To</span>
+                  <input
+                    type="date"
+                    value={dateTo}
+                    min={dateFrom || undefined}
+                    onChange={(e) => setSp('to', e.target.value)}
+                    className="px-2 py-1 text-[12px] border border-[#E5E7EB] rounded-[8px] bg-white focus:outline-none focus:ring-1 focus:ring-[#1E9A80]/30"
+                  />
+                </div>
+              </div>
+            </div>
+          </PopoverContent>
+        </Popover>
         <select
           value={duration}
           onChange={(e) => setDuration(e.target.value as DurationBucket)}
@@ -209,17 +294,14 @@ export default function CallsPage() {
             </option>
           ))}
         </select>
-        {(search || duration !== 'all' || dateRange !== 'all' || agentFilter) && (
+        {(search || duration !== 'all' || dateFrom || dateTo || agentFilter) && (
           <button
             onClick={() => {
-              setSearch('');
-              setDuration('all');
-              setDateRange('all');
-              setAgentFilter('');
+              setMultiSp({ q: '', duration: '', from: '', to: '', agent: '' });
             }}
             className="text-[11px] text-[#1E9A80] hover:underline"
           >
-            Clear
+            Clear all
           </button>
         )}
       </div>
