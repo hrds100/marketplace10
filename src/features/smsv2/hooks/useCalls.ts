@@ -92,21 +92,15 @@ export function useCalls(): UseCallsResult {
 
     async function load() {
       setLoading(true);
-      const [callsRes, recRes, intelRes, costRes] = await Promise.all([
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        (supabase.from('wk_calls' as any) as any)
-          .select(
-            'id, contact_id, agent_id, direction, status, started_at, duration_sec, disposition_column_id, agent_note'
-          )
-          .order('started_at', { ascending: false })
-          .limit(200),
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        (supabase.from('wk_recordings' as any) as any).select('call_id, storage_path, twilio_media_url, status'),
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        (supabase.from('wk_call_intelligence' as any) as any).select('call_id, summary'),
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        (supabase.from('wk_voice_call_costs' as any) as any).select('call_id, total_pence'),
-      ]);
+
+      // Step 1: load the 200 most recent calls.
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const callsRes = await (supabase.from('wk_calls' as any) as any)
+        .select(
+          'id, contact_id, agent_id, direction, status, started_at, duration_sec, disposition_column_id, agent_note'
+        )
+        .order('started_at', { ascending: false })
+        .limit(200);
 
       if (cancelled) return;
 
@@ -116,6 +110,34 @@ export function useCalls(): UseCallsResult {
         return;
       }
 
+      const callRows = (callsRes.data ?? []) as WkCallRow[];
+      const callIds = callRows.map((r) => r.id);
+
+      if (callIds.length === 0) {
+        setCalls([]);
+        setLoading(false);
+        return;
+      }
+
+      // Step 2: fetch recordings, intelligence, and costs scoped to
+      // those call IDs so we never hit the Supabase default 1000-row cap.
+      const [recRes, intelRes, costRes] = await Promise.all([
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        (supabase.from('wk_recordings' as any) as any)
+          .select('call_id, storage_path, twilio_media_url, status')
+          .in('call_id', callIds),
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        (supabase.from('wk_call_intelligence' as any) as any)
+          .select('call_id, summary')
+          .in('call_id', callIds),
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        (supabase.from('wk_voice_call_costs' as any) as any)
+          .select('call_id, total_pence')
+          .in('call_id', callIds),
+      ]);
+
+      if (cancelled) return;
+
       const recById = new Map<string, WkRecordingRow>();
       for (const r of (recRes.data ?? []) as WkRecordingRow[]) recById.set(r.call_id, r);
       const intelById = new Map<string, WkIntelRow>();
@@ -124,7 +146,7 @@ export function useCalls(): UseCallsResult {
       for (const c of (costRes.data ?? []) as WkCostRow[]) costById.set(c.call_id, c);
 
       setCalls(
-        ((callsRes.data ?? []) as WkCallRow[]).map((row) =>
+        callRows.map((row) =>
           rowToCall(row, recById.get(row.id), intelById.get(row.id), costById.get(row.id))
         )
       );
