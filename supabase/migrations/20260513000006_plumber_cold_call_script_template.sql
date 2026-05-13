@@ -4,7 +4,7 @@ INSERT INTO wk_sms_templates (name, body_md, is_global, owner_agent_id, move_to_
 VALUES (
   'Plumber Cold Call Script',
   'Opening' || chr(10) || chr(10) ||
-  'Hey, my name''s Elias, I''m calling from NFstay. I saw your listing on Google Maps — I can see you work in the trades industry. I just want to take one minute of your time, I think I have something you might find really interesting. Is that alright?' || chr(10) || chr(10) ||
+  'Hey, my name''s {agent_first_name}, I''m calling from NFstay. I saw your listing on Google Maps — I can see you work in the trades industry. I just want to take one minute of your time, I think I have something you might find really interesting. Is that alright?' || chr(10) || chr(10) ||
   'One-sentence pitch' || chr(10) || chr(10) ||
   'So basically, we work with Airbnb properties using a strategy called rent-to-rent — we rent a property from a landlord instead of buying it, then list it on Airbnb for profit. We''ve got a property running in Liverpool right now and we''re looking for partners. Entry starts from 5 hundred pounds on a five-year contract.' || chr(10) || chr(10) ||
   'Close' || chr(10) || chr(10) ||

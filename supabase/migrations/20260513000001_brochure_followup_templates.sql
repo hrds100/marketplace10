@@ -6,7 +6,7 @@ INSERT INTO wk_sms_templates (name, body_md, channel, subject, is_global, owner_
 VALUES
   (
     'Brochure — SMS',
-    E'Hi there,\n\nAs per our quick conversation, please see the brochure attached. This is a rent-to-rent Airbnb property, we rent it from the landlord on a long lease and list it on Airbnb for profit. You can join the joint venture from just £500.\n\nYou can also view the full deal directly on our website: nfstay.com\n\nElijah,\nnfstay.com',
+    E'Hi {first_name},\n\nAs per our quick conversation, please see the brochure attached. This is a rent-to-rent Airbnb property, we rent it from the landlord on a long lease and list it on Airbnb for profit. You can join the joint venture from just £500.\n\nYou can also view the full deal directly on our website: nfstay.com\n\n{agent_first_name},\nnfstay.com',
     'sms',
     NULL,
     true,
@@ -15,7 +15,7 @@ VALUES
   ),
   (
     'Brochure — WhatsApp',
-    E'Hi there,\n\nAs per our quick conversation, please see the brochure attached. This is a rent-to-rent Airbnb property, we rent it from the landlord on a long lease and list it on Airbnb for profit. You can join the joint venture from just £500.\n\nYou can also view the full deal directly on our website: nfstay.com\n\nElijah,\nnfstay.com',
+    E'Hi {first_name},\n\nAs per our quick conversation, please see the brochure attached. This is a rent-to-rent Airbnb property, we rent it from the landlord on a long lease and list it on Airbnb for profit. You can join the joint venture from just £500.\n\nYou can also view the full deal directly on our website: nfstay.com\n\n{agent_first_name},\nnfstay.com',
     'whatsapp',
     NULL,
     true,
@@ -24,7 +24,7 @@ VALUES
   ),
   (
     'Brochure — Email',
-    E'Hi there,\n\nAs per our quick conversation, please see the brochure attached. This is a rent-to-rent Airbnb property, we rent it from the landlord on a long lease and list it on Airbnb for profit. You can join the joint venture from just £500.\n\nYou can also view the full deal directly on our website: nfstay.com\n\nElijah,\nnfstay.com',
+    E'Hi {first_name},\n\nAs per our quick conversation, please see the brochure attached. This is a rent-to-rent Airbnb property, we rent it from the landlord on a long lease and list it on Airbnb for profit. You can join the joint venture from just £500.\n\nYou can also view the full deal directly on our website: nfstay.com\n\n{agent_first_name},\nnfstay.com',
     'email',
     'Brochure — Airbnb Joint Venture from £500',
     true,
