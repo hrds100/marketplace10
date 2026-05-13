@@ -61,7 +61,8 @@ export function useHydrateContacts(): void {
           .select(
             'id, name, phone, email, owner_agent_id, pipeline_column_id, deal_value_pence, is_hot, custom_fields, last_contact_at, created_at'
           )
-          .order('created_at', { ascending: false }),
+          .order('created_at', { ascending: false })
+          .limit(10000),
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         (supabase.from('wk_contact_tags' as any) as any).select('contact_id, tag'),
       ]);
