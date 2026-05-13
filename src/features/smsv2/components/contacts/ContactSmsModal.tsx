@@ -23,7 +23,7 @@
 // Same behaviour applies for WhatsApp + Email templates.
 
 import { useEffect, useMemo, useState } from 'react';
-import { Send, MessageSquare, X, Check, ArrowRight, Phone, Mail } from 'lucide-react';
+import { Send, MessageSquare, X, Check, ArrowRight, Phone, Mail, Paperclip, Trash2, Loader2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { supabase } from '@/integrations/supabase/client';
 import { useSmsV2 } from '../../store/SmsV2Store';
@@ -66,6 +66,7 @@ interface Template {
   /** PR 90: email subject (also on universal templates so they can
    *  carry through to email mode). NULL for sms/whatsapp. */
   subject: string | null;
+  attachment_url: string | null;
 }
 
 interface SendInvoke {
@@ -125,6 +126,8 @@ export default function ContactSmsModal({
   const [selectedTemplateId, setSelectedTemplateId] = useState('');
   const [subject, setSubject] = useState('');
   const [body, setBody] = useState('');
+  const [attachmentUrl, setAttachmentUrl] = useState<string | null>(null);
+  const [uploading, setUploading] = useState(false);
   const [sending, setSending] = useState(false);
   const [loadingTpls, setLoadingTpls] = useState(true);
   const [recentSendCount, setRecentSendCount] = useState(0);
@@ -145,7 +148,7 @@ export default function ContactSmsModal({
       try {
         const { data } = await (supabase as unknown as TemplatesTable)
           .from('wk_sms_templates')
-          .select('id, name, body_md, move_to_stage_id, channel, subject')
+          .select('id, name, body_md, move_to_stage_id, channel, subject, attachment_url')
           .order('name', { ascending: true });
         if (!cancelled && data) setTemplates(data);
       } catch {
@@ -245,6 +248,7 @@ export default function ContactSmsModal({
       });
       setSubject(expandedSubject);
     }
+    setAttachmentUrl(tpl.attachment_url ?? null);
     setShowSentBanner(false);
   };
 
@@ -286,11 +290,11 @@ export default function ContactSmsModal({
         // in the thread until refresh \u2014 sometimes never. Routes through
         // wk-sms-send now (same as InboxPage + MidCallSmsSender).
         resp = await fn.invoke('wk-sms-send', {
-          body: { contact_id: contact.id, body: trimBody },
+          body: { contact_id: contact.id, body: trimBody, attachment_url: attachmentUrl || undefined },
         });
       } else if (channel === 'whatsapp') {
         resp = await fn.invoke('unipile-send', {
-          body: { contact_id: contact.id, body: trimBody },
+          body: { contact_id: contact.id, body: trimBody, attachment_url: attachmentUrl || undefined },
         });
       } else {
         resp = await fn.invoke('wk-email-send', {
@@ -299,6 +303,7 @@ export default function ContactSmsModal({
             subject: trimSubject,
             body: trimBody,
             channel_id: selectedFromId || undefined,
+            attachment_url: attachmentUrl || undefined,
           },
         });
       }
@@ -325,6 +330,7 @@ export default function ContactSmsModal({
       }
 
       setBody('');
+      setAttachmentUrl(null);
       if (channel === 'email') setSubject('');
       setSelectedTemplateId('');
       setRecentSendCount((n) => n + 1);
@@ -542,6 +548,56 @@ export default function ContactSmsModal({
             className="w-full px-3 py-2 text-[13px] border border-[#E5E5E5] rounded-[10px] focus:outline-none focus:ring-1 focus:ring-[#1E9A80]/30 focus:border-[#1E9A80] resize-none"
             data-testid="contact-sms-modal-body"
           />
+
+          {/* Attachment upload / preview */}
+          <div className="flex items-center gap-2">
+            {attachmentUrl ? (
+              <div className="flex items-center gap-2 px-2.5 py-1.5 bg-[#ECFDF5] border border-[#1E9A80]/20 rounded-lg text-[11px]">
+                <Paperclip className="w-3 h-3 text-[#1E9A80]" />
+                <a href={attachmentUrl} target="_blank" rel="noopener noreferrer" className="text-[#1E9A80] font-medium truncate max-w-[200px]">
+                  {attachmentUrl.split('/').pop()}
+                </a>
+                <button onClick={() => setAttachmentUrl(null)} className="text-[#6B7280] hover:text-red-500">
+                  <Trash2 className="w-3 h-3" />
+                </button>
+              </div>
+            ) : (
+              <label className="inline-flex items-center gap-1 px-2.5 py-1.5 text-[11px] text-[#6B7280] hover:text-[#1E9A80] hover:bg-[#ECFDF5] border border-[#E5E5E5] rounded-lg cursor-pointer transition-colors">
+                {uploading ? <Loader2 className="w-3 h-3 animate-spin" /> : <Paperclip className="w-3 h-3" />}
+                {uploading ? 'Uploading…' : 'Attach file'}
+                <input
+                  type="file"
+                  accept=".pdf,.png,.jpg,.jpeg,.webp"
+                  className="hidden"
+                  onChange={async (e) => {
+                    const file = e.target.files?.[0];
+                    if (!file) return;
+                    if (file.size > 10 * 1024 * 1024) {
+                      pushToast('File too large (max 10MB)', 'error');
+                      return;
+                    }
+                    setUploading(true);
+                    try {
+                      const path = `${Date.now()}-${file.name.replace(/[^a-zA-Z0-9._-]/g, '_')}`;
+                      const { error: upErr } = await supabase.storage
+                        .from('crm-attachments')
+                        .upload(path, file, { upsert: true });
+                      if (upErr) throw upErr;
+                      const { data: urlData } = supabase.storage
+                        .from('crm-attachments')
+                        .getPublicUrl(path);
+                      setAttachmentUrl(urlData.publicUrl);
+                    } catch (err) {
+                      pushToast(`Upload failed: ${err instanceof Error ? err.message : 'unknown'}`, 'error');
+                    } finally {
+                      setUploading(false);
+                      e.target.value = '';
+                    }
+                  }}
+                />
+              </label>
+            )}
+          </div>
 
           <div className="flex items-center justify-between">
             <span

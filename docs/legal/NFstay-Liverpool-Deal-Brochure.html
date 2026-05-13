@@ -1,0 +1,246 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>NFstay — Liverpool Airbnb Investment Opportunity</title>
+<style>
+  @page { size: A4; margin: 12mm 16mm; }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: 'Inter', 'Segoe UI', system-ui, -apple-system, sans-serif;
+    font-size: 9.5pt;
+    line-height: 1.45;
+    color: #1A1A1A;
+    background: #fff;
+    max-width: 210mm;
+    margin: 0 auto;
+    padding: 12mm 16mm;
+  }
+  @media print { body { padding: 0; max-width: none; } }
+
+  /* ── Header ── */
+  .header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding-bottom: 10px;
+    border-bottom: 3px solid #1E9A80;
+    margin-bottom: 12px;
+  }
+  .logo { font-size: 20pt; font-weight: 700; letter-spacing: 2px; color: #0A0A0A; }
+  .logo span {
+    display: inline-block; border: 2px solid #0A0A0A; border-radius: 6px;
+    padding: 1px 5px; margin-right: 3px; font-weight: 700;
+  }
+  .header-right { text-align: right; font-size: 8.5pt; color: #6B7280; }
+
+  /* ── Photo gallery ── */
+  .gallery {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 4px;
+    margin-bottom: 10px;
+    border-radius: 8px;
+    overflow: hidden;
+    height: 120px;
+  }
+  .gallery img {
+    width: 100%;
+    height: 120px;
+    object-fit: cover;
+    display: block;
+  }
+
+  /* ── Title bar ── */
+  .title-bar {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 10px;
+  }
+  .title-bar h1 { font-size: 14pt; font-weight: 700; color: #0A0A0A; }
+  .title-bar .sub { font-size: 9pt; color: #6B7280; margin-top: 2px; }
+  .badge {
+    display: inline-block; background: #ECFDF5; color: #1E9A80;
+    font-size: 7.5pt; font-weight: 600; padding: 3px 10px; border-radius: 100px;
+    white-space: nowrap; margin-top: 4px;
+  }
+
+  /* ── Metrics strip ── */
+  .metrics { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin-bottom: 12px; }
+  .metric {
+    background: #fff; border: 1px solid #E5E7EB; border-top: 3px solid #1E9A80;
+    border-radius: 8px; padding: 8px 10px; text-align: center;
+  }
+  .metric .val { font-size: 15pt; font-weight: 700; color: #1E9A80; }
+  .metric .lbl { font-size: 7pt; color: #6B7280; text-transform: uppercase; letter-spacing: 0.4px; margin-top: 1px; }
+
+  /* ── Two-column panels ── */
+  .panels { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 10px; }
+  .panel { border: 1px solid #E5E7EB; border-radius: 8px; overflow: hidden; }
+  .panel-head {
+    background: #F3F3EE; padding: 6px 12px; font-weight: 600;
+    font-size: 8pt; text-transform: uppercase; letter-spacing: 0.4px; color: #1A1A1A;
+  }
+  .row {
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 4px 12px; border-bottom: 1px solid #F3F3EE; font-size: 8.5pt;
+  }
+  .row:last-child { border-bottom: none; }
+  .row .l { color: #6B7280; }
+  .row .r { font-weight: 600; color: #1A1A1A; }
+  .row.total { background: #ECFDF5; }
+  .row.total .l, .row.total .r { color: #1E9A80; font-weight: 700; }
+
+  /* JV step rows */
+  .step-row { padding: 7px 12px; border-bottom: 1px solid #F3F3EE; }
+  .step-row:last-child { border-bottom: none; }
+  .step-top { display: flex; align-items: center; gap: 6px; margin-bottom: 2px; }
+  .step-num {
+    background: #ECFDF5; color: #1E9A80; font-weight: 700; font-size: 8pt;
+    width: 18px; height: 18px; border-radius: 50%; display: inline-flex;
+    align-items: center; justify-content: center; flex-shrink: 0;
+  }
+  .step-title { font-weight: 600; color: #1A1A1A; font-size: 8.5pt; }
+  .step-desc { font-size: 7.5pt; color: #6B7280; padding-left: 24px; line-height: 1.4; }
+
+  /* ── Example returns ── */
+  .example {
+    background: linear-gradient(135deg, #ECFDF5, #fff);
+    border: 1px solid rgba(30,154,128,0.2); border-radius: 8px;
+    padding: 10px 14px; margin-bottom: 10px;
+  }
+  .example h3 { font-size: 9pt; font-weight: 700; color: #1E9A80; margin-bottom: 6px; }
+  .example-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; }
+  .example-card {
+    text-align: center; padding: 6px; background: rgba(255,255,255,0.8);
+    border-radius: 6px; border: 1px solid rgba(30,154,128,0.1);
+  }
+  .example-card .v { font-size: 12pt; font-weight: 700; color: #1E9A80; }
+  .example-card .l { font-size: 7pt; color: #6B7280; margin-top: 1px; }
+
+  /* ── Highlights ── */
+  .highlights { display: grid; grid-template-columns: 1fr 1fr; gap: 4px 12px; margin-bottom: 10px; }
+  .hi { display: flex; align-items: flex-start; gap: 5px; font-size: 8pt; color: #1A1A1A; }
+  .hi .ck { color: #1E9A80; font-weight: 700; font-size: 9pt; line-height: 1.25; flex-shrink: 0; }
+
+  /* ── Footer ── */
+  .footer {
+    border-top: 2px solid #1E9A80; padding-top: 8px;
+    display: flex; justify-content: space-between; align-items: center;
+  }
+  .footer-left { font-size: 7.5pt; color: #6B7280; line-height: 1.5; }
+  .footer-cta {
+    background: #1E9A80; color: #fff; font-size: 8.5pt; font-weight: 600;
+    padding: 8px 20px; border-radius: 8px; text-align: center; line-height: 1.4;
+  }
+  .footer-cta .big { font-size: 10pt; display: block; }
+  .disclaimer { margin-top: 6px; font-size: 6pt; color: #9CA3AF; line-height: 1.35; }
+</style>
+</head>
+<body>
+
+<!-- Header -->
+<div class="header">
+  <div class="logo"><span>nf</span>stay</div>
+  <div class="header-right">Airbnb Joint Venture Partnerships<br>nfstay.com</div>
+</div>
+
+<!-- Property Photos — 4 across -->
+<div class="gallery">
+  <img src="https://asazddtvjvmckouxcmmo.supabase.co/storage/v1/object/public/property-images/inv/pembroke-place/bafkreicobxluilcxpjy3ykl24x6zejszerb37aeutxitmz2tccaxy5goyy.jpeg" alt="Pembroke Place — exterior">
+  <img src="https://asazddtvjvmckouxcmmo.supabase.co/storage/v1/object/public/property-images/inv/pembroke-place/bafkreif442cy7otywhyai6e5maa2f32ckmfidlrekrr6zbrj3ulxrjnpja.jpeg" alt="Pembroke Place — bedroom">
+  <img src="https://asazddtvjvmckouxcmmo.supabase.co/storage/v1/object/public/property-images/inv/pembroke-place/bafkreigtjc7dr3qgwapd2gzzv677bskfpkyi2okmynkhnywdqxkxs7xkl4.jpeg" alt="Pembroke Place — interior">
+  <img src="https://asazddtvjvmckouxcmmo.supabase.co/storage/v1/object/public/property-images/inv/pembroke-place/bafkreihzqgasttxrcwvctowummvd3odd64fvkqsbdh433xx5qljzyqjgvy.jpeg" alt="Pembroke Place — living area">
+</div>
+
+<!-- Title -->
+<div class="title-bar">
+  <div>
+    <h1>15-Bed Airbnb Property — Liverpool</h1>
+    <div class="sub">Pembroke Place, Liverpool L7 &nbsp;|&nbsp; 15 Beds &nbsp;|&nbsp; 4 Baths &nbsp;|&nbsp; 2 Kitchens</div>
+  </div>
+  <div class="badge">LIVE &amp; ACCEPTING PARTNERS</div>
+</div>
+
+<!-- Key Metrics -->
+<div class="metrics">
+  <div class="metric"><div class="val">£500</div><div class="lbl">Minimum Entry</div></div>
+  <div class="metric"><div class="val">9.6%</div><div class="lbl">Monthly Yield</div></div>
+  <div class="metric"><div class="val">5 yr</div><div class="lbl">Agreement Term</div></div>
+  <div class="metric"><div class="val">~70%</div><div class="lbl">Already Sold</div></div>
+</div>
+
+<!-- Two panels -->
+<div class="panels">
+  <!-- Setup Cost Breakdown -->
+  <div class="panel">
+    <div class="panel-head">Setup Cost Breakdown</div>
+    <div class="row"><span class="l">Finder's fee</span><span class="r">£13,000</span></div>
+    <div class="row"><span class="l">Refurbishment</span><span class="r">£11,000</span></div>
+    <div class="row"><span class="l">Furniture</span><span class="r">£4,400</span></div>
+    <div class="row"><span class="l">Staging</span><span class="r">£1,500</span></div>
+    <div class="row"><span class="l">First month's rent</span><span class="r">£3,500</span></div>
+    <div class="row"><span class="l">Deposit</span><span class="r">£3,500</span></div>
+    <div class="row"><span class="l">Miscellaneous</span><span class="r">£1,000</span></div>
+    <div class="row total">
+      <span class="l">Total Setup</span>
+      <span class="r"><s style="color:#9CA3AF;font-weight:500;">£37,900</s> &nbsp;Start from <strong>£500</strong></span>
+    </div>
+  </div>
+
+  <!-- Active Partnership -->
+  <div class="panel">
+    <div class="panel-head">Active Partnership — You Have a Say</div>
+    <div class="step-row">
+      <div class="step-top"><span class="step-num">1</span><span class="step-title">A decision is proposed</span></div>
+      <div class="step-desc">You, another partner, or management can propose changes — furniture, nightly rate, booking strategy, even a new manager.</div>
+    </div>
+    <div class="step-row">
+      <div class="step-top"><span class="step-num">2</span><span class="step-title">You get notified</span></div>
+      <div class="step-desc">All partners receive a WhatsApp and email notification with a link back to the platform.</div>
+    </div>
+    <div class="step-row">
+      <div class="step-top"><span class="step-num">3</span><span class="step-title">You decide</span></div>
+      <div class="step-desc">Review the proposal, cast your vote. Majority decision is applied.</div>
+    </div>
+  </div>
+</div>
+
+<!-- Example Returns -->
+<div class="example">
+  <h3>Example: What Does a £1,500 Entry Look Like?</h3>
+  <div class="example-grid">
+    <div class="example-card"><div class="v">£144</div><div class="l">Est. Monthly Income</div></div>
+    <div class="example-card"><div class="v">£1,730</div><div class="l">Est. Year 1 Return</div></div>
+    <div class="example-card"><div class="v">£8,650</div><div class="l">Est. 5-Year Total Return</div></div>
+  </div>
+</div>
+
+<!-- Highlights -->
+<div class="highlights">
+  <div class="hi"><span class="ck">&#10003;</span><span>Already live and taking Airbnb bookings</span></div>
+  <div class="hi"><span class="ck">&#10003;</span><span>~100 properties managed across Manchester &amp; Liverpool</span></div>
+  <div class="hi"><span class="ck">&#10003;</span><span>HMO licence held &amp; redress scheme registered</span></div>
+  <div class="hi"><span class="ck">&#10003;</span><span>Monthly rent: £3,500/month to landlord</span></div>
+  <div class="hi"><span class="ck">&#10003;</span><span>Partners vote on all management decisions</span></div>
+  <div class="hi"><span class="ck">&#10003;</span><span>Live dashboard — track income, bookings, votes</span></div>
+  <div class="hi"><span class="ck">&#10003;</span><span>No day-to-day work required from you</span></div>
+  <div class="hi"><span class="ck">&#10003;</span><span>5-year agreement with monthly payouts</span></div>
+</div>
+
+<!-- Footer -->
+<div class="footer">
+  <div class="footer-left">NFstay &nbsp;|&nbsp; 9 Owen Street, Manchester<br>nfstay.com &nbsp;|&nbsp; Airbnb Joint Venture Partnerships</div>
+  <div class="footer-cta"><span class="big">Entry from £500</span>View the full deal at nfstay.com</div>
+</div>
+
+<div class="disclaimer">
+  This document is for information purposes only and does not constitute financial advice. Returns are estimates based on current performance and are not guaranteed.
+  Past performance is not indicative of future results. NFstay operates property joint-venture arrangements; this is not an FCA-regulated investment product.
+  Capital is at risk. You should seek independent financial advice before making any investment decision.
+</div>
+
+</body>
+</html>

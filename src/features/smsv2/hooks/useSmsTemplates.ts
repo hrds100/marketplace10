@@ -28,6 +28,7 @@ export interface SmsTemplate {
   channel: TemplateChannel | null;
   /** PR 64: subject line for email templates. */
   subject: string | null;
+  attachment_url: string | null;
   created_at: string;
   updated_at: string;
   /** PR 62: 'workspace' (wk_sms_templates) or 'campaign'
@@ -52,6 +53,7 @@ interface RawWorkspaceRow {
   move_to_stage_id: string | null;
   channel: TemplateChannel | null;
   subject: string | null;
+  attachment_url: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -64,6 +66,7 @@ interface RawCampaignRow {
   merge_fields: unknown;
   channel: TemplateChannel | null;
   subject: string | null;
+  attachment_url: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -78,7 +81,7 @@ export function useSmsTemplates(opts: UseSmsTemplatesOpts = {}) {
     try {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const wsRes = await (supabase.from('wk_sms_templates' as any) as any)
-        .select('id, name, body_md, is_global, owner_agent_id, move_to_stage_id, channel, subject, created_at, updated_at')
+        .select('id, name, body_md, is_global, owner_agent_id, move_to_stage_id, channel, subject, attachment_url, created_at, updated_at')
         .order('name', { ascending: true });
 
       let merged: SmsTemplate[] = ((wsRes.data ?? []) as RawWorkspaceRow[]).map(
@@ -88,7 +91,7 @@ export function useSmsTemplates(opts: UseSmsTemplatesOpts = {}) {
       if (campaignId) {
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const cRes = await (supabase.from('wk_campaign_sms_templates' as any) as any)
-          .select('id, campaign_id, name, body_md, merge_fields, channel, subject, created_at, updated_at')
+          .select('id, campaign_id, name, body_md, merge_fields, channel, subject, attachment_url, created_at, updated_at')
           .eq('campaign_id', campaignId)
           .order('name', { ascending: true });
         const campRows = (cRes.data ?? []) as RawCampaignRow[];
@@ -105,6 +108,7 @@ export function useSmsTemplates(opts: UseSmsTemplatesOpts = {}) {
               move_to_stage_id: null,
               channel: r.channel,
               subject: r.subject,
+              attachment_url: r.attachment_url ?? null,
               created_at: r.created_at,
               updated_at: r.updated_at,
               source: 'campaign',
