@@ -74,6 +74,8 @@ export interface CallRecord {
   costPence: number;
   dispositionColumnId?: string;
   agentNote?: string;
+  fromE164?: string;
+  toE164?: string;
 }
 
 export interface TranscriptLine {
