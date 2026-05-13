@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect } from 'react';
+import { useState, useMemo, useEffect, useCallback } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import {
   PhoneIncoming,
@@ -75,7 +75,7 @@ export default function CallsPage() {
   // PR 115: edit-contact modal — opened by clicking a prospect name.
   const [editing, setEditing] = useState<Contact | null>(null);
 
-  const { calls: realCalls } = useCalls();
+  const { calls: realCalls, loading: callsLoading, loadingMore, total, hasMore, loadMore } = useCalls();
   const { contacts: realContacts, columns, patchContact, upsertContact, pushToast } = useSmsV2();
   const persist = useContactPersistence();
   const { agents: realAgentsToday } = useAgentsToday();
@@ -122,6 +122,35 @@ export default function CallsPage() {
     };
   }, [playing, calls]);
 
+  // Build a phone→contact index so we can fall back to phone matching
+  // when contact_id is missing on a call row.
+  const contactByPhone = useMemo(() => {
+    const map = new Map<string, typeof contacts[number]>();
+    contacts.forEach((c) => {
+      if (c.phone) {
+        const normalised = c.phone.replace(/\s+/g, '');
+        map.set(normalised, c);
+        if (!normalised.startsWith('+') && normalised.length >= 10) {
+          map.set('+44' + normalised.replace(/^0/, ''), c);
+        }
+      }
+    });
+    return map;
+  }, [contacts]);
+
+  const findContact = useCallback(
+    (call: CallRecord) => {
+      if (call.contactId) {
+        const byId = contacts.find((x) => x.id === call.contactId);
+        if (byId) return byId;
+      }
+      const phone = call.toE164 || call.fromE164;
+      if (phone) return contactByPhone.get(phone.replace(/\s+/g, '')) ?? null;
+      return null;
+    },
+    [contacts, contactByPhone]
+  );
+
   // Group by contact so we can expand to show "previous calls to same person"
   const callsByContact = useMemo(() => {
     const map = new Map<string, CallRecord[]>();
@@ -146,7 +175,7 @@ export default function CallsPage() {
     const fromTs = dateFrom ? startOfDay(new Date(dateFrom + 'T00:00:00')).getTime() : null;
     const toTs = dateTo ? endOfDay(new Date(dateTo + 'T00:00:00')).getTime() : null;
     return calls.filter((c) => {
-      const contact = contacts.find((x) => x.id === c.contactId);
+      const contact = findContact(c);
       if (search) {
         const s = search.toLowerCase();
         const name = contact?.name ?? '';
@@ -168,7 +197,7 @@ export default function CallsPage() {
       }
       return true;
     });
-  }, [calls, contacts, search, duration, dateFrom, dateTo, agentFilter]);
+  }, [calls, contacts, findContact, search, duration, dateFrom, dateTo, agentFilter]);
 
   return (
     <div className="p-6 max-w-[1400px] mx-auto space-y-5">
@@ -176,7 +205,7 @@ export default function CallsPage() {
         <div>
           <h1 className="text-[26px] font-bold text-[#1A1A1A] tracking-tight">Call history</h1>
           <p className="text-[13px] text-[#6B7280]">
-            {filteredCalls.length} of {calls.length} calls · click row for previous calls to same prospect
+            {filteredCalls.length} of {total ?? calls.length} calls · click row for previous calls to same prospect
           </p>
         </div>
         <button className="flex items-center gap-1.5 border border-[#E5E7EB] bg-white text-[#1A1A1A] text-[13px] font-medium px-3 py-2 rounded-[10px] hover:bg-[#F3F3EE]">
@@ -322,7 +351,7 @@ export default function CallsPage() {
           </thead>
           <tbody className="divide-y divide-[#E5E7EB]">
             {filteredCalls.map((c) => {
-              const contact = contacts.find((x) => x.id === c.contactId);
+              const contact = findContact(c);
               const agent = agents.find((x) => x.id === c.agentId);
               const previousCalls = (callsByContact.get(c.contactId) ?? []).filter(
                 (x) => x.id !== c.id
@@ -584,9 +613,21 @@ export default function CallsPage() {
         </table>
       </div>
 
+      {hasMore && (
+        <div className="flex justify-center py-4">
+          <button
+            onClick={loadMore}
+            disabled={loadingMore}
+            className="px-4 py-2 text-[13px] font-medium text-[#1E9A80] bg-[#ECFDF5] hover:bg-[#1E9A80] hover:text-white rounded-[10px] transition-colors disabled:opacity-50"
+          >
+            {loadingMore ? 'Loading…' : `Load more calls (${calls.length} of ${total ?? '?'})`}
+          </button>
+        </div>
+      )}
+
       {transcriptCallId && (() => {
         const tCall = calls.find((c) => c.id === transcriptCallId);
-        const tContact = tCall ? contacts.find((c) => c.id === tCall.contactId) : null;
+        const tContact = tCall ? findContact(tCall) : null;
         const callerLabel = tContact?.name?.trim().split(/\s+/)[0] ?? 'Caller';
         return (
           <CallTranscriptModal
