@@ -7,4 +7,4 @@ SET body_md = 'Hi there,' || chr(10) || chr(10) ||
   'You can also view the full deal directly on our website: nfstay.com' || chr(10) || chr(10) ||
   'Elijah,' || chr(10) ||
   'nfstay.com'
-WHERE name LIKE 'Brochure Follow-Up%';
+WHERE name LIKE 'Brochure — %' OR name LIKE 'Brochure Follow-Up%';

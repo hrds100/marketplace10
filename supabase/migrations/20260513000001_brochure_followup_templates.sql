@@ -5,7 +5,7 @@
 INSERT INTO wk_sms_templates (name, body_md, channel, subject, is_global, owner_agent_id, move_to_stage_id)
 VALUES
   (
-    'Brochure Follow-Up — SMS',
+    'Brochure — SMS',
     E'Hi there,\n\nAs per our quick conversation, please see the brochure attached. This is a rent-to-rent Airbnb property, we rent it from the landlord on a long lease and list it on Airbnb for profit. You can join the joint venture from just £500.\n\nYou can also view the full deal directly on our website: nfstay.com\n\nElijah,\nnfstay.com',
     'sms',
     NULL,
@@ -14,7 +14,7 @@ VALUES
     NULL
   ),
   (
-    'Brochure Follow-Up — WhatsApp',
+    'Brochure — WhatsApp',
     E'Hi there,\n\nAs per our quick conversation, please see the brochure attached. This is a rent-to-rent Airbnb property, we rent it from the landlord on a long lease and list it on Airbnb for profit. You can join the joint venture from just £500.\n\nYou can also view the full deal directly on our website: nfstay.com\n\nElijah,\nnfstay.com',
     'whatsapp',
     NULL,
@@ -23,7 +23,7 @@ VALUES
     NULL
   ),
   (
-    'Brochure Follow-Up — Email',
+    'Brochure — Email',
     E'Hi there,\n\nAs per our quick conversation, please see the brochure attached. This is a rent-to-rent Airbnb property, we rent it from the landlord on a long lease and list it on Airbnb for profit. You can join the joint venture from just £500.\n\nYou can also view the full deal directly on our website: nfstay.com\n\nElijah,\nnfstay.com',
     'email',
     'Brochure — Airbnb Joint Venture from £500',

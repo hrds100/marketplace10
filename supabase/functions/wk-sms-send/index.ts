@@ -133,16 +133,19 @@ serve(async (req: Request) => {
     }
 
     // POST to Twilio Messages.create.
+    // MMS (MediaUrl) only works in US/Canada. UK numbers get the
+    // attachment as a clickable link appended to the body instead.
     const url = `https://api.twilio.com/2010-04-01/Accounts/${TWILIO_ACCOUNT_SID}/Messages.json`;
     const auth64 = btoa(`${TWILIO_ACCOUNT_SID}:${TWILIO_AUTH_TOKEN}`);
+    let smsBody = body;
+    if (payload.attachment_url) {
+      smsBody = `${body}\n\n${payload.attachment_url}`;
+    }
     const form = new URLSearchParams({
       To: toE164,
       From: fromE164,
-      Body: body,
+      Body: smsBody,
     });
-    if (payload.attachment_url) {
-      form.set('MediaUrl', payload.attachment_url);
-    }
     const twResp = await fetch(url, {
       method: 'POST',
       headers: {

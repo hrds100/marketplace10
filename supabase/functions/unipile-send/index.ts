@@ -161,7 +161,7 @@ serve(async (req: Request) => {
       fd.append('account_id', accountRow.external_id);
       fd.append('attendees_ids', JSON.stringify([toPhone]));
       fd.append('text', body);
-      fd.append('files', fileBlob, filename);
+      fd.append('attachments', fileBlob, filename);
       u = await fetch(`https://${UNIPILE_DSN}/api/v1/chats`, {
         method: 'POST',
         headers: {
