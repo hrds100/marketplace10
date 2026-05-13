@@ -121,6 +121,42 @@ export default function InboxPage() {
     return res;
   };
 
+  const openEditModal = async (fallback: Contact) => {
+    // Fetch the full contact from DB so the edit modal always has
+    // current data — the store may not have hydrated this contact yet
+    // (17k+ contacts exceed the store's load limit).
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { data } = await (supabase.from('wk_contacts' as any) as any)
+      .select('id, name, phone, email, owner_agent_id, pipeline_column_id, deal_value_pence, is_hot, custom_fields, last_contact_at, created_at')
+      .eq('id', fallback.id)
+      .maybeSingle();
+    if (data) {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const { data: tagRows } = await (supabase.from('wk_contact_tags' as any) as any)
+        .select('tag')
+        .eq('contact_id', data.id);
+      const tags = ((tagRows ?? []) as Array<{ tag: string }>).map((r) => r.tag);
+      const full: Contact = {
+        id: data.id,
+        name: data.name,
+        phone: data.phone,
+        email: data.email ?? undefined,
+        ownerAgentId: data.owner_agent_id ?? undefined,
+        pipelineColumnId: data.pipeline_column_id ?? undefined,
+        tags,
+        isHot: data.is_hot,
+        dealValuePence: data.deal_value_pence ?? undefined,
+        customFields: (data.custom_fields ?? {}) as Record<string, string>,
+        createdAt: data.created_at,
+        lastContactAt: data.last_contact_at ?? undefined,
+      };
+      upsertContact(full);
+      setEditing(full);
+    } else {
+      setEditing(fallback);
+    }
+  };
+
   // PR 52 (war room, Hugo 2026-04-27): the sidebar is now driven by
   // useInboxThreads (latest message per contact, ordered desc) merged
   // with any contact in the local store that doesn't have messages
@@ -553,7 +589,7 @@ export default function InboxPage() {
             size="md"
           />
           <button
-            onClick={() => setEditing(activeContact)}
+            onClick={() => void openEditModal(activeContact)}
             className="flex items-center gap-1.5 border border-[#E5E7EB] text-[#1A1A1A] text-[12px] font-medium px-3 py-1.5 rounded-[10px] hover:bg-[#F3F3EE]"
             title="Edit lead"
           >
@@ -834,8 +870,13 @@ export default function InboxPage() {
         void persist
           .patchContact(updated.id, {
             name: updated.name,
+            phone: updated.phone,
             email: updated.email ?? null,
             pipeline_column_id: updated.pipelineColumnId ?? null,
+            owner_agent_id: updated.ownerAgentId ?? null,
+            deal_value_pence: updated.dealValuePence ?? null,
+            is_hot: updated.isHot,
+            custom_fields: updated.customFields,
           })
           .then((result) => {
             if (result === true) {

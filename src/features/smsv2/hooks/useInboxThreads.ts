@@ -116,28 +116,36 @@ export function useInboxThreads(): { threads: InboxThread[]; loading: boolean; r
       }
     }
 
-    // Strategy: pull the last 500 messages, group client-side. Cheap
-    // for typical CRM volume (under a few thousand messages/day) and
-    // doesn't require a server-side window function. If volume grows,
-    // swap to a SQL function returning latest-per-contact directly.
+    // Strategy: pull the last 500 messages, group client-side. Then
+    // fetch only the contacts referenced by those messages (not all
+    // 17k+ contacts). This keeps the query small and fast.
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     let msgsQuery = (supabase.from('wk_sms_messages' as any) as any)
       .select('id, contact_id, direction, body, created_at, channel')
       .order('created_at', { ascending: false })
       .limit(500);
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    let contactsQuery = (supabase.from('wk_contacts' as any) as any)
-      .select('id, name, phone');
     if (allowedContactIds !== null) {
       msgsQuery = msgsQuery.in('contact_id', allowedContactIds);
-      contactsQuery = contactsQuery.in('id', allowedContactIds);
     }
-    const [msgsRes, contactsRes] = await Promise.all([msgsQuery, contactsQuery]);
-
+    const msgsRes = await msgsQuery;
     const msgs = (msgsRes.data ?? []) as MessageRow[];
-    const contacts = (contactsRes.data ?? []) as ContactRow[];
+
+    // Collect unique contact IDs from messages, then fetch just those.
+    const neededIds = Array.from(new Set(msgs.map((m) => m.contact_id)));
     const contactById = new Map<string, ContactRow>();
-    for (const c of contacts) contactById.set(c.id, c);
+    if (neededIds.length > 0) {
+      // Supabase .in() has a practical limit; batch in chunks of 200.
+      for (let i = 0; i < neededIds.length; i += 200) {
+        const chunk = neededIds.slice(i, i + 200);
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const { data } = await (supabase.from('wk_contacts' as any) as any)
+          .select('id, name, phone')
+          .in('id', chunk);
+        for (const c of (data ?? []) as ContactRow[]) {
+          contactById.set(c.id, c);
+        }
+      }
+    }
 
     // Per-contact channel counts (walk all 500 once).
     const counts = new Map<string, Record<ChannelKind, number>>();

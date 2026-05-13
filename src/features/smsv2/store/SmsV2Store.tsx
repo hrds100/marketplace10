@@ -77,12 +77,19 @@ const initialState: State = {
 function reducer(state: State, action: Action): State {
   switch (action.type) {
     case 'contact/upsert': {
-      const exists = state.contacts.some((c) => c.id === action.contact.id);
+      const incoming = action.contact;
+      const exists = state.contacts.some((c) => c.id === incoming.id);
       return {
         ...state,
         contacts: exists
-          ? state.contacts.map((c) => (c.id === action.contact.id ? action.contact : c))
-          : [...state.contacts, action.contact],
+          ? state.contacts.map((c) => {
+              if (c.id !== incoming.id) return c;
+              // Preserve tags when the incoming contact has none (realtime
+              // payloads don't include wk_contact_tags).
+              const tags = incoming.tags.length > 0 ? incoming.tags : c.tags;
+              return { ...incoming, tags };
+            })
+          : [...state.contacts, incoming],
       };
     }
     case 'contact/setAll':
