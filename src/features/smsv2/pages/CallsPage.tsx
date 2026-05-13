@@ -147,13 +147,11 @@ export default function CallsPage() {
     const toTs = dateTo ? endOfDay(new Date(dateTo + 'T00:00:00')).getTime() : null;
     return calls.filter((c) => {
       const contact = contacts.find((x) => x.id === c.contactId);
-      if (!contact) return false;
       if (search) {
         const s = search.toLowerCase();
-        if (
-          !contact.name.toLowerCase().includes(s) &&
-          !contact.phone.toLowerCase().includes(s)
-        )
+        const name = contact?.name ?? '';
+        const phone = contact?.phone ?? '';
+        if (!name.toLowerCase().includes(s) && !phone.toLowerCase().includes(s))
           return false;
       }
       if (agentFilter && c.agentId !== agentFilter) return false;
