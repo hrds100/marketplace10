@@ -38,6 +38,8 @@ interface SendBody {
    *  unipile-send + wk-email-send. Falls through to from_e164 then
    *  workspace default. */
   campaign_id?: string;
+  /** Public URL to a file in crm-attachments bucket. Sent as Twilio MMS MediaUrl. */
+  attachment_url?: string;
 }
 
 const json = (status: number, payload: Record<string, unknown>) =>
@@ -137,9 +139,10 @@ serve(async (req: Request) => {
       To: toE164,
       From: fromE164,
       Body: body,
-      // StatusCallback could be wired later for delivery receipts;
-      // out of scope for the receive-path refactor.
     });
+    if (payload.attachment_url) {
+      form.set('MediaUrl', payload.attachment_url);
+    }
     const twResp = await fetch(url, {
       method: 'POST',
       headers: {
@@ -176,6 +179,7 @@ serve(async (req: Request) => {
         to_e164: toE164,
         status: twJson.status ?? 'queued',
         created_by: agentId,
+        attachment_url: payload.attachment_url ?? null,
       })
       .select('id')
       .single();

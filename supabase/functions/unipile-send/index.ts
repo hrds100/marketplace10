@@ -36,6 +36,8 @@ interface SendBody {
    *  for this campaign — same precedence rule wk-dialer-start uses for
    *  voice. Falls through to channel_id, then workspace default. */
   campaign_id?: string;
+  /** Public URL to a file in crm-attachments bucket. Fetched server-side and sent as Unipile file attachment. */
+  attachment_url?: string;
 }
 
 const json = (status: number, payload: Record<string, unknown>) =>
@@ -146,19 +148,43 @@ serve(async (req: Request) => {
     }
 
     // POST to Unipile: start a chat with attendee + first message text.
-    const u = await fetch(`https://${UNIPILE_DSN}/api/v1/chats`, {
-      method: 'POST',
-      headers: {
-        'X-API-KEY': UNIPILE_TOKEN,
-        'Content-Type': 'application/json',
-        accept: 'application/json',
-      },
-      body: JSON.stringify({
-        account_id: accountRow.external_id,
-        attendees_ids: [toPhone],
-        text: body,
-      }),
-    });
+    // When an attachment_url is present, fetch the file and send as multipart form data.
+    let u: Response;
+    if (payload.attachment_url) {
+      const fileResp = await fetch(payload.attachment_url);
+      if (!fileResp.ok) {
+        return json(400, { error: `Failed to fetch attachment: ${fileResp.status}` });
+      }
+      const fileBlob = await fileResp.blob();
+      const filename = payload.attachment_url.split('/').pop() || 'attachment';
+      const fd = new FormData();
+      fd.append('account_id', accountRow.external_id);
+      fd.append('attendees_ids', JSON.stringify([toPhone]));
+      fd.append('text', body);
+      fd.append('files', fileBlob, filename);
+      u = await fetch(`https://${UNIPILE_DSN}/api/v1/chats`, {
+        method: 'POST',
+        headers: {
+          'X-API-KEY': UNIPILE_TOKEN,
+          accept: 'application/json',
+        },
+        body: fd,
+      });
+    } else {
+      u = await fetch(`https://${UNIPILE_DSN}/api/v1/chats`, {
+        method: 'POST',
+        headers: {
+          'X-API-KEY': UNIPILE_TOKEN,
+          'Content-Type': 'application/json',
+          accept: 'application/json',
+        },
+        body: JSON.stringify({
+          account_id: accountRow.external_id,
+          attendees_ids: [toPhone],
+          text: body,
+        }),
+      });
+    }
     const uText = await u.text();
     if (!u.ok) {
       console.error('[unipile-send] upstream error', u.status, uText);
@@ -181,6 +207,7 @@ serve(async (req: Request) => {
         to_e164: toPhone,
         status: 'queued',
         created_by: agentId,
+        attachment_url: payload.attachment_url ?? null,
       })
       .select('id')
       .single();

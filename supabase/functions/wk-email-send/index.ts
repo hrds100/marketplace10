@@ -55,6 +55,8 @@ interface SendBody {
   /** PR 86: campaign-aware resolution — picks from wk_campaign_numbers
    *  (channel='email') for this campaign, same precedence as wk-dialer-start. */
   campaign_id?: string;
+  /** Public URL to a file in crm-attachments bucket. Sent as Resend attachment. */
+  attachment_url?: string;
 }
 
 const json = (status: number, payload: Record<string, unknown>) =>
@@ -186,6 +188,12 @@ serve(async (req: Request) => {
         subject,
         html: finalHtml,
         text: body || undefined,
+        ...(payload.attachment_url ? {
+          attachments: [{
+            filename: payload.attachment_url.split('/').pop() || 'attachment',
+            path: payload.attachment_url,
+          }],
+        } : {}),
       }),
     });
     const rsBody = await rsResp.text();
@@ -225,6 +233,7 @@ serve(async (req: Request) => {
         to_e164: toEmail,
         status: 'queued',
         created_by: agentId,
+        attachment_url: payload.attachment_url ?? null,
       })
       .select('id')
       .single();
