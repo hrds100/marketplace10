@@ -3,6 +3,7 @@ import ReactDOM from 'react-dom';
 import { Trash2, Plus, Pencil } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from '@/hooks/useAuth';
 import EditContactModal from '@/features/smsv2/components/contacts/EditContactModal';
 import type { Contact } from '@/features/smsv2/types';
 import type { QueueLead } from '../types';
@@ -15,6 +16,7 @@ interface Props {
 }
 
 export default function QueueManagerPro({ queue, campaignId, onRefresh, onToast }: Props) {
+  const { user } = useAuth();
   const [removing, setRemoving] = useState<string | null>(null);
   const [adding, setAdding] = useState(false);
   const [creatingNew, setCreatingNew] = useState<Contact | null>(null);
@@ -103,6 +105,7 @@ export default function QueueManagerPro({ queue, campaignId, onRefresh, onToast 
           status: 'pending',
           priority: maxPriority + 1,
           attempts: 0,
+          agent_id: user?.id ?? null,
         });
         if (error) {
           onToast?.('Failed to add to queue', 'error');

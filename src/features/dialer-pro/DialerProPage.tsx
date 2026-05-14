@@ -176,6 +176,7 @@ export function DialerProContent({ autoCallContactId, pipelineColumnId, onAutoCa
               status: 'pending',
               priority: 9999,
               attempts: 0,
+              agent_id: userId,
             })
             .select('id')
             .single();
@@ -447,7 +448,7 @@ export function DialerProContent({ autoCallContactId, pipelineColumnId, onAutoCa
     } else {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const { data: row, error: insertErr } = await (supabase.from('wk_dialer_queue' as any) as any)
-        .insert({ contact_id: contactId, campaign_id: camp.id, status: 'pending', priority: 9999, attempts: 0 })
+        .insert({ contact_id: contactId, campaign_id: camp.id, status: 'pending', priority: 9999, attempts: 0, agent_id: userId })
         .select('id').single();
       if (insertErr || !row) { onToast('Could not add contact to queue', 'error'); return; }
       queueRowId = row.id;
