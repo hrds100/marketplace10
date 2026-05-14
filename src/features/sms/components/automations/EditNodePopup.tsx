@@ -274,20 +274,20 @@ export function EditNodePopup() {
             </div>
           )}
 
-          {/* Start node: Uses Global Prompt notice */}
+          {/* Start node: Trigger notice */}
           {isStart && (
             <div className="px-3 py-2.5 bg-[#ECFDF5] rounded-lg border border-[#1E9A80]/20">
               <p className="text-xs font-medium text-[#1E9A80]">
-                This is the Global AI Response node. It uses the Global Prompt settings.
+                Trigger node — flow begins here when the contact replies.
               </p>
               <p className="text-[10px] text-[#6B7280] mt-1">
-                Edit the Global Prompt to change how this node responds.
+                This node doesn't send a message. Wire its handle to the first action node (e.g. Send Brochure).
               </p>
             </div>
           )}
 
-          {/* DEFAULT fields */}
-          {(type === SmsNodeType.DEFAULT || type === SmsNodeType.STOP_CONVERSATION) && (
+          {/* DEFAULT fields — hidden on the start node (which is a pure trigger) */}
+          {!isStart && (type === SmsNodeType.DEFAULT || type === SmsNodeType.STOP_CONVERSATION) && (
             <>
               <div className="flex items-center gap-3">
                 <Label className="text-xs font-medium text-[#6B7280]">Message Type</Label>
