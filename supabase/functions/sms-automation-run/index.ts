@@ -248,6 +248,10 @@ async function executeNode(
       if (context.precomputedReply) {
         reply = context.precomputedReply;
         console.log('Using precomputed reply from pathway classification');
+      } else if (node.data.text) {
+        // Exact text mode — skip the AI call entirely.
+        reply = String(node.data.text);
+        console.log('Using exact text from node');
       } else {
         const nodePrompt = node.data.prompt || '';
         const systemPrompt = globalPrompt
@@ -865,15 +869,27 @@ serve(async (req: Request) => {
 
       finalNodeId = targetNode.id;
 
-      if (sentMessage) {
-        messageSent = true;
-        break;
-      }
-
       if (parkedWaiting) {
         flowParkedWaiting = true;
         // finalNodeId is the WAIT_FOR_REPLY node itself — state.current_node_id
         // must point here so the next inbound knows to take the "Replied" edge.
+        break;
+      }
+
+      if (sentMessage) {
+        // Chain into a WAIT_FOR_REPLY if it's the very next node, so the
+        // timer starts immediately rather than waiting for another inbound.
+        const nextEdges = edges.filter((e) => e.source === targetNode!.id);
+        if (nextEdges.length === 1) {
+          const nextNode = nodes.find((n) => n.id === nextEdges[0].target);
+          if (nextNode && (nextNode.type || '').toUpperCase() === 'WAIT_FOR_REPLY') {
+            // Don't set messageSent — the walk continues into the wait node.
+            targetNode = nextNode;
+            finalNodeId = nextNode.id;
+            continue;
+          }
+        }
+        messageSent = true;
         break;
       }
 
