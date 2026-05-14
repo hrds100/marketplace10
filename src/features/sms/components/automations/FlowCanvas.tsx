@@ -27,6 +27,7 @@ const nodeTypes: NodeTypes = {
   [SmsNodeType.DEFAULT]: NodeWrapper,
   [SmsNodeType.STOP_CONVERSATION]: NodeWrapper,
   [SmsNodeType.FOLLOW_UP]: NodeWrapper,
+  [SmsNodeType.WAIT_FOR_REPLY]: NodeWrapper,
   [SmsNodeType.TRANSFER]: NodeWrapper,
   [SmsNodeType.LABEL]: NodeWrapper,
   [SmsNodeType.MOVE_STAGE]: NodeWrapper,
