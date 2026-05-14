@@ -1,6 +1,6 @@
 import { useState, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Search, ChevronLeft, ChevronRight, Users, Pencil, Trash2 } from 'lucide-react';
+import { Search, ChevronLeft, ChevronRight, Users, Pencil, Trash2, Check, ChevronsUpDown } from 'lucide-react';
 import {
   Table,
   TableHeader,
@@ -19,6 +19,19 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
+import {
+  Command,
+  CommandEmpty,
+  CommandGroup,
+  CommandInput,
+  CommandItem,
+  CommandList,
+} from '@/components/ui/command';
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from '@/components/ui/popover';
 import { cn } from '@/lib/utils';
 import { formatDistanceToNow } from 'date-fns';
 import type { SmsContact, SmsLabel, SmsPipelineStage } from '../../types';
@@ -51,6 +64,7 @@ export default function ContactsTable({
   const [labelFilter, setLabelFilter] = useState('all');
   const [stageFilter, setStageFilter] = useState('all');
   const [groupFilter, setGroupFilter] = useState('all');
+  const [groupPopoverOpen, setGroupPopoverOpen] = useState(false);
   const [responseFilter, setResponseFilter] = useState('all');
   const [page, setPage] = useState(0);
 
@@ -184,19 +198,64 @@ export default function ContactsTable({
         </Select>
 
         {batchGroups.length > 0 && (
-          <Select value={groupFilter} onValueChange={setGroupFilter}>
-            <SelectTrigger className="w-full sm:w-44 rounded-[10px] border-[#E5E5E5]">
-              <SelectValue placeholder="All Groups" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">All Groups</SelectItem>
-              {batchGroups.map((g) => (
-                <SelectItem key={g} value={g}>
-                  {g}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+          <Popover open={groupPopoverOpen} onOpenChange={setGroupPopoverOpen}>
+            <PopoverTrigger asChild>
+              <Button
+                variant="outline"
+                role="combobox"
+                aria-expanded={groupPopoverOpen}
+                className="w-full sm:w-44 rounded-[10px] border-[#E5E5E5] justify-between font-normal"
+              >
+                <span className="truncate text-left">
+                  {groupFilter === 'all' ? 'All Groups' : groupFilter}
+                </span>
+                <ChevronsUpDown className="h-4 w-4 opacity-50 shrink-0 ml-2" />
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent className="w-[260px] p-0" align="start">
+              <Command>
+                <CommandInput placeholder="Search groups…" />
+                <CommandList>
+                  <CommandEmpty>No groups found.</CommandEmpty>
+                  <CommandGroup>
+                    <CommandItem
+                      value="all"
+                      onSelect={() => {
+                        setGroupFilter('all');
+                        setGroupPopoverOpen(false);
+                      }}
+                    >
+                      <Check
+                        className={cn(
+                          'mr-2 h-4 w-4',
+                          groupFilter === 'all' ? 'opacity-100' : 'opacity-0'
+                        )}
+                      />
+                      All Groups
+                    </CommandItem>
+                    {batchGroups.map((g) => (
+                      <CommandItem
+                        key={g}
+                        value={g}
+                        onSelect={() => {
+                          setGroupFilter(g);
+                          setGroupPopoverOpen(false);
+                        }}
+                      >
+                        <Check
+                          className={cn(
+                            'mr-2 h-4 w-4',
+                            groupFilter === g ? 'opacity-100' : 'opacity-0'
+                          )}
+                        />
+                        <span className="truncate">{g}</span>
+                      </CommandItem>
+                    ))}
+                  </CommandGroup>
+                </CommandList>
+              </Command>
+            </PopoverContent>
+          </Popover>
         )}
 
         <Select value={responseFilter} onValueChange={setResponseFilter}>

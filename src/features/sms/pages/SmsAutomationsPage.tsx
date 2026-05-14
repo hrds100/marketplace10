@@ -14,6 +14,7 @@ export default function SmsAutomationsPage() {
     isLoading,
     toggleActive,
     deleteAutomation,
+    duplicateAutomation,
     createAutomation,
   } = useAutomations();
   const { leadCountMap } = useAutomationLeadCounts();
@@ -40,6 +41,18 @@ export default function SmsAutomationsPage() {
       }
     },
     [deleteAutomation]
+  );
+
+  const handleDuplicate = useCallback(
+    async (id: string) => {
+      try {
+        const newId = await duplicateAutomation(id);
+        navigate(`/sms/automations/${newId}`);
+      } catch {
+        // toast.error already handled inside hook
+      }
+    },
+    [duplicateAutomation, navigate]
   );
 
   const handleNew = useCallback(async () => {
@@ -98,6 +111,7 @@ export default function SmsAutomationsPage() {
           automations={automations}
           leadCountMap={leadCountMap}
           onToggle={handleToggle}
+          onDuplicate={handleDuplicate}
           onDelete={handleDelete}
           onNew={handleNew}
         />
