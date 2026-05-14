@@ -165,15 +165,58 @@ export function useContacts() {
   });
 
   const bulkCreateMutation = useMutation({
+    // Dedupes input by phone_number, then upserts with ignoreDuplicates so
+    // any phones already in sms_contacts (or repeated in the CSV) are
+    // silently skipped instead of failing the whole batch.
     mutationFn: async (rows: { phone_number: string; display_name?: string; batch_name?: string }[]) => {
-      const { error } = await (supabase
+      // 1. Strip empty phones + dedupe within the input (keep first
+      //    occurrence so the user's first row wins on conflicting display
+      //    names / batch names).
+      const seen = new Set<string>();
+      const cleanRows = rows.reduce<typeof rows>((acc, row) => {
+        const phone = row.phone_number?.trim();
+        if (!phone) return acc;
+        if (seen.has(phone)) return acc;
+        seen.add(phone);
+        acc.push({ ...row, phone_number: phone });
+        return acc;
+      }, []);
+
+      if (cleanRows.length === 0) {
+        return { requested: rows.length, inserted: 0, skipped: rows.length };
+      }
+
+      // 2. Upsert — Postgres skips rows whose phone already exists.
+      const { data, error } = await (supabase
         .from('sms_contacts' as never)
-        .insert(rows as never) as never);
-      if (error) throw error;
+        .upsert(cleanRows as never, { onConflict: 'phone_number', ignoreDuplicates: true })
+        .select('id') as never);
+
+      if (error) {
+        // Supabase errors are plain objects, not Error instances — extract
+        // .message manually so the toast shows the real reason.
+        const msg = (error as { message?: string }).message
+          || (typeof error === 'string' ? error : 'Insert failed');
+        throw new Error(msg);
+      }
+
+      const inserted = (data as { id: string }[] | null)?.length ?? 0;
+      return {
+        requested: rows.length,
+        inserted,
+        skipped: rows.length - inserted,
+      };
     },
-    onSuccess: () => {
+    onSuccess: (result) => {
       queryClient.invalidateQueries({ queryKey: ['sms-contacts'] });
       queryClient.invalidateQueries({ queryKey: ['sms-batch-groups'] });
+      if (result.skipped > 0) {
+        toast.success(
+          `${result.inserted} imported, ${result.skipped} skipped (already in contacts or duplicate in file)`
+        );
+      } else {
+        toast.success(`${result.inserted} contact${result.inserted !== 1 ? 's' : ''} imported`);
+      }
     },
     onError: (err) => {
       toast.error(err instanceof Error ? err.message : 'Failed to import contacts');
