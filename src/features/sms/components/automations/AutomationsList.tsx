@@ -1,5 +1,5 @@
 import { useNavigate } from 'react-router-dom';
-import { Workflow, Trash2, Users } from 'lucide-react';
+import { Workflow, Trash2, Users, Copy } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Switch } from '@/components/ui/switch';
 import {
@@ -16,6 +16,7 @@ interface AutomationsListProps {
   automations: SmsAutomation[];
   leadCountMap: Record<string, number>;
   onToggle: (id: string, isActive: boolean) => void;
+  onDuplicate: (id: string) => void;
   onDelete: (id: string) => void;
   onNew: () => void;
 }
@@ -56,6 +57,7 @@ export default function AutomationsList({
   automations,
   leadCountMap,
   onToggle,
+  onDuplicate,
   onDelete,
   onNew,
 }: AutomationsListProps) {
@@ -90,7 +92,7 @@ export default function AutomationsList({
             <TableHead className="text-xs font-semibold text-[#6B7280] text-right">Leads</TableHead>
             <TableHead className="text-xs font-semibold text-[#6B7280]">Last Run</TableHead>
             <TableHead className="text-xs font-semibold text-[#6B7280] text-right">Run Count</TableHead>
-            <TableHead className="w-10" />
+            <TableHead className="w-20" />
           </TableRow>
         </TableHeader>
         <TableBody>
@@ -142,12 +144,22 @@ export default function AutomationsList({
                   {auto.runCount.toLocaleString()}
                 </TableCell>
                 <TableCell onClick={(e) => e.stopPropagation()}>
-                  <button
-                    onClick={() => onDelete(auto.id)}
-                    className="p-1.5 rounded-lg hover:bg-[#EF4444]/10 text-[#9CA3AF] hover:text-[#EF4444] transition-colors"
-                  >
-                    <Trash2 className="w-3.5 h-3.5" />
-                  </button>
+                  <div className="flex items-center justify-end gap-0.5">
+                    <button
+                      onClick={() => onDuplicate(auto.id)}
+                      className="p-1.5 rounded-lg hover:bg-[#1E9A80]/10 text-[#9CA3AF] hover:text-[#1E9A80] transition-colors"
+                      title="Duplicate"
+                    >
+                      <Copy className="w-3.5 h-3.5" />
+                    </button>
+                    <button
+                      onClick={() => onDelete(auto.id)}
+                      className="p-1.5 rounded-lg hover:bg-[#EF4444]/10 text-[#9CA3AF] hover:text-[#EF4444] transition-colors"
+                      title="Delete"
+                    >
+                      <Trash2 className="w-3.5 h-3.5" />
+                    </button>
+                  </div>
                 </TableCell>
               </TableRow>
             );

@@ -131,6 +131,49 @@ export function useAutomations() {
     },
   });
 
+  const duplicateMutation = useMutation({
+    mutationFn: async (automationId: string): Promise<string> => {
+      // Load the source row in full
+      const { data: source, error: loadErr } = await (supabase
+        .from('sms_automations' as never)
+        .select('name, description, flow_json, trigger_type, trigger_config')
+        .eq('id', automationId)
+        .single() as never);
+      if (loadErr) throw loadErr;
+      const src = source as {
+        name: string;
+        description: string | null;
+        flow_json: Record<string, unknown> | null;
+        trigger_type: string;
+        trigger_config: Record<string, unknown>;
+      };
+
+      // Insert a copy — always paused so it can't double-fire alongside
+      // the original until Hugo flips it on.
+      const { data: inserted, error: insertErr } = await (supabase
+        .from('sms_automations' as never)
+        .insert({
+          name: `${src.name} (Copy)`,
+          description: src.description,
+          flow_json: src.flow_json,
+          trigger_type: src.trigger_type,
+          trigger_config: src.trigger_config,
+          is_active: false,
+        } as never)
+        .select('id')
+        .single() as never);
+      if (insertErr) throw insertErr;
+      return (inserted as { id: string }).id;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['sms-automations'] });
+      toast.success('Automation duplicated');
+    },
+    onError: (err) => {
+      toast.error(err instanceof Error ? err.message : 'Failed to duplicate automation');
+    },
+  });
+
   return {
     automations: query.data ?? [],
     isLoading: query.isLoading,
@@ -138,6 +181,7 @@ export function useAutomations() {
     createAutomation: createMutation.mutateAsync,
     updateAutomation: updateMutation.mutateAsync,
     deleteAutomation: deleteMutation.mutateAsync,
+    duplicateAutomation: duplicateMutation.mutateAsync,
     toggleActive: toggleActiveMutation.mutateAsync,
   };
 }
