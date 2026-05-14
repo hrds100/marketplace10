@@ -12,6 +12,8 @@ import { useFlowContext } from './FlowContext';
 
 export function CustomEdge({
   id,
+  source,
+  target,
   sourceX,
   sourceY,
   targetX,
@@ -26,14 +28,43 @@ export function CustomEdge({
   const [isInlineEditing, setIsInlineEditing] = useState(false);
   const [inlineLabel, setInlineLabel] = useState(edgeData.label || '');
 
-  const [edgePath, labelX, labelY] = getBezierPath({
-    sourceX,
-    sourceY,
-    targetX,
-    targetY,
-    sourcePosition,
-    targetPosition,
-  });
+  // Self-loops (source node === target node) collapse to invisible 0-length
+  // bezier paths via getBezierPath. Detect and draw a visible arc around the
+  // node so the user can see + interact with the loop edge.
+  const isSelfLoop = source === target;
+
+  let edgePath: string;
+  let labelX: number;
+  let labelY: number;
+
+  if (isSelfLoop) {
+    // Source handle is at the node's bottom, target at the top. We arc out
+    // to the right of the node so the loop is clearly visible. Tuned so the
+    // arc misses the 280px-wide node card.
+    const arcOffsetX = 200;
+    const dropBelowSource = 40;
+    const riseAboveTarget = 40;
+    edgePath = `
+      M ${sourceX} ${sourceY}
+      C ${sourceX + arcOffsetX} ${sourceY + dropBelowSource},
+        ${targetX + arcOffsetX} ${targetY - riseAboveTarget},
+        ${targetX} ${targetY}
+    `;
+    labelX = sourceX + arcOffsetX * 0.85;
+    labelY = (sourceY + targetY) / 2;
+  } else {
+    const [path, lx, ly] = getBezierPath({
+      sourceX,
+      sourceY,
+      targetX,
+      targetY,
+      sourcePosition,
+      targetPosition,
+    });
+    edgePath = path;
+    labelX = lx;
+    labelY = ly;
+  }
 
   const handleSaveInlineLabel = useCallback(() => {
     updateEdge(id, { label: inlineLabel });
