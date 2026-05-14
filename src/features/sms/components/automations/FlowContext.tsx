@@ -47,7 +47,7 @@ const DEFAULT_NAMES: Record<SmsNodeType, string> = {
   [SmsNodeType.DEFAULT]: 'AI Response',
   [SmsNodeType.STOP_CONVERSATION]: 'Stop Conversation',
   [SmsNodeType.FOLLOW_UP]: 'Follow Up',
-  [SmsNodeType.WAIT_FOR_REPLY]: 'Wait for Reply',
+  [SmsNodeType.WAIT_FOR_REPLY]: 'If Reply / If No Reply',
   [SmsNodeType.TRANSFER]: 'Transfer',
   [SmsNodeType.LABEL]: 'Add Label',
   [SmsNodeType.MOVE_STAGE]: 'Move Stage',

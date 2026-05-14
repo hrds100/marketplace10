@@ -32,7 +32,7 @@ const TEAM_MEMBERS = [
 
 const NODE_TYPE_OPTIONS: { value: SmsNodeType; label: string }[] = [
   { value: SmsNodeType.STOP_CONVERSATION, label: 'Stop Conversation' },
-  { value: SmsNodeType.WAIT_FOR_REPLY, label: 'Wait for Reply (If reply / If no reply)' },
+  { value: SmsNodeType.WAIT_FOR_REPLY, label: 'If Reply / If No Reply' },
   { value: SmsNodeType.FOLLOW_UP, label: 'Follow Up' },
   { value: SmsNodeType.TRANSFER, label: 'Transfer' },
   { value: SmsNodeType.LABEL, label: 'Label' },
