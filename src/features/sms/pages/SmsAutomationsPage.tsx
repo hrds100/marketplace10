@@ -55,9 +55,11 @@ export default function SmsAutomationsPage() {
               type: 'DEFAULT',
               position: { x: 300, y: 0 },
               data: {
-                name: 'AI Response',
+                name: 'Trigger',
                 isStart: true,
-                prompt: 'Greet the user and ask how you can help with their property search.',
+                // Empty prompt — start node is a pure trigger marker. AI only
+                // kicks in if the user later adds AI Response nodes downstream.
+                prompt: '',
                 modelOptions: { temperature: 0.7 },
               },
             },

@@ -154,10 +154,16 @@ function NodeWrapperComponent({ id, data, type, selected }: NodeProps) {
           )}
           <div className="flex-1 min-w-0">
             <p className="text-sm font-medium text-[#1A1A1A] truncate">
-              {isStart ? 'AI Response' : nodeData.name}
+              {isStart ? (nodeData.name || 'Trigger') : nodeData.name}
             </p>
           </div>
-          {!isStart && (
+          {isStart ? (
+            <span
+              className="text-[10px] font-semibold px-1.5 py-0.5 rounded-full flex-shrink-0 text-[#1E9A80] bg-[#ECFDF5]"
+            >
+              Trigger
+            </span>
+          ) : (
             <span
               className="text-[10px] font-semibold px-1.5 py-0.5 rounded-full flex-shrink-0"
               style={{ color: config.borderColor, background: `${config.borderColor}15` }}
@@ -170,7 +176,7 @@ function NodeWrapperComponent({ id, data, type, selected }: NodeProps) {
         {/* Body */}
         <div className="px-3 py-2">
           <p className="text-xs text-[#6B7280] leading-relaxed">
-            {isStart ? 'Uses Global Prompt' : getNodeSummary(nodeType, nodeData, allLabels, allStages)}
+            {isStart ? 'Flow starts here when the contact replies.' : getNodeSummary(nodeType, nodeData, allLabels, allStages)}
           </p>
           {isLoopBack && (
             <div className="flex items-center gap-1 mt-1.5">
