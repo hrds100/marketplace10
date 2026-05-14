@@ -34,7 +34,7 @@ const NODE_CONFIG: Record<
   [SmsNodeType.DEFAULT]: { icon: MessageSquare, borderColor: '#1E9A80', label: 'AI Response' },
   [SmsNodeType.STOP_CONVERSATION]: { icon: CircleStop, borderColor: '#EF4444', label: 'Stop' },
   [SmsNodeType.FOLLOW_UP]: { icon: Clock, borderColor: '#F59E0B', label: 'Follow Up' },
-  [SmsNodeType.WAIT_FOR_REPLY]: { icon: Hourglass, borderColor: '#8B5CF6', label: 'Wait for Reply' },
+  [SmsNodeType.WAIT_FOR_REPLY]: { icon: Hourglass, borderColor: '#8B5CF6', label: 'If Reply / If No Reply' },
   [SmsNodeType.TRANSFER]: { icon: UserPlus, borderColor: '#6B7280', label: 'Transfer' },
   [SmsNodeType.LABEL]: { icon: Tag, borderColor: '#1E9A80', label: 'Label' },
   [SmsNodeType.MOVE_STAGE]: { icon: ArrowRightLeft, borderColor: '#1E9A80', label: 'Move Stage' },
@@ -54,7 +54,7 @@ function getNodeSummary(type: SmsNodeType, data: SmsNodeData, allLabels: SmsLabe
     case SmsNodeType.WAIT_FOR_REPLY: {
       const v = data.waitValue ?? 24;
       const u = data.waitUnit ?? 'hours';
-      return `Wait up to ${v} ${u} — branches: Replied / No Reply`;
+      return `If reply within ${v} ${u} → Replied branch. Else → No Reply branch.`;
     }
     case SmsNodeType.TRANSFER:
       return data.assignTo ? `Transfer to ${data.assignTo}` : 'Not assigned';

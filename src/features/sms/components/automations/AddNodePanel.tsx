@@ -20,8 +20,8 @@ const NODE_OPTIONS: NodeOption[] = [
   },
   {
     type: SmsNodeType.WAIT_FOR_REPLY,
-    name: 'Wait for Reply',
-    description: 'Branch on reply vs timeout (If reply / If no reply)',
+    name: 'If Reply / If No Reply',
+    description: 'Two outputs — Replied (contact answers) or No Reply (timeout elapses). Set wait time inside.',
     icon: Hourglass,
     borderColor: '#8B5CF6',
   },
