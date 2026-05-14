@@ -68,10 +68,11 @@ export default function SmsAutomationsPage() {
               type: 'DEFAULT',
               position: { x: 300, y: 0 },
               data: {
-                name: 'Trigger',
+                name: 'Start',
                 isStart: true,
-                // Empty prompt — start node is a pure trigger marker. AI only
-                // kicks in if the user later adds AI Response nodes downstream.
+                // Default to trigger mode — user can switch to AI Response
+                // in the start node's settings popup if they want chat.
+                startMode: 'trigger',
                 prompt: '',
                 modelOptions: { temperature: 0.7 },
               },

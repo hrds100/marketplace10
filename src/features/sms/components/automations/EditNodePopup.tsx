@@ -20,6 +20,7 @@ import {
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
 import { toast } from 'sonner';
+import { cn } from '@/lib/utils';
 import { SmsNodeType, type SmsNodeData, type SmsFollowUpStep } from '../../types';
 import { useLabels } from '../../hooks/useLabels';
 import { useStages } from '../../hooks/useStages';
@@ -93,6 +94,8 @@ export function EditNodePopup() {
   const [model, setModel] = useState('gpt-4o-mini');
   const [waitValue, setWaitValue] = useState(24);
   const [waitUnit, setWaitUnit] = useState<'minutes' | 'hours' | 'days'>('hours');
+  // Start node only — choose between silent trigger or AI Response.
+  const [startMode, setStartMode] = useState<'trigger' | 'ai'>('trigger');
 
   useEffect(() => {
     if (nodeData && node) {
@@ -113,6 +116,14 @@ export function EditNodePopup() {
       setWebhookMethod(nodeData.webhookMethod || 'POST');
       setWaitValue(Number(nodeData.waitValue ?? 24));
       setWaitUnit((nodeData.waitUnit as 'minutes' | 'hours' | 'days') || 'hours');
+      // Infer startMode from saved data: explicit > legacy fallback (any
+      // prompt/text means AI was in use; empty means it was a trigger).
+      const inferredStartMode: 'trigger' | 'ai' = nodeData.startMode
+        ? nodeData.startMode
+        : (nodeData.prompt || nodeData.text)
+          ? 'ai'
+          : 'trigger';
+      setStartMode(inferredStartMode);
     }
   }, [nodeData, node, nodeType]);
 
@@ -128,7 +139,23 @@ export function EditNodePopup() {
 
     const updates: Partial<SmsNodeData> = { name };
 
-    if (type === SmsNodeType.DEFAULT || type === SmsNodeType.STOP_CONVERSATION) {
+    // Start node: persist the chosen mode and clear AI fields when in
+    // trigger mode so the engine treats it as a silent passthrough.
+    if (node.data.isStart === true) {
+      updates.startMode = startMode;
+      if (startMode === 'trigger') {
+        updates.prompt = '';
+        updates.text = '';
+      } else {
+        // AI mode — keep the prompt/text the user typed below.
+        updates.prompt = useAiPrompt ? prompt : '';
+        updates.text = useAiPrompt ? '' : text;
+        updates.useGlobalSettings = useGlobalSettings;
+        updates.modelOptions = useGlobalSettings
+          ? { temperature: globalTemperature, model: globalModel }
+          : { temperature, model };
+      }
+    } else if (type === SmsNodeType.DEFAULT || type === SmsNodeType.STOP_CONVERSATION) {
       updates.prompt = useAiPrompt ? prompt : undefined;
       updates.text = useAiPrompt ? undefined : text;
       updates.delay = delay;
@@ -184,6 +211,7 @@ export function EditNodePopup() {
     webhookMethod,
     waitValue,
     waitUnit,
+    startMode,
     setNodes,
     updateNode,
     setIsEditingNode,
@@ -274,20 +302,61 @@ export function EditNodePopup() {
             </div>
           )}
 
-          {/* Start node: Trigger notice */}
+          {/* Start node: mode picker */}
           {isStart && (
-            <div className="px-3 py-2.5 bg-[#ECFDF5] rounded-lg border border-[#1E9A80]/20">
-              <p className="text-xs font-medium text-[#1E9A80]">
-                Trigger node — flow begins here when the contact replies.
-              </p>
-              <p className="text-[10px] text-[#6B7280] mt-1">
-                This node doesn't send a message. Wire its handle to the first action node (e.g. Send Brochure).
-              </p>
+            <div className="space-y-3">
+              <div className="space-y-1.5">
+                <Label className="text-xs font-medium text-[#6B7280]">Start mode</Label>
+                <div className="grid grid-cols-2 gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setStartMode('trigger')}
+                    className={cn(
+                      'p-3 rounded-lg border text-left transition-colors',
+                      startMode === 'trigger'
+                        ? 'border-[#1E9A80] bg-[#ECFDF5]'
+                        : 'border-[#E5E7EB] bg-white hover:border-[#1E9A80]/40'
+                    )}
+                  >
+                    <p className="text-xs font-semibold text-[#1A1A1A]">Trigger only</p>
+                    <p className="text-[10px] text-[#6B7280] mt-0.5">Silent — flow begins here, routes to next node. No AI reply.</p>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setStartMode('ai')}
+                    className={cn(
+                      'p-3 rounded-lg border text-left transition-colors',
+                      startMode === 'ai'
+                        ? 'border-[#1E9A80] bg-[#ECFDF5]'
+                        : 'border-[#E5E7EB] bg-white hover:border-[#1E9A80]/40'
+                    )}
+                  >
+                    <p className="text-xs font-semibold text-[#1A1A1A]">AI Response</p>
+                    <p className="text-[10px] text-[#6B7280] mt-0.5">Generate an AI reply on every inbound using Global Prompt.</p>
+                  </button>
+                </div>
+              </div>
+              {startMode === 'ai' && (
+                <div className="px-3 py-2 bg-[#FEF3C7] rounded-lg border border-[#F59E0B]/30">
+                  <p className="text-[10px] text-[#92400E]">
+                    Heads up — in AI mode, the start node responds and parks the conversation here. If you wire an outgoing edge from this node, the engine routes to the next node and the AI reply at start is skipped. For pure chatbot flows, leave this node with no outgoing edges.
+                  </p>
+                </div>
+              )}
+              {startMode === 'trigger' && (
+                <div className="px-3 py-2 bg-[#ECFDF5] rounded-lg border border-[#1E9A80]/20">
+                  <p className="text-[10px] text-[#1E9A80]">
+                    Trigger mode — this node doesn't send a message. Wire its output handle to the first action node (e.g. Send Brochure).
+                  </p>
+                </div>
+              )}
             </div>
           )}
 
-          {/* DEFAULT fields — hidden on the start node (which is a pure trigger) */}
-          {!isStart && (type === SmsNodeType.DEFAULT || type === SmsNodeType.STOP_CONVERSATION) && (
+          {/* DEFAULT fields — shown for non-start DEFAULT/STOP nodes
+              AND for start nodes when AI mode is selected. */}
+          {((!isStart && (type === SmsNodeType.DEFAULT || type === SmsNodeType.STOP_CONVERSATION))
+            || (isStart && startMode === 'ai')) && (
             <>
               <div className="flex items-center gap-3">
                 <Label className="text-xs font-medium text-[#6B7280]">Message Type</Label>

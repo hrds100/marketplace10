@@ -260,6 +260,11 @@ export interface SmsNodeData {
   // WAIT_FOR_REPLY only
   waitValue?: number;
   waitUnit?: 'minutes' | 'hours' | 'days';
+  // Start node only — 'trigger' is a silent passthrough (current default),
+  // 'ai' makes the start node generate an AI reply on inbound using
+  // Global Prompt + this node's prompt. If undefined, inferred from
+  // whether prompt/text is set.
+  startMode?: 'trigger' | 'ai';
   [key: string]: unknown;
 }
 
