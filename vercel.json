@@ -46,6 +46,10 @@
       "destination": "/landing/variant-a.html"
     },
     {
+      "source": "/brochure",
+      "destination": "/brochure.html"
+    },
+    {
       "source": "/api/health",
       "destination": "https://asazddtvjvmckouxcmmo.supabase.co/functions/v1/health"
     },
