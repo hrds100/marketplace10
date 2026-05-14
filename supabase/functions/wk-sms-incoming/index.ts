@@ -137,26 +137,61 @@ serve(async (req: Request) => {
     const supa = createClient(SUPABASE_URL, SUPABASE_SERVICE_KEY);
 
     const { e164: fromE164, variants: fromVariants } = phoneVariants(rawFrom);
-    const { e164: toE164 } = phoneVariants(rawTo);
+    const { e164: toE164, variants: toVariants } = phoneVariants(rawTo);
 
-    // 1. Find or create wk_contacts row for this caller.
-    //    We look up by ANY phone variant Twilio might match against
-    //    historical entries (some legacy rows have no leading '+').
-    //    On insert we always store the strict E.164 form.
-    let contactId: string | null = null;
-    {
-      const { data: existing } = await supa
-        .from('wk_contacts')
-        .select('id')
-        .in('phone', fromVariants)
-        .limit(1)
-        .maybeSingle();
+    // ---- ROUTING DECISION (Hugo 2026-05-14) ----
+    // The number can be registered in /sms (sms_contacts), /crm
+    // (wk_contacts), both, or neither. Inbound mirrors to wherever the
+    // contact lives so the reply shows up in the relevant inbox:
+    //   • only in sms_contacts → write to /sms tables only (skip /crm)
+    //   • only in wk_contacts  → write to /crm tables only (current behaviour)
+    //   • in both              → write to BOTH
+    //   • in neither           → default to /crm (so the message isn't lost)
+    // Each pipeline owns its own automation trigger independently —
+    // /sms fires sms-automation-run if its conversation has automation
+    // enabled. /crm's AI flow runs as before.
 
-      if (existing?.id) {
-        contactId = existing.id as string;
-      } else {
-        // Insert with permissive defaults — the agent can rename + assign
-        // pipeline + owner from /crm/contacts later.
+    const { data: smsContactRow } = await supa
+      .from('sms_contacts')
+      .select('id, phone_number, opted_out')
+      .in('phone_number', fromVariants)
+      .limit(1)
+      .maybeSingle();
+
+    const { data: wkContactRow } = await supa
+      .from('wk_contacts')
+      .select('id')
+      .in('phone', fromVariants)
+      .limit(1)
+      .maybeSingle();
+
+    const inSms = !!smsContactRow?.id;
+    const inWk = !!wkContactRow?.id;
+    // Write to /crm if the contact is already registered there OR if it's
+    // registered nowhere (default destination). Skip /crm when the contact
+    // is /sms-only.
+    const writeToWk = inWk || !inSms;
+    const writeToSms = inSms;
+
+    console.log(
+      `[wk-sms-incoming] routing decision from=${fromE164} inSms=${inSms} inWk=${inWk} writeToWk=${writeToWk} writeToSms=${writeToSms}`,
+    );
+
+    // ---- Collect media URLs (used by both pipelines) ----
+    const mediaUrls: string[] = [];
+    for (let i = 0; i < numMedia; i++) {
+      const u = params[`MediaUrl${i}`];
+      if (u) mediaUrls.push(u);
+    }
+
+    // ==========================================================
+    // PATH A: /crm pipeline (wk_*) — original behaviour
+    // ==========================================================
+    let contactId: string | null = wkContactRow?.id ?? null;
+
+    if (writeToWk) {
+      // 1. Find or create wk_contacts row for this caller.
+      if (!contactId) {
         const { data: inserted, error: insErr } = await supa
           .from('wk_contacts')
           .insert({
@@ -175,62 +210,204 @@ serve(async (req: Request) => {
 
         if (insErr || !inserted?.id) {
           console.error('[wk-sms-incoming] wk_contacts insert failed', insErr);
-          return new Response(TWIML_OK, {
-            status: 200,
-            headers: { ...corsHeaders, 'Content-Type': 'text/xml' },
-          });
+        } else {
+          contactId = inserted.id as string;
+          console.log(`[wk-sms-incoming] created wk_contact ${contactId} for ${fromE164}`);
         }
-        contactId = inserted.id as string;
-        console.log(`[wk-sms-incoming] created wk_contact ${contactId} for ${fromE164}`);
       }
-    }
 
-    // 2. Collect media URLs from MediaUrl0..MediaUrl{numMedia-1}.
-    const mediaUrls: string[] = [];
-    for (let i = 0; i < numMedia; i++) {
-      const u = params[`MediaUrl${i}`];
-      if (u) mediaUrls.push(u);
-    }
+      // 2. Insert wk_sms_messages — idempotent on twilio_sid (UNIQUE).
+      if (contactId) {
+        const { error: msgErr } = await supa
+          .from('wk_sms_messages')
+          .insert({
+            contact_id: contactId,
+            direction: 'inbound',
+            body,
+            twilio_sid: messageSid,
+            from_e164: fromE164,
+            to_e164: toE164 || null,
+            media_urls: mediaUrls,
+            status: 'received',
+          });
 
-    // 3. Insert the message — idempotent on twilio_sid (UNIQUE).
-    //    The unique index causes duplicate webhooks to fail the insert
-    //    with code 23505; we treat that as success.
-    const { error: msgErr } = await supa
-      .from('wk_sms_messages')
-      .insert({
-        contact_id: contactId,
-        direction: 'inbound',
-        body,
-        twilio_sid: messageSid,
-        from_e164: fromE164,
-        to_e164: toE164 || null,
-        media_urls: mediaUrls,
-        status: 'received',
-      });
+        if (msgErr) {
+          const code = (msgErr as { code?: string }).code;
+          if (code === '23505') {
+            console.log(`[wk-sms-incoming] /crm duplicate sid=${messageSid} — idempotent skip`);
+          } else {
+            console.error('[wk-sms-incoming] wk_sms_messages insert failed', msgErr);
+          }
+        } else {
+          console.log(
+            `[wk-sms-incoming] /crm saved contact=${contactId} sid=${messageSid} bodyLen=${body.length}`,
+          );
+        }
 
-    if (msgErr) {
-      // Postgres unique violation = duplicate webhook delivery, fine.
-      // Anything else = real problem; log and move on (Twilio will
-      // retry on 5xx; we want to avoid that since the table state is
-      // unknown).
-      const code = (msgErr as { code?: string }).code;
-      if (code === '23505') {
-        console.log(`[wk-sms-incoming] duplicate sid=${messageSid} — idempotent skip`);
-      } else {
-        console.error('[wk-sms-incoming] wk_sms_messages insert failed', msgErr);
+        // 3. Bump wk_contacts.last_contact_at.
+        await supa
+          .from('wk_contacts')
+          .update({ last_contact_at: new Date().toISOString() })
+          .eq('id', contactId);
       }
     } else {
-      console.log(
-        `[wk-sms-incoming] saved message contact=${contactId} sid=${messageSid} bodyLen=${body.length}`,
-      );
+      console.log(`[wk-sms-incoming] skipping /crm write — contact is /sms-only`);
     }
 
-    // 4. Bump wk_contacts.last_contact_at so the inbox sort is correct
-    //    even if a thread has only inbound messages.
-    await supa
-      .from('wk_contacts')
-      .update({ last_contact_at: new Date().toISOString() })
-      .eq('id', contactId);
+    // ==========================================================
+    // PATH B: /sms pipeline (sms_*) — mirror to legacy when the
+    // sender is registered in sms_contacts. This is what surfaces
+    // the message in /sms/inbox and lets sms-automation-run pick
+    // up the reply for an active automation.
+    // ==========================================================
+    if (writeToSms && smsContactRow?.id) {
+      const smsContactId = smsContactRow.id as string;
+      const isOptedOut = !!(smsContactRow as { opted_out?: boolean }).opted_out;
+
+      // Find the sms_numbers row for the *to* address (the number that
+      // received the SMS) so we can stamp number_id on the conversation.
+      const { data: numberRow } = await supa
+        .from('sms_numbers')
+        .select('id, channel')
+        .in('phone_number', toVariants)
+        .limit(1)
+        .maybeSingle();
+
+      const numberId = (numberRow as { id?: string } | null)?.id ?? null;
+      const channel = (numberRow as { channel?: string } | null)?.channel ?? 'sms';
+
+      // 1. Idempotency — skip if this sid already landed in sms_messages.
+      const { data: dupe } = await supa
+        .from('sms_messages')
+        .select('id')
+        .eq('twilio_sid', messageSid)
+        .maybeSingle();
+
+      let smsMessageId: string | null = (dupe as { id?: string } | null)?.id ?? null;
+
+      if (!smsMessageId) {
+        const { data: smsMsg, error: smsMsgErr } = await supa
+          .from('sms_messages')
+          .insert({
+            twilio_sid: messageSid,
+            from_number: fromE164,
+            to_number: toE164 || null,
+            body,
+            direction: 'inbound',
+            status: 'received',
+            media_urls: mediaUrls,
+            number_id: numberId,
+            contact_id: smsContactId,
+            channel,
+          })
+          .select('id')
+          .single();
+
+        if (smsMsgErr) {
+          const code = (smsMsgErr as { code?: string }).code;
+          if (code === '23505') {
+            console.log(`[wk-sms-incoming] /sms duplicate sid=${messageSid} — idempotent skip`);
+          } else {
+            console.error('[wk-sms-incoming] sms_messages insert failed', smsMsgErr);
+          }
+        } else {
+          smsMessageId = (smsMsg as { id: string }).id;
+          console.log(`[wk-sms-incoming] /sms saved sid=${messageSid} contact=${smsContactId}`);
+        }
+      }
+
+      // 2. Mark contact as responded.
+      await supa
+        .from('sms_contacts')
+        .update({ response_status: 'responded', updated_at: new Date().toISOString() })
+        .eq('id', smsContactId);
+
+      // 3. Upsert sms_conversations so /sms/inbox shows it.
+      if (numberId) {
+        const preview = body.length > 100 ? body.substring(0, 100) + '...' : body;
+
+        const { data: existingConv } = await supa
+          .from('sms_conversations')
+          .select('id, automation_id, automation_enabled, unread_count')
+          .eq('contact_id', smsContactId)
+          .eq('number_id', numberId)
+          .eq('channel', channel)
+          .maybeSingle();
+
+        let convId: string | null = (existingConv as { id?: string } | null)?.id ?? null;
+        let automationId: string | null = (existingConv as { automation_id?: string | null } | null)?.automation_id ?? null;
+        let automationEnabled = !!(existingConv as { automation_enabled?: boolean } | null)?.automation_enabled;
+
+        if (existingConv) {
+          await supa
+            .from('sms_conversations')
+            .update({
+              last_message_at: new Date().toISOString(),
+              last_message_preview: preview,
+              unread_count: ((existingConv as { unread_count?: number }).unread_count ?? 0) + 1,
+              is_archived: false,
+            })
+            .eq('id', convId!);
+        } else {
+          // Try to auto-attach an active 'new_message' automation, mirroring
+          // sms-webhook-incoming's existing behaviour.
+          const { data: activeAuto } = await supa
+            .from('sms_automations')
+            .select('id')
+            .eq('is_active', true)
+            .eq('trigger_type', 'new_message')
+            .limit(1)
+            .maybeSingle();
+
+          if (activeAuto) {
+            automationId = (activeAuto as { id: string }).id;
+            automationEnabled = true;
+          }
+
+          const { data: newConv } = await supa
+            .from('sms_conversations')
+            .insert({
+              contact_id: smsContactId,
+              number_id: numberId,
+              channel,
+              last_message_at: new Date().toISOString(),
+              last_message_preview: preview,
+              unread_count: 1,
+              automation_id: automationId,
+              automation_enabled: automationEnabled,
+            })
+            .select('id')
+            .single();
+          convId = (newConv as { id?: string } | null)?.id ?? null;
+        }
+
+        // 4. Trigger sms-automation-run if this conversation has an
+        //    active automation. Fire-and-forget, mirrors what
+        //    sms-webhook-incoming does. Skip if opted-out.
+        if (convId && smsMessageId && automationEnabled && automationId && !isOptedOut) {
+          const runUrl = `${SUPABASE_URL}/functions/v1/sms-automation-run`;
+          fetch(runUrl, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${SUPABASE_SERVICE_KEY}`,
+            },
+            body: JSON.stringify({
+              message_id: smsMessageId,
+              conversation_id: convId,
+              contact_id: smsContactId,
+              from_number: fromE164,
+              to_number: toE164,
+              body,
+              number_id: numberId,
+            }),
+          }).catch((err) => console.error('[wk-sms-incoming] sms-automation-run trigger failed:', err));
+          console.log(`[wk-sms-incoming] /sms automation triggered conv=${convId} auto=${automationId}`);
+        }
+      } else {
+        console.warn(`[wk-sms-incoming] /sms: no sms_numbers row found for to=${toE164} — message saved but conversation skipped`);
+      }
+    }
 
     // Empty TwiML — no auto-reply.
     return new Response(TWIML_OK, {
