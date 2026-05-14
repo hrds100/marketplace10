@@ -12,6 +12,7 @@ import {
   Pencil,
   Send,
   Mail,
+  Paperclip,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { MOCK_SMS, MOCK_CALLS, MOCK_ACTIVITIES } from '../data/mockCalls';
@@ -102,6 +103,7 @@ export default function InboxPage() {
   // intent is obvious.
   const [replyChannel, setReplyChannel] = useState<ChannelKindUI | null>(null);
   const [sending, setSending] = useState(false);
+  const [replyAttachmentUrl, setReplyAttachmentUrl] = useState<string | null>(null);
   const [agreementTo, setAgreementTo] = useState<Contact | null>(null);
   const [playingCallId, setPlayingCallId] = useState<string | null>(null);
   const [signedUrls] = useState(() => new Map<string, string>());
@@ -304,6 +306,7 @@ export default function InboxPage() {
     sentAt: m.createdAt,
     channel: m.channel,
     subject: m.subject,
+    attachmentUrl: m.attachmentUrl,
   })), [crmMessages]);
 
   // PR 105 (Hugo 2026-04-28): channel must be re-picked every time —
@@ -408,6 +411,7 @@ export default function InboxPage() {
       });
       setReplySubject(expandedSubject);
     }
+    setReplyAttachmentUrl(tpl.attachment_url ?? null);
   };
 
   // Reset template selection when channel changes (different template list).
@@ -434,9 +438,10 @@ export default function InboxPage() {
       const fn = supabase.functions as unknown as SmsSendInvoke;
       const trimmedBody = reply.trim();
       let resp: Awaited<ReturnType<SmsSendInvoke['invoke']>>;
+      const attach = replyAttachmentUrl || undefined;
       if (replyChannel === 'whatsapp') {
         resp = await fn.invoke('unipile-send', {
-          body: { contact_id: activeContact.id, body: trimmedBody },
+          body: { contact_id: activeContact.id, body: trimmedBody, attachment_url: attach },
         });
       } else if (replyChannel === 'email') {
         resp = await fn.invoke('wk-email-send', {
@@ -444,11 +449,12 @@ export default function InboxPage() {
             contact_id: activeContact.id,
             subject: replySubject.trim(),
             body: trimmedBody,
+            attachment_url: attach,
           },
         });
       } else {
         resp = await fn.invoke('wk-sms-send', {
-          body: { contact_id: activeContact.id, body: trimmedBody },
+          body: { contact_id: activeContact.id, body: trimmedBody, attachment_url: attach },
         });
       }
       const { data, error } = resp;
@@ -465,6 +471,7 @@ export default function InboxPage() {
         pushToast(`${channelLabel} sent`, 'success');
         setReply('');
         if (replyChannel === 'email') setReplySubject('');
+        setReplyAttachmentUrl(null);
         // PR 105: force re-pick of channel after every successful send.
         setReplyChannel(null);
         // PR 107: prompt the agent for a follow-up time. Skipped silently
@@ -667,6 +674,17 @@ export default function InboxPage() {
                     </div>
                   )}
                   {m.body}
+                  {'attachmentUrl' in m && m.attachmentUrl && (
+                    <a
+                      href={m.attachmentUrl as string}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="mt-1.5 flex items-center gap-1 text-[11px] text-[#1E9A80] hover:underline"
+                    >
+                      <Paperclip className="w-3 h-3" />
+                      {(m.attachmentUrl as string).split('/').pop() ?? 'Attachment'}
+                    </a>
+                  )}
                   <div className="text-[10px] text-[#9CA3AF] mt-0.5 tabular-nums">
                     {formatTimeOnly(m.sentAt)}
                   </div>
@@ -829,6 +847,13 @@ export default function InboxPage() {
               />
             )}
           </div>
+          {replyAttachmentUrl && (
+            <div className="flex items-center gap-1 text-[11px] text-[#1E9A80] bg-[#ECFDF5] px-2 py-1 rounded-lg">
+              <Paperclip className="w-3 h-3" />
+              <span className="truncate max-w-[300px]">{replyAttachmentUrl.split('/').pop()}</span>
+              <button onClick={() => setReplyAttachmentUrl(null)} className="ml-1 text-[#9CA3AF] hover:text-[#EF4444]">&times;</button>
+            </div>
+          )}
           <div className="flex gap-2">
             <input
               value={reply}

@@ -22,6 +22,8 @@ export interface CrmMessage {
   channel: ChannelKind;
   /** Email subject line (null for sms/whatsapp). */
   subject: string | null;
+  /** Brochure / PDF attachment URL (null when no attachment). */
+  attachmentUrl: string | null;
 }
 
 interface MessageRow {
@@ -34,6 +36,7 @@ interface MessageRow {
   status: string;
   channel: ChannelKind | null;
   subject: string | null;
+  attachment_url: string | null;
 }
 
 function rowToMessage(r: MessageRow): CrmMessage {
@@ -47,6 +50,7 @@ function rowToMessage(r: MessageRow): CrmMessage {
     status: r.status,
     channel: (r.channel ?? 'sms') as ChannelKind,
     subject: r.subject ?? null,
+    attachmentUrl: r.attachment_url ?? null,
   };
 }
 
@@ -67,7 +71,7 @@ export function useContactMessages(contactId: string): {
     }
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const { data } = await (supabase.from('wk_sms_messages' as any) as any)
-      .select('id, contact_id, direction, body, created_at, twilio_sid, status, channel, subject')
+      .select('id, contact_id, direction, body, created_at, twilio_sid, status, channel, subject, attachment_url')
       .eq('contact_id', contactId)
       .order('created_at', { ascending: true })
       .limit(500);
