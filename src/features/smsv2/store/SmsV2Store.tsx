@@ -92,12 +92,18 @@ function reducer(state: State, action: Action): State {
           : [...state.contacts, incoming],
       };
     }
-    case 'contact/setAll':
+    case 'contact/setAll': {
+      const incomingIds = new Set(action.contacts.map((c) => c.id));
+      const pipelineKeep = state.contacts.filter(
+        (c) => c.pipelineColumnId && !incomingIds.has(c.id),
+      );
+      const merged = [...action.contacts, ...pipelineKeep];
       return {
         ...state,
-        contacts: action.contacts,
-        queue: action.contacts.map((c) => c.id),
+        contacts: merged,
+        queue: merged.map((c) => c.id),
       };
+    }
     case 'contact/patch':
       return {
         ...state,
