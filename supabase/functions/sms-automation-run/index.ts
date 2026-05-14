@@ -711,18 +711,21 @@ serve(async (req: Request) => {
     const outgoingEdges = edges.filter((e) => e.source === currentNodeId);
 
     if (!outgoingEdges.length) {
-      // Check if this is the start node with no edges yet — just respond with AI
-      // or if this is an action node, try to loop back to start
       const currentNodeType = (currentNode.type || 'DEFAULT').toUpperCase();
       const startNode = nodes.find((n) => n.data.isStart === true);
 
       if (currentNodeType === 'DEFAULT' && currentNode.data.isStart && startNode) {
-        // Start node with no outgoing edges: just respond with AI and stay at start
+        // Start node with no outgoing edges: respond with AI and stay parked.
         console.log('Start node with no edges — responding with AI and staying at start');
         // Fall through to execute the start node directly (handled below)
+      } else if (currentNodeType === 'DEFAULT') {
+        // Mid-flow AI Response node with no outgoing edges — this is a
+        // chat parking spot. Each future inbound triggers another AI
+        // reply from this same node. Fall through to execute it.
+        console.log(`Mid-flow DEFAULT node ${currentNodeId} with no outgoing edges — chat parking spot, generating AI reply`);
       } else {
-        // No outgoing edges — flow is done
-        console.log('No outgoing edges from current node — flow complete');
+        // Terminal action node (STOP/TRANSFER/etc.) without edges — flow done.
+        console.log(`No outgoing edges from ${currentNodeType} node — flow complete`);
         if (state) {
           await supabase
             .from('sms_automation_state')
@@ -920,6 +923,17 @@ serve(async (req: Request) => {
           console.log(`No outgoing edges from ${currentNodeType} node — looping back to start node ${startNode.id}`);
           finalNodeId = startNode.id;
           // Don't complete — just park at the start node and wait for next message
+          break;
+        }
+
+        // DEFAULT (AI Response) nodes with no outgoing edges are
+        // chat-parking spots — they handle each future inbound by
+        // generating another AI reply. NEVER mark the flow complete
+        // here. Even if executeNode just failed (AI/send error), we
+        // want to stay parked so the next inbound retries.
+        if (currentNodeType === 'DEFAULT') {
+          console.log(`DEFAULT node ${targetNode!.id} has no outgoing edges — parking here as chat handler`);
+          finalNodeId = targetNode!.id;
           break;
         }
 
