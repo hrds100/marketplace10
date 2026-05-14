@@ -343,8 +343,11 @@ async function executeNode(
     }
 
     case 'WAIT_FOR_REPLY': {
-      // Parking node: schedule a "no_reply" task that the worker picks up
-      // when the timeout elapses. Caller sets state.status='waiting'.
+      // Parking node. We can't insert the scheduled task here because on
+      // a brand-new conversation the state row hasn't been created yet —
+      // automationStateId is undefined. The main handler reads
+      // output.execute_at + wait_node_id after the walk + state save and
+      // inserts the task with the real state.id.
       const waitValue = Number(node.data.waitValue ?? 24);
       const waitUnit = String(node.data.waitUnit ?? 'hours');
       const ms = waitUnit === 'minutes'
@@ -354,32 +357,28 @@ async function executeNode(
           : waitValue * 86_400_000; // days
       const executeAt = new Date(Date.now() + ms).toISOString();
 
-      // Best-effort: cancel any prior pending wait_for_reply tasks for this
-      // state (shouldn't exist, but defensive).
-      await supabase
-        .from('sms_scheduled_tasks')
-        .update({ status: 'completed', last_error: 'superseded' })
-        .eq('automation_state_id', context.automationStateId || '')
-        .eq('status', 'pending')
-        .eq('type', 'wait_for_reply');
-
+      // Cancel any prior pending task on the same state (re-entry only).
       if (context.automationStateId) {
-        await supabase.from('sms_scheduled_tasks').insert({
-          type: 'wait_for_reply',
-          reference_id: context.conversationId,
-          node_id: node.id,
-          automation_state_id: context.automationStateId,
-          branch_label: 'no_reply',
-          execute_at: executeAt,
-        });
+        await supabase
+          .from('sms_scheduled_tasks')
+          .update({ status: 'completed', last_error: 'superseded' })
+          .eq('automation_state_id', context.automationStateId)
+          .eq('status', 'pending')
+          .eq('type', 'wait_for_reply');
       }
 
-      console.log(`Parked on WAIT_FOR_REPLY ${node.id}, no_reply branch fires at ${executeAt}`);
+      console.log(`Parked on WAIT_FOR_REPLY ${node.id}, no_reply branch will fire at ${executeAt}`);
       return {
         shouldStop: false,
         sentMessage: false,
         parkedWaiting: true,
-        output: { status: 'parked_waiting', execute_at: executeAt, wait_value: waitValue, wait_unit: waitUnit },
+        output: {
+          status: 'parked_waiting',
+          execute_at: executeAt,
+          wait_value: waitValue,
+          wait_unit: waitUnit,
+          wait_node_id: node.id,
+        },
       };
     }
 
@@ -817,6 +816,7 @@ serve(async (req: Request) => {
     let finalNodeId = targetNode.id;
     let flowCompleted = false;
     let flowParkedWaiting = false;
+    let pendingWaitTask: { execute_at: string; node_id: string } | null = null;
     let exitReason: string | null = null;
     const maxSilentSteps = 10; // Max non-message nodes to walk through
     let silentSteps = 0;
@@ -873,6 +873,13 @@ serve(async (req: Request) => {
         flowParkedWaiting = true;
         // finalNodeId is the WAIT_FOR_REPLY node itself — state.current_node_id
         // must point here so the next inbound knows to take the "Replied" edge.
+        // Capture the scheduled-task data so we can insert it AFTER the state
+        // row is created (state.id might not exist yet on first inbound).
+        const executeAt = (output as { execute_at?: string }).execute_at;
+        const waitNodeId = (output as { wait_node_id?: string }).wait_node_id;
+        if (executeAt && waitNodeId) {
+          pendingWaitTask = { execute_at: executeAt, node_id: waitNodeId };
+        }
         break;
       }
 
@@ -890,13 +897,6 @@ serve(async (req: Request) => {
           }
         }
         messageSent = true;
-        break;
-      }
-
-      if (parkedWaiting) {
-        flowParkedWaiting = true;
-        // finalNodeId is the WAIT_FOR_REPLY node itself — state.current_node_id
-        // must point here so the next inbound knows to take the "Replied" edge.
         break;
       }
 
@@ -968,6 +968,7 @@ serve(async (req: Request) => {
     } else if (flowParkedWaiting) {
       // Parked on a WAIT_FOR_REPLY node. Worker will resume on timeout;
       // inbound message will resume via the "Replied" branch (intercepted above).
+      let parkedStateId: string | null = null;
       if (state) {
         await supabase
           .from('sms_automation_state')
@@ -978,8 +979,9 @@ serve(async (req: Request) => {
             last_message_at: now,
           })
           .eq('id', state.id);
+        parkedStateId = state.id;
       } else {
-        await supabase
+        const { data: inserted } = await supabase
           .from('sms_automation_state')
           .insert({
             conversation_id,
@@ -988,7 +990,33 @@ serve(async (req: Request) => {
             step_number: stepNumber,
             status: 'waiting',
             last_message_at: now,
+          })
+          .select('id')
+          .single();
+        parkedStateId = (inserted as { id?: string } | null)?.id ?? null;
+      }
+
+      // Now that the state row exists, schedule the "no_reply" task that
+      // sms-automation-worker will pick up when the timeout elapses. This
+      // is what fires the No Reply branch.
+      if (parkedStateId && pendingWaitTask) {
+        const { error: taskErr } = await supabase
+          .from('sms_scheduled_tasks')
+          .insert({
+            type: 'wait_for_reply',
+            reference_id: conversation_id,
+            node_id: pendingWaitTask.node_id,
+            automation_state_id: parkedStateId,
+            branch_label: 'no_reply',
+            execute_at: pendingWaitTask.execute_at,
           });
+        if (taskErr) {
+          console.error('[sms-automation-run] failed to insert wait_for_reply task', taskErr);
+        } else {
+          console.log(`[sms-automation-run] scheduled no_reply task for state ${parkedStateId} at ${pendingWaitTask.execute_at}`);
+        }
+      } else if (flowParkedWaiting && !pendingWaitTask) {
+        console.warn('[sms-automation-run] flow parked waiting but pendingWaitTask was empty — No Reply branch will NEVER fire');
       }
     } else {
       // Flow continues — save position and wait for next user message
