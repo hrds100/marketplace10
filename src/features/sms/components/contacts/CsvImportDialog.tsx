@@ -22,11 +22,19 @@ import { Upload, CheckCircle, AlertTriangle, ArrowLeft, ArrowRight } from 'lucid
 import { cn } from '@/lib/utils';
 import type { SmsContact } from '../../types';
 
+interface ImportResult {
+  requested: number;
+  inserted: number;
+  skipped: number;
+}
+
 interface CsvImportDialogProps {
   open: boolean;
   onClose: () => void;
   existingContacts: SmsContact[];
-  onImport?: (rows: { phone_number: string; display_name?: string; batch_name?: string }[]) => Promise<void>;
+  onImport?: (
+    rows: { phone_number: string; display_name?: string; batch_name?: string }[]
+  ) => Promise<ImportResult | void>;
 }
 
 interface ParsedRow {
@@ -42,6 +50,7 @@ export default function CsvImportDialog({ open, onClose, existingContacts, onImp
   const [rows, setRows] = useState<ParsedRow[]>([]);
   const [duplicateCount, setDuplicateCount] = useState(0);
   const [importedCount, setImportedCount] = useState(0);
+  const [skippedCount, setSkippedCount] = useState(0);
   const [dragOver, setDragOver] = useState(false);
   const [groupName, setGroupName] = useState('');
 
@@ -50,6 +59,7 @@ export default function CsvImportDialog({ open, onClose, existingContacts, onImp
     setRows([]);
     setDuplicateCount(0);
     setImportedCount(0);
+    setSkippedCount(0);
     setGroupName('');
   }
 
@@ -115,22 +125,33 @@ export default function CsvImportDialog({ open, onClose, existingContacts, onImp
       ? rows.filter((r) => r.phone && !existingPhones.has(r.phone))
       : rows.filter((r) => r.phone);
 
+    let inserted = toImport.length;
+    let skipped = rows.length - toImport.length;
+
     if (onImport && toImport.length > 0) {
       const batchName = groupName.trim() || undefined;
       try {
-        await onImport(
+        const result = await onImport(
           toImport.map((r) => ({
             phone_number: r.phone!,
             display_name: r.name || undefined,
             batch_name: batchName,
           }))
         );
+        // The hook returns accurate counts after DB-side dedup; prefer those
+        // over the frontend estimate which can't see format-normalised dupes.
+        if (result && typeof result === 'object') {
+          inserted = result.inserted;
+          skipped = (rows.length - toImport.length) + result.skipped;
+        }
       } catch {
-        // Error handled by hook toast
+        // Error handled by hook toast — fall through and show success step
+        // with whatever counts we have so the dialog isn't stuck.
       }
     }
 
-    setImportedCount(toImport.length);
+    setImportedCount(inserted);
+    setSkippedCount(skipped);
     setStep('success');
   }
 
@@ -266,8 +287,19 @@ export default function CsvImportDialog({ open, onClose, existingContacts, onImp
             <CheckCircle className="h-12 w-12 text-[#1E9A80] mb-3" />
             <p className="text-lg font-medium text-[#1A1A1A]">Import complete</p>
             <p className="text-sm text-[#6B7280] mt-1">
-              {importedCount} contact{importedCount !== 1 ? 's' : ''} imported successfully.
+              {importedCount} contact{importedCount !== 1 ? 's' : ''} imported
+              {skippedCount > 0 && (
+                <>
+                  , <span className="text-[#F59E0B]">{skippedCount} skipped</span>
+                </>
+              )}
+              .
             </p>
+            {skippedCount > 0 && (
+              <p className="text-xs text-[#9CA3AF] mt-2 max-w-xs">
+                Skipped rows had no phone, or the phone was already in your contacts (including formatting variants like <code>+447…</code> vs <code>447…</code>).
+              </p>
+            )}
           </div>
         )}
 
