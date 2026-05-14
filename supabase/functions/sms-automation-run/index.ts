@@ -86,8 +86,40 @@ interface AutomationState {
   current_node_id: string;
   step_number: number;
   context_data: Record<string, unknown>;
-  status: 'active' | 'suspended' | 'completed' | 'paused';
+  status: 'active' | 'suspended' | 'completed' | 'paused' | 'waiting';
   last_message_at: string | null;
+}
+
+function normalizeLabel(s: string | null | undefined): string {
+  return (s ?? '').trim().toLowerCase().replace(/[\s_-]+/g, '_');
+}
+
+// Find an outgoing edge from a node whose label matches a target ("replied" or "no_reply").
+// Used for WAIT_FOR_REPLY branching where edges carry semantic labels.
+function findOutgoingEdgeByLabel(
+  edges: FlowEdge[],
+  sourceNodeId: string,
+  targetLabel: string
+): FlowEdge | null {
+  const target = normalizeLabel(targetLabel);
+  const outgoing = edges.filter((e) => e.source === sourceNodeId);
+  for (const e of outgoing) {
+    const lbl = normalizeLabel(e.data?.label || e.label);
+    if (lbl === target) return e;
+  }
+  if (target === 'replied') {
+    for (const e of outgoing) {
+      const lbl = normalizeLabel(e.data?.label || e.label);
+      if (lbl === 'reply' || lbl === 'response' || lbl === 'yes') return e;
+    }
+  }
+  if (target === 'no_reply') {
+    for (const e of outgoing) {
+      const lbl = normalizeLabel(e.data?.label || e.label);
+      if (lbl === 'no_response' || lbl === 'timeout' || lbl === 'no') return e;
+    }
+  }
+  return null;
 }
 
 interface ConversationMessage {
@@ -192,6 +224,7 @@ async function executeNode(
   context: {
     supabase: ReturnType<typeof createClient>;
     automationId: string;
+    automationStateId?: string;
     contactId: string;
     conversationId: string;
     fromNumber: string;
@@ -202,7 +235,7 @@ async function executeNode(
     precomputedReply?: string | null;
     numberId?: string;
   }
-): Promise<{ shouldStop: boolean; sentMessage: boolean; output: Record<string, unknown> }> {
+): Promise<{ shouldStop: boolean; sentMessage: boolean; parkedWaiting?: boolean; output: Record<string, unknown> }> {
   const { supabase, contactId, fromNumber, body, globalPrompt, contactName } = context;
   const nodeType = (node.type || 'DEFAULT').toUpperCase();
 
@@ -303,6 +336,47 @@ async function executeNode(
         console.log(`Stop message sent: "${node.data.text.substring(0, 60)}"`);
       }
       return { shouldStop: true, sentMessage: !!node.data.text, output: { status: 'stopped', text: node.data.text || null } };
+    }
+
+    case 'WAIT_FOR_REPLY': {
+      // Parking node: schedule a "no_reply" task that the worker picks up
+      // when the timeout elapses. Caller sets state.status='waiting'.
+      const waitValue = Number(node.data.waitValue ?? 24);
+      const waitUnit = String(node.data.waitUnit ?? 'hours');
+      const ms = waitUnit === 'minutes'
+        ? waitValue * 60_000
+        : waitUnit === 'hours'
+          ? waitValue * 3_600_000
+          : waitValue * 86_400_000; // days
+      const executeAt = new Date(Date.now() + ms).toISOString();
+
+      // Best-effort: cancel any prior pending wait_for_reply tasks for this
+      // state (shouldn't exist, but defensive).
+      await supabase
+        .from('sms_scheduled_tasks')
+        .update({ status: 'completed', last_error: 'superseded' })
+        .eq('automation_state_id', context.automationStateId || '')
+        .eq('status', 'pending')
+        .eq('type', 'wait_for_reply');
+
+      if (context.automationStateId) {
+        await supabase.from('sms_scheduled_tasks').insert({
+          type: 'wait_for_reply',
+          reference_id: context.conversationId,
+          node_id: node.id,
+          automation_state_id: context.automationStateId,
+          branch_label: 'no_reply',
+          execute_at: executeAt,
+        });
+      }
+
+      console.log(`Parked on WAIT_FOR_REPLY ${node.id}, no_reply branch fires at ${executeAt}`);
+      return {
+        shouldStop: false,
+        sentMessage: false,
+        parkedWaiting: true,
+        output: { status: 'parked_waiting', execute_at: executeAt, wait_value: waitValue, wait_unit: waitUnit },
+      };
     }
 
     case 'FOLLOW_UP': {
@@ -498,6 +572,27 @@ serve(async (req: Request) => {
       );
     }
 
+    // ---- INTERCEPT: state is parked on a WAIT_FOR_REPLY node ----
+    // Inbound message just arrived. Cancel the pending "no_reply" timeout and
+    // flip status back to 'active' so the rest of the engine takes the
+    // "Replied" branch below.
+    const wasWaitingForReply = state?.status === 'waiting';
+    if (wasWaitingForReply && state) {
+      await supabase
+        .from('sms_scheduled_tasks')
+        .update({ status: 'completed', last_error: 'reply_received' })
+        .eq('automation_state_id', state.id)
+        .eq('status', 'pending')
+        .eq('type', 'wait_for_reply');
+
+      await supabase
+        .from('sms_automation_state')
+        .update({ status: 'active' })
+        .eq('id', state.id);
+
+      console.log(`State ${state.id} unparked: reply received during WAIT_FOR_REPLY`);
+    }
+
     // ---- STEP 5: Load automation flow_json ----
     const { data: automation } = await supabase
       .from('sms_automations')
@@ -657,6 +752,22 @@ serve(async (req: Request) => {
     if (outgoingEdges.length === 0) {
       // No edges — execute current node directly (start node loop-back case)
       targetNode = currentNode;
+    } else if (wasWaitingForReply) {
+      // Reply just landed on a WAIT_FOR_REPLY node. Pick the "Replied" edge
+      // deterministically by label — no AI classification needed.
+      const repliedEdge = findOutgoingEdgeByLabel(outgoingEdges, currentNodeId, 'replied');
+      if (repliedEdge) {
+        targetNode = nodes.find((n) => n.id === repliedEdge.target) || null;
+        console.log(`WAIT_FOR_REPLY ${currentNodeId} reply → edge "${repliedEdge.data?.label || repliedEdge.label}" → ${repliedEdge.target}`);
+      } else {
+        // No "Replied" edge defined — fall back to first non-"no_reply" edge,
+        // or first edge as last resort.
+        const nonNoReply = outgoingEdges.find(
+          (e) => normalizeLabel(e.data?.label || e.label) !== 'no_reply'
+        );
+        targetNode = nodes.find((n) => n.id === (nonNoReply?.target || outgoingEdges[0].target)) || null;
+        console.warn(`No "Replied" edge from ${currentNodeId} — falling back to ${targetNode?.id}`);
+      }
     } else if (outgoingEdges.length === 1) {
       targetNode = nodes.find((n) => n.id === outgoingEdges[0].target) || null;
     } else {
@@ -701,6 +812,7 @@ serve(async (req: Request) => {
     let messageSent = false;
     let finalNodeId = targetNode.id;
     let flowCompleted = false;
+    let flowParkedWaiting = false;
     let exitReason: string | null = null;
     const maxSilentSteps = 10; // Max non-message nodes to walk through
     let silentSteps = 0;
@@ -721,9 +833,10 @@ serve(async (req: Request) => {
         .select('id')
         .single();
 
-      const { shouldStop, sentMessage, output } = await executeNode(targetNode, {
+      const { shouldStop, sentMessage, parkedWaiting, output } = await executeNode(targetNode, {
         supabase,
         automationId,
+        automationStateId: state?.id,
         contactId: contact_id,
         conversationId: conversation_id,
         fromNumber: from_number,
@@ -754,6 +867,13 @@ serve(async (req: Request) => {
 
       if (sentMessage) {
         messageSent = true;
+        break;
+      }
+
+      if (parkedWaiting) {
+        flowParkedWaiting = true;
+        // finalNodeId is the WAIT_FOR_REPLY node itself — state.current_node_id
+        // must point here so the next inbound knows to take the "Replied" edge.
         break;
       }
 
@@ -822,6 +942,31 @@ serve(async (req: Request) => {
             exit_reason: exitReason,
           });
       }
+    } else if (flowParkedWaiting) {
+      // Parked on a WAIT_FOR_REPLY node. Worker will resume on timeout;
+      // inbound message will resume via the "Replied" branch (intercepted above).
+      if (state) {
+        await supabase
+          .from('sms_automation_state')
+          .update({
+            current_node_id: finalNodeId,
+            step_number: stepNumber,
+            status: 'waiting',
+            last_message_at: now,
+          })
+          .eq('id', state.id);
+      } else {
+        await supabase
+          .from('sms_automation_state')
+          .insert({
+            conversation_id,
+            automation_id: automationId,
+            current_node_id: finalNodeId,
+            step_number: stepNumber,
+            status: 'waiting',
+            last_message_at: now,
+          });
+      }
     } else {
       // Flow continues — save position and wait for next user message
       if (state) {
@@ -872,7 +1017,11 @@ serve(async (req: Request) => {
       })
       .eq('id', automationId);
 
-    const status = flowCompleted ? 'completed' : 'waiting_reply';
+    const status = flowCompleted
+      ? 'completed'
+      : flowParkedWaiting
+        ? 'parked_waiting'
+        : 'waiting_reply';
     console.log(`Turn-based run complete: ${status}, node=${finalNodeId}, message_sent=${messageSent}`);
 
     return new Response(

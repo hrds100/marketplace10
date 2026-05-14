@@ -1,4 +1,4 @@
-import { X, CircleStop, Clock, UserPlus, Tag, ArrowRightLeft, Globe } from 'lucide-react';
+import { X, CircleStop, Clock, UserPlus, Tag, ArrowRightLeft, Globe, Hourglass } from 'lucide-react';
 import { SmsNodeType } from '../../types';
 import { useFlowContext } from './FlowContext';
 
@@ -17,6 +17,13 @@ const NODE_OPTIONS: NodeOption[] = [
     description: 'End the conversation flow',
     icon: CircleStop,
     borderColor: '#EF4444',
+  },
+  {
+    type: SmsNodeType.WAIT_FOR_REPLY,
+    name: 'Wait for Reply',
+    description: 'Branch on reply vs timeout (If reply / If no reply)',
+    icon: Hourglass,
+    borderColor: '#8B5CF6',
   },
   {
     type: SmsNodeType.FOLLOW_UP,

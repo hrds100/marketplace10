@@ -171,6 +171,9 @@ verify_jwt = false
 [functions.sms-automation-run]
 verify_jwt = false
 
+[functions.sms-automation-worker]
+verify_jwt = false
+
 [functions.sms-bulk-send]
 verify_jwt = false
 

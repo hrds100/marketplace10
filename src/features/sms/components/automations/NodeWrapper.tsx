@@ -5,6 +5,7 @@ import {
   MessageSquare,
   CircleStop,
   Clock,
+  Hourglass,
   UserPlus,
   Tag,
   ArrowRightLeft,
@@ -33,6 +34,7 @@ const NODE_CONFIG: Record<
   [SmsNodeType.DEFAULT]: { icon: MessageSquare, borderColor: '#1E9A80', label: 'AI Response' },
   [SmsNodeType.STOP_CONVERSATION]: { icon: CircleStop, borderColor: '#EF4444', label: 'Stop' },
   [SmsNodeType.FOLLOW_UP]: { icon: Clock, borderColor: '#F59E0B', label: 'Follow Up' },
+  [SmsNodeType.WAIT_FOR_REPLY]: { icon: Hourglass, borderColor: '#8B5CF6', label: 'Wait for Reply' },
   [SmsNodeType.TRANSFER]: { icon: UserPlus, borderColor: '#6B7280', label: 'Transfer' },
   [SmsNodeType.LABEL]: { icon: Tag, borderColor: '#1E9A80', label: 'Label' },
   [SmsNodeType.MOVE_STAGE]: { icon: ArrowRightLeft, borderColor: '#1E9A80', label: 'Move Stage' },
@@ -49,6 +51,11 @@ function getNodeSummary(type: SmsNodeType, data: SmsNodeData, allLabels: SmsLabe
       return 'End conversation';
     case SmsNodeType.FOLLOW_UP:
       return `${(data.steps || []).length} step${(data.steps || []).length !== 1 ? 's' : ''}`;
+    case SmsNodeType.WAIT_FOR_REPLY: {
+      const v = data.waitValue ?? 24;
+      const u = data.waitUnit ?? 'hours';
+      return `Wait up to ${v} ${u} — branches: Replied / No Reply`;
+    }
     case SmsNodeType.TRANSFER:
       return data.assignTo ? `Transfer to ${data.assignTo}` : 'Not assigned';
     case SmsNodeType.LABEL: {
@@ -87,6 +94,7 @@ function NodeWrapperComponent({ id, data, type, selected }: NodeProps) {
   const isStart = nodeData.isStart === true;
   const isTerminal = nodeType === SmsNodeType.STOP_CONVERSATION;
   const isLoopBack = [SmsNodeType.LABEL, SmsNodeType.MOVE_STAGE, SmsNodeType.FOLLOW_UP].includes(nodeType);
+  const isBranching = nodeType === SmsNodeType.WAIT_FOR_REPLY;
 
   return (
     <>
@@ -217,14 +225,40 @@ function NodeWrapperComponent({ id, data, type, selected }: NodeProps) {
         )}
       </div>
 
-      {/* Source handle — not on terminal nodes */}
-      {!isTerminal && (
+      {/* Source handle — branching nodes have TWO handles (Replied / No Reply),
+          everything else has one. */}
+      {isBranching ? (
+        <>
+          <Handle
+            id="replied"
+            type="source"
+            position={Position.Bottom}
+            style={{ left: '30%' }}
+            className="!w-3 !h-3 !bg-[#1E9A80] !border-2 !border-white"
+          >
+            <span className="absolute -bottom-5 left-1/2 -translate-x-1/2 text-[9px] font-semibold text-[#1E9A80] whitespace-nowrap pointer-events-none">
+              Replied
+            </span>
+          </Handle>
+          <Handle
+            id="no_reply"
+            type="source"
+            position={Position.Bottom}
+            style={{ left: '70%' }}
+            className="!w-3 !h-3 !bg-[#EF4444] !border-2 !border-white"
+          >
+            <span className="absolute -bottom-5 left-1/2 -translate-x-1/2 text-[9px] font-semibold text-[#EF4444] whitespace-nowrap pointer-events-none">
+              No Reply
+            </span>
+          </Handle>
+        </>
+      ) : !isTerminal ? (
         <Handle
           type="source"
           position={Position.Bottom}
           className="!w-3 !h-3 !bg-[#1E9A80] !border-2 !border-white"
         />
-      )}
+      ) : null}
     </>
   );
 }
