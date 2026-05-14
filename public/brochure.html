@@ -1,0 +1,500 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>NFstay — Liverpool Airbnb Investment Opportunity</title>
+<meta name="description" content="15-Bed Airbnb property in Liverpool. Joint venture partnerships from £500. 9.6% monthly yield, 5-year term, ~70% already sold.">
+<meta property="og:title" content="NFstay — Liverpool Airbnb Investment Opportunity">
+<meta property="og:description" content="15-Bed Airbnb property in Liverpool. JV partnerships from £500.">
+<meta property="og:type" content="website">
+<meta property="og:url" content="https://nfstay.com/brochure">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  html { scroll-behavior: smooth; }
+  body {
+    font-family: 'Inter', system-ui, -apple-system, 'Segoe UI', sans-serif;
+    font-size: 15px;
+    line-height: 1.55;
+    color: #1A1A1A;
+    background: #F3F3EE;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+  .page {
+    max-width: 1100px;
+    margin: 0 auto;
+    padding: 16px;
+    background: #fff;
+    min-height: 100vh;
+  }
+  @media (min-width: 640px) { .page { padding: 28px; } }
+  @media (min-width: 1024px) {
+    body { padding: 24px 0; }
+    .page { padding: 40px 48px; border-radius: 20px; box-shadow: rgba(0,0,0,0.06) 0 8px 32px; min-height: 0; }
+  }
+
+  /* ── Header ── */
+  .header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 16px;
+    padding-bottom: 16px;
+    border-bottom: 3px solid #1E9A80;
+    margin-bottom: 20px;
+    flex-wrap: wrap;
+  }
+  .logo {
+    font-size: 22px;
+    font-weight: 700;
+    letter-spacing: 2px;
+    color: #0A0A0A;
+    display: flex;
+    align-items: center;
+  }
+  .logo .nf {
+    display: inline-block;
+    border: 2px solid #0A0A0A;
+    border-radius: 6px;
+    padding: 1px 7px;
+    margin-right: 4px;
+    font-weight: 700;
+  }
+  .header-right {
+    text-align: right;
+    font-size: 12px;
+    color: #6B7280;
+    line-height: 1.5;
+  }
+  @media (min-width: 640px) {
+    .logo { font-size: 26px; }
+    .header-right { font-size: 13px; }
+  }
+
+  /* ── Gallery ── */
+  .gallery {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 6px;
+    margin-bottom: 20px;
+    border-radius: 12px;
+    overflow: hidden;
+  }
+  .gallery img {
+    width: 100%;
+    aspect-ratio: 1 / 1;
+    object-fit: cover;
+    display: block;
+    background: #F3F3EE;
+  }
+  @media (min-width: 640px) {
+    .gallery {
+      grid-template-columns: repeat(4, 1fr);
+      gap: 8px;
+    }
+    .gallery img { aspect-ratio: 4 / 5; }
+  }
+  @media (min-width: 1024px) {
+    .gallery img { aspect-ratio: 1 / 1; }
+  }
+
+  /* ── Title bar ── */
+  .title-bar {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 14px;
+    margin-bottom: 20px;
+    flex-wrap: wrap;
+  }
+  .title-bar h1 {
+    font-size: 22px;
+    font-weight: 700;
+    color: #0A0A0A;
+    letter-spacing: -0.5px;
+    line-height: 1.2;
+  }
+  .title-bar .sub {
+    font-size: 14px;
+    color: #6B7280;
+    margin-top: 6px;
+    line-height: 1.5;
+  }
+  .badge {
+    display: inline-block;
+    background: #ECFDF5;
+    color: #1E9A80;
+    font-size: 11px;
+    font-weight: 700;
+    padding: 5px 12px;
+    border-radius: 100px;
+    white-space: nowrap;
+    letter-spacing: 0.5px;
+  }
+  @media (min-width: 640px) {
+    .title-bar h1 { font-size: 28px; }
+    .title-bar .sub { font-size: 15px; }
+    .badge { font-size: 12px; padding: 6px 14px; }
+  }
+
+  /* ── Metrics ── */
+  .metrics {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 10px;
+    margin-bottom: 24px;
+  }
+  .metric {
+    background: #fff;
+    border: 1px solid #E5E7EB;
+    border-top: 3px solid #1E9A80;
+    border-radius: 12px;
+    padding: 14px 12px;
+    text-align: center;
+  }
+  .metric .val {
+    font-size: 24px;
+    font-weight: 700;
+    color: #1E9A80;
+    line-height: 1.1;
+  }
+  .metric .lbl {
+    font-size: 10px;
+    color: #6B7280;
+    text-transform: uppercase;
+    letter-spacing: 0.6px;
+    margin-top: 6px;
+    font-weight: 600;
+  }
+  @media (min-width: 640px) {
+    .metrics { grid-template-columns: repeat(4, 1fr); gap: 12px; }
+    .metric { padding: 16px 12px; }
+    .metric .val { font-size: 28px; }
+    .metric .lbl { font-size: 11px; }
+  }
+
+  /* ── Panels ── */
+  .panels {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 14px;
+    margin-bottom: 24px;
+  }
+  @media (min-width: 768px) {
+    .panels { grid-template-columns: 1fr 1fr; gap: 16px; }
+  }
+  .panel {
+    border: 1px solid #E5E7EB;
+    border-radius: 12px;
+    overflow: hidden;
+    background: #fff;
+  }
+  .panel-head {
+    background: #F3F3EE;
+    padding: 11px 16px;
+    font-weight: 700;
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.6px;
+    color: #1A1A1A;
+  }
+  .row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 10px 16px;
+    border-bottom: 1px solid #F3F3EE;
+    font-size: 14px;
+    gap: 12px;
+  }
+  .row:last-child { border-bottom: none; }
+  .row .l { color: #6B7280; }
+  .row .r { font-weight: 600; color: #1A1A1A; text-align: right; }
+  .row.total { background: #ECFDF5; }
+  .row.total .l, .row.total .r { color: #1E9A80; font-weight: 700; }
+  .row.total .r s { color: #9CA3AF; font-weight: 500; margin-right: 4px; }
+
+  /* JV step rows */
+  .step-row {
+    padding: 12px 16px;
+    border-bottom: 1px solid #F3F3EE;
+  }
+  .step-row:last-child { border-bottom: none; }
+  .step-top {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 4px;
+  }
+  .step-num {
+    background: #ECFDF5;
+    color: #1E9A80;
+    font-weight: 700;
+    font-size: 12px;
+    width: 22px;
+    height: 22px;
+    border-radius: 50%;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+  }
+  .step-title {
+    font-weight: 600;
+    color: #1A1A1A;
+    font-size: 14px;
+  }
+  .step-desc {
+    font-size: 13px;
+    color: #6B7280;
+    padding-left: 30px;
+    line-height: 1.5;
+  }
+
+  /* ── Example returns ── */
+  .example {
+    background: linear-gradient(135deg, #ECFDF5, #fff);
+    border: 1px solid rgba(30,154,128,0.2);
+    border-radius: 12px;
+    padding: 18px 16px;
+    margin-bottom: 24px;
+  }
+  .example h3 {
+    font-size: 14px;
+    font-weight: 700;
+    color: #1E9A80;
+    margin-bottom: 12px;
+  }
+  .example-grid {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 8px;
+  }
+  @media (min-width: 480px) {
+    .example-grid { grid-template-columns: repeat(3, 1fr); gap: 10px; }
+  }
+  .example-card {
+    text-align: center;
+    padding: 12px 8px;
+    background: rgba(255,255,255,0.85);
+    border-radius: 10px;
+    border: 1px solid rgba(30,154,128,0.15);
+  }
+  .example-card .v {
+    font-size: 20px;
+    font-weight: 700;
+    color: #1E9A80;
+    line-height: 1.1;
+  }
+  .example-card .l {
+    font-size: 11px;
+    color: #6B7280;
+    margin-top: 4px;
+  }
+  @media (min-width: 640px) {
+    .example { padding: 22px; }
+    .example h3 { font-size: 15px; }
+    .example-card .v { font-size: 22px; }
+    .example-card .l { font-size: 12px; }
+  }
+
+  /* ── Highlights ── */
+  .highlights {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 8px 16px;
+    margin-bottom: 28px;
+  }
+  @media (min-width: 640px) {
+    .highlights { grid-template-columns: 1fr 1fr; gap: 10px 20px; }
+  }
+  .hi {
+    display: flex;
+    align-items: flex-start;
+    gap: 8px;
+    font-size: 14px;
+    color: #1A1A1A;
+    line-height: 1.5;
+  }
+  .hi .ck {
+    color: #1E9A80;
+    font-weight: 700;
+    font-size: 15px;
+    line-height: 1.4;
+    flex-shrink: 0;
+  }
+
+  /* ── Footer ── */
+  .footer {
+    border-top: 2px solid #1E9A80;
+    padding-top: 18px;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    align-items: stretch;
+  }
+  .footer-left {
+    font-size: 12px;
+    color: #6B7280;
+    line-height: 1.6;
+  }
+  .footer-cta {
+    background: #1E9A80;
+    color: #fff;
+    font-size: 14px;
+    font-weight: 600;
+    padding: 14px 22px;
+    border-radius: 12px;
+    text-align: center;
+    line-height: 1.4;
+    text-decoration: none;
+    display: block;
+    box-shadow: rgba(30,154,128,0.35) 0 4px 16px;
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+  }
+  .footer-cta:hover {
+    transform: translateY(-1px);
+    box-shadow: rgba(30,154,128,0.45) 0 6px 20px;
+  }
+  .footer-cta:active { transform: translateY(0); }
+  .footer-cta .big {
+    font-size: 16px;
+    display: block;
+    margin-bottom: 2px;
+  }
+  @media (min-width: 640px) {
+    .footer {
+      flex-direction: row;
+      justify-content: space-between;
+      align-items: center;
+      gap: 24px;
+    }
+    .footer-left { font-size: 13px; }
+    .footer-cta { font-size: 13px; padding: 12px 28px; min-width: 240px; }
+    .footer-cta .big { font-size: 15px; }
+  }
+
+  .disclaimer {
+    margin-top: 18px;
+    font-size: 11px;
+    color: #9CA3AF;
+    line-height: 1.55;
+  }
+  @media (min-width: 640px) {
+    .disclaimer { font-size: 11px; }
+  }
+</style>
+</head>
+<body>
+
+<div class="page">
+
+  <!-- Header -->
+  <div class="header">
+    <div class="logo"><span class="nf">nf</span>stay</div>
+    <div class="header-right">Airbnb Joint Venture Partnerships<br>nfstay.com</div>
+  </div>
+
+  <!-- Gallery -->
+  <div class="gallery">
+    <img src="https://asazddtvjvmckouxcmmo.supabase.co/storage/v1/object/public/property-images/inv/pembroke-place/bafkreicobxluilcxpjy3ykl24x6zejszerb37aeutxitmz2tccaxy5goyy.jpeg" alt="Pembroke Place — exterior" loading="lazy">
+    <img src="https://asazddtvjvmckouxcmmo.supabase.co/storage/v1/object/public/property-images/inv/pembroke-place/bafkreif442cy7otywhyai6e5maa2f32ckmfidlrekrr6zbrj3ulxrjnpja.jpeg" alt="Pembroke Place — bedroom" loading="lazy">
+    <img src="https://asazddtvjvmckouxcmmo.supabase.co/storage/v1/object/public/property-images/inv/pembroke-place/bafkreigtjc7dr3qgwapd2gzzv677bskfpkyi2okmynkhnywdqxkxs7xkl4.jpeg" alt="Pembroke Place — interior" loading="lazy">
+    <img src="https://asazddtvjvmckouxcmmo.supabase.co/storage/v1/object/public/property-images/inv/pembroke-place/bafkreihzqgasttxrcwvctowummvd3odd64fvkqsbdh433xx5qljzyqjgvy.jpeg" alt="Pembroke Place — living area" loading="lazy">
+  </div>
+
+  <!-- Title -->
+  <div class="title-bar">
+    <div>
+      <h1>15-Bed Airbnb Property — Liverpool</h1>
+      <div class="sub">Pembroke Place, Liverpool L7 &nbsp;|&nbsp; 15 Beds &nbsp;|&nbsp; 4 Baths &nbsp;|&nbsp; 2 Kitchens</div>
+    </div>
+    <div class="badge">LIVE &amp; ACCEPTING PARTNERS</div>
+  </div>
+
+  <!-- Metrics -->
+  <div class="metrics">
+    <div class="metric"><div class="val">&pound;500</div><div class="lbl">Minimum Entry</div></div>
+    <div class="metric"><div class="val">9.6%</div><div class="lbl">Monthly Yield</div></div>
+    <div class="metric"><div class="val">5 yr</div><div class="lbl">Agreement Term</div></div>
+    <div class="metric"><div class="val">~70%</div><div class="lbl">Already Sold</div></div>
+  </div>
+
+  <!-- Panels -->
+  <div class="panels">
+    <div class="panel">
+      <div class="panel-head">Setup Cost Breakdown</div>
+      <div class="row"><span class="l">Finder's fee</span><span class="r">&pound;13,000</span></div>
+      <div class="row"><span class="l">Refurbishment</span><span class="r">&pound;11,000</span></div>
+      <div class="row"><span class="l">Furniture</span><span class="r">&pound;4,400</span></div>
+      <div class="row"><span class="l">Staging</span><span class="r">&pound;1,500</span></div>
+      <div class="row"><span class="l">First month's rent</span><span class="r">&pound;3,500</span></div>
+      <div class="row"><span class="l">Deposit</span><span class="r">&pound;3,500</span></div>
+      <div class="row"><span class="l">Miscellaneous</span><span class="r">&pound;1,000</span></div>
+      <div class="row total">
+        <span class="l">Total Setup</span>
+        <span class="r"><s>&pound;37,900</s>Start from <strong>&pound;500</strong></span>
+      </div>
+    </div>
+
+    <div class="panel">
+      <div class="panel-head">Active Partnership — You Have a Say</div>
+      <div class="step-row">
+        <div class="step-top"><span class="step-num">1</span><span class="step-title">A decision is proposed</span></div>
+        <div class="step-desc">You, another partner, or management can propose changes — furniture, nightly rate, booking strategy, even a new manager.</div>
+      </div>
+      <div class="step-row">
+        <div class="step-top"><span class="step-num">2</span><span class="step-title">You get notified</span></div>
+        <div class="step-desc">All partners receive a WhatsApp and email notification with a link back to the platform.</div>
+      </div>
+      <div class="step-row">
+        <div class="step-top"><span class="step-num">3</span><span class="step-title">You decide</span></div>
+        <div class="step-desc">Review the proposal, cast your vote. Majority decision is applied.</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Example Returns -->
+  <div class="example">
+    <h3>Example: What Does a &pound;1,500 Entry Look Like?</h3>
+    <div class="example-grid">
+      <div class="example-card"><div class="v">&pound;144</div><div class="l">Est. Monthly Income</div></div>
+      <div class="example-card"><div class="v">&pound;1,730</div><div class="l">Est. Year 1 Return</div></div>
+      <div class="example-card"><div class="v">&pound;8,650</div><div class="l">Est. 5-Year Total Return</div></div>
+    </div>
+  </div>
+
+  <!-- Highlights -->
+  <div class="highlights">
+    <div class="hi"><span class="ck">&#10003;</span><span>Already live and taking Airbnb bookings</span></div>
+    <div class="hi"><span class="ck">&#10003;</span><span>~100 properties managed across Manchester &amp; Liverpool</span></div>
+    <div class="hi"><span class="ck">&#10003;</span><span>HMO licence held &amp; redress scheme registered</span></div>
+    <div class="hi"><span class="ck">&#10003;</span><span>Monthly rent: &pound;3,500/month to landlord</span></div>
+    <div class="hi"><span class="ck">&#10003;</span><span>Partners vote on all management decisions</span></div>
+    <div class="hi"><span class="ck">&#10003;</span><span>Live dashboard — track income, bookings, votes</span></div>
+    <div class="hi"><span class="ck">&#10003;</span><span>No day-to-day work required from you</span></div>
+    <div class="hi"><span class="ck">&#10003;</span><span>5-year agreement with monthly payouts</span></div>
+  </div>
+
+  <!-- Footer -->
+  <div class="footer">
+    <div class="footer-left">NFstay &nbsp;|&nbsp; 9 Owen Street, Manchester<br>nfstay.com &nbsp;|&nbsp; Airbnb Joint Venture Partnerships</div>
+    <a class="footer-cta" href="https://nfstay.com">
+      <span class="big">Entry from &pound;500</span>View the full deal at nfstay.com
+    </a>
+  </div>
+
+  <div class="disclaimer">
+    This document is for information purposes only and does not constitute financial advice. Returns are estimates based on current performance and are not guaranteed.
+    Past performance is not indicative of future results. NFstay operates property joint-venture arrangements; this is not an FCA-regulated investment product.
+    Capital is at risk. You should seek independent financial advice before making any investment decision.
+  </div>
+
+</div>
+
+</body>
+</html>
