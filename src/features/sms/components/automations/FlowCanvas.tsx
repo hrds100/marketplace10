@@ -58,12 +58,19 @@ export function FlowCanvas() {
 
   const onConnect = useCallback(
     (params: Connection) => {
+      // WAIT_FOR_REPLY nodes expose two source handles ('replied' / 'no_reply').
+      // Pick the edge label from the handle so the engine + worker know which
+      // branch to follow.
+      let label = 'Responded';
+      if (params.sourceHandle === 'replied') label = 'Replied';
+      else if (params.sourceHandle === 'no_reply') label = 'No Reply';
+
       setEdges((eds) =>
         addEdge(
           {
             ...params,
             type: 'custom',
-            data: { label: 'Responded' } as SmsEdgeData,
+            data: { label } as SmsEdgeData,
           },
           eds
         )

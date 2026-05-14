@@ -199,6 +199,7 @@ export enum SmsNodeType {
   DEFAULT = 'DEFAULT',
   STOP_CONVERSATION = 'STOP_CONVERSATION',
   FOLLOW_UP = 'FOLLOW_UP',
+  WAIT_FOR_REPLY = 'WAIT_FOR_REPLY',
   TRANSFER = 'TRANSFER',
   LABEL = 'LABEL',
   MOVE_STAGE = 'MOVE_STAGE',
@@ -256,6 +257,9 @@ export interface SmsNodeData {
   webhookMethod?: string;
   modelOptions?: { temperature: number; model?: string };
   useGlobalSettings?: boolean;
+  // WAIT_FOR_REPLY only
+  waitValue?: number;
+  waitUnit?: 'minutes' | 'hours' | 'days';
   [key: string]: unknown;
 }
 

@@ -32,6 +32,7 @@ const TEAM_MEMBERS = [
 
 const NODE_TYPE_OPTIONS: { value: SmsNodeType; label: string }[] = [
   { value: SmsNodeType.STOP_CONVERSATION, label: 'Stop Conversation' },
+  { value: SmsNodeType.WAIT_FOR_REPLY, label: 'Wait for Reply (If reply / If no reply)' },
   { value: SmsNodeType.FOLLOW_UP, label: 'Follow Up' },
   { value: SmsNodeType.TRANSFER, label: 'Transfer' },
   { value: SmsNodeType.LABEL, label: 'Label' },
@@ -90,6 +91,8 @@ export function EditNodePopup() {
   const [webhookUrl, setWebhookUrl] = useState('');
   const [webhookMethod, setWebhookMethod] = useState('POST');
   const [model, setModel] = useState('gpt-4o-mini');
+  const [waitValue, setWaitValue] = useState(24);
+  const [waitUnit, setWaitUnit] = useState<'minutes' | 'hours' | 'days'>('hours');
 
   useEffect(() => {
     if (nodeData && node) {
@@ -108,6 +111,8 @@ export function EditNodePopup() {
       setStageId(nodeData.stageId || '');
       setWebhookUrl(nodeData.webhookUrl || '');
       setWebhookMethod(nodeData.webhookMethod || 'POST');
+      setWaitValue(Number(nodeData.waitValue ?? 24));
+      setWaitUnit((nodeData.waitUnit as 'minutes' | 'hours' | 'days') || 'hours');
     }
   }, [nodeData, node, nodeType]);
 
@@ -148,6 +153,10 @@ export function EditNodePopup() {
       updates.webhookUrl = webhookUrl;
       updates.webhookMethod = webhookMethod;
     }
+    if (type === SmsNodeType.WAIT_FOR_REPLY) {
+      updates.waitValue = Math.max(1, Math.floor(waitValue || 1));
+      updates.waitUnit = waitUnit;
+    }
 
     updateNode(isEditingNode, updates);
     toast.success('Node updated');
@@ -173,6 +182,8 @@ export function EditNodePopup() {
     stageId,
     webhookUrl,
     webhookMethod,
+    waitValue,
+    waitUnit,
     setNodes,
     updateNode,
     setIsEditingNode,
@@ -549,6 +560,48 @@ export function EditNodePopup() {
                 </SelectContent>
               </Select>
             </div>
+          )}
+
+          {/* WAIT_FOR_REPLY fields */}
+          {type === SmsNodeType.WAIT_FOR_REPLY && (
+            <>
+              <div className="px-3 py-2.5 bg-[#F3E8FF] rounded-lg border border-[#8B5CF6]/20">
+                <p className="text-xs font-medium text-[#8B5CF6]">
+                  Two outputs: <span className="font-semibold">Replied</span> (contact responds before timeout) and <span className="font-semibold">No Reply</span> (timeout elapses).
+                </p>
+                <p className="text-[10px] text-[#6B7280] mt-1">
+                  Connect each handle on the canvas to the node that should fire on that branch.
+                </p>
+              </div>
+              <div className="flex items-end gap-3">
+                <div className="space-y-1.5 flex-1">
+                  <Label className="text-xs font-medium text-[#6B7280]">Wait up to</Label>
+                  <Input
+                    type="number"
+                    value={waitValue || ''}
+                    onChange={(e) => setWaitValue(parseInt(e.target.value) || 1)}
+                    min={1}
+                    className="rounded-lg border-[#E5E7EB]"
+                  />
+                </div>
+                <div className="space-y-1.5 flex-1">
+                  <Label className="text-xs font-medium text-[#6B7280]">Unit</Label>
+                  <Select
+                    value={waitUnit}
+                    onValueChange={(v) => setWaitUnit(v as 'minutes' | 'hours' | 'days')}
+                  >
+                    <SelectTrigger className="rounded-lg border-[#E5E7EB]">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="minutes">Minutes</SelectItem>
+                      <SelectItem value="hours">Hours</SelectItem>
+                      <SelectItem value="days">Days</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+            </>
           )}
 
           {/* WEBHOOK fields */}
