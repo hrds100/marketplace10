@@ -48,6 +48,36 @@
     margin-bottom: 20px;
     flex-wrap: wrap;
   }
+
+  /* ── Page headline ── */
+  .page-headline {
+    text-align: center;
+    margin-bottom: 22px;
+  }
+  .page-headline h1 {
+    font-size: 22px;
+    font-weight: 800;
+    color: #0A0A0A;
+    letter-spacing: -0.6px;
+    line-height: 1.2;
+  }
+  .page-headline .kicker {
+    display: inline-block;
+    font-size: 11px;
+    font-weight: 700;
+    color: #1E9A80;
+    text-transform: uppercase;
+    letter-spacing: 1.2px;
+    margin-bottom: 8px;
+  }
+  @media (min-width: 640px) {
+    .page-headline { margin-bottom: 28px; }
+    .page-headline h1 { font-size: 30px; }
+    .page-headline .kicker { font-size: 12px; }
+  }
+  @media (min-width: 1024px) {
+    .page-headline h1 { font-size: 34px; }
+  }
   .logo {
     font-size: 22px;
     font-weight: 700;
@@ -111,7 +141,7 @@
     margin-bottom: 20px;
     flex-wrap: wrap;
   }
-  .title-bar h1 {
+  .title-bar h2 {
     font-size: 22px;
     font-weight: 700;
     color: #0A0A0A;
@@ -136,7 +166,7 @@
     letter-spacing: 0.5px;
   }
   @media (min-width: 640px) {
-    .title-bar h1 { font-size: 28px; }
+    .title-bar h2 { font-size: 28px; }
     .title-bar .sub { font-size: 15px; }
     .badge { font-size: 12px; padding: 6px 14px; }
   }
@@ -399,6 +429,12 @@
     <div class="header-right">Airbnb Joint Venture Partnerships<br>nfstay.com</div>
   </div>
 
+  <!-- Page Headline -->
+  <div class="page-headline">
+    <div class="kicker">Investment Opportunity</div>
+    <h1>NFstay &mdash; Liverpool Airbnb Investment Opportunity</h1>
+  </div>
+
   <!-- Gallery -->
   <div class="gallery">
     <img src="https://asazddtvjvmckouxcmmo.supabase.co/storage/v1/object/public/property-images/inv/pembroke-place/bafkreicobxluilcxpjy3ykl24x6zejszerb37aeutxitmz2tccaxy5goyy.jpeg" alt="Pembroke Place — exterior" loading="lazy">
@@ -410,7 +446,7 @@
   <!-- Title -->
   <div class="title-bar">
     <div>
-      <h1>15-Bed Airbnb Property — Liverpool</h1>
+      <h2>15-Bed Airbnb Property — Liverpool</h2>
       <div class="sub">Pembroke Place, Liverpool L7 &nbsp;|&nbsp; 15 Beds &nbsp;|&nbsp; 4 Baths &nbsp;|&nbsp; 2 Kitchens</div>
     </div>
     <div class="badge">LIVE &amp; ACCEPTING PARTNERS</div>
