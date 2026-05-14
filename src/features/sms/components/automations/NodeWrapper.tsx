@@ -98,14 +98,19 @@ function NodeWrapperComponent({ id, data, type, selected }: NodeProps) {
 
   return (
     <>
-      {/* Target handle — not on start node */}
-      {!isStart && (
-        <Handle
-          type="target"
-          position={Position.Top}
-          className="!w-3 !h-3 !bg-[#E5E7EB] !border-2 !border-white"
-        />
-      )}
+      {/* Target handle. Start nodes need one too so self-loops (e.g. the
+          "Has questions" loop on an AI start) have somewhere to attach.
+          Visually faded on start nodes since they're not normally the
+          target of an external edge. */}
+      <Handle
+        type="target"
+        position={Position.Top}
+        className={
+          isStart
+            ? '!w-2.5 !h-2.5 !bg-[#E5E7EB]/60 !border !border-white'
+            : '!w-3 !h-3 !bg-[#E5E7EB] !border-2 !border-white'
+        }
+      />
 
       {/* NodeToolbar — shown when selected */}
       <NodeToolbar isVisible={selected} position={Position.Right} offset={8}>
