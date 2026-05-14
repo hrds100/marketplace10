@@ -225,32 +225,36 @@ function NodeWrapperComponent({ id, data, type, selected }: NodeProps) {
         )}
       </div>
 
-      {/* Source handle — branching nodes have TWO handles (Replied / No Reply),
-          everything else has one. */}
+      {/* Source handle — branching nodes have TWO labelled branch rows
+          (If Reply / If No Reply); everything else has a single handle. */}
       {isBranching ? (
         <>
+          <div className="px-3 pt-1 pb-3 border-t border-[#E5E7EB] mt-1">
+            <div className="grid grid-cols-2 gap-2">
+              <div className="flex items-center justify-center gap-1.5 px-2 py-1.5 rounded-md bg-[#ECFDF5] border border-[#1E9A80]/30">
+                <span className="w-1.5 h-1.5 rounded-full bg-[#1E9A80]" />
+                <span className="text-[11px] font-semibold text-[#1E9A80]">If Reply</span>
+              </div>
+              <div className="flex items-center justify-center gap-1.5 px-2 py-1.5 rounded-md bg-[#FEF2F2] border border-[#EF4444]/30">
+                <span className="w-1.5 h-1.5 rounded-full bg-[#EF4444]" />
+                <span className="text-[11px] font-semibold text-[#EF4444]">If No Reply</span>
+              </div>
+            </div>
+          </div>
           <Handle
             id="replied"
             type="source"
             position={Position.Bottom}
-            style={{ left: '30%' }}
-            className="!w-3 !h-3 !bg-[#1E9A80] !border-2 !border-white"
-          >
-            <span className="absolute -bottom-5 left-1/2 -translate-x-1/2 text-[9px] font-semibold text-[#1E9A80] whitespace-nowrap pointer-events-none">
-              Replied
-            </span>
-          </Handle>
+            style={{ left: '25%' }}
+            className="!w-3.5 !h-3.5 !bg-[#1E9A80] !border-2 !border-white"
+          />
           <Handle
             id="no_reply"
             type="source"
             position={Position.Bottom}
-            style={{ left: '70%' }}
-            className="!w-3 !h-3 !bg-[#EF4444] !border-2 !border-white"
-          >
-            <span className="absolute -bottom-5 left-1/2 -translate-x-1/2 text-[9px] font-semibold text-[#EF4444] whitespace-nowrap pointer-events-none">
-              No Reply
-            </span>
-          </Handle>
+            style={{ left: '75%' }}
+            className="!w-3.5 !h-3.5 !bg-[#EF4444] !border-2 !border-white"
+          />
         </>
       ) : !isTerminal ? (
         <Handle
