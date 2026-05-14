@@ -154,15 +154,29 @@ function NodeWrapperComponent({ id, data, type, selected }: NodeProps) {
           )}
           <div className="flex-1 min-w-0">
             <p className="text-sm font-medium text-[#1A1A1A] truncate">
-              {isStart ? (nodeData.name || 'Trigger') : nodeData.name}
+              {isStart ? (nodeData.name || 'Start') : nodeData.name}
             </p>
           </div>
           {isStart ? (
-            <span
-              className="text-[10px] font-semibold px-1.5 py-0.5 rounded-full flex-shrink-0 text-[#1E9A80] bg-[#ECFDF5]"
-            >
-              Trigger
-            </span>
+            (() => {
+              // Resolve start mode: explicit setting wins, else legacy
+              // inference from whether prompt/text is configured.
+              const explicit = (nodeData as { startMode?: 'trigger' | 'ai' }).startMode;
+              const startMode: 'trigger' | 'ai' = explicit
+                ? explicit
+                : (nodeData.prompt || nodeData.text)
+                  ? 'ai'
+                  : 'trigger';
+              return startMode === 'ai' ? (
+                <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded-full flex-shrink-0 text-[#1E9A80] bg-[#ECFDF5]">
+                  AI Start
+                </span>
+              ) : (
+                <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded-full flex-shrink-0 text-[#6B7280] bg-[#F3F3EE]">
+                  Trigger
+                </span>
+              );
+            })()
           ) : (
             <span
               className="text-[10px] font-semibold px-1.5 py-0.5 rounded-full flex-shrink-0"
@@ -176,7 +190,23 @@ function NodeWrapperComponent({ id, data, type, selected }: NodeProps) {
         {/* Body */}
         <div className="px-3 py-2">
           <p className="text-xs text-[#6B7280] leading-relaxed">
-            {isStart ? 'Flow starts here when the contact replies.' : getNodeSummary(nodeType, nodeData, allLabels, allStages)}
+            {isStart
+              ? (() => {
+                  const explicit = (nodeData as { startMode?: 'trigger' | 'ai' }).startMode;
+                  const startMode: 'trigger' | 'ai' = explicit
+                    ? explicit
+                    : (nodeData.prompt || nodeData.text)
+                      ? 'ai'
+                      : 'trigger';
+                  if (startMode === 'ai') {
+                    const preview = (nodeData.prompt || nodeData.text || '').toString();
+                    return preview
+                      ? (preview.length > 60 ? `AI replies: ${preview.slice(0, 60)}...` : `AI replies: ${preview}`)
+                      : 'AI replies using Global Prompt';
+                  }
+                  return 'Flow starts here when the contact replies.';
+                })()
+              : getNodeSummary(nodeType, nodeData, allLabels, allStages)}
           </p>
           {isLoopBack && (
             <div className="flex items-center gap-1 mt-1.5">
