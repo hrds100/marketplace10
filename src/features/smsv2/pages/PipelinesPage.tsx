@@ -11,6 +11,8 @@ import { useContactPersistence } from '../hooks/useContactPersistence';
 import { useContactChannelStatus } from '../hooks/useContactSmsStatus';
 import { useFollowups } from '../hooks/useFollowups';
 import { useDialerProModal } from '../layout/DialerProModalContext';
+import { rowToContact } from '../hooks/useHydrateContacts';
+import { supabase } from '@/integrations/supabase/client';
 import type { Contact } from '../types';
 
 export default function PipelinesPage() {
@@ -57,6 +59,34 @@ export default function PipelinesPage() {
     }
     return map;
   }, [followups]);
+
+  // Hydrate contacts that have a pipeline stage but may have been
+  // excluded from the global store's 10k-row cap.
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const [contactsRes, tagsRes] = await Promise.all([
+        (supabase.from('wk_contacts' as any) as any)
+          .select('id, name, phone, email, owner_agent_id, pipeline_column_id, deal_value_pence, is_hot, custom_fields, last_contact_at, created_at')
+          .not('pipeline_column_id', 'is', null),
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        (supabase.from('wk_contact_tags' as any) as any).select('contact_id, tag'),
+      ]);
+      if (cancelled) return;
+      const rows = contactsRes.data ?? [];
+      const tagMap = new Map<string, string[]>();
+      for (const t of (tagsRes.data ?? []) as { contact_id: string; tag: string }[]) {
+        const arr = tagMap.get(t.contact_id);
+        if (arr) arr.push(t.tag);
+        else tagMap.set(t.contact_id, [t.tag]);
+      }
+      for (const row of rows) {
+        upsertContact(rowToContact(row, tagMap.get(row.id) ?? []));
+      }
+    })();
+    return () => { cancelled = true; };
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   const save = (updated: Contact) => {
     const prev = contacts.find((c) => c.id === updated.id);

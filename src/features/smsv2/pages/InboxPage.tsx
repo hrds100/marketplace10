@@ -26,6 +26,8 @@ import { useContactTimeline } from '../hooks/useContactTimeline';
 import { useContactMessages } from '../hooks/useContactMessages';
 import { useInboxThreads } from '../hooks/useInboxThreads';
 import { useContactPersistence } from '../hooks/useContactPersistence';
+import { signCallRecording } from '../hooks/useCalls';
+import CallTranscriptModal from '../components/calls/CallTranscriptModal';
 import { useSmsTemplates } from '../hooks/useSmsTemplates';
 import { useCurrentAgent } from '../hooks/useCurrentAgent';
 import { interpolateTemplate } from '../lib/interpolateTemplate';
@@ -33,7 +35,9 @@ import { supabase } from '@/integrations/supabase/client';
 import { useDialerProModal } from '../layout/DialerProModalContext';
 import SendAgreementModal from '@/features/agreements/components/SendAgreementModal';
 import { FileSignature } from 'lucide-react';
-import type { Contact } from '../types';
+import type { Contact, CallRecord, ActivityEvent } from '../types';
+
+const ACTIVITY_KINDS_FOR_THREAD = new Set(['note', 'outcome_applied', 'stage_moved', 'tag_added', 'task_created']);
 
 interface SmsSendInvoke {
   invoke: (
@@ -99,6 +103,9 @@ export default function InboxPage() {
   const [replyChannel, setReplyChannel] = useState<ChannelKindUI | null>(null);
   const [sending, setSending] = useState(false);
   const [agreementTo, setAgreementTo] = useState<Contact | null>(null);
+  const [playingCallId, setPlayingCallId] = useState<string | null>(null);
+  const [signedUrls] = useState(() => new Map<string, string>());
+  const [transcriptCallId, setTranscriptCallId] = useState<string | null>(null);
   const navigateTo = useNavigate();
   const { openDialerPro } = useDialerProModal();
   const threadScrollRef = useRef<HTMLDivElement>(null);
@@ -119,6 +126,17 @@ export default function InboxPage() {
     const res = await persist.patchContact(id, { name });
     if (res !== true) pushToast(`Rename failed: ${res}`, 'error');
     return res;
+  };
+
+  const signAndPlay = async (callId: string, storagePath: string | undefined) => {
+    if (!storagePath) { pushToast('No recording available', 'error'); return; }
+    if (playingCallId === callId) { setPlayingCallId(null); return; }
+    const cached = signedUrls.get(callId);
+    if (cached) { setPlayingCallId(callId); return; }
+    const url = storagePath.startsWith('http') ? storagePath : await signCallRecording(storagePath);
+    if (!url) { pushToast('Recording not available', 'error'); return; }
+    signedUrls.set(callId, url);
+    setPlayingCallId(callId);
   };
 
   const openEditModal = async (fallback: Contact) => {
@@ -325,18 +343,22 @@ export default function InboxPage() {
 
   // Sort the unified thread by timestamp so SMS interleave with calls if present
   const threadItems = useMemo(() => {
-    const items = contactSms.map((m) => ({
+    const items: { kind: 'sms' | 'call' | 'activity'; ts: string; payload: unknown }[] = contactSms.map((m) => ({
       kind: 'sms' as const,
       ts: m.sentAt,
       payload: m,
     }));
-    // Add call entries from timeline so the bubble list shows both
     for (const c of timeline.calls) {
       items.push({ kind: 'call' as const, ts: c.startedAt, payload: c });
     }
+    for (const a of contactActivity) {
+      if (ACTIVITY_KINDS_FOR_THREAD.has(a.kind)) {
+        items.push({ kind: 'activity' as const, ts: a.ts, payload: a });
+      }
+    }
     items.sort((a, b) => +new Date(a.ts) - +new Date(b.ts));
     return items;
-  }, [contactSms, timeline.calls]);
+  }, [contactSms, timeline.calls, contactActivity]);
 
   // Auto-scroll on thread change OR new message append.
   useEffect(() => {
@@ -541,7 +563,7 @@ export default function InboxPage() {
                   </div>
                   <div className="flex-1 min-w-0">
                     <div className="text-[13px] font-semibold text-[#1A1A1A] truncate flex items-center gap-1">
-                      <EditableName value={r.name} onSave={(n) => renameContact(r.contactId, n)} className="text-[13px] font-semibold" />
+                      <EditableName value={r.name} onSave={(n) => renameContact(r.id, n)} className="text-[13px] font-semibold" />
                     </div>
                     <div className="text-[11px] text-[#6B7280] truncate flex items-center gap-1">
                       {r.lastChannel && <ChannelGlyph channel={r.lastChannel} size={10} />}
@@ -651,29 +673,65 @@ export default function InboxPage() {
                 </div>
               );
             }
-            const c = item.payload;
+            if (item.kind === 'call') {
+              const c = item.payload as CallRecord;
+              return (
+                <div
+                  key={`call-${c.id}`}
+                  className="rounded-2xl px-3 py-2 max-w-[60%] mx-auto bg-white border border-[#E5E7EB] text-[#1A1A1A] text-[12px]"
+                >
+                  <div className="flex items-center gap-1.5 font-semibold">
+                    {c.direction === 'outbound' ? (
+                      <PhoneOutgoing className="w-3 h-3 text-[#3B82F6]" />
+                    ) : (
+                      <PhoneIncoming className="w-3 h-3 text-[#1E9A80]" />
+                    )}
+                    {c.direction} call · {c.status}
+                    {c.durationSec > 0 && ` · ${formatDuration(c.durationSec)}`}
+                  </div>
+                  {c.aiSummary && (
+                    <div className="text-[11px] text-[#6B7280] italic mt-1">
+                      &ldquo;{c.aiSummary}&rdquo;
+                    </div>
+                  )}
+                  <div className="flex items-center gap-3 mt-1.5">
+                    {c.recordingUrl && (
+                      <button
+                        onClick={() => void signAndPlay(c.id, c.recordingUrl)}
+                        className="text-[10px] flex items-center gap-1 text-[#1E9A80] hover:underline"
+                      >
+                        <Play className="w-3 h-3" />
+                        {playingCallId === c.id ? 'Hide recording' : 'Play recording'}
+                      </button>
+                    )}
+                    <button
+                      onClick={() => setTranscriptCallId(c.id)}
+                      className="text-[10px] flex items-center gap-1 text-[#1E9A80] hover:underline"
+                    >
+                      <MessageSquare className="w-3 h-3" /> Transcript
+                    </button>
+                  </div>
+                  {playingCallId === c.id && signedUrls.get(c.id) && (
+                    <audio src={signedUrls.get(c.id)} controls autoPlay className="w-full mt-1.5 h-8" />
+                  )}
+                  <div className="text-[10px] text-[#9CA3AF] mt-1 tabular-nums">
+                    {formatTimeOnly(c.startedAt)}
+                  </div>
+                </div>
+              );
+            }
+            const a = item.payload as ActivityEvent;
             return (
               <div
-                key={`call-${c.id}`}
-                className="rounded-2xl px-3 py-2 max-w-[60%] mx-auto bg-white border border-[#E5E7EB] text-[#1A1A1A] text-[12px]"
+                key={`act-${a.id}`}
+                className="mx-auto max-w-[80%] px-3 py-1.5 rounded-xl bg-[#F3F3EE] border border-[#E5E7EB] text-[11px] text-[#6B7280] flex items-center gap-2"
               >
-                <div className="flex items-center gap-1.5 font-semibold">
-                  {c.direction === 'outbound' ? (
-                    <PhoneOutgoing className="w-3 h-3 text-[#3B82F6]" />
-                  ) : (
-                    <PhoneIncoming className="w-3 h-3 text-[#1E9A80]" />
-                  )}
-                  {c.direction} call · {c.status}
-                  {c.durationSec > 0 && ` · ${formatDuration(c.durationSec)}`}
+                <ActivityIcon kind={a.kind} />
+                <div className="flex-1 min-w-0">
+                  <span className="font-medium text-[#1A1A1A]">{a.title}</span>
+                  {a.body && <span className="ml-1 truncate">{a.body}</span>}
                 </div>
-                {c.aiSummary && (
-                  <div className="text-[11px] text-[#6B7280] italic mt-1">
-                    "{c.aiSummary}"
-                  </div>
-                )}
-                <div className="text-[10px] text-[#9CA3AF] mt-1 tabular-nums">
-                  {formatTimeOnly(c.startedAt)}
-                </div>
+                <span className="text-[10px] text-[#9CA3AF] tabular-nums flex-shrink-0">{formatTimeOnly(a.ts)}</span>
               </div>
             );
           })}
@@ -892,6 +950,13 @@ export default function InboxPage() {
       contact={agreementTo}
       onClose={() => setAgreementTo(null)}
     />
+    {transcriptCallId && (
+      <CallTranscriptModal
+        callId={transcriptCallId}
+        callerLabel={activeContact?.name ?? 'Caller'}
+        onClose={() => setTranscriptCallId(null)}
+      />
+    )}
     </>
   );
 }
