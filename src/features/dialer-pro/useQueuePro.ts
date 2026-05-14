@@ -42,13 +42,13 @@ export function useQueuePro(campaignId: string | null) {
   const [loading, setLoading] = useState(true);
 
   const fetchQueue = useCallback(async () => {
+    setLoading(true);
     const nowIso = new Date().toISOString();
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     let q = (supabase.from('wk_dialer_queue' as any) as any)
       .select(
         'id, contact_id, campaign_id, priority, attempts, scheduled_for, status, ' +
         'wk_contacts:contact_id ( id, name, phone, pipeline_column_id )',
-        { count: 'exact' }
       )
       .eq('status', 'pending')
       .or(`scheduled_for.is.null,scheduled_for.lte.${nowIso}`)
@@ -56,13 +56,13 @@ export function useQueuePro(campaignId: string | null) {
       .order('scheduled_for', { ascending: true, nullsFirst: true })
       .order('attempts', { ascending: true })
       .order('created_at', { ascending: true })
-      .limit(1000);
+      .limit(200);
 
     if (campaignId && campaignId.trim() !== '') {
       q = q.eq('campaign_id', campaignId);
     }
 
-    const { data: rows, error, count } = await q;
+    const { data: rows, error } = await q;
 
     if (error) {
       console.warn('[dialer-pro] queue fetch error', error);
@@ -75,7 +75,7 @@ export function useQueuePro(campaignId: string | null) {
       .filter((l): l is QueueLead => l !== null);
 
     setQueue(leads);
-    setTotalCount(count ?? leads.length);
+    setTotalCount(leads.length);
     setLoading(false);
   }, [campaignId]);
 
