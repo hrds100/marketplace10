@@ -43,21 +43,39 @@ function mapRow(row: ContactRow): SmsContact {
   };
 }
 
+// PostgREST defaults to capping responses at 1000 rows regardless of .limit().
+// Page through with .range() so the contacts list, search, and groups dropdown
+// see every row, not just the most recent 1000.
 async function fetchContacts(): Promise<SmsContact[]> {
-  const { data, error } = await (supabase
-    .from('sms_contacts' as never)
-    .select(`
-      id, phone_number, display_name, notes, pipeline_stage_id,
-      assigned_to, opted_out, batch_name, response_status, created_at, updated_at,
-      sms_contact_labels (
-        sms_labels!label_id ( id, name, colour, position )
-      )
-    `)
-    .order('created_at', { ascending: false })
-    .limit(5000) as never);
+  const pageSize = 1000;
+  const all: ContactRow[] = [];
+  let from = 0;
 
-  if (error) throw error;
-  return ((data as ContactRow[]) ?? []).map(mapRow);
+  // Hard ceiling to avoid an accidental infinite loop if the API misbehaves.
+  // Revisit if the contact base ever climbs past 100k.
+  const maxPages = 100;
+
+  for (let page = 0; page < maxPages; page++) {
+    const { data, error } = await (supabase
+      .from('sms_contacts' as never)
+      .select(`
+        id, phone_number, display_name, notes, pipeline_stage_id,
+        assigned_to, opted_out, batch_name, response_status, created_at, updated_at,
+        sms_contact_labels (
+          sms_labels!label_id ( id, name, colour, position )
+        )
+      `)
+      .order('created_at', { ascending: false })
+      .range(from, from + pageSize - 1) as never);
+
+    if (error) throw error;
+    const rows = (data as ContactRow[]) ?? [];
+    all.push(...rows);
+    if (rows.length < pageSize) break;
+    from += pageSize;
+  }
+
+  return all.map(mapRow);
 }
 
 export function useContacts() {
