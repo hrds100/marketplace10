@@ -94,11 +94,12 @@ function normalizeLabel(s: string | null | undefined): string {
   return (s ?? '').trim().toLowerCase().replace(/[\s_-]+/g, '_');
 }
 
-// Detects rejection / opt-out intent ANY time during a conversation —
-// short standalone "no" / "nope" / "stop" replies, multi-word rejections
-// like "not interested" / "leave me alone" / "this is spam", and common
-// complaint phrases. Tuned to avoid false positives on replies that
-// happen to contain "no" in another context (e.g. "no problem!").
+// Detects SOFT rejection / opt-out intent during a conversation —
+// "no" / "nope" / "not interested" / "leave me alone" / "this is spam",
+// complaint phrases, etc. Soft rejections are STATE-LEVEL: they stop
+// THIS automation but don't block future campaigns to the same contact.
+// Tuned to avoid false positives on replies that happen to contain "no"
+// in another context (e.g. "no problem!").
 function isRejection(body: string | null | undefined): boolean {
   const text = (body || '').trim().toLowerCase();
   if (!text) return false;
@@ -643,7 +644,12 @@ serve(async (req: Request) => {
     // This catches mid-flow rejections that the Trigger AI can't see
     // (e.g. when the lead is parked at AI Reply and changes their mind).
     if (isRejection(body)) {
-      console.log(`[sms-automation-run] rejection detected: "${body.slice(0, 60)}" — opting out contact ${contact_id}`);
+      // Hugo 2026-05-15: ALL rejections are per-automation, including STOP.
+      // No contact-level opt-out. Each new campaign / automation to this
+      // contact starts fresh, regardless of how they rejected prior flows.
+      // (See README — this is a non-standard choice that diverges from
+      // TCPA/CTIA "STOP = universal" guidance. Operator-approved.)
+      console.log(`[sms-automation-run] rejection detected: "${body.slice(0, 60)}" — state-level opt-out only`);
 
       // Load existing state (if any) so we can scope task cancellation.
       const { data: rejStateRow } = await supabase
@@ -736,17 +742,18 @@ serve(async (req: Request) => {
           });
       }
 
+      // Mark contact as responded (so we know they engaged) but do NOT
+      // set opted_out — Hugo wants new automations to be unblocked.
       await supabase
         .from('sms_contacts')
-        .update({ opted_out: true, response_status: 'responded', updated_at: nowTs })
+        .update({ response_status: 'responded', updated_at: nowTs })
         .eq('id', contact_id);
 
-      // Hugo 2026-05-15: NO goodbye message — opt-out is silent. Contact
-      // said no, system stops, no further outbound. Going dark is the
-      // intended UX.
+      // NO goodbye message — opt-out is silent. Contact said no, this
+      // automation stops, no further outbound from this flow.
 
       return new Response(
-        JSON.stringify({ status: 'opted_out_via_rejection' }),
+        JSON.stringify({ status: 'opted_out_state_only', contact_opted_out: false }),
         { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
