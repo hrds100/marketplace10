@@ -933,7 +933,19 @@ export default function CampaignWizard({ open, onClose, onComplete, isSubmitting
                   >
                     <Checkbox
                       checked={data.selectedNumberIds.includes(n.id)}
-                      onCheckedChange={() => update({ selectedNumberIds: toggleInArray(data.selectedNumberIds, n.id) })}
+                      onCheckedChange={() => {
+                        const next = toggleInArray(data.selectedNumberIds, n.id);
+                        // Auto-flip rotation ON the moment a 2nd number is
+                        // selected so messages spread across senders by
+                        // default (carriers filter aggressively when one
+                        // number sends all the volume). Auto-flip OFF when
+                        // dropping back to a single number — rotation is
+                        // meaningless with one sender.
+                        update({
+                          selectedNumberIds: next,
+                          rotation: next.length >= 2,
+                        });
+                      }}
                     />
                     <div>
                       <span className="text-sm font-medium text-[#1A1A1A]">{n.label}</span>
@@ -948,10 +960,23 @@ export default function CampaignWizard({ open, onClose, onComplete, isSubmitting
               <div className="flex items-center gap-2 pt-2">
                 <Switch
                   checked={data.rotation}
+                  disabled={data.selectedNumberIds.length < 2}
                   onCheckedChange={(v) => update({ rotation: v })}
                 />
-                <Label className="text-sm text-[#1A1A1A]">Enable number rotation</Label>
+                <Label className={`text-sm ${data.selectedNumberIds.length < 2 ? 'text-[#9CA3AF]' : 'text-[#1A1A1A]'}`}>
+                  Enable number rotation
+                </Label>
               </div>
+              {data.selectedNumberIds.length >= 2 && data.rotation && (
+                <p className="text-xs text-[#1E9A80]">
+                  Rotation auto-enabled — messages will round-robin across the {data.selectedNumberIds.length} selected numbers.
+                </p>
+              )}
+              {data.selectedNumberIds.length >= 2 && !data.rotation && (
+                <p className="text-xs text-[#F59E0B]">
+                  ⚠ Rotation is OFF — every message will go from the first selected number. Carriers may block it once volume rises.
+                </p>
+              )}
             </div>
           )}
 
