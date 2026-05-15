@@ -36,7 +36,8 @@ const NODE_TYPE_OPTIONS: { value: SmsNodeType; label: string }[] = [
   { value: SmsNodeType.WAIT_FOR_REPLY, label: 'If Reply / If No Reply' },
   { value: SmsNodeType.SCHEDULED_DELAY, label: 'Scheduled Drip (fires regardless of reply)' },
   { value: SmsNodeType.FOLLOW_UP, label: 'Follow Up' },
-  { value: SmsNodeType.TRANSFER, label: 'Transfer' },
+  { value: SmsNodeType.TRANSFER, label: 'Transfer to agent' },
+  { value: SmsNodeType.TRANSFER_TO_DIALER, label: 'Transfer to Dialer (CRM hot lead)' },
   { value: SmsNodeType.LABEL, label: 'Label' },
   { value: SmsNodeType.MOVE_STAGE, label: 'Move Stage' },
   { value: SmsNodeType.WEBHOOK, label: 'Webhook' },
@@ -53,6 +54,7 @@ const LOOP_BACK_TYPES = new Set([
 const TERMINAL_TYPES = new Set([
   SmsNodeType.STOP_CONVERSATION,
   SmsNodeType.TRANSFER,
+  SmsNodeType.TRANSFER_TO_DIALER,
 ]);
 
 function generateStepId(): string {
@@ -95,6 +97,7 @@ export function EditNodePopup() {
   const [model, setModel] = useState('gpt-4o-mini');
   const [waitValue, setWaitValue] = useState(24);
   const [waitUnit, setWaitUnit] = useState<'minutes' | 'hours' | 'days'>('hours');
+  const [dialerPriority, setDialerPriority] = useState(9999);
   // Start node only — choose between silent trigger or AI Response.
   const [startMode, setStartMode] = useState<'trigger' | 'ai'>('trigger');
 
@@ -117,6 +120,7 @@ export function EditNodePopup() {
       setWebhookMethod(nodeData.webhookMethod || 'POST');
       setWaitValue(Number(nodeData.waitValue ?? 24));
       setWaitUnit((nodeData.waitUnit as 'minutes' | 'hours' | 'days') || 'hours');
+      setDialerPriority(Number(nodeData.dialerPriority ?? 9999));
       // Infer startMode from saved data: explicit > legacy fallback (any
       // prompt/text means AI was in use; empty means it was a trigger).
       const inferredStartMode: 'trigger' | 'ai' = nodeData.startMode
@@ -185,6 +189,9 @@ export function EditNodePopup() {
       updates.waitValue = Math.max(1, Math.floor(waitValue || 1));
       updates.waitUnit = waitUnit;
     }
+    if (type === SmsNodeType.TRANSFER_TO_DIALER) {
+      updates.dialerPriority = Math.max(1, Math.floor(dialerPriority || 9999));
+    }
 
     updateNode(isEditingNode, updates);
     toast.success('Node updated');
@@ -212,6 +219,7 @@ export function EditNodePopup() {
     webhookMethod,
     waitValue,
     waitUnit,
+    dialerPriority,
     startMode,
     setNodes,
     updateNode,
@@ -712,6 +720,33 @@ export function EditNodePopup() {
                     </SelectContent>
                   </Select>
                 </div>
+              </div>
+            </>
+          )}
+
+          {/* TRANSFER_TO_DIALER fields */}
+          {type === SmsNodeType.TRANSFER_TO_DIALER && (
+            <>
+              <div className="px-3 py-2.5 bg-[#FEE2E2] rounded-lg border border-[#DC2626]/30">
+                <p className="text-xs font-medium text-[#DC2626]">
+                  Terminal node — when the engine walks here, the lead is pushed to the CRM dialer queue with the priority below. Automation ends after.
+                </p>
+                <p className="text-[10px] text-[#6B7280] mt-1">
+                  Lead is upserted into wk_contacts with <code className="text-[#1A1A1A]">is_hot = true</code> and added to the first ACTIVE wk_dialer_campaign (so an agent calls them next).
+                </p>
+              </div>
+              <div className="space-y-1.5">
+                <Label className="text-xs font-medium text-[#6B7280]">Dialer priority</Label>
+                <Input
+                  type="number"
+                  value={dialerPriority || ''}
+                  onChange={(e) => setDialerPriority(parseInt(e.target.value) || 9999)}
+                  min={1}
+                  className="rounded-lg border-[#E5E7EB] w-[140px]"
+                />
+                <p className="text-[10px] text-[#9CA3AF]">
+                  Higher = sooner in agent's queue. 9999 = top of queue (default).
+                </p>
               </div>
             </>
           )}

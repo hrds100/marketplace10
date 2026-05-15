@@ -7,6 +7,7 @@ import {
   Clock,
   Hourglass,
   CalendarClock,
+  PhoneForwarded,
   UserPlus,
   Tag,
   ArrowRightLeft,
@@ -38,6 +39,7 @@ const NODE_CONFIG: Record<
   [SmsNodeType.WAIT_FOR_REPLY]: { icon: Hourglass, borderColor: '#8B5CF6', label: 'If Reply / If No Reply' },
   [SmsNodeType.SCHEDULED_DELAY]: { icon: CalendarClock, borderColor: '#0EA5E9', label: 'Scheduled Drip' },
   [SmsNodeType.TRANSFER]: { icon: UserPlus, borderColor: '#6B7280', label: 'Transfer' },
+  [SmsNodeType.TRANSFER_TO_DIALER]: { icon: PhoneForwarded, borderColor: '#DC2626', label: 'Transfer to Dialer' },
   [SmsNodeType.LABEL]: { icon: Tag, borderColor: '#1E9A80', label: 'Label' },
   [SmsNodeType.MOVE_STAGE]: { icon: ArrowRightLeft, borderColor: '#1E9A80', label: 'Move Stage' },
   [SmsNodeType.WEBHOOK]: { icon: Globe, borderColor: '#1A1A1A', label: 'Webhook' },
@@ -65,6 +67,10 @@ function getNodeSummary(type: SmsNodeType, data: SmsNodeData, allLabels: SmsLabe
     }
     case SmsNodeType.TRANSFER:
       return data.assignTo ? `Transfer to ${data.assignTo}` : 'Not assigned';
+    case SmsNodeType.TRANSFER_TO_DIALER: {
+      const pri = data.dialerPriority ?? 9999;
+      return `Push to CRM dialer (priority ${pri}) — terminal`;
+    }
     case SmsNodeType.LABEL: {
       const label = allLabels.find((l) => l.id === data.labelId);
       return label ? label.name : 'No label selected';
@@ -99,7 +105,8 @@ function NodeWrapperComponent({ id, data, type, selected }: NodeProps) {
 
   const Icon = config.icon;
   const isStart = nodeData.isStart === true;
-  const isTerminal = nodeType === SmsNodeType.STOP_CONVERSATION;
+  const isTerminal = nodeType === SmsNodeType.STOP_CONVERSATION
+    || nodeType === SmsNodeType.TRANSFER_TO_DIALER;
   const isLoopBack = [SmsNodeType.LABEL, SmsNodeType.MOVE_STAGE, SmsNodeType.FOLLOW_UP].includes(nodeType);
   const isBranching = nodeType === SmsNodeType.WAIT_FOR_REPLY;
   const isScheduledDrip = nodeType === SmsNodeType.SCHEDULED_DELAY;

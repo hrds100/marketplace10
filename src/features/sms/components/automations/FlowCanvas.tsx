@@ -30,6 +30,7 @@ const nodeTypes: NodeTypes = {
   [SmsNodeType.WAIT_FOR_REPLY]: NodeWrapper,
   [SmsNodeType.SCHEDULED_DELAY]: NodeWrapper,
   [SmsNodeType.TRANSFER]: NodeWrapper,
+  [SmsNodeType.TRANSFER_TO_DIALER]: NodeWrapper,
   [SmsNodeType.LABEL]: NodeWrapper,
   [SmsNodeType.MOVE_STAGE]: NodeWrapper,
   [SmsNodeType.WEBHOOK]: NodeWrapper,

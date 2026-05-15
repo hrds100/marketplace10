@@ -1,4 +1,4 @@
-import { X, CircleStop, Clock, UserPlus, Tag, ArrowRightLeft, Globe, Hourglass, CalendarClock } from 'lucide-react';
+import { X, CircleStop, Clock, UserPlus, Tag, ArrowRightLeft, Globe, Hourglass, CalendarClock, PhoneForwarded } from 'lucide-react';
 import { SmsNodeType } from '../../types';
 import { useFlowContext } from './FlowContext';
 
@@ -45,6 +45,13 @@ const NODE_OPTIONS: NodeOption[] = [
     description: 'Hand off to a human team member',
     icon: UserPlus,
     borderColor: '#6B7280',
+  },
+  {
+    type: SmsNodeType.TRANSFER_TO_DIALER,
+    name: 'Transfer to Dialer',
+    description: 'Push lead to CRM (hot flag + top of dialer queue) — terminal node. Add it where you want the lead to be called.',
+    icon: PhoneForwarded,
+    borderColor: '#DC2626',
   },
   {
     type: SmsNodeType.LABEL,
