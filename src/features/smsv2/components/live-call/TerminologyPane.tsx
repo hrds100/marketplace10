@@ -1,34 +1,38 @@
 // TerminologyPane — col 4 of the LiveCallScreen.
 //
-// PR 11 (Hugo 2026-04-26): two tabs side-by-side — Glossary (term
-// definitions: JV, HMO, finder's fee, etc) and Objections (caller
-// pushback Q&A: "what's the catch?", "have you done this before?").
-// Each tab has a + button for the agent to add a new card mid-call
-// without leaving the call. Both are admin-editable in Settings →
-// Glossary.
+// PR 11 (Hugo 2026-04-26): originally Glossary + Objections tabs.
+// Hugo 2026-05-15: Objections tab replaced with Messages tab showing
+// the contact's SMS / WhatsApp / email history. Agents wanted to see
+// what was already said before they pick up — pre-written objection
+// scripts weren't being used in practice and the timeline is more
+// useful context for the actual conversation.
 //
-// Data: wk_terminologies with the new `category` column. Realtime so
-// admin edits land in the live-call pane without reload.
+// Data:
+//   • Glossary: wk_terminologies (category='glossary'), realtime
+//   • Messages: wk_sms_messages for the active contact, realtime
 
 import { useMemo, useState } from 'react';
-import { BookOpen, ChevronRight, ChevronDown, MessageCircleQuestion, Plus, X } from 'lucide-react';
+import { BookOpen, ChevronRight, ChevronDown, MessageSquare, Plus, X } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import {
   useTerminologies,
   type Terminology,
-  type TerminologyCategory,
 } from '../../hooks/useTerminologies';
+import { useContactMessages, type CrmMessage } from '../../hooks/useContactMessages';
 import { useSmsV2 } from '../../store/SmsV2Store';
 
-export default function TerminologyPane() {
+type PaneTab = 'glossary' | 'messages';
+
+export default function TerminologyPane({ contactId }: { contactId?: string }) {
   const { items, loading, error, add } = useTerminologies({ activeOnly: true });
   const { pushToast } = useSmsV2();
-  const [tab, setTab] = useState<TerminologyCategory>('glossary');
+  const [tab, setTab] = useState<PaneTab>('messages');
   const [filter, setFilter] = useState('');
   const [adding, setAdding] = useState(false);
 
+  // Glossary filtering (only used when tab='glossary')
   const filtered = useMemo(() => {
-    const inTab = items.filter((t) => t.category === tab);
+    const inTab = items.filter((t) => t.category === 'glossary');
     const q = filter.trim().toLowerCase();
     if (!q) return inTab;
     return inTab.filter(
@@ -37,18 +41,25 @@ export default function TerminologyPane() {
         (t.short_gist ?? '').toLowerCase().includes(q) ||
         t.definition_md.toLowerCase().includes(q)
     );
-  }, [items, filter, tab]);
+  }, [items, filter]);
 
-  const counts = useMemo(() => {
-    const c = { glossary: 0, objection: 0 };
-    for (const t of items) c[t.category] = (c[t.category] ?? 0) + 1;
-    return c;
-  }, [items]);
+  const glossaryCount = useMemo(
+    () => items.filter((t) => t.category === 'glossary').length,
+    [items]
+  );
+
+  // Contact message history (only used when tab='messages')
+  const { messages: contactMessages } = useContactMessages(contactId ?? '');
+  const filteredMessages = useMemo(() => {
+    const q = filter.trim().toLowerCase();
+    if (!q) return contactMessages;
+    return contactMessages.filter((m) => m.body.toLowerCase().includes(q));
+  }, [contactMessages, filter]);
 
   const handleAdd = async (form: { term: string; short_gist: string; definition_md: string }) => {
     try {
       const maxSort = items
-        .filter((t) => t.category === tab)
+        .filter((t) => t.category === 'glossary')
         .reduce((max, t) => Math.max(max, t.sort_order), 0);
       await add({
         term: form.term,
@@ -56,9 +67,9 @@ export default function TerminologyPane() {
         definition_md: form.definition_md,
         sort_order: maxSort + 10,
         is_active: true,
-        category: tab,
+        category: 'glossary',
       });
-      pushToast(`Added to ${tab === 'glossary' ? 'Glossary' : 'Objections'}`, 'success');
+      pushToast('Added to Glossary', 'success');
       setAdding(false);
     } catch (e) {
       pushToast(`Add failed: ${e instanceof Error ? e.message : 'unknown'}`, 'error');
@@ -69,18 +80,18 @@ export default function TerminologyPane() {
     <div className="flex flex-col h-full bg-white">
       <div className="flex border-b border-[#E5E7EB]">
         <TabButton
+          active={tab === 'messages'}
+          icon={<MessageSquare className="w-3.5 h-3.5" />}
+          label="Messages"
+          count={contactMessages.length}
+          onClick={() => setTab('messages')}
+        />
+        <TabButton
           active={tab === 'glossary'}
           icon={<BookOpen className="w-3.5 h-3.5" />}
           label="Glossary"
-          count={counts.glossary}
+          count={glossaryCount}
           onClick={() => setTab('glossary')}
-        />
-        <TabButton
-          active={tab === 'objection'}
-          icon={<MessageCircleQuestion className="w-3.5 h-3.5" />}
-          label="Objections"
-          count={counts.objection}
-          onClick={() => setTab('objection')}
         />
       </div>
 
@@ -89,41 +100,105 @@ export default function TerminologyPane() {
           type="text"
           value={filter}
           onChange={(e) => setFilter(e.target.value)}
-          placeholder="Filter…"
+          placeholder={tab === 'messages' ? 'Search messages…' : 'Filter…'}
           className="flex-1 px-2.5 py-1.5 text-[12px] border border-[#E5E5E5] rounded-[10px] focus:outline-none focus:ring-1 focus:ring-[#1E9A80]/30 focus:border-[#1E9A80]"
         />
-        <button
-          onClick={() => setAdding(true)}
-          title={`Add a ${tab === 'glossary' ? 'term' : 'objection'}`}
-          className="p-1.5 rounded-[10px] bg-[#1E9A80]/10 text-[#1E9A80] hover:bg-[#1E9A80]/20"
-        >
-          <Plus className="w-3.5 h-3.5" />
-        </button>
+        {tab === 'glossary' && (
+          <button
+            onClick={() => setAdding(true)}
+            title="Add a term"
+            className="p-1.5 rounded-[10px] bg-[#1E9A80]/10 text-[#1E9A80] hover:bg-[#1E9A80]/20"
+          >
+            <Plus className="w-3.5 h-3.5" />
+          </button>
+        )}
       </div>
 
       <div className="flex-1 overflow-y-auto px-3 py-2 space-y-1.5">
-        {error && (
-          <div className="text-[11px] text-[#EF4444] px-1">⚠ {error}</div>
+        {tab === 'glossary' ? (
+          <>
+            {error && (
+              <div className="text-[11px] text-[#EF4444] px-1">⚠ {error}</div>
+            )}
+            {!loading && filtered.length === 0 && !adding && (
+              <div className="text-[12px] text-[#9CA3AF] text-center px-4 py-6 leading-snug">
+                {glossaryCount === 0
+                  ? 'No glossary terms yet. Click + to add one, or manage them in Settings → Glossary.'
+                  : `No matches for "${filter}".`}
+              </div>
+            )}
+            {filtered.map((t) => (
+              <TermCard key={t.id} term={t} />
+            ))}
+          </>
+        ) : (
+          <MessagesTimeline contactId={contactId} messages={filteredMessages} />
         )}
-        {!loading && filtered.length === 0 && !adding && (
-          <div className="text-[12px] text-[#9CA3AF] text-center px-4 py-6 leading-snug">
-            {items.filter((t) => t.category === tab).length === 0
-              ? `No ${tab === 'glossary' ? 'glossary terms' : 'objections'} yet. Click + to add one, or manage them in Settings → Glossary.`
-              : `No matches for "${filter}".`}
-          </div>
-        )}
-        {filtered.map((t) => (
-          <TermCard key={t.id} term={t} />
-        ))}
       </div>
 
-      {adding && (
+      {adding && tab === 'glossary' && (
         <AddCardForm
-          category={tab}
           onCancel={() => setAdding(false)}
           onSave={(form) => void handleAdd(form)}
         />
       )}
+    </div>
+  );
+}
+
+function MessagesTimeline({ contactId, messages }: { contactId?: string; messages: CrmMessage[] }) {
+  if (!contactId) {
+    return (
+      <div className="text-[12px] text-[#9CA3AF] text-center px-4 py-6 leading-snug">
+        No active contact — start a call to see message history.
+      </div>
+    );
+  }
+  if (messages.length === 0) {
+    return (
+      <div className="text-[12px] text-[#9CA3AF] text-center px-4 py-6 leading-snug">
+        No messages exchanged with this contact yet.
+      </div>
+    );
+  }
+  return (
+    <>
+      {messages.map((m) => (
+        <MessageBubble key={m.id} message={m} />
+      ))}
+    </>
+  );
+}
+
+function MessageBubble({ message }: { message: CrmMessage }) {
+  const isInbound = message.direction === 'inbound';
+  const time = new Date(message.createdAt);
+  const timeStr = time.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+  const dateStr = time.toLocaleDateString([], { day: '2-digit', month: 'short' });
+  return (
+    <div
+      className={cn(
+        'rounded-lg border p-2 text-[12px] leading-snug',
+        isInbound
+          ? 'border-[#1E9A80]/30 bg-[#ECFDF5] text-[#1A1A1A]'
+          : 'border-[#E5E7EB] bg-white text-[#374151]'
+      )}
+    >
+      <div className="flex items-center justify-between gap-2 mb-1">
+        <span
+          className={cn(
+            'text-[10px] font-semibold uppercase tracking-wide',
+            isInbound ? 'text-[#1E9A80]' : 'text-[#6B7280]'
+          )}
+        >
+          {isInbound ? '↓ From contact' : '↑ Sent'}
+          {message.channel !== 'sms' && ` · ${message.channel}`}
+        </span>
+        <span className="text-[10px] text-[#9CA3AF] tabular-nums">
+          {dateStr} {timeStr}
+        </span>
+      </div>
+      <div className="whitespace-pre-wrap break-words">{message.body}</div>
     </div>
   );
 }
@@ -159,11 +234,9 @@ function TabButton({
 }
 
 function AddCardForm({
-  category,
   onCancel,
   onSave,
 }: {
-  category: TerminologyCategory;
   onCancel: () => void;
   onSave: (form: { term: string; short_gist: string; definition_md: string }) => void;
 }) {
@@ -184,7 +257,7 @@ function AddCardForm({
     <div className="border-t-2 border-[#1E9A80] bg-[#ECFDF5]/30 p-3 space-y-2">
       <div className="flex items-center justify-between">
         <span className="text-[11px] font-bold uppercase tracking-wide text-[#1E9A80]">
-          New {category === 'glossary' ? 'term' : 'objection'}
+          New term
         </span>
         <button
           onClick={onCancel}
@@ -198,11 +271,7 @@ function AddCardForm({
         type="text"
         value={term}
         onChange={(e) => setTerm(e.target.value)}
-        placeholder={
-          category === 'glossary'
-            ? 'Term (e.g. "Voting")'
-            : 'Caller objection (e.g. "What\'s the catch?")'
-        }
+        placeholder='Term (e.g. "Voting")'
         autoFocus
         className="w-full px-2 py-1.5 text-[12px] bg-white border border-[#E5E5E5] rounded-[8px] focus:outline-none focus:ring-1 focus:ring-[#1E9A80]/30 focus:border-[#1E9A80]"
       />
@@ -216,11 +285,7 @@ function AddCardForm({
       <textarea
         value={definition}
         onChange={(e) => setDefinition(e.target.value)}
-        placeholder={
-          category === 'glossary'
-            ? 'Full definition (Markdown supported)'
-            : 'Coach-friendly answer (Markdown supported)'
-        }
+        placeholder="Full definition (Markdown supported)"
         rows={3}
         className="w-full px-2 py-1.5 text-[12px] bg-white border border-[#E5E5E5] rounded-[8px] focus:outline-none focus:ring-1 focus:ring-[#1E9A80]/30 focus:border-[#1E9A80] resize-none"
       />
