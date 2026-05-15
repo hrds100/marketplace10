@@ -202,6 +202,7 @@ export enum SmsNodeType {
   WAIT_FOR_REPLY = 'WAIT_FOR_REPLY',
   SCHEDULED_DELAY = 'SCHEDULED_DELAY',
   TRANSFER = 'TRANSFER',
+  TRANSFER_TO_DIALER = 'TRANSFER_TO_DIALER',
   LABEL = 'LABEL',
   MOVE_STAGE = 'MOVE_STAGE',
   WEBHOOK = 'WEBHOOK',
@@ -261,6 +262,10 @@ export interface SmsNodeData {
   // WAIT_FOR_REPLY only
   waitValue?: number;
   waitUnit?: 'minutes' | 'hours' | 'days';
+  // TRANSFER_TO_DIALER only — which dialer campaign to add this lead to,
+  // and what priority (default 9999 = top of queue).
+  dialerCampaignId?: string;
+  dialerPriority?: number;
   // Start node only — 'trigger' is a silent passthrough (current default),
   // 'ai' makes the start node generate an AI reply on inbound using
   // Global Prompt + this node's prompt. If undefined, inferred from

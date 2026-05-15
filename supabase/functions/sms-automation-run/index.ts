@@ -94,64 +94,6 @@ function normalizeLabel(s: string | null | undefined): string {
   return (s ?? '').trim().toLowerCase().replace(/[\s_-]+/g, '_');
 }
 
-// Detects POSITIVE intent to talk on the phone OR strong engagement.
-// When this fires we transfer the lead to the CRM dialer with top
-// priority — a human agent will call them. Tuned tight so it only
-// catches clear call requests / strong interest, not just "thanks"
-// or "ok" which the AI Reply can keep handling.
-function isPositiveTransferIntent(body: string | null | undefined): boolean {
-  const text = (body || '').trim().toLowerCase().replace(/\s+/g, ' ');
-  if (!text) return false;
-
-  const STRONG = [
-    // Explicit call requests
-    'call me',
-    'ring me',
-    'phone me',
-    'give me a call',
-    'give me a ring',
-    'call back',
-    'ring back',
-    'call later',
-    'call asap',
-    'call now',
-    'when can you call',
-    'what time can you call',
-    'what time works',
-    'good time to talk',
-    'good time to chat',
-    'happy for a call',
-    'happy to chat',
-    'happy to talk',
-    'happy to speak',
-    'lets jump on a call',
-    "let's jump on a call",
-    'lets talk on the phone',
-    "let's talk on the phone",
-    // Strong interest
-    'i am interested',
-    "i'm interested",
-    'im interested',
-    'very interested',
-    'really interested',
-    'sounds great',
-    'sounds amazing',
-    'count me in',
-    'sign me up',
-    // Direct yes-to-call
-    'yes please call',
-    'yes please ring',
-    'yes ring',
-    'yes call',
-    'sure call me',
-    'sure ring me',
-  ];
-  for (const p of STRONG) {
-    if (text.includes(p)) return true;
-  }
-  return false;
-}
-
 // Detects SOFT rejection / opt-out intent during a conversation —
 // "no" / "nope" / "not interested" / "leave me alone" / "this is spam",
 // complaint phrases, etc. Soft rejections are STATE-LEVEL: they stop
@@ -558,6 +500,92 @@ async function executeNode(
       return { shouldStop: true, sentMessage: false, output: { status: 'transferred', assigned_to: node.data.assignTo } };
     }
 
+    case 'TRANSFER_TO_DIALER': {
+      const nowTs = new Date().toISOString();
+      const priority = Math.max(1, Math.floor(Number(node.data.dialerPriority ?? 9999)));
+      const fromVariants = [fromNumber, fromNumber.replace(/^\+/, ''), '+' + fromNumber.replace(/^\+/, '')];
+
+      const { data: smsContactRow } = await supabase
+        .from('sms_contacts')
+        .select('display_name')
+        .eq('id', contactId)
+        .maybeSingle();
+      const displayName =
+        (smsContactRow as { display_name?: string } | null)?.display_name || fromNumber;
+
+      let wkContactId: string | null = null;
+      const { data: existingWk } = await supabase
+        .from('wk_contacts')
+        .select('id')
+        .in('phone', fromVariants)
+        .limit(1)
+        .maybeSingle();
+
+      if (existingWk && (existingWk as { id?: string }).id) {
+        wkContactId = (existingWk as { id: string }).id;
+        await supabase
+          .from('wk_contacts')
+          .update({ is_hot: true, last_contact_at: nowTs, updated_at: nowTs })
+          .eq('id', wkContactId);
+      } else {
+        const e164 = fromNumber.startsWith('+') ? fromNumber : '+' + fromNumber;
+        const { data: inserted } = await supabase
+          .from('wk_contacts')
+          .insert({
+            name: displayName,
+            phone: e164,
+            owner_agent_id: null,
+            pipeline_column_id: null,
+            is_hot: true,
+            custom_fields: {
+              source: 'sms_automation_transfer_node',
+              automation_id: context.automationId,
+              node_id: node.id,
+              transferred_at: nowTs,
+            },
+          })
+          .select('id')
+          .single();
+        wkContactId = (inserted as { id?: string } | null)?.id ?? null;
+      }
+
+      if (wkContactId) {
+        let campaignId = (node.data.dialerCampaignId as string | undefined) || null;
+        if (!campaignId) {
+          const { data: defaultCampaign } = await supabase
+            .from('wk_dialer_campaigns')
+            .select('id')
+            .eq('is_active', true)
+            .order('created_at', { ascending: false })
+            .limit(1)
+            .maybeSingle();
+          campaignId = (defaultCampaign as { id?: string } | null)?.id ?? null;
+        }
+        if (campaignId) {
+          await supabase.from('wk_dialer_queue').upsert(
+            {
+              campaign_id: campaignId,
+              contact_id: wkContactId,
+              status: 'pending',
+              priority,
+              attempts: 0,
+              scheduled_for: null,
+            },
+            { onConflict: 'campaign_id,contact_id' }
+          );
+        }
+        console.log(
+          `Lead ${wkContactId} pushed to CRM dialer with priority ${priority} (campaign ${campaignId})`
+        );
+      }
+
+      return {
+        shouldStop: true,
+        sentMessage: false,
+        output: { status: 'transferred_to_dialer', wk_contact_id: wkContactId, priority },
+      };
+    }
+
     case 'LABEL': {
       if (node.data.labelId) {
         await supabase.from('sms_contact_labels').upsert(
@@ -692,178 +720,6 @@ serve(async (req: Request) => {
 
     const automationId = conv.automation_id;
 
-    // ---- POSITIVE INTENT → CRM DIALER TRANSFER (Hugo 2026-05-15) ----
-    // If the contact asks for a call or shows strong interest ANY time
-    // in the flow, transfer them to the CRM dialer with top priority
-    // and stop further automated outreach. Agent calls them next.
-    if (isPositiveTransferIntent(body)) {
-      console.log(`[sms-automation-run] positive intent: "${body.slice(0, 60)}" — transferring contact ${contact_id} to CRM dialer`);
-      const nowTs = new Date().toISOString();
-
-      // 1. Load existing state so we can scope task cancellation.
-      const { data: transferStateRow } = await supabase
-        .from('sms_automation_state')
-        .select('id, status, exit_reason')
-        .eq('conversation_id', conversation_id)
-        .eq('automation_id', automationId)
-        .maybeSingle();
-      const transferState = transferStateRow as { id: string; status: string; exit_reason: string | null } | null;
-
-      // 2. Idempotency: if already transferred, don't re-do the work.
-      if (transferState && transferState.status === 'completed' && transferState.exit_reason === 'transferred_to_dialer') {
-        return new Response(
-          JSON.stringify({ status: 'already_transferred' }),
-          { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-        );
-      }
-
-      // 3. Cancel any pending drip / wait tasks for this state.
-      if (transferState) {
-        await supabase
-          .from('sms_scheduled_tasks')
-          .update({ status: 'completed', last_error: 'transferred_to_dialer' })
-          .eq('automation_state_id', transferState.id)
-          .eq('status', 'pending');
-      }
-
-      // 4. Upsert wk_contacts so this contact exists in the CRM (with
-      //    is_hot=true so it surfaces in hot-leads filters too).
-      const fromVariants = [from_number, from_number.replace(/^\+/, ''), '+' + from_number.replace(/^\+/, '')];
-      const { data: contactName } = await supabase
-        .from('sms_contacts')
-        .select('display_name')
-        .eq('id', contact_id)
-        .maybeSingle();
-      const displayName = (contactName as { display_name?: string } | null)?.display_name || from_number;
-
-      const { data: existingWk } = await supabase
-        .from('wk_contacts')
-        .select('id')
-        .in('phone', fromVariants)
-        .limit(1)
-        .maybeSingle();
-
-      let wkContactId: string | null = (existingWk as { id?: string } | null)?.id ?? null;
-      if (wkContactId) {
-        await supabase
-          .from('wk_contacts')
-          .update({
-            is_hot: true,
-            last_contact_at: nowTs,
-            updated_at: nowTs,
-          })
-          .eq('id', wkContactId);
-      } else {
-        const e164 = from_number.startsWith('+') ? from_number : '+' + from_number;
-        const { data: inserted } = await supabase
-          .from('wk_contacts')
-          .insert({
-            name: displayName,
-            phone: e164,
-            owner_agent_id: null,
-            pipeline_column_id: null,
-            is_hot: true,
-            custom_fields: {
-              source: 'sms_automation_transfer',
-              automation_id: automationId,
-              transferred_at: nowTs,
-            },
-          })
-          .select('id')
-          .single();
-        wkContactId = (inserted as { id?: string } | null)?.id ?? null;
-      }
-
-      // 5. Add to dialer queue with top priority. Look for an active
-      //    campaign; use the first one available.
-      if (wkContactId) {
-        const { data: campaign } = await supabase
-          .from('wk_dialer_campaigns')
-          .select('id')
-          .eq('is_active', true)
-          .order('created_at', { ascending: false })
-          .limit(1)
-          .maybeSingle();
-        const campaignId = (campaign as { id?: string } | null)?.id;
-
-        if (campaignId) {
-          // Upsert (campaign_id, contact_id) — unique constraint.
-          await supabase
-            .from('wk_dialer_queue')
-            .upsert(
-              {
-                campaign_id: campaignId,
-                contact_id: wkContactId,
-                status: 'pending',
-                priority: 9999,
-                attempts: 0,
-                scheduled_for: null,
-              },
-              { onConflict: 'campaign_id,contact_id' }
-            );
-          console.log(`[sms-automation-run] added wk_contact ${wkContactId} to dialer campaign ${campaignId} with priority 9999`);
-        } else {
-          console.warn(`[sms-automation-run] no active wk_dialer_campaigns — skipping queue insert`);
-        }
-      }
-
-      // 6. Mark state completed; land at a STOP node visually so the
-      //    canvas reflects the transfer.
-      let transferStopNodeId = 'transferred_to_dialer';
-      try {
-        const { data: autoForStop } = await supabase
-          .from('sms_automations')
-          .select('flow_json')
-          .eq('id', automationId)
-          .maybeSingle();
-        const fj = (autoForStop as { flow_json?: FlowJson | null } | null)?.flow_json;
-        const anyStop = fj?.nodes?.find((n) => (n.type || '').toUpperCase() === 'STOP_CONVERSATION');
-        if (anyStop) transferStopNodeId = anyStop.id;
-      } catch {
-        // ignore lookup error
-      }
-
-      if (transferState) {
-        await supabase
-          .from('sms_automation_state')
-          .update({
-            status: 'completed',
-            current_node_id: transferStopNodeId,
-            completed_at: nowTs,
-            last_message_at: nowTs,
-            exit_reason: 'transferred_to_dialer',
-          })
-          .eq('id', transferState.id);
-      } else {
-        await supabase
-          .from('sms_automation_state')
-          .insert({
-            conversation_id,
-            automation_id: automationId,
-            current_node_id: transferStopNodeId,
-            step_number: 1,
-            status: 'completed',
-            completed_at: nowTs,
-            last_message_at: nowTs,
-            exit_reason: 'transferred_to_dialer',
-          });
-      }
-
-      // 7. Mark sms_contacts response_status = 'responded' (don't opt out;
-      //    they're being transferred to a human, not rejecting).
-      await supabase
-        .from('sms_contacts')
-        .update({ response_status: 'responded', updated_at: nowTs })
-        .eq('id', contact_id);
-
-      // No outbound message — the agent's call IS the next touchpoint.
-      // Going silent here keeps the contact's experience clean.
-
-      return new Response(
-        JSON.stringify({ status: 'transferred_to_dialer', wk_contact_id: wkContactId }),
-        { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
-    }
 
     // ---- GLOBAL OPT-OUT SAFETY NET (Hugo 2026-05-15) ----
     // If the contact says no/nope/not interested/stop/spam/etc. at ANY
