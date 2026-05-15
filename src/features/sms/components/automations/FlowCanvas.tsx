@@ -28,6 +28,7 @@ const nodeTypes: NodeTypes = {
   [SmsNodeType.STOP_CONVERSATION]: NodeWrapper,
   [SmsNodeType.FOLLOW_UP]: NodeWrapper,
   [SmsNodeType.WAIT_FOR_REPLY]: NodeWrapper,
+  [SmsNodeType.SCHEDULED_DELAY]: NodeWrapper,
   [SmsNodeType.TRANSFER]: NodeWrapper,
   [SmsNodeType.LABEL]: NodeWrapper,
   [SmsNodeType.MOVE_STAGE]: NodeWrapper,
@@ -59,12 +60,14 @@ export function FlowCanvas() {
 
   const onConnect = useCallback(
     (params: Connection) => {
-      // WAIT_FOR_REPLY nodes expose two source handles ('replied' / 'no_reply').
-      // Pick the edge label from the handle so the engine + worker know which
-      // branch to follow.
+      // WAIT_FOR_REPLY exposes 'replied' / 'no_reply' handles. SCHEDULED_DELAY
+      // exposes 'fire_after' / 'continue_now'. Pick the edge label from the
+      // source handle so the engine + worker know which branch is which.
       let label = 'Responded';
       if (params.sourceHandle === 'replied') label = 'Replied';
       else if (params.sourceHandle === 'no_reply') label = 'No Reply';
+      else if (params.sourceHandle === 'fire_after') label = 'Fire after';
+      else if (params.sourceHandle === 'continue_now') label = 'Continue now';
 
       setEdges((eds) =>
         addEdge(

@@ -48,6 +48,7 @@ const DEFAULT_NAMES: Record<SmsNodeType, string> = {
   [SmsNodeType.STOP_CONVERSATION]: 'Stop Conversation',
   [SmsNodeType.FOLLOW_UP]: 'Follow Up',
   [SmsNodeType.WAIT_FOR_REPLY]: 'If Reply / If No Reply',
+  [SmsNodeType.SCHEDULED_DELAY]: 'Scheduled Drip',
   [SmsNodeType.TRANSFER]: 'Transfer',
   [SmsNodeType.LABEL]: 'Add Label',
   [SmsNodeType.MOVE_STAGE]: 'Move Stage',
@@ -197,8 +198,8 @@ export function FlowContextProvider({
         webhookMethod: type === SmsNodeType.WEBHOOK ? 'POST' : undefined,
         webhookUrl: type === SmsNodeType.WEBHOOK ? '' : undefined,
         modelOptions: type === SmsNodeType.DEFAULT ? { temperature: 0.7 } : undefined,
-        waitValue: type === SmsNodeType.WAIT_FOR_REPLY ? 24 : undefined,
-        waitUnit: type === SmsNodeType.WAIT_FOR_REPLY ? 'hours' : undefined,
+        waitValue: type === SmsNodeType.WAIT_FOR_REPLY || type === SmsNodeType.SCHEDULED_DELAY ? 24 : undefined,
+        waitUnit: type === SmsNodeType.WAIT_FOR_REPLY || type === SmsNodeType.SCHEDULED_DELAY ? 'hours' : undefined,
       },
     };
     setNodes((prev) => [...prev, newNode]);

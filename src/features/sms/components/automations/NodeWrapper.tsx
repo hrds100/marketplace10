@@ -6,6 +6,7 @@ import {
   CircleStop,
   Clock,
   Hourglass,
+  CalendarClock,
   UserPlus,
   Tag,
   ArrowRightLeft,
@@ -35,6 +36,7 @@ const NODE_CONFIG: Record<
   [SmsNodeType.STOP_CONVERSATION]: { icon: CircleStop, borderColor: '#EF4444', label: 'Stop' },
   [SmsNodeType.FOLLOW_UP]: { icon: Clock, borderColor: '#F59E0B', label: 'Follow Up' },
   [SmsNodeType.WAIT_FOR_REPLY]: { icon: Hourglass, borderColor: '#8B5CF6', label: 'If Reply / If No Reply' },
+  [SmsNodeType.SCHEDULED_DELAY]: { icon: CalendarClock, borderColor: '#0EA5E9', label: 'Scheduled Drip' },
   [SmsNodeType.TRANSFER]: { icon: UserPlus, borderColor: '#6B7280', label: 'Transfer' },
   [SmsNodeType.LABEL]: { icon: Tag, borderColor: '#1E9A80', label: 'Label' },
   [SmsNodeType.MOVE_STAGE]: { icon: ArrowRightLeft, borderColor: '#1E9A80', label: 'Move Stage' },
@@ -55,6 +57,11 @@ function getNodeSummary(type: SmsNodeType, data: SmsNodeData, allLabels: SmsLabe
       const v = data.waitValue ?? 24;
       const u = data.waitUnit ?? 'hours';
       return `If reply within ${v} ${u} → Replied branch. Else → No Reply branch.`;
+    }
+    case SmsNodeType.SCHEDULED_DELAY: {
+      const v = data.waitValue ?? 24;
+      const u = data.waitUnit ?? 'hours';
+      return `Fires "Fire after" target in ${v} ${u} regardless of replies. Live conversation continues separately.`;
     }
     case SmsNodeType.TRANSFER:
       return data.assignTo ? `Transfer to ${data.assignTo}` : 'Not assigned';
@@ -95,6 +102,7 @@ function NodeWrapperComponent({ id, data, type, selected }: NodeProps) {
   const isTerminal = nodeType === SmsNodeType.STOP_CONVERSATION;
   const isLoopBack = [SmsNodeType.LABEL, SmsNodeType.MOVE_STAGE, SmsNodeType.FOLLOW_UP].includes(nodeType);
   const isBranching = nodeType === SmsNodeType.WAIT_FOR_REPLY;
+  const isScheduledDrip = nodeType === SmsNodeType.SCHEDULED_DELAY;
 
   return (
     <>
@@ -267,7 +275,8 @@ function NodeWrapperComponent({ id, data, type, selected }: NodeProps) {
       </div>
 
       {/* Source handle — branching nodes have TWO labelled branch rows
-          (If Reply / If No Reply); everything else has a single handle. */}
+          (If Reply / If No Reply); SCHEDULED_DELAY has Fire after / Continue
+          now; everything else has a single handle. */}
       {isBranching ? (
         <>
           <div className="px-3 pt-1 pb-3 border-t border-[#E5E7EB] mt-1">
@@ -295,6 +304,35 @@ function NodeWrapperComponent({ id, data, type, selected }: NodeProps) {
             position={Position.Bottom}
             style={{ left: '75%' }}
             className="!w-3.5 !h-3.5 !bg-[#EF4444] !border-2 !border-white"
+          />
+        </>
+      ) : isScheduledDrip ? (
+        <>
+          <div className="px-3 pt-1 pb-3 border-t border-[#E5E7EB] mt-1">
+            <div className="grid grid-cols-2 gap-2">
+              <div className="flex items-center justify-center gap-1.5 px-2 py-1.5 rounded-md bg-[#E0F2FE] border border-[#0EA5E9]/30">
+                <span className="w-1.5 h-1.5 rounded-full bg-[#0EA5E9]" />
+                <span className="text-[11px] font-semibold text-[#0369A1]">Fire after</span>
+              </div>
+              <div className="flex items-center justify-center gap-1.5 px-2 py-1.5 rounded-md bg-[#ECFDF5] border border-[#1E9A80]/30">
+                <span className="w-1.5 h-1.5 rounded-full bg-[#1E9A80]" />
+                <span className="text-[11px] font-semibold text-[#1E9A80]">Continue now</span>
+              </div>
+            </div>
+          </div>
+          <Handle
+            id="fire_after"
+            type="source"
+            position={Position.Bottom}
+            style={{ left: '25%' }}
+            className="!w-3.5 !h-3.5 !bg-[#0EA5E9] !border-2 !border-white"
+          />
+          <Handle
+            id="continue_now"
+            type="source"
+            position={Position.Bottom}
+            style={{ left: '75%' }}
+            className="!w-3.5 !h-3.5 !bg-[#1E9A80] !border-2 !border-white"
           />
         </>
       ) : !isTerminal ? (
