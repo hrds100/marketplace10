@@ -94,11 +94,27 @@ function normalizeLabel(s: string | null | undefined): string {
   return (s ?? '').trim().toLowerCase().replace(/[\s_-]+/g, '_');
 }
 
-// Detects rejection / opt-out intent ANY time during a conversation —
-// short standalone "no" / "nope" / "stop" replies, multi-word rejections
-// like "not interested" / "leave me alone" / "this is spam", and common
-// complaint phrases. Tuned to avoid false positives on replies that
-// happen to contain "no" in another context (e.g. "no problem!").
+// HARD opt-out keywords — TCPA/CTIA legal standards. These are
+// CONTACT-level: once any of these comes in, the contact is opted out
+// of ALL automations forever. Match only when the entire message is
+// one of these tokens (stripped of trailing punctuation).
+function isHardOptOut(body: string | null | undefined): boolean {
+  const text = (body || '').trim().toLowerCase().replace(/[.!?,;]+$/, '');
+  if (!text) return false;
+  const HARD = new Set([
+    'stop', 'stopall', 'stop all',
+    'unsubscribe', 'unsub',
+    'cancel', 'end', 'quit',
+  ]);
+  return HARD.has(text);
+}
+
+// Detects SOFT rejection / opt-out intent during a conversation —
+// "no" / "nope" / "not interested" / "leave me alone" / "this is spam",
+// complaint phrases, etc. Soft rejections are STATE-LEVEL: they stop
+// THIS automation but don't block future campaigns to the same contact.
+// Tuned to avoid false positives on replies that happen to contain "no"
+// in another context (e.g. "no problem!").
 function isRejection(body: string | null | undefined): boolean {
   const text = (body || '').trim().toLowerCase();
   if (!text) return false;
@@ -643,7 +659,11 @@ serve(async (req: Request) => {
     // This catches mid-flow rejections that the Trigger AI can't see
     // (e.g. when the lead is parked at AI Reply and changes their mind).
     if (isRejection(body)) {
-      console.log(`[sms-automation-run] rejection detected: "${body.slice(0, 60)}" — opting out contact ${contact_id}`);
+      const hardOptOut = isHardOptOut(body);
+      console.log(
+        `[sms-automation-run] rejection detected: "${body.slice(0, 60)}" — `
+        + (hardOptOut ? 'HARD opt-out (contact-level, legal)' : 'soft (state-level only)')
+      );
 
       // Load existing state (if any) so we can scope task cancellation.
       const { data: rejStateRow } = await supabase
@@ -736,17 +756,37 @@ serve(async (req: Request) => {
           });
       }
 
+      // Hugo 2026-05-15: opt-out is per-automation by default. Only HARD
+      // keywords (STOP, UNSUBSCRIBE, CANCEL, END, QUIT) flip the contact-
+      // level opted_out flag — those are TCPA/CTIA legal opt-outs that
+      // must block ALL future automations forever. Soft rejections like
+      // "nope" or "not interested" only stop THIS automation; another
+      // campaign to the same contact later can still try.
+      const contactUpdate: Record<string, unknown> = {
+        response_status: 'responded',
+        updated_at: nowTs,
+      };
+      if (hardOptOut) {
+        contactUpdate.opted_out = true;
+        // Also record in the dedicated opt-outs table for legal audit.
+        await supabase.from('sms_opt_outs').upsert(
+          { phone_number: from_number, reason: 'keyword_stop' },
+          { onConflict: 'phone_number' }
+        );
+      }
       await supabase
         .from('sms_contacts')
-        .update({ opted_out: true, response_status: 'responded', updated_at: nowTs })
+        .update(contactUpdate)
         .eq('id', contact_id);
 
-      // Hugo 2026-05-15: NO goodbye message — opt-out is silent. Contact
-      // said no, system stops, no further outbound. Going dark is the
-      // intended UX.
+      // NO goodbye message — opt-out is silent. Contact said no, system
+      // stops, no further outbound. Going dark is the intended UX.
 
       return new Response(
-        JSON.stringify({ status: 'opted_out_via_rejection' }),
+        JSON.stringify({
+          status: hardOptOut ? 'opted_out_hard' : 'opted_out_soft',
+          contact_opted_out: hardOptOut,
+        }),
         { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
