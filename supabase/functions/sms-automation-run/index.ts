@@ -662,6 +662,44 @@ serve(async (req: Request) => {
         );
       }
 
+      // Find a STOP_CONVERSATION node in the flow so the lead visibly lands
+      // at the Stop card on the canvas. Prefer one wired to a "Not
+      // interested" edge from the start node (semantic match). Otherwise
+      // fall back to any STOP_CONVERSATION node; if none exists, use the
+      // synthetic 'opt_out' marker so the column at least carries meaning.
+      let stopNodeId = 'opt_out';
+      try {
+        const { data: autoForStop } = await supabase
+          .from('sms_automations')
+          .select('flow_json')
+          .eq('id', automationId)
+          .maybeSingle();
+        const fj = (autoForStop as { flow_json?: FlowJson | null } | null)?.flow_json;
+        if (fj?.nodes?.length) {
+          const startNode = fj.nodes.find((n) => n.data?.isStart === true);
+          const notInterestedEdge = startNode
+            ? fj.edges?.find((e) =>
+                e.source === startNode.id
+                && normalizeLabel(e.data?.label || e.label).includes('not_interested'))
+            : null;
+          let preferredTargetId: string | null = notInterestedEdge?.target ?? null;
+          if (preferredTargetId) {
+            const preferredNode = fj.nodes.find((n) =>
+              n.id === preferredTargetId
+              && (n.type || '').toUpperCase() === 'STOP_CONVERSATION');
+            if (preferredNode) stopNodeId = preferredNode.id;
+          }
+          if (stopNodeId === 'opt_out') {
+            // Fall back to any STOP_CONVERSATION node.
+            const anyStop = fj.nodes.find((n) =>
+              (n.type || '').toUpperCase() === 'STOP_CONVERSATION');
+            if (anyStop) stopNodeId = anyStop.id;
+          }
+        }
+      } catch (lookupErr) {
+        console.warn('[sms-automation-run] stop-node lookup failed (continuing with opt_out marker):', lookupErr);
+      }
+
       const nowTs = new Date().toISOString();
 
       if (rejState) {
@@ -675,6 +713,7 @@ serve(async (req: Request) => {
           .from('sms_automation_state')
           .update({
             status: 'completed',
+            current_node_id: stopNodeId,
             completed_at: nowTs,
             last_message_at: nowTs,
             exit_reason: 'opted_out',
@@ -688,7 +727,7 @@ serve(async (req: Request) => {
           .insert({
             conversation_id,
             automation_id: automationId,
-            current_node_id: 'opt_out',
+            current_node_id: stopNodeId,
             step_number: 1,
             status: 'completed',
             completed_at: nowTs,

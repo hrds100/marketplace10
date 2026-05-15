@@ -16,13 +16,15 @@ async function fetchFlowLeadCounts(automationId: string | undefined): Promise<Fl
   if (!automationId) return {};
 
   try {
-    // 1. Active or waiting states only — completed/suspended/paused leads
-    //    are no longer "at" a node in any meaningful sense.
+    // 1. Pull active + waiting (live conversations) AND completed (so leads
+    //    that ended on a Stop / Transfer / opt-out node show up there
+    //    instead of disappearing from the canvas). Suspended/paused leads
+    //    are excluded — they're not at a node, they're frozen.
     const { data: states, error: stateErr } = await (supabase
       .from('sms_automation_state' as never)
       .select('current_node_id, conversation_id, status')
       .eq('automation_id', automationId)
-      .in('status', ['active', 'waiting']) as never);
+      .in('status', ['active', 'waiting', 'completed']) as never);
 
     if (stateErr || !states) return {};
 
