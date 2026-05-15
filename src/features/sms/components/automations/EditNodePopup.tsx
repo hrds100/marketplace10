@@ -34,6 +34,7 @@ const TEAM_MEMBERS = [
 const NODE_TYPE_OPTIONS: { value: SmsNodeType; label: string }[] = [
   { value: SmsNodeType.STOP_CONVERSATION, label: 'Stop Conversation' },
   { value: SmsNodeType.WAIT_FOR_REPLY, label: 'If Reply / If No Reply' },
+  { value: SmsNodeType.SCHEDULED_DELAY, label: 'Scheduled Drip (fires regardless of reply)' },
   { value: SmsNodeType.FOLLOW_UP, label: 'Follow Up' },
   { value: SmsNodeType.TRANSFER, label: 'Transfer' },
   { value: SmsNodeType.LABEL, label: 'Label' },
@@ -180,7 +181,7 @@ export function EditNodePopup() {
       updates.webhookUrl = webhookUrl;
       updates.webhookMethod = webhookMethod;
     }
-    if (type === SmsNodeType.WAIT_FOR_REPLY) {
+    if (type === SmsNodeType.WAIT_FOR_REPLY || type === SmsNodeType.SCHEDULED_DELAY) {
       updates.waitValue = Math.max(1, Math.floor(waitValue || 1));
       updates.waitUnit = waitUnit;
     }
@@ -629,6 +630,48 @@ export function EditNodePopup() {
                 </SelectContent>
               </Select>
             </div>
+          )}
+
+          {/* SCHEDULED_DELAY fields */}
+          {type === SmsNodeType.SCHEDULED_DELAY && (
+            <>
+              <div className="px-3 py-2.5 bg-[#E0F2FE] rounded-lg border border-[#0EA5E9]/30">
+                <p className="text-xs font-medium text-[#0369A1]">
+                  Two outputs: <span className="font-semibold">Fire after</span> (sends after the delay, regardless of replies) and <span className="font-semibold">Continue now</span> (where the live conversation goes immediately).
+                </p>
+                <p className="text-[10px] text-[#6B7280] mt-1">
+                  Use this when you want a drip message to fire on a fixed schedule while AI keeps handling replies in parallel.
+                </p>
+              </div>
+              <div className="flex items-end gap-3">
+                <div className="space-y-1.5 flex-1">
+                  <Label className="text-xs font-medium text-[#6B7280]">Fire after</Label>
+                  <Input
+                    type="number"
+                    value={waitValue || ''}
+                    onChange={(e) => setWaitValue(parseInt(e.target.value) || 1)}
+                    min={1}
+                    className="rounded-lg border-[#E5E7EB]"
+                  />
+                </div>
+                <div className="space-y-1.5 flex-1">
+                  <Label className="text-xs font-medium text-[#6B7280]">Unit</Label>
+                  <Select
+                    value={waitUnit}
+                    onValueChange={(v) => setWaitUnit(v as 'minutes' | 'hours' | 'days')}
+                  >
+                    <SelectTrigger className="rounded-lg border-[#E5E7EB]">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="minutes">Minutes</SelectItem>
+                      <SelectItem value="hours">Hours</SelectItem>
+                      <SelectItem value="days">Days</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+            </>
           )}
 
           {/* WAIT_FOR_REPLY fields */}

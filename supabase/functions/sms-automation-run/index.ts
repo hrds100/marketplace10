@@ -346,6 +346,39 @@ async function executeNode(
       return { shouldStop: true, sentMessage: !!node.data.text, output: { status: 'stopped', text: node.data.text || null } };
     }
 
+    case 'SCHEDULED_DELAY': {
+      // Drip node — schedules a "fire after" target message to send after
+      // the configured wait, regardless of any reply. The live conversation
+      // continues immediately down the "Continue now" edge. Two side effects
+      // and one return value:
+      //   1. Insert sms_scheduled_tasks row (type='scheduled_delay') so the
+      //      cron worker fires the drip target at execute_at.
+      //   2. Return the "Continue now" target node id so the caller can
+      //      advance the walk to it (we can't change `targetNode` from
+      //      inside executeNode, so we communicate via output).
+      const waitValue = Number(node.data.waitValue ?? 24);
+      const waitUnit = String(node.data.waitUnit ?? 'hours');
+      const ms = waitUnit === 'minutes'
+        ? waitValue * 60_000
+        : waitUnit === 'hours'
+          ? waitValue * 3_600_000
+          : waitValue * 86_400_000;
+      const executeAt = new Date(Date.now() + ms).toISOString();
+
+      console.log(`SCHEDULED_DELAY ${node.id} — will fire "Fire after" target at ${executeAt}`);
+
+      return {
+        shouldStop: false,
+        sentMessage: false,
+        parkedWaiting: false,
+        output: {
+          status: 'scheduled_delay_armed',
+          execute_at: executeAt,
+          drip_source_node_id: node.id,
+        },
+      };
+    }
+
     case 'WAIT_FOR_REPLY': {
       // Parking node. We can't insert the scheduled task here because on
       // a brand-new conversation the state row hasn't been created yet —
@@ -824,6 +857,9 @@ serve(async (req: Request) => {
     let flowCompleted = false;
     let flowParkedWaiting = false;
     let pendingWaitTask: { execute_at: string; node_id: string } | null = null;
+    // SCHEDULED_DELAY drip tasks accumulate during the walk and are inserted
+    // after the state row is finalized so we have a valid state.id to link to.
+    const pendingDripTasks: Array<{ execute_at: string; source_node_id: string; target_node_id: string }> = [];
     let exitReason: string | null = null;
     const maxSilentSteps = 10; // Max non-message nodes to walk through
     let silentSteps = 0;
@@ -890,13 +926,58 @@ serve(async (req: Request) => {
         break;
       }
 
+      // SCHEDULED_DELAY: fire-and-forget the "Fire after" target as a future
+      // task, then continue the walk down the "Continue now" branch.
+      if ((output as { status?: string }).status === 'scheduled_delay_armed') {
+        const executeAt = (output as { execute_at?: string }).execute_at;
+        const sourceNodeId = (output as { drip_source_node_id?: string }).drip_source_node_id;
+        if (executeAt && sourceNodeId) {
+          // Find "Fire after" edge (sourceHandle='fire_after' OR label match)
+          const dripEdges = edges.filter((e) => e.source === sourceNodeId);
+          const fireAfterEdge = dripEdges.find(
+            (e) => (e as { sourceHandle?: string }).sourceHandle === 'fire_after',
+          ) || dripEdges.find(
+            (e) => normalizeLabel(e.data?.label || e.label) === 'fire_after',
+          );
+          const continueEdge = dripEdges.find(
+            (e) => (e as { sourceHandle?: string }).sourceHandle === 'continue_now',
+          ) || dripEdges.find(
+            (e) => normalizeLabel(e.data?.label || e.label) === 'continue_now',
+          );
+
+          if (fireAfterEdge?.target) {
+            pendingDripTasks.push({
+              execute_at: executeAt,
+              source_node_id: sourceNodeId,
+              target_node_id: fireAfterEdge.target,
+            });
+            console.log(`[scheduled_delay] queued drip → ${fireAfterEdge.target} at ${executeAt}`);
+          } else {
+            console.warn(`[scheduled_delay] ${sourceNodeId} has no "Fire after" edge — drip skipped`);
+          }
+
+          if (continueEdge?.target) {
+            const continueNode = nodes.find((n) => n.id === continueEdge.target);
+            if (continueNode) {
+              targetNode = continueNode;
+              finalNodeId = continueNode.id;
+              continue;
+            }
+          }
+          // No continue_now edge — flow ends here (lead just waits for drip).
+          flowCompleted = false;
+          break;
+        }
+      }
+
       if (sentMessage) {
-        // Chain into a WAIT_FOR_REPLY if it's the very next node, so the
+        // Chain into a wait/drip node if it's the very next node, so the
         // timer starts immediately rather than waiting for another inbound.
         const nextEdges = edges.filter((e) => e.source === targetNode!.id);
         if (nextEdges.length === 1) {
           const nextNode = nodes.find((n) => n.id === nextEdges[0].target);
-          if (nextNode && (nextNode.type || '').toUpperCase() === 'WAIT_FOR_REPLY') {
+          const nextType = (nextNode?.type || '').toUpperCase();
+          if (nextNode && (nextType === 'WAIT_FOR_REPLY' || nextType === 'SCHEDULED_DELAY')) {
             // Don't set messageSent — the walk continues into the wait node.
             targetNode = nextNode;
             finalNodeId = nextNode.id;
@@ -1014,6 +1095,26 @@ serve(async (req: Request) => {
         parkedStateId = (inserted as { id?: string } | null)?.id ?? null;
       }
 
+      // Insert any drip tasks accumulated during the walk (SCHEDULED_DELAY
+      // nodes fire-and-forget a future message regardless of conversation
+      // state — they live alongside the parked WAIT_FOR_REPLY task, not
+      // dependent on it).
+      if (parkedStateId && pendingDripTasks.length > 0) {
+        for (const dt of pendingDripTasks) {
+          const { error: dErr } = await supabase
+            .from('sms_scheduled_tasks')
+            .insert({
+              type: 'scheduled_delay',
+              reference_id: conversation_id,
+              node_id: dt.source_node_id,
+              automation_state_id: parkedStateId,
+              branch_label: dt.target_node_id, // stash target id here
+              execute_at: dt.execute_at,
+            });
+          if (dErr) console.error('[sms-automation-run] drip task insert failed', dErr);
+        }
+      }
+
       // Now that the state row exists, schedule the "no_reply" task that
       // sms-automation-worker will pick up when the timeout elapses. This
       // is what fires the No Reply branch.
@@ -1038,6 +1139,7 @@ serve(async (req: Request) => {
       }
     } else {
       // Flow continues — save position and wait for next user message
+      let activeStateId: string | null = null;
       if (state) {
         await supabase
           .from('sms_automation_state')
@@ -1047,8 +1149,9 @@ serve(async (req: Request) => {
             last_message_at: now,
           })
           .eq('id', state.id);
+        activeStateId = state.id;
       } else {
-        await supabase
+        const { data: inserted } = await supabase
           .from('sms_automation_state')
           .insert({
             conversation_id,
@@ -1057,7 +1160,28 @@ serve(async (req: Request) => {
             step_number: stepNumber,
             status: 'active',
             last_message_at: now,
-          });
+          })
+          .select('id')
+          .single();
+        activeStateId = (inserted as { id?: string } | null)?.id ?? null;
+      }
+
+      // Insert any drip tasks accumulated during this run. Drip tasks
+      // are fire-and-forget — they run independently of the live state.
+      if (activeStateId && pendingDripTasks.length > 0) {
+        for (const dt of pendingDripTasks) {
+          const { error: dErr } = await supabase
+            .from('sms_scheduled_tasks')
+            .insert({
+              type: 'scheduled_delay',
+              reference_id: conversation_id,
+              node_id: dt.source_node_id,
+              automation_state_id: activeStateId,
+              branch_label: dt.target_node_id, // stash target node id here
+              execute_at: dt.execute_at,
+            });
+          if (dErr) console.error('[sms-automation-run] drip task insert failed', dErr);
+        }
       }
     }
 

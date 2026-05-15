@@ -133,7 +133,7 @@ serve(async (req: Request) => {
       .from('sms_scheduled_tasks')
       .select('id, type, reference_id, node_id, automation_state_id, branch_label, execute_at, status, attempts')
       .eq('status', 'pending')
-      .eq('type', 'wait_for_reply')
+      .in('type', ['wait_for_reply', 'scheduled_delay'])
       .lte('execute_at', now)
       .order('execute_at', { ascending: true })
       .limit(MAX_TASKS_PER_RUN);
@@ -175,6 +175,182 @@ serve(async (req: Request) => {
         continue;
       }
 
+      // ============================================================
+      // SCHEDULED_DELAY handler — fire-and-forget drip message.
+      // Does NOT touch automation_state. Only sends the target node's
+      // text. branch_label stores the target node id (a small hack to
+      // avoid another column). Stops early if the contact opted out
+      // or the lead has reached a terminal state.
+      // ============================================================
+      if (taskRow.type === 'scheduled_delay') {
+        try {
+          const targetNodeId = taskRow.branch_label || '';
+          if (!targetNodeId || !taskRow.automation_state_id) {
+            console.warn(`[scheduled_delay] task ${taskRow.id} missing target/state — failing`);
+            await supabase
+              .from('sms_scheduled_tasks')
+              .update({ status: 'failed', last_error: 'missing target/state' })
+              .eq('id', taskRow.id);
+            failed++;
+            continue;
+          }
+
+          // Load state to read conversation, then load contact + automation flow.
+          const { data: stateData } = await supabase
+            .from('sms_automation_state')
+            .select('id, conversation_id, automation_id, status, exit_reason')
+            .eq('id', taskRow.automation_state_id)
+            .maybeSingle();
+          const state = stateData as { id: string; conversation_id: string; automation_id: string; status: string; exit_reason: string | null } | null;
+          if (!state) {
+            await supabase
+              .from('sms_scheduled_tasks')
+              .update({ status: 'failed', last_error: 'state not found' })
+              .eq('id', taskRow.id);
+            failed++;
+            continue;
+          }
+
+          // Skip if the lead opted out or reached a terminal state — don't
+          // drip on someone who said "stop".
+          if (state.status === 'completed' && state.exit_reason === 'stop_node') {
+            console.log(`[scheduled_delay] task ${taskRow.id}: lead stopped, skipping drip`);
+            await supabase
+              .from('sms_scheduled_tasks')
+              .update({ status: 'completed', last_error: 'lead stopped' })
+              .eq('id', taskRow.id);
+            skipped++;
+            continue;
+          }
+
+          const { data: conv } = await supabase
+            .from('sms_conversations')
+            .select('id, contact_id, number_id')
+            .eq('id', state.conversation_id)
+            .maybeSingle();
+          const convRow = conv as { id: string; contact_id: string; number_id: string | null } | null;
+          if (!convRow) {
+            await supabase
+              .from('sms_scheduled_tasks')
+              .update({ status: 'failed', last_error: 'conversation not found' })
+              .eq('id', taskRow.id);
+            failed++;
+            continue;
+          }
+
+          const { data: contactRow } = await supabase
+            .from('sms_contacts')
+            .select('id, phone_number, opted_out')
+            .eq('id', convRow.contact_id)
+            .maybeSingle();
+          const contact = contactRow as { id: string; phone_number: string; opted_out: boolean } | null;
+          if (!contact) {
+            await supabase
+              .from('sms_scheduled_tasks')
+              .update({ status: 'failed', last_error: 'contact not found' })
+              .eq('id', taskRow.id);
+            failed++;
+            continue;
+          }
+          if (contact.opted_out) {
+            console.log(`[scheduled_delay] contact ${contact.id} opted out, skipping drip`);
+            await supabase
+              .from('sms_scheduled_tasks')
+              .update({ status: 'completed', last_error: 'contact opted out' })
+              .eq('id', taskRow.id);
+            skipped++;
+            continue;
+          }
+
+          // Load the flow + find the target node.
+          const { data: auto } = await supabase
+            .from('sms_automations')
+            .select('flow_json, is_active')
+            .eq('id', state.automation_id)
+            .maybeSingle();
+          const automation = auto as { flow_json: FlowJson | null; is_active: boolean } | null;
+          if (!automation?.is_active || !automation.flow_json) {
+            await supabase
+              .from('sms_scheduled_tasks')
+              .update({ status: 'completed', last_error: 'automation inactive' })
+              .eq('id', taskRow.id);
+            skipped++;
+            continue;
+          }
+
+          const targetNode = automation.flow_json.nodes.find((n) => n.id === targetNodeId);
+          if (!targetNode) {
+            await supabase
+              .from('sms_scheduled_tasks')
+              .update({ status: 'failed', last_error: 'target node not found' })
+              .eq('id', taskRow.id);
+            failed++;
+            continue;
+          }
+
+          const text = (targetNode.data as { text?: string }).text;
+          if (!text) {
+            console.warn(`[scheduled_delay] target node ${targetNodeId} has no text — drip skipped`);
+            await supabase
+              .from('sms_scheduled_tasks')
+              .update({ status: 'completed', last_error: 'target has no text' })
+              .eq('id', taskRow.id);
+            skipped++;
+            continue;
+          }
+
+          // Send via sms-send.
+          const sendUrl = `${SUPABASE_URL}/functions/v1/sms-send`;
+          const sendPayload: Record<string, string | undefined> = {
+            to: contact.phone_number,
+            body: text,
+            contact_id: contact.id,
+          };
+          if (convRow.number_id) sendPayload.from_number_id = convRow.number_id;
+
+          const sendRes = await fetch(sendUrl, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${SUPABASE_SERVICE_KEY}`,
+            },
+            body: JSON.stringify(sendPayload),
+          });
+
+          if (!sendRes.ok) {
+            const errBody = await sendRes.text();
+            console.error(`[scheduled_delay] sms-send failed: ${errBody}`);
+            await supabase
+              .from('sms_scheduled_tasks')
+              .update({ status: 'failed', last_error: `sms-send: ${errBody.slice(0, 200)}` })
+              .eq('id', taskRow.id);
+            failed++;
+            continue;
+          }
+
+          await supabase
+            .from('sms_scheduled_tasks')
+            .update({ status: 'completed' })
+            .eq('id', taskRow.id);
+          resumed++;
+          console.log(`[scheduled_delay] task ${taskRow.id}: fired "${text.substring(0, 60)}" to ${contact.phone_number}`);
+        } catch (innerErr) {
+          console.error(`[scheduled_delay] task ${taskRow.id} threw:`, innerErr);
+          await supabase
+            .from('sms_scheduled_tasks')
+            .update({
+              status: 'failed',
+              last_error: innerErr instanceof Error ? innerErr.message : String(innerErr),
+            })
+            .eq('id', taskRow.id);
+          failed++;
+        }
+        continue;
+      }
+
+      // ============================================================
+      // WAIT_FOR_REPLY handler (existing — unchanged below)
+      // ============================================================
       try {
         if (!taskRow.automation_state_id) {
           console.warn(`Task ${taskRow.id} has no automation_state_id, skipping`);

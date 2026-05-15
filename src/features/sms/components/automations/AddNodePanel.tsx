@@ -1,4 +1,4 @@
-import { X, CircleStop, Clock, UserPlus, Tag, ArrowRightLeft, Globe, Hourglass } from 'lucide-react';
+import { X, CircleStop, Clock, UserPlus, Tag, ArrowRightLeft, Globe, Hourglass, CalendarClock } from 'lucide-react';
 import { SmsNodeType } from '../../types';
 import { useFlowContext } from './FlowContext';
 
@@ -24,6 +24,13 @@ const NODE_OPTIONS: NodeOption[] = [
     description: 'Two outputs — Replied (contact answers) or No Reply (timeout elapses). Set wait time inside.',
     icon: Hourglass,
     borderColor: '#8B5CF6',
+  },
+  {
+    type: SmsNodeType.SCHEDULED_DELAY,
+    name: 'Scheduled Drip',
+    description: 'Fires its "Fire after" target after X time REGARDLESS of replies, while the live conversation continues separately.',
+    icon: CalendarClock,
+    borderColor: '#0EA5E9',
   },
   {
     type: SmsNodeType.FOLLOW_UP,
