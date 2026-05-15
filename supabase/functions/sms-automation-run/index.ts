@@ -77,6 +77,18 @@ interface FlowJson {
   globalModel?: string;
   globalTemperature?: number;
   maxRepliesPerLead?: number;
+  // Per-automation opt-in: when true, the engine checks every inbound
+  // message for positive transfer intent ("call me", "i'm interested",
+  // etc.) BEFORE walking the canvas. A positive match pushes the lead
+  // straight to the CRM dialer and stops the automation. This is the
+  // "any stage if they ask to call" trigger — not global, only on for
+  // automations that explicitly enable it.
+  transferOnPositiveIntent?: boolean;
+  // Dialer routing used by the pre-walk transfer (and as fallback for
+  // TRANSFER_TO_DIALER nodes that don't carry their own settings).
+  transferDialerCampaignId?: string;
+  transferPipelineColumnId?: string;
+  transferDialerPriority?: number;
 }
 
 interface AutomationState {
@@ -150,6 +162,80 @@ function isRejection(body: string | null | undefined): boolean {
   return false;
 }
 
+// Detects POSITIVE transfer intent — contact is clearly asking for a call
+// or signalling strong interest. Used by the per-automation
+// `transferOnPositiveIntent` flag to short-circuit the canvas walk and
+// push the lead to the CRM dialer at ANY stage of the flow. Conservative
+// to avoid false positives on neutral phrases.
+function isPositiveTransferIntent(body: string | null | undefined): boolean {
+  const text = (body || '').trim().toLowerCase();
+  if (!text) return false;
+  if (isRejection(text)) return false; // rejections always win
+
+  const callPhrases = [
+    'call me',
+    'ring me',
+    'phone me',
+    'give me a call',
+    'give me a ring',
+    'can you call',
+    'can we call',
+    'can we talk',
+    'can we speak',
+    'happy to chat',
+    'happy to talk',
+    'happy to speak',
+    'happy to call',
+    'lets talk',
+    "let's talk",
+    'lets chat',
+    "let's chat",
+    'lets speak',
+    "let's speak",
+    'when can you call',
+    'when can we talk',
+    'best to call',
+    'better to call',
+    'better on the phone',
+    'phone is best',
+    'call would be',
+    'a quick call',
+    'quick chat',
+    'quick call',
+    'call back',
+    'callback',
+  ];
+  for (const p of callPhrases) {
+    if (text.includes(p)) return true;
+  }
+
+  const strongInterest = [
+    "i'm interested",
+    'im interested',
+    'i am interested',
+    'very interested',
+    'really interested',
+    'sounds great',
+    'sounds good',
+    'count me in',
+    'sign me up',
+    'how do i sign up',
+    'how do i invest',
+    'how do i join',
+    'lets do it',
+    "let's do it",
+    'lets go',
+    "let's go",
+    'i want in',
+    'where do i sign',
+  ];
+  for (const p of strongInterest) {
+    if (text.includes(p)) return true;
+  }
+
+  return false;
+}
+
 // Find an outgoing edge from a node whose label matches a target ("replied" or "no_reply").
 // Used for WAIT_FOR_REPLY branching where edges carry semantic labels.
 function findOutgoingEdgeByLabel(
@@ -203,6 +289,211 @@ async function loadConversationHistory(
     role: msg.direction === 'inbound' ? 'user' : 'assistant',
     content: msg.body,
   }));
+}
+
+// ---- Push lead to CRM dialer (shared helper) ----
+//
+// Used by:
+//   • TRANSFER_TO_DIALER node case in executeNode (per-node opt-in)
+//   • Pre-walk positive-intent detector when flow_json.transferOnPositiveIntent
+//     is true (per-automation "any stage if they ask to call" trigger)
+//
+// Side effects:
+//   • Upsert wk_contacts (CRM contact) with is_hot=true and pipeline_column_id
+//     set to the configured "New Leads" column (or first column on the
+//     pipeline as a fallback).
+//   • Backfill the full sms_messages history for this contact into
+//     wk_sms_messages so the CRM inbox shows the conversation.
+//   • Upsert wk_dialer_queue (status=pending) at the configured priority.
+async function pushLeadToCrmDialer(
+  supabase: ReturnType<typeof createClient>,
+  args: {
+    contactId: string;
+    fromNumber: string;
+    automationId: string;
+    nodeId: string;
+    priority: number;
+    campaignId?: string | null;
+    pipelineColumnId?: string | null;
+    source: 'transfer_node' | 'positive_intent';
+  }
+): Promise<{ wkContactId: string | null; campaignId: string | null }> {
+  const nowTs = new Date().toISOString();
+  const priority = Math.max(1, Math.floor(args.priority || 9999));
+  const fromVariants = [
+    args.fromNumber,
+    args.fromNumber.replace(/^\+/, ''),
+    '+' + args.fromNumber.replace(/^\+/, ''),
+  ];
+
+  // 1. Get display_name from sms_contacts
+  const { data: smsContactRow } = await supabase
+    .from('sms_contacts')
+    .select('display_name')
+    .eq('id', args.contactId)
+    .maybeSingle();
+  const displayName =
+    (smsContactRow as { display_name?: string } | null)?.display_name ||
+    args.fromNumber;
+
+  // 2. Resolve pipeline_column_id — explicit on node wins, else first
+  //    column on the (only) active pipeline.
+  let pipelineColumnId: string | null = args.pipelineColumnId ?? null;
+  if (!pipelineColumnId) {
+    const { data: firstCol } = await supabase
+      .from('wk_pipeline_columns')
+      .select('id')
+      .order('position', { ascending: true })
+      .limit(1)
+      .maybeSingle();
+    pipelineColumnId =
+      (firstCol as { id?: string } | null)?.id ?? null;
+  }
+
+  // 3. Upsert wk_contacts
+  let wkContactId: string | null = null;
+  const { data: existingWk } = await supabase
+    .from('wk_contacts')
+    .select('id')
+    .in('phone', fromVariants)
+    .limit(1)
+    .maybeSingle();
+
+  if (existingWk && (existingWk as { id?: string }).id) {
+    wkContactId = (existingWk as { id: string }).id;
+    const updatePatch: Record<string, unknown> = {
+      is_hot: true,
+      last_contact_at: nowTs,
+      updated_at: nowTs,
+    };
+    if (pipelineColumnId) updatePatch.pipeline_column_id = pipelineColumnId;
+    await supabase.from('wk_contacts').update(updatePatch).eq('id', wkContactId);
+  } else {
+    const e164 = args.fromNumber.startsWith('+')
+      ? args.fromNumber
+      : '+' + args.fromNumber;
+    const { data: inserted } = await supabase
+      .from('wk_contacts')
+      .insert({
+        name: displayName,
+        phone: e164,
+        owner_agent_id: null,
+        pipeline_column_id: pipelineColumnId,
+        is_hot: true,
+        custom_fields: {
+          source: `sms_automation_${args.source}`,
+          automation_id: args.automationId,
+          node_id: args.nodeId,
+          transferred_at: nowTs,
+        },
+      })
+      .select('id')
+      .single();
+    wkContactId = (inserted as { id?: string } | null)?.id ?? null;
+  }
+
+  // 4. Backfill SMS history → wk_sms_messages so the CRM inbox shows the
+  //    conversation that led to the transfer.
+  if (wkContactId) {
+    const { data: history } = await supabase
+      .from('sms_messages')
+      .select('id, twilio_sid, from_number, to_number, body, direction, status, media_urls, created_at, channel')
+      .eq('contact_id', args.contactId)
+      .order('created_at', { ascending: true });
+
+    const historyRows = (history ?? []) as Array<{
+      id: string;
+      twilio_sid: string | null;
+      from_number: string | null;
+      to_number: string | null;
+      body: string | null;
+      direction: string | null;
+      status: string | null;
+      media_urls: string[] | null;
+      created_at: string;
+      channel: string | null;
+    }>;
+
+    if (historyRows.length) {
+      const sids = historyRows.map((m) => m.twilio_sid).filter(Boolean) as string[];
+      const { data: alreadyCopied } = sids.length
+        ? await supabase
+            .from('wk_sms_messages')
+            .select('twilio_sid')
+            .eq('contact_id', wkContactId)
+            .in('twilio_sid', sids)
+        : { data: [] };
+      const copiedSet = new Set(
+        ((alreadyCopied ?? []) as Array<{ twilio_sid: string | null }>)
+          .map((r) => r.twilio_sid)
+          .filter(Boolean) as string[]
+      );
+
+      const toInsert = historyRows
+        .filter((m) => !m.twilio_sid || !copiedSet.has(m.twilio_sid))
+        .map((m) => ({
+          contact_id: wkContactId,
+          direction: m.direction || 'inbound',
+          body: m.body || '',
+          twilio_sid: m.twilio_sid,
+          from_e164: m.from_number,
+          to_e164: m.to_number,
+          media_urls: m.media_urls,
+          status: m.status,
+          created_at: m.created_at,
+          channel: m.channel || 'sms',
+        }));
+
+      if (toInsert.length) {
+        const { error: copyErr } = await supabase
+          .from('wk_sms_messages')
+          .insert(toInsert);
+        if (copyErr) {
+          console.warn(
+            `[pushLeadToCrmDialer] message backfill failed (${copyErr.message}) — continuing`
+          );
+        } else {
+          console.log(
+            `[pushLeadToCrmDialer] copied ${toInsert.length} message(s) to wk_sms_messages for ${wkContactId}`
+          );
+        }
+      }
+    }
+  }
+
+  // 5. Upsert wk_dialer_queue at configured priority
+  let resolvedCampaignId: string | null = args.campaignId ?? null;
+  if (wkContactId) {
+    if (!resolvedCampaignId) {
+      const { data: defaultCampaign } = await supabase
+        .from('wk_dialer_campaigns')
+        .select('id')
+        .eq('is_active', true)
+        .order('created_at', { ascending: false })
+        .limit(1)
+        .maybeSingle();
+      resolvedCampaignId =
+        (defaultCampaign as { id?: string } | null)?.id ?? null;
+    }
+    if (resolvedCampaignId) {
+      await supabase.from('wk_dialer_queue').upsert(
+        {
+          campaign_id: resolvedCampaignId,
+          contact_id: wkContactId,
+          status: 'pending',
+          priority,
+          attempts: 0,
+          scheduled_for: null,
+        },
+        { onConflict: 'campaign_id,contact_id' }
+      );
+    }
+    console.log(
+      `[pushLeadToCrmDialer] ${wkContactId} → priority ${priority}, campaign ${resolvedCampaignId}, column ${pipelineColumnId}`
+    );
+  }
+
+  return { wkContactId, campaignId: resolvedCampaignId };
 }
 
 // ---- Resolve edge via AI pathway classification ----
@@ -501,88 +792,27 @@ async function executeNode(
     }
 
     case 'TRANSFER_TO_DIALER': {
-      const nowTs = new Date().toISOString();
       const priority = Math.max(1, Math.floor(Number(node.data.dialerPriority ?? 9999)));
-      const fromVariants = [fromNumber, fromNumber.replace(/^\+/, ''), '+' + fromNumber.replace(/^\+/, '')];
-
-      const { data: smsContactRow } = await supabase
-        .from('sms_contacts')
-        .select('display_name')
-        .eq('id', contactId)
-        .maybeSingle();
-      const displayName =
-        (smsContactRow as { display_name?: string } | null)?.display_name || fromNumber;
-
-      let wkContactId: string | null = null;
-      const { data: existingWk } = await supabase
-        .from('wk_contacts')
-        .select('id')
-        .in('phone', fromVariants)
-        .limit(1)
-        .maybeSingle();
-
-      if (existingWk && (existingWk as { id?: string }).id) {
-        wkContactId = (existingWk as { id: string }).id;
-        await supabase
-          .from('wk_contacts')
-          .update({ is_hot: true, last_contact_at: nowTs, updated_at: nowTs })
-          .eq('id', wkContactId);
-      } else {
-        const e164 = fromNumber.startsWith('+') ? fromNumber : '+' + fromNumber;
-        const { data: inserted } = await supabase
-          .from('wk_contacts')
-          .insert({
-            name: displayName,
-            phone: e164,
-            owner_agent_id: null,
-            pipeline_column_id: null,
-            is_hot: true,
-            custom_fields: {
-              source: 'sms_automation_transfer_node',
-              automation_id: context.automationId,
-              node_id: node.id,
-              transferred_at: nowTs,
-            },
-          })
-          .select('id')
-          .single();
-        wkContactId = (inserted as { id?: string } | null)?.id ?? null;
-      }
-
-      if (wkContactId) {
-        let campaignId = (node.data.dialerCampaignId as string | undefined) || null;
-        if (!campaignId) {
-          const { data: defaultCampaign } = await supabase
-            .from('wk_dialer_campaigns')
-            .select('id')
-            .eq('is_active', true)
-            .order('created_at', { ascending: false })
-            .limit(1)
-            .maybeSingle();
-          campaignId = (defaultCampaign as { id?: string } | null)?.id ?? null;
-        }
-        if (campaignId) {
-          await supabase.from('wk_dialer_queue').upsert(
-            {
-              campaign_id: campaignId,
-              contact_id: wkContactId,
-              status: 'pending',
-              priority,
-              attempts: 0,
-              scheduled_for: null,
-            },
-            { onConflict: 'campaign_id,contact_id' }
-          );
-        }
-        console.log(
-          `Lead ${wkContactId} pushed to CRM dialer with priority ${priority} (campaign ${campaignId})`
-        );
-      }
+      const { wkContactId, campaignId } = await pushLeadToCrmDialer(supabase, {
+        contactId,
+        fromNumber,
+        automationId: context.automationId,
+        nodeId: node.id,
+        priority,
+        campaignId: (node.data.dialerCampaignId as string | undefined) || null,
+        pipelineColumnId: (node.data.pipelineColumnId as string | undefined) || null,
+        source: 'transfer_node',
+      });
 
       return {
         shouldStop: true,
         sentMessage: false,
-        output: { status: 'transferred_to_dialer', wk_contact_id: wkContactId, priority },
+        output: {
+          status: 'transferred_to_dialer',
+          wk_contact_id: wkContactId,
+          priority,
+          campaign_id: campaignId,
+        },
       };
     }
 
@@ -926,6 +1156,76 @@ serve(async (req: Request) => {
 
     const { nodes, edges, globalPrompt, globalModel, globalTemperature, maxRepliesPerLead } = flowJson;
     const effectiveMaxReplies = maxRepliesPerLead ?? 50;
+
+    // ---- POSITIVE-INTENT TRANSFER (per-automation opt-in) ----
+    // If the automation has transferOnPositiveIntent=true and the inbound
+    // message matches the positive-intent detector ("call me", "i'm
+    // interested", etc.), push the lead to the CRM dialer immediately and
+    // complete the automation. This is the "any stage if they ask to call"
+    // trigger Hugo asked for — opt-in per automation so campaigns that
+    // shouldn't escalate to CRM don't.
+    if (flowJson.transferOnPositiveIntent === true && isPositiveTransferIntent(body)) {
+      console.log(
+        `[sms-automation-run] positive intent detected ("${body.slice(0, 60)}") — pushing to CRM dialer`
+      );
+
+      const priority = Math.max(
+        1,
+        Math.floor(Number(flowJson.transferDialerPriority ?? 1))
+      );
+      const { wkContactId, campaignId } = await pushLeadToCrmDialer(supabase, {
+        contactId: contact_id,
+        fromNumber: from_number,
+        automationId,
+        nodeId: state?.current_node_id || 'positive_intent_prewalk',
+        priority,
+        campaignId: flowJson.transferDialerCampaignId ?? null,
+        pipelineColumnId: flowJson.transferPipelineColumnId ?? null,
+        source: 'positive_intent',
+      });
+
+      const nowTs = new Date().toISOString();
+
+      if (state) {
+        // Cancel any pending scheduled tasks (waits / drips) for this state.
+        await supabase
+          .from('sms_scheduled_tasks')
+          .update({ status: 'completed', last_error: 'positive_intent_transfer' })
+          .eq('automation_state_id', state.id)
+          .eq('status', 'pending');
+
+        await supabase
+          .from('sms_automation_state')
+          .update({
+            status: 'completed',
+            completed_at: nowTs,
+            last_message_at: nowTs,
+            exit_reason: 'positive_intent_transfer',
+          })
+          .eq('id', state.id);
+      } else {
+        await supabase.from('sms_automation_state').insert({
+          conversation_id,
+          automation_id: automationId,
+          current_node_id: 'positive_intent_prewalk',
+          step_number: 1,
+          status: 'completed',
+          completed_at: nowTs,
+          last_message_at: nowTs,
+          exit_reason: 'positive_intent_transfer',
+        });
+      }
+
+      return new Response(
+        JSON.stringify({
+          status: 'transferred_on_positive_intent',
+          wk_contact_id: wkContactId,
+          campaign_id: campaignId,
+          priority,
+        }),
+        { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
 
     // ---- STEP 5b: Reply limit check ----
     if (state && state.step_number >= effectiveMaxReplies) {
