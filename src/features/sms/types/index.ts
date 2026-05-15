@@ -263,9 +263,12 @@ export interface SmsNodeData {
   waitValue?: number;
   waitUnit?: 'minutes' | 'hours' | 'days';
   // TRANSFER_TO_DIALER only — which dialer campaign to add this lead to,
-  // and what priority (default 9999 = top of queue).
+  // what priority (default 9999 = top of queue), and which CRM pipeline
+  // column to land in (defaults to first column on the active pipeline
+  // when omitted).
   dialerCampaignId?: string;
   dialerPriority?: number;
+  pipelineColumnId?: string;
   // Start node only — 'trigger' is a silent passthrough (current default),
   // 'ai' makes the start node generate an AI reply on inbound using
   // Global Prompt + this node's prompt. If undefined, inferred from
