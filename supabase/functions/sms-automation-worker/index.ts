@@ -212,12 +212,14 @@ serve(async (req: Request) => {
           }
 
           // Skip if the lead opted out or reached a terminal state — don't
-          // drip on someone who said "stop".
-          if (state.status === 'completed' && state.exit_reason === 'stop_node') {
-            console.log(`[scheduled_delay] task ${taskRow.id}: lead stopped, skipping drip`);
+          // drip on someone who said "stop", "no thanks", "not interested",
+          // or hit a STOP_CONVERSATION node in the flow.
+          if (state.status === 'completed'
+              && (state.exit_reason === 'stop_node' || state.exit_reason === 'opted_out')) {
+            console.log(`[scheduled_delay] task ${taskRow.id}: lead in terminal state "${state.exit_reason}", skipping drip`);
             await supabase
               .from('sms_scheduled_tasks')
-              .update({ status: 'completed', last_error: 'lead stopped' })
+              .update({ status: 'completed', last_error: `lead ${state.exit_reason}` })
               .eq('id', taskRow.id);
             skipped++;
             continue;
