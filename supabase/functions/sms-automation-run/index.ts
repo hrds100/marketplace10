@@ -94,6 +94,61 @@ function normalizeLabel(s: string | null | undefined): string {
   return (s ?? '').trim().toLowerCase().replace(/[\s_-]+/g, '_');
 }
 
+// Detects rejection / opt-out intent ANY time during a conversation —
+// short standalone "no" / "nope" / "stop" replies, multi-word rejections
+// like "not interested" / "leave me alone" / "this is spam", and common
+// complaint phrases. Tuned to avoid false positives on replies that
+// happen to contain "no" in another context (e.g. "no problem!").
+function isRejection(body: string | null | undefined): boolean {
+  const text = (body || '').trim().toLowerCase();
+  if (!text) return false;
+
+  // Multi-word rejection phrases — strong signal, length doesn't matter.
+  const strongPhrases = [
+    'not interested',
+    'no thanks',
+    'no thank you',
+    'remove me',
+    'take me off',
+    'leave me alone',
+    'stop sending',
+    'stop messaging',
+    'stop contacting',
+    "don't contact me",
+    "don't text me",
+    "don't message me",
+    'do not contact me',
+    'do not text me',
+    'this is spam',
+    'this is a scam',
+    'fuck off',
+    'piss off',
+    'go away',
+    'not for me',
+    'not my thing',
+    'unsubscribe me',
+    'opt me out',
+  ];
+  for (const p of strongPhrases) {
+    if (text.includes(p)) return true;
+  }
+
+  // Standalone short rejection — only matches when the entire message
+  // (modulo trailing punctuation) is exactly one of these tokens.
+  const clean = text.replace(/[.!?,;]+$/, '');
+  const standalone = new Set([
+    'no', 'nope', 'nah', 'na',
+    'stop', 'cancel', 'end', 'quit',
+    'unsubscribe', 'remove',
+    'spam', 'scam',
+    'leave', 'pass', 'never',
+    'no thanks', 'not interested',
+  ]);
+  if (standalone.has(clean)) return true;
+
+  return false;
+}
+
 // Find an outgoing edge from a node whose label matches a target ("replied" or "no_reply").
 // Used for WAIT_FOR_REPLY branching where edges carry semantic labels.
 function findOutgoingEdgeByLabel(
@@ -577,6 +632,103 @@ serve(async (req: Request) => {
     }
 
     const automationId = conv.automation_id;
+
+    // ---- GLOBAL OPT-OUT SAFETY NET (Hugo 2026-05-15) ----
+    // If the contact says no/nope/not interested/stop/spam/etc. at ANY
+    // point in the flow, kill all future outreach immediately:
+    //   • cancel any pending scheduled tasks (waits, drips)
+    //   • mark state completed with exit_reason='opted_out'
+    //   • mark contact.opted_out=true so future campaigns skip them
+    //   • send a polite goodbye, then exit
+    // This catches mid-flow rejections that the Trigger AI can't see
+    // (e.g. when the lead is parked at AI Reply and changes their mind).
+    if (isRejection(body)) {
+      console.log(`[sms-automation-run] rejection detected: "${body.slice(0, 60)}" — opting out contact ${contact_id}`);
+
+      // Load existing state (if any) so we can scope task cancellation.
+      const { data: rejStateRow } = await supabase
+        .from('sms_automation_state')
+        .select('id, status, exit_reason')
+        .eq('conversation_id', conversation_id)
+        .eq('automation_id', automationId)
+        .maybeSingle();
+      const rejState = rejStateRow as { id: string; status: string; exit_reason: string | null } | null;
+
+      // Skip if we've already opted them out — don't double-send goodbye.
+      if (rejState && rejState.status === 'completed' && rejState.exit_reason === 'opted_out') {
+        return new Response(
+          JSON.stringify({ status: 'already_opted_out' }),
+          { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+
+      const nowTs = new Date().toISOString();
+
+      if (rejState) {
+        await supabase
+          .from('sms_scheduled_tasks')
+          .update({ status: 'completed', last_error: 'contact opted out' })
+          .eq('automation_state_id', rejState.id)
+          .eq('status', 'pending');
+
+        await supabase
+          .from('sms_automation_state')
+          .update({
+            status: 'completed',
+            completed_at: nowTs,
+            last_message_at: nowTs,
+            exit_reason: 'opted_out',
+          })
+          .eq('id', rejState.id);
+      } else {
+        // No state yet (first inbound is the rejection). Record a completed
+        // state so the canvas + dashboards reflect the opt-out.
+        await supabase
+          .from('sms_automation_state')
+          .insert({
+            conversation_id,
+            automation_id: automationId,
+            current_node_id: 'opt_out',
+            step_number: 1,
+            status: 'completed',
+            completed_at: nowTs,
+            last_message_at: nowTs,
+            exit_reason: 'opted_out',
+          });
+      }
+
+      await supabase
+        .from('sms_contacts')
+        .update({ opted_out: true, response_status: 'responded', updated_at: nowTs })
+        .eq('id', contact_id);
+
+      // Send a polite goodbye via sms-send. Idempotent enough — if Twilio
+      // fails we just log; we don't retry, because the goal is silence.
+      try {
+        const sendUrl = `${SUPABASE_URL}/functions/v1/sms-send`;
+        const sendPayload: Record<string, string | undefined> = {
+          to: from_number,
+          body: 'All good mate, feel free to reach out whenever suits you.',
+          contact_id,
+        };
+        if (requestNumberId) sendPayload.from_number_id = requestNumberId;
+        await fetch(sendUrl, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${SUPABASE_SERVICE_KEY}`,
+          },
+          body: JSON.stringify(sendPayload),
+        });
+      } catch (sendErr) {
+        console.error('[sms-automation-run] goodbye send failed (ignored):', sendErr);
+      }
+
+      return new Response(
+        JSON.stringify({ status: 'opted_out_via_rejection' }),
+        { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
 
     // ---- STEP 4: Load automation state ----
     const { data: stateRow } = await supabase
