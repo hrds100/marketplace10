@@ -379,9 +379,10 @@ export default function LiveCallScreen() {
 
         <ResizableHandle withHandle />
 
-        {/* COL 4 — glossary cards (click-to-expand, item G) */}
+        {/* COL 4 — message history + glossary (PR Hugo 2026-05-15: replaced
+            Objections tab with the contact's SMS/WhatsApp timeline) */}
         <ResizablePanel defaultSize={20} minSize={14} className="overflow-hidden">
-          <TerminologyPane />
+          <TerminologyPane contactId={contact?.id} />
         </ResizablePanel>
       </ResizablePanelGroup>
 
