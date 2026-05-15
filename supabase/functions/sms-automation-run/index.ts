@@ -245,13 +245,17 @@ async function executeNode(
     case 'DEFAULT': {
       let reply: string;
 
-      if (context.precomputedReply) {
+      // Exact text mode WINS. Even if a previous AI classifier handed us
+      // a precomputedReply (e.g. Start AI generated "Cheers, sending it
+      // over now 👇" while routing to this brochure node), the user
+      // configured this node with literal text. That text is what should
+      // go out — the classifier's preamble is discarded here.
+      if (node.data.text) {
+        reply = String(node.data.text);
+        console.log('Using exact text from node (precomputedReply ignored if set)');
+      } else if (context.precomputedReply) {
         reply = context.precomputedReply;
         console.log('Using precomputed reply from pathway classification');
-      } else if (node.data.text) {
-        // Exact text mode — skip the AI call entirely.
-        reply = String(node.data.text);
-        console.log('Using exact text from node');
       } else {
         const nodePrompt = node.data.prompt || '';
         const systemPrompt = globalPrompt
