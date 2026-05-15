@@ -741,27 +741,9 @@ serve(async (req: Request) => {
         .update({ opted_out: true, response_status: 'responded', updated_at: nowTs })
         .eq('id', contact_id);
 
-      // Send a polite goodbye via sms-send. Idempotent enough — if Twilio
-      // fails we just log; we don't retry, because the goal is silence.
-      try {
-        const sendUrl = `${SUPABASE_URL}/functions/v1/sms-send`;
-        const sendPayload: Record<string, string | undefined> = {
-          to: from_number,
-          body: 'All good mate, feel free to reach out whenever suits you.',
-          contact_id,
-        };
-        if (requestNumberId) sendPayload.from_number_id = requestNumberId;
-        await fetch(sendUrl, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${SUPABASE_SERVICE_KEY}`,
-          },
-          body: JSON.stringify(sendPayload),
-        });
-      } catch (sendErr) {
-        console.error('[sms-automation-run] goodbye send failed (ignored):', sendErr);
-      }
+      // Hugo 2026-05-15: NO goodbye message — opt-out is silent. Contact
+      // said no, system stops, no further outbound. Going dark is the
+      // intended UX.
 
       return new Response(
         JSON.stringify({ status: 'opted_out_via_rejection' }),
@@ -1051,6 +1033,11 @@ serve(async (req: Request) => {
     // SCHEDULED_DELAY drip tasks accumulate during the walk and are inserted
     // after the state row is finalized so we have a valid state.id to link to.
     const pendingDripTasks: Array<{ execute_at: string; source_node_id: string; target_node_id: string }> = [];
+    // Tracks whether ANY message-sending happened during this turn. Used to
+    // prevent firing a 2nd AI reply when the walk transitions from a sender
+    // node (e.g. brochure) through a drip into an AI chat node — the AI
+    // chat node is meant for future inbounds, not the current turn.
+    let alreadySentThisTurn = false;
     let exitReason: string | null = null;
     const maxSilentSteps = 10; // Max non-message nodes to walk through
     let silentSteps = 0;
@@ -1058,6 +1045,19 @@ serve(async (req: Request) => {
     // Walk through non-message nodes (LABEL, MOVE_STAGE, WEBHOOK, FOLLOW_UP)
     // until we hit a message node (DEFAULT, STOP_CONVERSATION) or run out of edges
     while (targetNode && !messageSent && silentSteps < maxSilentSteps) {
+      // GUARD: if we've already sent a message this turn AND the next
+      // target is a message-capable DEFAULT node (i.e. an AI Reply or
+      // exact-text send), park here without executing. The current
+      // inbound was already handled upstream. The AI Reply / next-send
+      // belongs to a FUTURE inbound.
+      const targetType = (targetNode.type || '').toUpperCase();
+      if (alreadySentThisTurn && targetType === 'DEFAULT') {
+        console.log(`[walk] alreadySentThisTurn — parking at ${targetNode.id} without executing`);
+        finalNodeId = targetNode.id;
+        messageSent = true;
+        break;
+      }
+
       // Log step
       const { data: stepRun } = await supabase
         .from('sms_automation_step_runs')
@@ -1162,6 +1162,7 @@ serve(async (req: Request) => {
       }
 
       if (sentMessage) {
+        alreadySentThisTurn = true;
         // Chain into a wait/drip node if it's the very next node, so the
         // timer starts immediately rather than waiting for another inbound.
         const nextEdges = edges.filter((e) => e.source === targetNode!.id);
