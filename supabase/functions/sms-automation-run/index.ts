@@ -94,21 +94,6 @@ function normalizeLabel(s: string | null | undefined): string {
   return (s ?? '').trim().toLowerCase().replace(/[\s_-]+/g, '_');
 }
 
-// HARD opt-out keywords — TCPA/CTIA legal standards. These are
-// CONTACT-level: once any of these comes in, the contact is opted out
-// of ALL automations forever. Match only when the entire message is
-// one of these tokens (stripped of trailing punctuation).
-function isHardOptOut(body: string | null | undefined): boolean {
-  const text = (body || '').trim().toLowerCase().replace(/[.!?,;]+$/, '');
-  if (!text) return false;
-  const HARD = new Set([
-    'stop', 'stopall', 'stop all',
-    'unsubscribe', 'unsub',
-    'cancel', 'end', 'quit',
-  ]);
-  return HARD.has(text);
-}
-
 // Detects SOFT rejection / opt-out intent during a conversation —
 // "no" / "nope" / "not interested" / "leave me alone" / "this is spam",
 // complaint phrases, etc. Soft rejections are STATE-LEVEL: they stop
@@ -659,11 +644,12 @@ serve(async (req: Request) => {
     // This catches mid-flow rejections that the Trigger AI can't see
     // (e.g. when the lead is parked at AI Reply and changes their mind).
     if (isRejection(body)) {
-      const hardOptOut = isHardOptOut(body);
-      console.log(
-        `[sms-automation-run] rejection detected: "${body.slice(0, 60)}" — `
-        + (hardOptOut ? 'HARD opt-out (contact-level, legal)' : 'soft (state-level only)')
-      );
+      // Hugo 2026-05-15: ALL rejections are per-automation, including STOP.
+      // No contact-level opt-out. Each new campaign / automation to this
+      // contact starts fresh, regardless of how they rejected prior flows.
+      // (See README — this is a non-standard choice that diverges from
+      // TCPA/CTIA "STOP = universal" guidance. Operator-approved.)
+      console.log(`[sms-automation-run] rejection detected: "${body.slice(0, 60)}" — state-level opt-out only`);
 
       // Load existing state (if any) so we can scope task cancellation.
       const { data: rejStateRow } = await supabase
@@ -756,37 +742,18 @@ serve(async (req: Request) => {
           });
       }
 
-      // Hugo 2026-05-15: opt-out is per-automation by default. Only HARD
-      // keywords (STOP, UNSUBSCRIBE, CANCEL, END, QUIT) flip the contact-
-      // level opted_out flag — those are TCPA/CTIA legal opt-outs that
-      // must block ALL future automations forever. Soft rejections like
-      // "nope" or "not interested" only stop THIS automation; another
-      // campaign to the same contact later can still try.
-      const contactUpdate: Record<string, unknown> = {
-        response_status: 'responded',
-        updated_at: nowTs,
-      };
-      if (hardOptOut) {
-        contactUpdate.opted_out = true;
-        // Also record in the dedicated opt-outs table for legal audit.
-        await supabase.from('sms_opt_outs').upsert(
-          { phone_number: from_number, reason: 'keyword_stop' },
-          { onConflict: 'phone_number' }
-        );
-      }
+      // Mark contact as responded (so we know they engaged) but do NOT
+      // set opted_out — Hugo wants new automations to be unblocked.
       await supabase
         .from('sms_contacts')
-        .update(contactUpdate)
+        .update({ response_status: 'responded', updated_at: nowTs })
         .eq('id', contact_id);
 
-      // NO goodbye message — opt-out is silent. Contact said no, system
-      // stops, no further outbound. Going dark is the intended UX.
+      // NO goodbye message — opt-out is silent. Contact said no, this
+      // automation stops, no further outbound from this flow.
 
       return new Response(
-        JSON.stringify({
-          status: hardOptOut ? 'opted_out_hard' : 'opted_out_soft',
-          contact_opted_out: hardOptOut,
-        }),
+        JSON.stringify({ status: 'opted_out_state_only', contact_opted_out: false }),
         { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
