@@ -198,6 +198,7 @@ export default function InboxPage() {
       id: string;
       name: string;
       phone: string;
+      email?: string;
       pipelineColumnId: string | undefined;
       lastMessageBody: string | null;
       lastMessageAt: string | null;
@@ -216,6 +217,7 @@ export default function InboxPage() {
         id: t.contactId,
         name: c?.name || t.contactName || t.contactPhone || 'Unknown',
         phone: c?.phone ?? t.contactPhone,
+        email: c?.email,
         pipelineColumnId: c?.pipelineColumnId,
         lastMessageBody: t.lastMessageBody,
         lastMessageAt: t.lastMessageAt,
@@ -280,6 +282,7 @@ export default function InboxPage() {
       id: activeRow.id,
       name: activeRow.name,
       phone: activeRow.phone,
+      email: activeRow.email,
       tags: activeRow.tags,
       isHot: activeRow.isHot,
       customFields: {},
