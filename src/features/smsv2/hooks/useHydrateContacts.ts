@@ -55,21 +55,31 @@ export function useHydrateContacts(): void {
       // wk_contacts + wk_contact_tags joined client-side. Service-role bypass
       // is not needed: RLS lets agents see their own + admins see everything.
       //
-      // 2026-05-16: previously `.limit(10000)` was used, but PostgREST caps
-      // single responses at the project's `db.max_rows` (defaults around
-      // 1k–2k), so contacts past that ceiling were silently dropped. Now we
-      // page through wk_contacts with `.range()` until the page comes back
-      // short of PAGE_SIZE. wk_contact_tags is fetched in parallel and
-      // grouped client-side.
+      // 2026-05-16 (round 2): PostgREST caps single responses at
+      // db.max_rows (~1–2k) so .limit(10000) silently dropped rows.
+      // Round 1 fix paginated sequentially — too slow (11k contacts =
+      // ~6s), so the UI looked empty + unresponsive on first paint.
+      // This pass:
+      //   1. HEAD-count first so we know how many pages exist.
+      //   2. Fetch all pages in parallel with Promise.all.
+      // 11k contacts now load in ~1 round-trip's worth of latency.
       const PAGE_SIZE = 1000;
-      const HARD_CAP_PAGES = 200; // 200k contacts safety net
-      const contactRows: WkContactRow[] = [];
+      const HARD_CAP = 200_000; // sanity ceiling
 
+      // 1. HEAD count
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const { count: totalCount } = await (supabase.from('wk_contacts' as any) as any)
+        .select('id', { count: 'exact', head: true });
+      if (cancelled) return;
+      const total = Math.min(typeof totalCount === 'number' ? totalCount : 0, HARD_CAP);
+      const pageCount = total === 0 ? 1 : Math.ceil(total / PAGE_SIZE);
+
+      // 2. Parallel page fetches
       const tagsPromise =
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         (supabase.from('wk_contact_tags' as any) as any).select('contact_id, tag');
 
-      for (let page = 0; page < HARD_CAP_PAGES; page++) {
+      const pagePromises = Array.from({ length: pageCount }, async (_, page) => {
         const from = page * PAGE_SIZE;
         const to = from + PAGE_SIZE - 1;
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -79,18 +89,16 @@ export function useHydrateContacts(): void {
           )
           .order('created_at', { ascending: false })
           .range(from, to);
-
-        if (cancelled) return;
-
         if (error) {
-          console.error('[useHydrateContacts] contacts load failed at page', page, error);
-          break;
+          console.error('[useHydrateContacts] page', page, 'failed:', error);
+          return [] as WkContactRow[];
         }
+        return (data ?? []) as WkContactRow[];
+      });
 
-        const rows = (data ?? []) as WkContactRow[];
-        contactRows.push(...rows);
-        if (rows.length < PAGE_SIZE) break;
-      }
+      const pages = await Promise.all(pagePromises);
+      if (cancelled) return;
+      const contactRows: WkContactRow[] = pages.flat();
 
       const tagsRes = await tagsPromise;
       if (cancelled) return;
