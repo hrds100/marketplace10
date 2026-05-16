@@ -364,14 +364,16 @@ async function pushLeadToCrmDialer(
     .maybeSingle();
 
   if (existingWk && (existingWk as { id?: string }).id) {
+    // Existing CRM contact — DO NOT overwrite their pipeline stage.
+    // Hugo 2026-05-16: a lead who's already at "Proposal Sent" or
+    // "Closed" and replies "call me" should NOT be bumped back to
+    // "New Leads". Only the new-contact insert branch below sets the
+    // column. We still flip is_hot=true and bump last_contact_at.
     wkContactId = (existingWk as { id: string }).id;
-    const updatePatch: Record<string, unknown> = {
-      is_hot: true,
-      last_contact_at: nowTs,
-      updated_at: nowTs,
-    };
-    if (pipelineColumnId) updatePatch.pipeline_column_id = pipelineColumnId;
-    await supabase.from('wk_contacts').update(updatePatch).eq('id', wkContactId);
+    await supabase
+      .from('wk_contacts')
+      .update({ is_hot: true, last_contact_at: nowTs, updated_at: nowTs })
+      .eq('id', wkContactId);
   } else {
     const e164 = args.fromNumber.startsWith('+')
       ? args.fromNumber
