@@ -625,9 +625,12 @@ export function DialerProContent({ autoCallContactId, pipelineColumnId, onAutoCa
 
           <ResizableHandle withHandle />
 
-          {/* COL 4 — Glossary / terminology */}
+          {/* COL 4 — Messages timeline (default) + Glossary. Follows the
+              same contact as COL 1: live call → currentLead, otherwise
+              the next lead in the queue, so the agent can read the SMS
+              history BEFORE dialing. */}
           <ResizablePanel defaultSize={20} minSize={14} className="overflow-hidden">
-            <TerminologyPane />
+            <TerminologyPane contactId={activeContactId ?? undefined} />
           </ResizablePanel>
         </ResizablePanelGroup>
       </div>

@@ -150,7 +150,7 @@ function MessagesTimeline({ contactId, messages }: { contactId?: string; message
   if (!contactId) {
     return (
       <div className="text-[12px] text-[#9CA3AF] text-center px-4 py-6 leading-snug">
-        No active contact — start a call to see message history.
+        Queue empty. Add leads to see message history before dialing.
       </div>
     );
   }
