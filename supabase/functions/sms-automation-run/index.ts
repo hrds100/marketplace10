@@ -89,6 +89,10 @@ interface FlowJson {
   transferDialerCampaignId?: string;
   transferPipelineColumnId?: string;
   transferDialerPriority?: number;
+  // Short SMS sent right before the lead is pushed to the CRM dialer
+  // on a positive-intent match. Defaults to a warm acknowledgment when
+  // omitted; set to "" to suppress.
+  transferAckMessage?: string;
 }
 
 interface AutomationState {
@@ -476,17 +480,32 @@ async function pushLeadToCrmDialer(
         (defaultCampaign as { id?: string } | null)?.id ?? null;
     }
     if (resolvedCampaignId) {
-      await supabase.from('wk_dialer_queue').upsert(
-        {
+      // No unique constraint exists on (campaign_id, contact_id) so we
+      // can't onConflict-upsert. Clear any prior pending row for this
+      // contact in this campaign, then insert a fresh one at the
+      // configured priority so they land at the top of the queue.
+      await supabase
+        .from('wk_dialer_queue')
+        .delete()
+        .eq('campaign_id', resolvedCampaignId)
+        .eq('contact_id', wkContactId)
+        .eq('status', 'pending');
+
+      const { error: queueErr } = await supabase
+        .from('wk_dialer_queue')
+        .insert({
           campaign_id: resolvedCampaignId,
           contact_id: wkContactId,
           status: 'pending',
           priority,
           attempts: 0,
           scheduled_for: null,
-        },
-        { onConflict: 'campaign_id,contact_id' }
-      );
+        });
+      if (queueErr) {
+        console.error(
+          `[pushLeadToCrmDialer] queue insert failed: ${queueErr.message}`
+        );
+      }
     }
     console.log(
       `[pushLeadToCrmDialer] ${wkContactId} → priority ${priority}, campaign ${resolvedCampaignId}, column ${pipelineColumnId}`
@@ -1171,7 +1190,7 @@ serve(async (req: Request) => {
 
       const priority = Math.max(
         1,
-        Math.floor(Number(flowJson.transferDialerPriority ?? 1))
+        Math.floor(Number(flowJson.transferDialerPriority ?? 9999))
       );
       const { wkContactId, campaignId } = await pushLeadToCrmDialer(supabase, {
         contactId: contact_id,
@@ -1183,6 +1202,45 @@ serve(async (req: Request) => {
         pipelineColumnId: flowJson.transferPipelineColumnId ?? null,
         source: 'positive_intent',
       });
+
+      // Send a brief acknowledgment so the lead knows a call is coming.
+      // Operator-configurable via flow_json.transferAckMessage; falls back
+      // to a warm default. Skipped if explicitly set to empty string.
+      const ackTemplate =
+        flowJson.transferAckMessage !== undefined
+          ? flowJson.transferAckMessage
+          : "Sure — I'll get one of our team to give you a quick call shortly 👍";
+      if (ackTemplate && ackTemplate.trim().length > 0) {
+        try {
+          const sendUrl = `${SUPABASE_URL}/functions/v1/sms-send`;
+          const ackPayload: Record<string, string | undefined> = {
+            to: from_number,
+            body: ackTemplate,
+            contact_id,
+          };
+          if (requestNumberId) ackPayload.from_number_id = requestNumberId;
+          const ackRes = await fetch(sendUrl, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${SUPABASE_SERVICE_KEY}`,
+            },
+            body: JSON.stringify(ackPayload),
+          });
+          if (!ackRes.ok) {
+            const ackData = await ackRes.json().catch(() => ({}));
+            console.error(
+              `[sms-automation-run] positive-intent ack send failed: ${JSON.stringify(ackData)}`
+            );
+          } else {
+            console.log(
+              `[sms-automation-run] positive-intent ack sent to ${from_number}`
+            );
+          }
+        } catch (ackErr) {
+          console.error('[sms-automation-run] positive-intent ack threw:', ackErr);
+        }
+      }
 
       const nowTs = new Date().toISOString();
 
