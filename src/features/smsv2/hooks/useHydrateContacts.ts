@@ -54,25 +54,46 @@ export function useHydrateContacts(): void {
     async function load() {
       // wk_contacts + wk_contact_tags joined client-side. Service-role bypass
       // is not needed: RLS lets agents see their own + admins see everything.
-      const [contactsRes, tagsRes] = await Promise.all([
-        // wk_* tables aren't in the generated types yet — cast required.
+      //
+      // 2026-05-16: previously `.limit(10000)` was used, but PostgREST caps
+      // single responses at the project's `db.max_rows` (defaults around
+      // 1k–2k), so contacts past that ceiling were silently dropped. Now we
+      // page through wk_contacts with `.range()` until the page comes back
+      // short of PAGE_SIZE. wk_contact_tags is fetched in parallel and
+      // grouped client-side.
+      const PAGE_SIZE = 1000;
+      const HARD_CAP_PAGES = 200; // 200k contacts safety net
+      const contactRows: WkContactRow[] = [];
+
+      const tagsPromise =
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        (supabase.from('wk_contacts' as any) as any)
+        (supabase.from('wk_contact_tags' as any) as any).select('contact_id, tag');
+
+      for (let page = 0; page < HARD_CAP_PAGES; page++) {
+        const from = page * PAGE_SIZE;
+        const to = from + PAGE_SIZE - 1;
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const { data, error } = await (supabase.from('wk_contacts' as any) as any)
           .select(
             'id, name, phone, email, owner_agent_id, pipeline_column_id, deal_value_pence, is_hot, custom_fields, last_contact_at, created_at'
           )
           .order('created_at', { ascending: false })
-          .limit(10000),
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        (supabase.from('wk_contact_tags' as any) as any).select('contact_id, tag'),
-      ]);
+          .range(from, to);
 
-      if (cancelled) return;
+        if (cancelled) return;
 
-      if (contactsRes.error) {
-        console.error('[useHydrateContacts] contacts load failed:', contactsRes.error);
-        return;
+        if (error) {
+          console.error('[useHydrateContacts] contacts load failed at page', page, error);
+          break;
+        }
+
+        const rows = (data ?? []) as WkContactRow[];
+        contactRows.push(...rows);
+        if (rows.length < PAGE_SIZE) break;
       }
+
+      const tagsRes = await tagsPromise;
+      if (cancelled) return;
 
       const tagsByContact = new Map<string, string[]>();
       for (const row of (tagsRes.data ?? []) as WkContactTagRow[]) {
@@ -81,9 +102,11 @@ export function useHydrateContacts(): void {
         tagsByContact.set(row.contact_id, list);
       }
 
-      const real = ((contactsRes.data ?? []) as WkContactRow[]).map((row) =>
+      const real = contactRows.map((row) =>
         rowToContact(row, tagsByContact.get(row.id) ?? [])
       );
+
+      console.log(`[useHydrateContacts] loaded ${real.length} contacts`);
 
       // Atomic replace — never append-on-top of seed/realtime state, so the
       // store always reflects exactly what the DB returned.

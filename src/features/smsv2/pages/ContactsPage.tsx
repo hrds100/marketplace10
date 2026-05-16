@@ -1,6 +1,6 @@
 import { useState, useMemo, useCallback } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
-import { Search, Phone, MessageSquare, Mail, Flame, Pencil, Upload, Trash2 } from 'lucide-react';
+import { Search, Phone, MessageSquare, Mail, Flame, Pencil, Upload, Trash2, Download } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { formatPence, formatRelativeTime } from '../data/helpers';
 import StageSelector from '../components/shared/StageSelector';
@@ -153,6 +153,58 @@ export default function ContactsPage() {
       });
   };
 
+  // Export the currently filtered list to CSV. Honours active search /
+  // stage / owner filters so an operator can export "all hot leads in
+  // New Leads" or similar by setting filters first.
+  const exportCsv = useCallback(() => {
+    const escape = (val: unknown): string => {
+      const s = val === null || val === undefined ? '' : String(val);
+      if (/[",\n\r]/.test(s)) return `"${s.replace(/"/g, '""')}"`;
+      return s;
+    };
+    const header = [
+      'Name',
+      'Phone',
+      'Email',
+      'Stage',
+      'Owner',
+      'Value (GBP)',
+      'Tags',
+      'Hot',
+      'Last contact',
+      'Created',
+    ];
+    const stageById = new Map(columns.map((c) => [c.id, c.name] as const));
+    const ownerById = new Map(agents.map((a) => [a.id, a.name] as const));
+    const rows = filtered.map((c) => [
+      c.name,
+      c.phone,
+      c.email ?? '',
+      c.pipelineColumnId ? (stageById.get(c.pipelineColumnId) ?? '') : '',
+      c.ownerAgentId ? (ownerById.get(c.ownerAgentId) ?? '') : '',
+      c.dealValuePence ? (c.dealValuePence / 100).toFixed(2) : '',
+      (c.tags ?? []).join('; '),
+      c.isHot ? 'yes' : '',
+      c.lastContactAt ?? '',
+      c.createdAt ?? '',
+    ]);
+    const csv = [header, ...rows]
+      .map((row) => row.map(escape).join(','))
+      .join('\n');
+    // Prepend BOM so Excel opens UTF-8 correctly (£, accents).
+    const blob = new Blob(['﻿' + csv], { type: 'text/csv;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    const ts = new Date().toISOString().slice(0, 10);
+    a.href = url;
+    a.download = `nfstay-contacts-${ts}.csv`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    pushToast(`Exported ${filtered.length} contacts`, 'success');
+  }, [filtered, columns, agents, pushToast]);
+
   const [deleting, setDeleting] = useState<string | null>(null);
   const deleteContact = useCallback(async (c: Contact) => {
     if (!confirm(`Delete "${c.name}" (${c.phone})? This cannot be undone.`)) return;
@@ -183,6 +235,14 @@ export default function ContactsPage() {
           </p>
         </div>
         <div className="flex gap-2">
+          <button
+            onClick={exportCsv}
+            disabled={filtered.length === 0}
+            className="flex items-center gap-1.5 border border-[#E5E7EB] bg-white text-[#1A1A1A] text-[13px] font-medium px-3 py-2 rounded-[10px] hover:bg-[#F3F3EE] disabled:opacity-50 disabled:cursor-not-allowed"
+            title={`Export ${filtered.length} contacts as CSV`}
+          >
+            <Download className="w-3.5 h-3.5" /> Export CSV
+          </button>
           <button
             onClick={() => setBulkOpen(true)}
             className="flex items-center gap-1.5 border border-[#E5E7EB] bg-white text-[#1A1A1A] text-[13px] font-medium px-3 py-2 rounded-[10px] hover:bg-[#F3F3EE]"
