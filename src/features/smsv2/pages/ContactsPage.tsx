@@ -1,6 +1,6 @@
-import { useState, useMemo, useCallback } from 'react';
+import { useState, useMemo, useCallback, useEffect } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
-import { Search, Phone, MessageSquare, Mail, Flame, Pencil, Upload, Trash2, Download } from 'lucide-react';
+import { Search, Phone, MessageSquare, Mail, Flame, Pencil, Upload, Trash2, Download, ChevronLeft, ChevronRight } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { formatPence, formatRelativeTime } from '../data/helpers';
 import StageSelector from '../components/shared/StageSelector';
@@ -125,6 +125,23 @@ export default function ContactsPage() {
       return true;
     });
   }, [contacts, search, stageFilter, ownerFilter]);
+
+  // UI pagination — rendering 11k+ <tr> rows locks the main thread, so
+  // slice to a page at a time. Search / filters run against the full
+  // dataset above, then we slice for display.
+  const PAGE_SIZE = 100;
+  const [page, setPage] = useState(0);
+  const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
+  // Reset to page 0 whenever filters or the total dataset change.
+  useEffect(() => { setPage(0); }, [search, stageFilter, ownerFilter]);
+  // Clamp if data shrinks and current page is now out of range.
+  useEffect(() => {
+    if (page > totalPages - 1) setPage(Math.max(0, totalPages - 1));
+  }, [page, totalPages]);
+  const visibleSlice = useMemo(
+    () => filtered.slice(page * PAGE_SIZE, page * PAGE_SIZE + PAGE_SIZE),
+    [filtered, page]
+  );
 
   const setStage = (id: string, col: string) => {
     patchContact(id, { pipelineColumnId: col });
@@ -305,7 +322,7 @@ export default function ContactsPage() {
             </tr>
           </thead>
           <tbody className="divide-y divide-[#E5E7EB]">
-            {filtered.map((c) => {
+            {visibleSlice.map((c) => {
               const owner = agents.find((a) => a.id === c.ownerAgentId);
               return (
                 <tr key={c.id} className="hover:bg-[#F3F3EE]/30">
@@ -425,6 +442,34 @@ export default function ContactsPage() {
             )}
           </tbody>
         </table>
+        {filtered.length > PAGE_SIZE && (
+          <div className="flex items-center justify-between gap-3 px-4 py-2.5 border-t border-[#E5E7EB] bg-[#F3F3EE]/30">
+            <span className="text-[11px] text-[#6B7280] tabular-nums">
+              Showing {page * PAGE_SIZE + 1}–{Math.min((page + 1) * PAGE_SIZE, filtered.length)} of {filtered.length}
+            </span>
+            <div className="flex items-center gap-1.5">
+              <button
+                onClick={() => setPage((p) => Math.max(0, p - 1))}
+                disabled={page === 0}
+                className="flex items-center gap-1 text-[11px] px-2 py-1 border border-[#E5E7EB] rounded-[8px] bg-white hover:bg-[#F3F3EE] disabled:opacity-40 disabled:cursor-not-allowed"
+                title="Previous page"
+              >
+                <ChevronLeft className="w-3.5 h-3.5" /> Prev
+              </button>
+              <span className="text-[11px] text-[#6B7280] px-2 tabular-nums">
+                Page {page + 1} / {totalPages}
+              </span>
+              <button
+                onClick={() => setPage((p) => Math.min(totalPages - 1, p + 1))}
+                disabled={page >= totalPages - 1}
+                className="flex items-center gap-1 text-[11px] px-2 py-1 border border-[#E5E7EB] rounded-[8px] bg-white hover:bg-[#F3F3EE] disabled:opacity-40 disabled:cursor-not-allowed"
+                title="Next page"
+              >
+                Next <ChevronRight className="w-3.5 h-3.5" />
+              </button>
+            </div>
+          </div>
+        )}
       </div>
 
       <BulkUploadModal open={bulkOpen} onClose={() => setBulkOpen(false)} />
