@@ -358,22 +358,31 @@ async function pushLeadToCrmDialer(
   let wkContactId: string | null = null;
   const { data: existingWk } = await supabase
     .from('wk_contacts')
-    .select('id')
+    .select('id, pipeline_column_id')
     .in('phone', fromVariants)
     .limit(1)
     .maybeSingle();
 
   if (existingWk && (existingWk as { id?: string }).id) {
-    // Existing CRM contact — DO NOT overwrite their pipeline stage.
-    // Hugo 2026-05-16: a lead who's already at "Proposal Sent" or
-    // "Closed" and replies "call me" should NOT be bumped back to
-    // "New Leads". Only the new-contact insert branch below sets the
-    // column. We still flip is_hot=true and bump last_contact_at.
-    wkContactId = (existingWk as { id: string }).id;
-    await supabase
-      .from('wk_contacts')
-      .update({ is_hot: true, last_contact_at: nowTs, updated_at: nowTs })
-      .eq('id', wkContactId);
+    // Existing CRM contact.
+    // Hugo 2026-05-16:
+    //   • If they already have a pipeline stage (e.g. "Proposal Sent" /
+    //     "Closed"), DO NOT touch it — preserve their pipeline position.
+    //   • If they're in wk_contacts but pipeline_column_id is NULL
+    //     (e.g. created by unipile_poll without a stage), assign them
+    //     "New Leads" so they show up on the pipeline board.
+    // Always flip is_hot=true and bump last_contact_at.
+    const existingRow = existingWk as { id: string; pipeline_column_id: string | null };
+    wkContactId = existingRow.id;
+    const updatePatch: Record<string, unknown> = {
+      is_hot: true,
+      last_contact_at: nowTs,
+      updated_at: nowTs,
+    };
+    if (!existingRow.pipeline_column_id && pipelineColumnId) {
+      updatePatch.pipeline_column_id = pipelineColumnId;
+    }
+    await supabase.from('wk_contacts').update(updatePatch).eq('id', wkContactId);
   } else {
     const e164 = args.fromNumber.startsWith('+')
       ? args.fromNumber
