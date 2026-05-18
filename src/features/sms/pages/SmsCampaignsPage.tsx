@@ -4,10 +4,26 @@ import { useCampaigns } from '../hooks/useCampaigns';
 import CampaignsList from '../components/campaigns/CampaignsList';
 import CampaignWizard from '../components/campaigns/CampaignWizard';
 import EditCampaignDialog from '../components/campaigns/EditCampaignDialog';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import type { SmsCampaign } from '../types';
+import { supabase } from '@/integrations/supabase/client';
+
+// Fire a single OPTIONS preflight at sms-bulk-send when the page mounts.
+// The function is rarely called (only on launch) so it goes cold; first
+// real launch can hit a ~1.6s cold-start that loses the CORS preflight
+// race and produces "Failed to send a request to the Edge Function".
+// Pinging here warms the instance so the actual launch is instant.
+function useWakeBulkSend() {
+  useEffect(() => {
+    void fetch(
+      `${import.meta.env.VITE_SUPABASE_URL ?? supabase.supabaseUrl}/functions/v1/sms-bulk-send`,
+      { method: 'OPTIONS' }
+    ).catch(() => { /* warmup only — failures are fine */ });
+  }, []);
+}
 
 export default function SmsCampaignsPage() {
+  useWakeBulkSend();
   const {
     campaigns,
     isLoading,
