@@ -1325,6 +1325,25 @@ serve(async (req: Request) => {
             console.log(
               `[sms-automation-run] positive-intent ack sent to ${from_number}`
             );
+            // Telegram monitor — pre-walk transfer ack counts as an AI
+            // reply for monitoring purposes, so operators see the full
+            // Q/A pair (lead said "call me" → bot said "I'll call you").
+            if (flowJson.telegramMonitorEnabled === true) {
+              const { data: smsContactRow } = await supabase
+                .from('sms_contacts')
+                .select('display_name')
+                .eq('id', contact_id)
+                .maybeSingle();
+              const contactName =
+                (smsContactRow as { display_name?: string } | null)?.display_name || '';
+              await notifyTelegram({
+                automationName: automation.name || '(unnamed)',
+                contactName,
+                contactPhone: from_number,
+                inboundBody: body,
+                aiReply: ackTemplate,
+              });
+            }
           }
         } catch (ackErr) {
           console.error('[sms-automation-run] positive-intent ack threw:', ackErr);
