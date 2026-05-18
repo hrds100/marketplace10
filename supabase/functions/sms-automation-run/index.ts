@@ -548,7 +548,8 @@ async function notifyTelegram(args: {
   contactName: string;
   contactPhone: string;
   inboundBody: string;
-  aiReply: string;
+  aiReply?: string;       // blank when AI didn't reply (silent actions)
+  trigger?: string;       // node action label (e.g. "Moved to CRM Dialer")
 }): Promise<void> {
   if (!TELEGRAM_BOT_TOKEN || !TELEGRAM_MONITOR_CHAT_ID) return;
 
@@ -557,13 +558,16 @@ async function notifyTelegram(args: {
 
   // Plain text body — readable in Telegram without HTML parsing quirks.
   // The bot/automation name on the first line is so multiple campaigns
-  // can share one monitor group.
+  // can share one monitor group. `trigger` is the engine action label
+  // (Moved to CRM / Moved to Stop / Labelled X / etc.) so operators can
+  // see silent flow changes that didn't produce an AI reply.
   const text =
     `🤖 ${escapeHtml(args.automationName)}\n` +
     `Name: ${escapeHtml(args.contactName || '(no name)')}\n` +
     `Phone: ${escapeHtml(args.contactPhone)}\n\n` +
     `Q: ${escapeHtml(args.inboundBody)}\n` +
-    `A: ${escapeHtml(args.aiReply)}`;
+    `A: ${escapeHtml(args.aiReply || '')}\n` +
+    `trigger: ${escapeHtml(args.trigger || '')}`;
 
   try {
     const url = `https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`;
@@ -764,7 +768,7 @@ async function executeNode(
 
       // Telegram monitor — per-automation opt-in. Best-effort, never
       // throws. Skipped automatically when the flag is off or the env
-      // vars are missing.
+      // vars are missing. AI reply path: A = reply, trigger blank.
       if (context.telegramMonitorEnabled) {
         await notifyTelegram({
           automationName: context.automationName,
@@ -772,6 +776,7 @@ async function executeNode(
           contactPhone: fromNumber,
           inboundBody: body,
           aiReply: reply,
+          trigger: '',
         });
       }
 
@@ -797,6 +802,16 @@ async function executeNode(
           body: JSON.stringify(stopPayload),
         });
         console.log(`Stop message sent: "${node.data.text.substring(0, 60)}"`);
+      }
+      if (context.telegramMonitorEnabled) {
+        await notifyTelegram({
+          automationName: context.automationName,
+          contactName,
+          contactPhone: fromNumber,
+          inboundBody: body,
+          aiReply: node.data.text || '',
+          trigger: 'Moved to Stop',
+        });
       }
       return { shouldStop: true, sentMessage: !!node.data.text, output: { status: 'stopped', text: node.data.text || null } };
     }
@@ -896,6 +911,16 @@ async function executeNode(
           .eq('id', contactId);
         console.log(`Contact transferred to ${node.data.assignTo}`);
       }
+      if (context.telegramMonitorEnabled) {
+        await notifyTelegram({
+          automationName: context.automationName,
+          contactName,
+          contactPhone: fromNumber,
+          inboundBody: body,
+          aiReply: '',
+          trigger: `Transferred to ${node.data.assignTo || 'agent'}`,
+        });
+      }
       return { shouldStop: true, sentMessage: false, output: { status: 'transferred', assigned_to: node.data.assignTo } };
     }
 
@@ -911,6 +936,17 @@ async function executeNode(
         pipelineColumnId: (node.data.pipelineColumnId as string | undefined) || null,
         source: 'transfer_node',
       });
+
+      if (context.telegramMonitorEnabled) {
+        await notifyTelegram({
+          automationName: context.automationName,
+          contactName,
+          contactPhone: fromNumber,
+          inboundBody: body,
+          aiReply: '',
+          trigger: 'Moved to CRM Dialer',
+        });
+      }
 
       return {
         shouldStop: true,
@@ -932,6 +968,26 @@ async function executeNode(
         );
         console.log(`Label ${node.data.labelId} added to contact ${contactId}`);
       }
+      if (context.telegramMonitorEnabled) {
+        // Look up the label name so the trigger line is readable.
+        let labelName = node.data.labelId ? String(node.data.labelId) : '(no label)';
+        if (node.data.labelId) {
+          const { data: lbl } = await supabase
+            .from('sms_labels')
+            .select('name')
+            .eq('id', node.data.labelId)
+            .maybeSingle();
+          labelName = (lbl as { name?: string } | null)?.name || labelName;
+        }
+        await notifyTelegram({
+          automationName: context.automationName,
+          contactName,
+          contactPhone: fromNumber,
+          inboundBody: body,
+          aiReply: '',
+          trigger: `Added label "${labelName}"`,
+        });
+      }
       return { shouldStop: false, sentMessage: false, output: { status: 'labelled', label_id: node.data.labelId } };
     }
 
@@ -942,6 +998,25 @@ async function executeNode(
           .update({ pipeline_stage_id: node.data.stageId, updated_at: new Date().toISOString() })
           .eq('id', contactId);
         console.log(`Contact moved to stage ${node.data.stageId}`);
+      }
+      if (context.telegramMonitorEnabled) {
+        let stageName = node.data.stageId ? String(node.data.stageId) : '(no stage)';
+        if (node.data.stageId) {
+          const { data: stg } = await supabase
+            .from('sms_pipeline_stages')
+            .select('name')
+            .eq('id', node.data.stageId)
+            .maybeSingle();
+          stageName = (stg as { name?: string } | null)?.name || stageName;
+        }
+        await notifyTelegram({
+          automationName: context.automationName,
+          contactName,
+          contactPhone: fromNumber,
+          inboundBody: body,
+          aiReply: '',
+          trigger: `Moved to stage "${stageName}"`,
+        });
       }
       return { shouldStop: false, sentMessage: false, output: { status: 'stage_moved', stage_id: node.data.stageId } };
     }
@@ -965,6 +1040,16 @@ async function executeNode(
           });
           const webhookStatus = webhookRes.status;
           console.log(`Webhook ${node.data.webhookUrl} responded ${webhookStatus}`);
+          if (context.telegramMonitorEnabled) {
+            await notifyTelegram({
+              automationName: context.automationName,
+              contactName,
+              contactPhone: fromNumber,
+              inboundBody: body,
+              aiReply: '',
+              trigger: `Webhook called (${webhookStatus})`,
+            });
+          }
           return { shouldStop: false, sentMessage: false, output: { status: 'webhook_sent', http_status: webhookStatus } };
         } catch (webhookErr) {
           console.error('Webhook call failed:', webhookErr);
@@ -1099,13 +1184,18 @@ serve(async (req: Request) => {
       // fall back to any STOP_CONVERSATION node; if none exists, use the
       // synthetic 'opt_out' marker so the column at least carries meaning.
       let stopNodeId = 'opt_out';
+      let rejAutomationName = '(unnamed)';
+      let rejTelegramEnabled = false;
       try {
         const { data: autoForStop } = await supabase
           .from('sms_automations')
-          .select('flow_json')
+          .select('name, flow_json')
           .eq('id', automationId)
           .maybeSingle();
-        const fj = (autoForStop as { flow_json?: FlowJson | null } | null)?.flow_json;
+        const aForStop = autoForStop as { name?: string; flow_json?: FlowJson | null } | null;
+        rejAutomationName = aForStop?.name || '(unnamed)';
+        rejTelegramEnabled = aForStop?.flow_json?.telegramMonitorEnabled === true;
+        const fj = aForStop?.flow_json;
         if (fj?.nodes?.length) {
           const startNode = fj.nodes.find((n) => n.data?.isStart === true);
           const notInterestedEdge = startNode
@@ -1176,6 +1266,26 @@ serve(async (req: Request) => {
 
       // NO goodbye message — opt-out is silent. Contact said no, this
       // automation stops, no further outbound from this flow.
+
+      // Telegram monitor: opt-outs are silent on the SMS side but Hugo
+      // wants visibility on the trigger so the team knows when leads
+      // bail. A: stays blank, trigger names the action.
+      if (rejTelegramEnabled) {
+        const { data: contactRow } = await supabase
+          .from('sms_contacts')
+          .select('display_name')
+          .eq('id', contact_id)
+          .maybeSingle();
+        const cn = (contactRow as { display_name?: string } | null)?.display_name || '';
+        await notifyTelegram({
+          automationName: rejAutomationName,
+          contactName: cn,
+          contactPhone: from_number,
+          inboundBody: body,
+          aiReply: '',
+          trigger: 'Moved to Stop (opt-out)',
+        });
+      }
 
       return new Response(
         JSON.stringify({ status: 'opted_out_state_only', contact_opted_out: false }),
@@ -1325,9 +1435,9 @@ serve(async (req: Request) => {
             console.log(
               `[sms-automation-run] positive-intent ack sent to ${from_number}`
             );
-            // Telegram monitor — pre-walk transfer ack counts as an AI
-            // reply for monitoring purposes, so operators see the full
-            // Q/A pair (lead said "call me" → bot said "I'll call you").
+            // Telegram monitor — pre-walk transfer fires both A (the ack
+            // SMS) and trigger (the CRM move) so operators see the full
+            // Q/A pair plus the destination.
             if (flowJson.telegramMonitorEnabled === true) {
               const { data: smsContactRow } = await supabase
                 .from('sms_contacts')
@@ -1342,6 +1452,7 @@ serve(async (req: Request) => {
                 contactPhone: from_number,
                 inboundBody: body,
                 aiReply: ackTemplate,
+                trigger: 'Moved to CRM Dialer',
               });
             }
           }
