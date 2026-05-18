@@ -9,6 +9,10 @@ import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.39.3';
 
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!;
 const SUPABASE_SERVICE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
+// Telegram monitoring — both must be set OR notifyTelegram() is a no-op.
+// Per-automation opt-in via flow_json.telegramMonitorEnabled.
+const TELEGRAM_BOT_TOKEN = Deno.env.get('TELEGRAM_BOT_TOKEN') || '';
+const TELEGRAM_MONITOR_CHAT_ID = Deno.env.get('TELEGRAM_MONITOR_CHAT_ID') || '';
 
 const DEBOUNCE_MS = 5_000;
 
@@ -93,6 +97,11 @@ interface FlowJson {
   // on a positive-intent match. Defaults to a warm acknowledgment when
   // omitted; set to "" to suppress.
   transferAckMessage?: string;
+  // Per-automation Telegram monitoring. When true, every successful AI
+  // reply fires a Q/A snippet to the Supabase secret
+  // TELEGRAM_MONITOR_CHAT_ID via TELEGRAM_BOT_TOKEN. Failures are
+  // logged but never block the SMS path.
+  telegramMonitorEnabled?: boolean;
 }
 
 interface AutomationState {
@@ -526,6 +535,59 @@ async function pushLeadToCrmDialer(
   return { wkContactId, campaignId: resolvedCampaignId };
 }
 
+// ---- Telegram monitoring (per-automation Q/A forward) ----
+//
+// Fires only when:
+//   • TELEGRAM_BOT_TOKEN + TELEGRAM_MONITOR_CHAT_ID are set
+//   • flow_json.telegramMonitorEnabled is true on this automation
+//
+// Never throws — Telegram outages must not break SMS delivery. Errors
+// are logged and swallowed.
+async function notifyTelegram(args: {
+  automationName: string;
+  contactName: string;
+  contactPhone: string;
+  inboundBody: string;
+  aiReply: string;
+}): Promise<void> {
+  if (!TELEGRAM_BOT_TOKEN || !TELEGRAM_MONITOR_CHAT_ID) return;
+
+  const escapeHtml = (s: string): string =>
+    s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+
+  // Plain text body — readable in Telegram without HTML parsing quirks.
+  // The bot/automation name on the first line is so multiple campaigns
+  // can share one monitor group.
+  const text =
+    `🤖 ${escapeHtml(args.automationName)}\n` +
+    `Name: ${escapeHtml(args.contactName || '(no name)')}\n` +
+    `Phone: ${escapeHtml(args.contactPhone)}\n\n` +
+    `Q: ${escapeHtml(args.inboundBody)}\n` +
+    `A: ${escapeHtml(args.aiReply)}`;
+
+  try {
+    const url = `https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`;
+    const res = await fetch(url, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        chat_id: TELEGRAM_MONITOR_CHAT_ID,
+        text,
+        parse_mode: 'HTML',
+        disable_web_page_preview: true,
+      }),
+    });
+    if (!res.ok) {
+      const errBody = await res.text();
+      console.warn(
+        `[notifyTelegram] non-200 from Telegram (${res.status}): ${errBody.slice(0, 200)}`
+      );
+    }
+  } catch (err) {
+    console.warn('[notifyTelegram] fetch failed:', err);
+  }
+}
+
 // ---- Resolve edge via AI pathway classification ----
 
 async function resolveNextEdge(
@@ -601,6 +663,7 @@ async function executeNode(
   context: {
     supabase: ReturnType<typeof createClient>;
     automationId: string;
+    automationName: string;
     automationStateId?: string;
     contactId: string;
     conversationId: string;
@@ -611,6 +674,7 @@ async function executeNode(
     contactName: string;
     precomputedReply?: string | null;
     numberId?: string;
+    telegramMonitorEnabled: boolean;
   }
 ): Promise<{ shouldStop: boolean; sentMessage: boolean; parkedWaiting?: boolean; output: Record<string, unknown> }> {
   const { supabase, contactId, fromNumber, body, globalPrompt, contactName } = context;
@@ -697,6 +761,20 @@ async function executeNode(
       }
 
       console.log(`AI reply sent to ${fromNumber}: "${reply.substring(0, 60)}..."`);
+
+      // Telegram monitor — per-automation opt-in. Best-effort, never
+      // throws. Skipped automatically when the flag is off or the env
+      // vars are missing.
+      if (context.telegramMonitorEnabled) {
+        await notifyTelegram({
+          automationName: context.automationName,
+          contactName,
+          contactPhone: fromNumber,
+          inboundBody: body,
+          aiReply: reply,
+        });
+      }
+
       return { shouldStop: false, sentMessage: true, output: { reply, message_id: sendData.message_id, status: 'sent' } };
     }
 
@@ -1537,6 +1615,7 @@ serve(async (req: Request) => {
       const { shouldStop, sentMessage, parkedWaiting, output } = await executeNode(targetNode, {
         supabase,
         automationId,
+        automationName: automation.name || '(unnamed)',
         automationStateId: state?.id,
         contactId: contact_id,
         conversationId: conversation_id,
@@ -1547,6 +1626,7 @@ serve(async (req: Request) => {
         contactName,
         precomputedReply,
         numberId: requestNumberId,
+        telegramMonitorEnabled: flowJson.telegramMonitorEnabled === true,
       });
 
       // Clear precomputed reply after first use
