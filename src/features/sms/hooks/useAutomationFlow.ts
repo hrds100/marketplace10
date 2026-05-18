@@ -91,8 +91,25 @@ export function useAutomationFlow(id: string | undefined) {
       if (is_active !== undefined) updates.is_active = is_active;
 
       if (nodes !== undefined || edges !== undefined || globalPrompt !== undefined || globalModel !== undefined || globalTemperature !== undefined || maxRepliesPerLead !== undefined) {
+        // Hugo 2026-05-18: previously we reconstructed flow_json from
+        // ONLY the UI-known fields, which silently dropped engine-side
+        // flags written via SQL (telegramMonitorEnabled,
+        // transferOnPositiveIntent, transferDialerCampaignId,
+        // transferPipelineColumnId, transferDialerPriority,
+        // transferAckMessage). Now we read the current row first and
+        // merge — unknown keys survive the round-trip.
+        const { data: existing } = await (supabase
+          .from('sms_automations' as never)
+          .select('flow_json')
+          .eq('id', automationId)
+          .maybeSingle() as never);
+        const existingFlow = (existing as { flow_json?: Record<string, unknown> } | null)?.flow_json ?? {};
+
         const currentFlow = query.data;
         updates.flow_json = {
+          // Preserve unknown engine-side fields written by SQL / server
+          ...existingFlow,
+          // Then apply the UI-known fields (changes take precedence)
           nodes: nodes ?? currentFlow?.nodes ?? [],
           edges: edges ?? currentFlow?.edges ?? [],
           globalPrompt: globalPrompt ?? currentFlow?.globalPrompt ?? '',
