@@ -132,9 +132,25 @@ export function useCampaigns() {
 
   const launchMutation = useMutation({
     mutationFn: async (campaignId: string) => {
-      const { data, error } = await supabase.functions.invoke('sms-bulk-send', {
-        body: { campaign_id: campaignId },
-      });
+      // sms-bulk-send is invoked rarely (only on campaign launch) so it
+      // tends to be cold. The first request often loses the CORS
+      // preflight race (~1.6s boot) and supabase-js surfaces a
+      // FunctionsFetchError "Failed to send a request to the Edge
+      // Function". Retry once after a short wait — by then the function
+      // is warm. 2026-05-18 (Hugo).
+      const invokeOnce = () =>
+        supabase.functions.invoke('sms-bulk-send', { body: { campaign_id: campaignId } });
+
+      let { data, error } = await invokeOnce();
+      if (error) {
+        const isFetchError =
+          (error as { name?: string } | null)?.name === 'FunctionsFetchError' ||
+          /failed to send a request/i.test(error.message ?? '');
+        if (isFetchError) {
+          await new Promise((resolve) => setTimeout(resolve, 1500));
+          ({ data, error } = await invokeOnce());
+        }
+      }
 
       if (error) throw error;
       return data;
