@@ -444,7 +444,12 @@ serve(async (req: Request) => {
     }
 
     if (hasRemaining && hitTimeLimit) {
-      // Hit time limit but more to send — re-invoke self to continue
+      // Hit time limit but more to send — re-invoke self to continue.
+      // Hugo 2026-05-18: campaigns were stopping mid-flow (500-row
+      // campaign stuck at 28). Fire-and-forget fetch() gets killed by
+      // the Supabase Edge runtime the moment we return the response.
+      // EdgeRuntime.waitUntil() keeps the worker alive until the
+      // self-invoke fetch lands, so the chain actually continues.
       console.log(`Re-invoking self for remaining recipients (sent ${batchSentCount} this round)`);
 
       // Set status back to draft so next invocation picks it up
@@ -453,15 +458,30 @@ serve(async (req: Request) => {
         .update({ status: 'draft' })
         .eq('id', campaign_id);
 
-      // Fire-and-forget: re-invoke this edge function
-      fetch(`${SUPABASE_URL}/functions/v1/sms-bulk-send`, {
+      const reInvoke = fetch(`${SUPABASE_URL}/functions/v1/sms-bulk-send`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${SUPABASE_SERVICE_KEY}`,
         },
         body: JSON.stringify({ campaign_id }),
-      }).catch((err) => console.error('Self re-invoke failed:', err));
+      }).then(async (res) => {
+        if (!res.ok) {
+          const text = await res.text().catch(() => '');
+          console.error(`Self re-invoke non-2xx (${res.status}): ${text.slice(0, 300)}`);
+        } else {
+          console.log('Self re-invoke accepted.');
+        }
+      }).catch((err) => console.error('Self re-invoke fetch failed:', err));
+
+      // Keep the worker alive until the self-invoke fetch is in flight.
+      // Falls back to await if waitUntil isn't available.
+      const er = (globalThis as { EdgeRuntime?: { waitUntil?: (p: Promise<unknown>) => void } }).EdgeRuntime;
+      if (er?.waitUntil) {
+        er.waitUntil(reInvoke);
+      } else {
+        await reInvoke;
+      }
 
       return jsonResponse({
         status: 'continuing',
