@@ -35,6 +35,54 @@ function randomBetween(min: number, max: number): number {
   return Math.floor(Math.random() * (max - min + 1)) + min;
 }
 
+// ---- Pipeline stage auto-bucketing (mirrors sms-automation-run) ----
+//
+// After each successful cold SMS send, move the contact into the
+// "Cold SMS Sent" stage of THEIR current pipeline. Operates within the
+// same pipeline only (won't reassign a contact who's already further
+// along, e.g. Brochure Sent → Cold SMS Sent is blocked by forward-only
+// position check).
+async function moveContactToStageByName(
+  supabase: ReturnType<typeof createClient>,
+  contactId: string,
+  targetStageName: string
+): Promise<void> {
+  try {
+    const { data: contactRow } = await supabase
+      .from('sms_contacts')
+      .select('pipeline_stage_id')
+      .eq('id', contactId)
+      .maybeSingle();
+    const currentStageId = (contactRow as { pipeline_stage_id?: string | null } | null)?.pipeline_stage_id;
+    if (!currentStageId) return;
+
+    const { data: currentStage } = await supabase
+      .from('sms_pipeline_stages')
+      .select('id, position, pipeline_id')
+      .eq('id', currentStageId)
+      .maybeSingle();
+    const cur = currentStage as { id: string; position: number; pipeline_id: string } | null;
+    if (!cur) return;
+
+    const { data: targetStage } = await supabase
+      .from('sms_pipeline_stages')
+      .select('id, position')
+      .eq('pipeline_id', cur.pipeline_id)
+      .eq('name', targetStageName)
+      .maybeSingle();
+    const target = targetStage as { id: string; position: number } | null;
+    if (!target || target.id === cur.id) return;
+    if (target.position <= cur.position) return;
+
+    await supabase
+      .from('sms_contacts')
+      .update({ pipeline_stage_id: target.id, updated_at: new Date().toISOString() })
+      .eq('id', contactId);
+  } catch (err) {
+    console.warn('[moveContactToStageByName] threw:', err);
+  }
+}
+
 serve(async (req: Request) => {
   if (req.method === 'OPTIONS') {
     return new Response('ok', { headers: corsHeaders });
@@ -380,6 +428,11 @@ serve(async (req: Request) => {
 
         sentCount++;
         batchSentCount++;
+
+        // Pipeline auto-bucket: cold SMS delivered to Twilio means the
+        // contact has moved from "New Leads" → "Cold SMS Sent" in their
+        // current pipeline. Best-effort; never blocks the send loop.
+        await moveContactToStageByName(supabase, contact.id, 'Cold SMS Sent');
 
         console.log(`[${i + 1}/${recipientsToProcess.length}] Sent to ${contact.phone_number} via ${number.phone_number}`);
 
