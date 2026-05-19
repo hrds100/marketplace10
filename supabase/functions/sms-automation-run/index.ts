@@ -119,6 +119,24 @@ function normalizeLabel(s: string | null | undefined): string {
   return (s ?? '').trim().toLowerCase().replace(/[\s_-]+/g, '_');
 }
 
+// Substitute supported template variables in a literal SMS body.
+// Mirrors the set used by sms-bulk-send so operators can mix templates
+// across cold campaigns and automation literal-text nodes:
+//   {name}                          -> displayName (defaults to "there")
+//   {phone}                         -> phone
+//   {company_name} / {company name} -> company (defaults to "")
+function substituteTemplate(
+  text: string,
+  vars: { displayName?: string; phone?: string; company?: string }
+): string {
+  if (!text) return text;
+  let out = text;
+  out = out.replace(/\{name\}/gi, vars.displayName?.trim() || 'there');
+  out = out.replace(/\{phone\}/gi, vars.phone || '');
+  out = out.replace(/\{company[\s_-]?name\}/gi, vars.company?.trim() || '');
+  return out;
+}
+
 // Detects SOFT rejection / opt-out intent during a conversation —
 // "no" / "nope" / "not interested" / "leave me alone" / "this is spam",
 // complaint phrases, etc. Soft rejections are STATE-LEVEL: they stop
@@ -745,6 +763,7 @@ async function executeNode(
     body: string;
     globalPrompt: string;
     contactName: string;
+    contactCompanyName: string;
     precomputedReply?: string | null;
     numberId?: string;
     telegramMonitorEnabled: boolean;
@@ -765,16 +784,30 @@ async function executeNode(
       // configured this node with literal text. That text is what should
       // go out — the classifier's preamble is discarded here.
       if (node.data.text) {
-        reply = String(node.data.text);
+        reply = substituteTemplate(String(node.data.text), {
+          displayName: contactName,
+          phone: fromNumber,
+          company: context.contactCompanyName,
+        });
         console.log('Using exact text from node (precomputedReply ignored if set)');
       } else if (context.precomputedReply) {
         reply = context.precomputedReply;
         console.log('Using precomputed reply from pathway classification');
       } else {
         const nodePrompt = node.data.prompt || '';
-        const systemPrompt = globalPrompt
-          ? `${globalPrompt}\n\n${nodePrompt}`
-          : nodePrompt || 'You are a helpful SMS assistant. Keep replies concise (under 160 chars if possible).';
+        // Substitute template variables ({name}, {phone}, {company_name})
+        // in the prompt so operators can personalize at the prompt level
+        // (e.g. "You are emailing {company_name}...").
+        const tmplVars = {
+          displayName: contactName,
+          phone: fromNumber,
+          company: context.contactCompanyName,
+        };
+        const resolvedGlobalPrompt = substituteTemplate(globalPrompt || '', tmplVars);
+        const resolvedNodePrompt = substituteTemplate(nodePrompt, tmplVars);
+        const systemPrompt = resolvedGlobalPrompt
+          ? `${resolvedGlobalPrompt}\n\n${resolvedNodePrompt}`
+          : resolvedNodePrompt || 'You are a helpful SMS assistant. Keep replies concise (under 160 chars if possible).';
 
         const model = node.data.modelOptions?.model || 'gpt-5.4-mini';
         const temperature = node.data.modelOptions?.temperature ?? 0.7;
@@ -870,10 +903,15 @@ async function executeNode(
 
     case 'STOP_CONVERSATION': {
       if (node.data.text) {
+        const stopText = substituteTemplate(String(node.data.text), {
+          displayName: contactName,
+          phone: fromNumber,
+          company: context.contactCompanyName,
+        });
         const sendUrl = `${SUPABASE_URL}/functions/v1/sms-send`;
         const stopPayload: Record<string, string | undefined> = {
           to: fromNumber,
-          body: node.data.text,
+          body: stopText,
           contact_id: contactId,
         };
         if (context.numberId) stopPayload.from_number_id = context.numberId;
@@ -1669,14 +1707,15 @@ serve(async (req: Request) => {
       }
     }
 
-    // ---- STEP 8: Get contact name ----
+    // ---- STEP 8: Get contact name + company ----
     const { data: contactData } = await supabase
       .from('sms_contacts')
-      .select('display_name')
+      .select('display_name, company_name')
       .eq('id', contact_id)
       .maybeSingle();
 
-    const contactName = contactData?.display_name || '';
+    const contactName = (contactData as { display_name?: string | null } | null)?.display_name || '';
+    const contactCompanyName = (contactData as { company_name?: string | null } | null)?.company_name || '';
 
     // ---- STEP 9: Evaluate outgoing edges from current node ----
     const currentNode = nodes.find((n) => n.id === currentNodeId);
@@ -1853,6 +1892,7 @@ serve(async (req: Request) => {
         body,
         globalPrompt: globalPrompt || '',
         contactName,
+        contactCompanyName,
         precomputedReply,
         numberId: requestNumberId,
         telegramMonitorEnabled: flowJson.telegramMonitorEnabled === true,

@@ -7,6 +7,7 @@ interface ContactRow {
   id: string;
   phone_number: string;
   display_name: string | null;
+  company_name: string | null;
   notes: string;
   pipeline_stage_id: string | null;
   assigned_to: string | null;
@@ -31,6 +32,7 @@ function mapRow(row: ContactRow): SmsContact {
     id: row.id,
     phoneNumber: row.phone_number,
     displayName: row.display_name,
+    companyName: row.company_name,
     labels,
     pipelineStageId: row.pipeline_stage_id,
     notes: row.notes ?? '',
@@ -59,7 +61,7 @@ async function fetchContacts(): Promise<SmsContact[]> {
     const { data, error } = await (supabase
       .from('sms_contacts' as never)
       .select(`
-        id, phone_number, display_name, notes, pipeline_stage_id,
+        id, phone_number, display_name, company_name, notes, pipeline_stage_id,
         assigned_to, opted_out, batch_name, response_status, created_at, updated_at,
         sms_contact_labels (
           sms_labels!label_id ( id, name, colour, position )
@@ -90,6 +92,7 @@ export function useContacts() {
     mutationFn: async (payload: {
       phone_number: string;
       display_name?: string;
+      company_name?: string | null;
       notes?: string;
       pipeline_stage_id?: string | null;
       labelIds?: string[];
@@ -128,6 +131,7 @@ export function useContacts() {
       id: string;
       phone_number?: string;
       display_name?: string | null;
+      company_name?: string | null;
       notes?: string;
       pipeline_stage_id?: string | null;
       labelIds?: string[];
@@ -186,7 +190,7 @@ export function useContacts() {
     // Dedupes input by phone_number, then upserts with ignoreDuplicates so
     // any phones already in sms_contacts (or repeated in the CSV) are
     // silently skipped instead of failing the whole batch.
-    mutationFn: async (rows: { phone_number: string; display_name?: string; batch_name?: string }[]) => {
+    mutationFn: async (rows: { phone_number: string; display_name?: string; company_name?: string | null; batch_name?: string; pipeline_stage_id?: string | null }[]) => {
       // 1. Strip empty phones + dedupe within the input (keep first
       //    occurrence so the user's first row wins on conflicting display
       //    names / batch names).
