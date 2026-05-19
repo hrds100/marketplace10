@@ -535,6 +535,75 @@ async function pushLeadToCrmDialer(
   return { wkContactId, campaignId: resolvedCampaignId };
 }
 
+// ---- Pipeline stage auto-bucketing ----
+//
+// Moves a contact to a named stage within their CURRENT pipeline.
+// Designed to keep the /sms/pipeline board in sync with engine events
+// (cold SMS sent, brochure sent, transfer to CRM, opt-out) without
+// requiring per-automation config.
+//
+// Rules:
+//   • Contact must already have a pipeline_stage_id pointing at a
+//     stage that belongs to a pipeline. Otherwise skip — we never
+//     auto-assign a pipeline to an unbucketed contact.
+//   • Target stage is matched by name within the SAME pipeline. If no
+//     stage with that name exists in this pipeline, skip silently
+//     (operator hasn't set one up — that's intentional).
+//   • By default the move is forward-only by stage position. Closed
+//     and rejection paths pass forwardOnly=false because terminal
+//     states should win regardless of where the contact currently is.
+//   • Never throws — failures are logged. Stage moves are a side
+//     effect; they must not break the SMS path.
+async function moveContactToStageByName(
+  supabase: ReturnType<typeof createClient>,
+  contactId: string,
+  targetStageName: string,
+  options?: { forwardOnly?: boolean }
+): Promise<void> {
+  const forwardOnly = options?.forwardOnly !== false;
+  try {
+    const { data: contactRow } = await supabase
+      .from('sms_contacts')
+      .select('pipeline_stage_id')
+      .eq('id', contactId)
+      .maybeSingle();
+    const currentStageId = (contactRow as { pipeline_stage_id?: string | null } | null)?.pipeline_stage_id;
+    if (!currentStageId) return;
+
+    const { data: currentStage } = await supabase
+      .from('sms_pipeline_stages')
+      .select('id, position, pipeline_id')
+      .eq('id', currentStageId)
+      .maybeSingle();
+    const cur = currentStage as { id: string; position: number; pipeline_id: string } | null;
+    if (!cur) return;
+
+    const { data: targetStage } = await supabase
+      .from('sms_pipeline_stages')
+      .select('id, position')
+      .eq('pipeline_id', cur.pipeline_id)
+      .eq('name', targetStageName)
+      .maybeSingle();
+    const target = targetStage as { id: string; position: number } | null;
+    if (!target) return;
+    if (target.id === cur.id) return;
+
+    if (forwardOnly && target.position <= cur.position) return;
+
+    const { error: upErr } = await supabase
+      .from('sms_contacts')
+      .update({ pipeline_stage_id: target.id, updated_at: new Date().toISOString() })
+      .eq('id', contactId);
+    if (upErr) {
+      console.warn(`[moveContactToStageByName] update failed: ${upErr.message}`);
+    } else {
+      console.log(`[moveContactToStageByName] contact ${contactId} -> "${targetStageName}"`);
+    }
+  } catch (err) {
+    console.warn('[moveContactToStageByName] threw:', err);
+  }
+}
+
 // ---- Telegram monitoring (per-automation Q/A forward) ----
 //
 // Fires only when:
@@ -780,6 +849,16 @@ async function executeNode(
         });
       }
 
+      // Pipeline auto-bucket: detect the Brochure node by name or by
+      // the canonical brochure URL in the literal text. Either heuristic
+      // is enough to recognise that this DEFAULT node sent the brochure.
+      const nodeName = String(node.data.name || '').toLowerCase();
+      const replyHasBrochure = reply.toLowerCase().includes('nfstay.com/brochure');
+      const looksLikeBrochure = nodeName.includes('brochure') || replyHasBrochure;
+      if (looksLikeBrochure) {
+        await moveContactToStageByName(supabase, contactId, 'Brochure Sent');
+      }
+
       return { shouldStop: false, sentMessage: true, output: { reply, message_id: sendData.message_id, status: 'sent' } };
     }
 
@@ -813,6 +892,9 @@ async function executeNode(
           trigger: 'Moved to Stop',
         });
       }
+      // Pipeline auto-bucket: canvas Stop node => Closed (terminal,
+      // backward moves allowed).
+      await moveContactToStageByName(supabase, contactId, 'Closed', { forwardOnly: false });
       return { shouldStop: true, sentMessage: !!node.data.text, output: { status: 'stopped', text: node.data.text || null } };
     }
 
@@ -947,6 +1029,9 @@ async function executeNode(
           trigger: 'Moved to CRM Dialer',
         });
       }
+
+      // Pipeline auto-bucket: canvas-driven transfer => CRM column.
+      await moveContactToStageByName(supabase, contactId, 'Moved CRM');
 
       return {
         shouldStop: true,
@@ -1287,6 +1372,11 @@ serve(async (req: Request) => {
         });
       }
 
+      // Pipeline auto-bucket: opt-outs are terminal, so allow backward
+      // moves too. Lands the contact on the "Closed" column of their
+      // current pipeline (if a column with that name exists).
+      await moveContactToStageByName(supabase, contact_id, 'Closed', { forwardOnly: false });
+
       return new Response(
         JSON.stringify({ status: 'opted_out_state_only', contact_opted_out: false }),
         { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
@@ -1460,6 +1550,9 @@ serve(async (req: Request) => {
           console.error('[sms-automation-run] positive-intent ack threw:', ackErr);
         }
       }
+
+      // Pipeline auto-bucket: positive intent => CRM column.
+      await moveContactToStageByName(supabase, contact_id, 'Moved CRM');
 
       const nowTs = new Date().toISOString();
 
