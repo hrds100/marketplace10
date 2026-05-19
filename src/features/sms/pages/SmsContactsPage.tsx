@@ -217,6 +217,8 @@ export default function SmsContactsPage() {
         open={csvOpen}
         onClose={() => setCsvOpen(false)}
         existingContacts={contacts}
+        pipelines={pipelines}
+        stages={stages}
         onImport={bulkCreateContacts}
       />
 

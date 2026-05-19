@@ -186,7 +186,7 @@ export function useContacts() {
     // Dedupes input by phone_number, then upserts with ignoreDuplicates so
     // any phones already in sms_contacts (or repeated in the CSV) are
     // silently skipped instead of failing the whole batch.
-    mutationFn: async (rows: { phone_number: string; display_name?: string; batch_name?: string }[]) => {
+    mutationFn: async (rows: { phone_number: string; display_name?: string; batch_name?: string; pipeline_stage_id?: string | null }[]) => {
       // 1. Strip empty phones + dedupe within the input (keep first
       //    occurrence so the user's first row wins on conflicting display
       //    names / batch names).

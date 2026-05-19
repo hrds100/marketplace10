@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useMemo } from 'react';
 import Papa from 'papaparse';
 import {
   Dialog,
@@ -18,9 +18,16 @@ import {
 } from '@/components/ui/table';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 import { Upload, CheckCircle, AlertTriangle, ArrowLeft, ArrowRight } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import type { SmsContact } from '../../types';
+import type { SmsContact, SmsPipeline, SmsPipelineStage } from '../../types';
 
 interface ImportResult {
   requested: number;
@@ -32,8 +39,12 @@ interface CsvImportDialogProps {
   open: boolean;
   onClose: () => void;
   existingContacts: SmsContact[];
+  /** Optional — when provided, the import dialog shows a pipeline picker
+   *  and lands new contacts on the first column of the selected pipeline. */
+  pipelines?: SmsPipeline[];
+  stages?: SmsPipelineStage[];
   onImport?: (
-    rows: { phone_number: string; display_name?: string; batch_name?: string }[]
+    rows: { phone_number: string; display_name?: string; batch_name?: string; pipeline_stage_id?: string | null }[]
   ) => Promise<ImportResult | void>;
 }
 
@@ -45,7 +56,7 @@ interface ParsedRow {
 
 type Step = 'upload' | 'preview' | 'duplicates' | 'success';
 
-export default function CsvImportDialog({ open, onClose, existingContacts, onImport }: CsvImportDialogProps) {
+export default function CsvImportDialog({ open, onClose, existingContacts, pipelines, stages, onImport }: CsvImportDialogProps) {
   const [step, setStep] = useState<Step>('upload');
   const [rows, setRows] = useState<ParsedRow[]>([]);
   const [duplicateCount, setDuplicateCount] = useState(0);
@@ -53,6 +64,20 @@ export default function CsvImportDialog({ open, onClose, existingContacts, onImp
   const [skippedCount, setSkippedCount] = useState(0);
   const [dragOver, setDragOver] = useState(false);
   const [groupName, setGroupName] = useState('');
+  // Sentinel "__none__" = don't bucket. Default keeps existing behaviour.
+  const [pipelineId, setPipelineId] = useState<string>('__none__');
+
+  // First column (position 0) of each pipeline — that's where new
+  // imports land. If a pipeline has no stages yet, no target is shown.
+  const firstStageByPipeline = useMemo(() => {
+    const map = new Map<string, SmsPipelineStage>();
+    if (!stages) return map;
+    const sorted = [...stages].sort((a, b) => a.position - b.position);
+    for (const s of sorted) {
+      if (!map.has(s.pipelineId)) map.set(s.pipelineId, s);
+    }
+    return map;
+  }, [stages]);
 
   function reset() {
     setStep('upload');
@@ -61,6 +86,7 @@ export default function CsvImportDialog({ open, onClose, existingContacts, onImp
     setImportedCount(0);
     setSkippedCount(0);
     setGroupName('');
+    setPipelineId('__none__');
   }
 
   function handleClose() {
@@ -130,12 +156,16 @@ export default function CsvImportDialog({ open, onClose, existingContacts, onImp
 
     if (onImport && toImport.length > 0) {
       const batchName = groupName.trim() || undefined;
+      const targetStageId = pipelineId !== '__none__'
+        ? firstStageByPipeline.get(pipelineId)?.id ?? null
+        : null;
       try {
         const result = await onImport(
           toImport.map((r) => ({
             phone_number: r.phone!,
             display_name: r.name || undefined,
             batch_name: batchName,
+            pipeline_stage_id: targetStageId,
           }))
         );
         // The hook returns accurate counts after DB-side dedup; prefer those
@@ -220,6 +250,35 @@ export default function CsvImportDialog({ open, onClose, existingContacts, onImp
               />
               <p className="text-xs text-[#9CA3AF] mt-1">Tag these contacts so you can re-use the group in future campaigns</p>
             </div>
+
+            {pipelines && pipelines.length > 0 && (
+              <div>
+                <Label className="text-sm font-medium text-[#1A1A1A]">Pipeline (optional)</Label>
+                <Select value={pipelineId} onValueChange={setPipelineId}>
+                  <SelectTrigger className="mt-1.5 rounded-lg border-[#E5E7EB]">
+                    <SelectValue placeholder="No pipeline" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="__none__">No pipeline (unbucketed)</SelectItem>
+                    {pipelines
+                      .slice()
+                      .sort((a, b) => a.position - b.position)
+                      .filter((p) => firstStageByPipeline.has(p.id))
+                      .map((p) => {
+                        const firstStage = firstStageByPipeline.get(p.id)!;
+                        return (
+                          <SelectItem key={p.id} value={p.id}>
+                            {p.name} → {firstStage.name}
+                          </SelectItem>
+                        );
+                      })}
+                  </SelectContent>
+                </Select>
+                <p className="text-xs text-[#9CA3AF] mt-1">
+                  Drops these contacts straight into the first column of the chosen pipeline.
+                </p>
+              </div>
+            )}
             <div className="border border-[#E5E7EB] rounded-xl overflow-hidden">
               <Table>
                 <TableHeader>
