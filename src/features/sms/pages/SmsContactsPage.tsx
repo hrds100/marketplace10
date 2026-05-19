@@ -6,6 +6,7 @@ import Papa from 'papaparse';
 import { useContacts } from '../hooks/useContacts';
 import { useLabels } from '../hooks/useLabels';
 import { useStages } from '../hooks/useStages';
+import { usePipelines } from '../hooks/usePipelines';
 import { useCampaigns } from '../hooks/useCampaigns';
 import type { SmsContact, SmsLabel } from '../types';
 import ContactsTable from '../components/contacts/ContactsTable';
@@ -20,7 +21,8 @@ export default function SmsContactsPage() {
     bulkCreateContacts, bulkUpdateStage, bulkAddLabel, bulkDelete, pushToCampaign,
   } = useContacts();
   const { labels } = useLabels();
-  const { stages } = useStages();
+  const { stages } = useStages();           // all pipelines' stages
+  const { pipelines } = usePipelines();
   const { campaigns } = useCampaigns();
   const [formOpen, setFormOpen] = useState(false);
   const [csvOpen, setCsvOpen] = useState(false);
@@ -184,6 +186,15 @@ export default function SmsContactsPage() {
           contacts={contacts}
           labels={labels}
           stages={stages}
+          pipelines={pipelines}
+          onMoveStage={async (contactId, stageId) => {
+            try {
+              await updateContact({ id: contactId, pipeline_stage_id: stageId });
+              toast.success('Stage updated');
+            } catch (err) {
+              toast.error(err instanceof Error ? err.message : 'Failed to move contact');
+            }
+          }}
           onEdit={handleEditContact}
           onDelete={handleDeleteContact}
           selectedIds={selectedIds}
@@ -196,6 +207,7 @@ export default function SmsContactsPage() {
         contact={editingContact}
         labels={labels}
         stages={stages}
+        pipelines={pipelines}
         open={formOpen}
         onClose={() => setFormOpen(false)}
         onSave={handleSaveContact}

@@ -25,13 +25,15 @@ import {
 } from '@/components/ui/popover';
 import { ChevronDown } from 'lucide-react';
 import { toast } from 'sonner';
-import type { SmsContact, SmsLabel, SmsPipelineStage } from '../../types';
+import type { SmsContact, SmsLabel, SmsPipeline, SmsPipelineStage } from '../../types';
 import LabelBadge from '../shared/LabelBadge';
 
 interface ContactFormProps {
   contact: SmsContact | null;
   labels: SmsLabel[];
   stages: SmsPipelineStage[];
+  /** Optional — when provided, stage dropdown groups options by pipeline. */
+  pipelines?: SmsPipeline[];
   open: boolean;
   onClose: () => void;
   onSave: (data: {
@@ -47,10 +49,30 @@ export default function ContactForm({
   contact,
   labels,
   stages,
+  pipelines,
   open,
   onClose,
   onSave,
 }: ContactFormProps) {
+  // Group stages by pipeline when pipelines are passed; otherwise flat.
+  const stagesByPipeline = (() => {
+    if (!pipelines || pipelines.length === 0) return null;
+    const byId = new Map(pipelines.map((p) => [p.id, p] as const));
+    const grouped = new Map<string, { pipeline: SmsPipeline; stages: SmsPipelineStage[] }>();
+    for (const s of stages) {
+      const p = byId.get(s.pipelineId);
+      if (!p) continue;
+      const bucket = grouped.get(p.id) ?? { pipeline: p, stages: [] };
+      bucket.stages.push(s);
+      grouped.set(p.id, bucket);
+    }
+    return Array.from(grouped.values())
+      .sort((a, b) => a.pipeline.position - b.pipeline.position)
+      .map((g) => ({
+        pipeline: g.pipeline,
+        stages: g.stages.sort((a, b) => a.position - b.position),
+      }));
+  })();
   const [name, setName] = useState('');
   const [phone, setPhone] = useState('');
   const [selectedLabels, setSelectedLabels] = useState<string[]>([]);
@@ -180,11 +202,24 @@ export default function ContactForm({
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="none">No stage</SelectItem>
-                {stages.map((s) => (
-                  <SelectItem key={s.id} value={s.id}>
-                    {s.name}
-                  </SelectItem>
-                ))}
+                {stagesByPipeline
+                  ? stagesByPipeline.map((g) => (
+                      <div key={g.pipeline.id}>
+                        <div className="px-2 py-1 text-[10px] uppercase tracking-wide text-[#9CA3AF] font-semibold">
+                          {g.pipeline.name}
+                        </div>
+                        {g.stages.map((s) => (
+                          <SelectItem key={s.id} value={s.id}>
+                            {s.name}
+                          </SelectItem>
+                        ))}
+                      </div>
+                    ))
+                  : stages.map((s) => (
+                      <SelectItem key={s.id} value={s.id}>
+                        {s.name}
+                      </SelectItem>
+                    ))}
               </SelectContent>
             </Select>
           </div>

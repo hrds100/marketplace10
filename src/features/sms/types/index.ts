@@ -12,6 +12,13 @@ export interface SmsPipelineStage {
   name: string;
   colour: string;
   position: number;
+  pipelineId: string;
+}
+
+export interface SmsPipeline {
+  id: string;
+  name: string;
+  position: number;
 }
 
 export interface SmsContact {
