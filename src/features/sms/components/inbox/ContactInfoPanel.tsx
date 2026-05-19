@@ -30,7 +30,8 @@ import { useUpdateContact } from '../../hooks/useUpdateContact';
 import { useContactLabels } from '../../hooks/useContactLabels';
 import { useLabels } from '../../hooks/useLabels';
 import { useStages } from '../../hooks/useStages';
-import type { SmsAutomationState, SmsContact, SmsInternalNote } from '../../types';
+import { usePipelines } from '../../hooks/usePipelines';
+import type { SmsAutomationState, SmsContact, SmsInternalNote, SmsPipeline, SmsPipelineStage } from '../../types';
 
 interface ContactInfoPanelProps {
   contact: SmsContact | null;
@@ -61,6 +62,7 @@ export default function ContactInfoPanel({
   const { addLabel, removeLabel, isUpdating: labelsUpdating } = useContactLabels();
   const { labels: allLabels } = useLabels();
   const { stages } = useStages();
+  const { pipelines } = usePipelines();
 
   const [editingName, setEditingName] = useState(false);
   const [nameValue, setNameValue] = useState('');
@@ -69,8 +71,31 @@ export default function ContactInfoPanel({
 
   if (!contact) return null;
 
-  const stage = stages.find((s) => s.id === contact.pipelineStageId);
+  // Selected stage label is rendered by Radix from the matched SelectItem
+  // (its children are wrapped in <ItemText>), so we don't need to compute
+  // a separate `stage` here.
   const contactLabelIds = new Set(contact.labels.map((l) => l.id));
+
+  // Group stages by pipeline so the dropdown shows
+  // "Plumber → New Leads" / "Real Estate → Cold SMS Sent" etc.
+  const stagesByPipeline = (() => {
+    if (!pipelines || pipelines.length === 0) return null;
+    const byId = new Map(pipelines.map((p) => [p.id, p] as const));
+    const grouped = new Map<string, { pipeline: SmsPipeline; stages: SmsPipelineStage[] }>();
+    for (const s of stages) {
+      const p = byId.get(s.pipelineId);
+      if (!p) continue;
+      const bucket = grouped.get(p.id) ?? { pipeline: p, stages: [] };
+      bucket.stages.push(s);
+      grouped.set(p.id, bucket);
+    }
+    return Array.from(grouped.values())
+      .sort((a, b) => a.pipeline.position - b.pipeline.position)
+      .map((g) => ({
+        pipeline: g.pipeline,
+        stages: g.stages.sort((a, b) => a.position - b.position),
+      }));
+  })();
 
   function startEditName() {
     setNameValue(contact?.displayName ?? '');
@@ -284,32 +309,34 @@ export default function ContactInfoPanel({
               disabled={isUpdating}
             >
               <SelectTrigger className="h-8 text-sm">
-                <SelectValue placeholder="Select stage">
-                  {stage ? (
-                    <div className="flex items-center gap-2">
-                      <span
-                        className="h-2.5 w-2.5 rounded-full shrink-0"
-                        style={{ backgroundColor: stage.colour }}
-                      />
-                      <span>{stage.name}</span>
-                    </div>
-                  ) : (
-                    'Not set'
-                  )}
-                </SelectValue>
+                <SelectValue placeholder="Select stage" />
               </SelectTrigger>
               <SelectContent>
-                {stages.map((s) => (
-                  <SelectItem key={s.id} value={s.id}>
-                    <div className="flex items-center gap-2">
-                      <span
-                        className="h-2.5 w-2.5 rounded-full shrink-0"
-                        style={{ backgroundColor: s.colour }}
-                      />
-                      <span>{s.name}</span>
-                    </div>
-                  </SelectItem>
-                ))}
+                {stagesByPipeline
+                  ? stagesByPipeline.flatMap((g) =>
+                      g.stages.map((s) => (
+                        <SelectItem key={s.id} value={s.id}>
+                          <div className="flex items-center gap-2">
+                            <span
+                              className="h-2.5 w-2.5 rounded-full shrink-0"
+                              style={{ backgroundColor: s.colour }}
+                            />
+                            <span>{g.pipeline.name} → {s.name}</span>
+                          </div>
+                        </SelectItem>
+                      ))
+                    )
+                  : stages.map((s) => (
+                      <SelectItem key={s.id} value={s.id}>
+                        <div className="flex items-center gap-2">
+                          <span
+                            className="h-2.5 w-2.5 rounded-full shrink-0"
+                            style={{ backgroundColor: s.colour }}
+                          />
+                          <span>{s.name}</span>
+                        </div>
+                      </SelectItem>
+                    ))}
               </SelectContent>
             </Select>
           </div>
