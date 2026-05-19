@@ -88,12 +88,6 @@ export default function ContactsTable({
       }));
   }, [pipelines, stages]);
 
-  // Lookup: stageId -> pipeline name (for the cell label).
-  const pipelineNameByStageId = useMemo(() => {
-    if (!pipelines) return new Map<string, string>();
-    const byId = new Map(pipelines.map((p) => [p.id, p.name] as const));
-    return new Map(stages.map((s) => [s.id, byId.get(s.pipelineId) ?? ''] as const));
-  }, [pipelines, stages]);
   const navigate = useNavigate();
   const [search, setSearch] = useState('');
   const [labelFilter, setLabelFilter] = useState('all');
@@ -219,24 +213,19 @@ export default function ContactsTable({
         </Select>
 
         <Select value={stageFilter} onValueChange={setStageFilter}>
-          <SelectTrigger className="w-full sm:w-44 rounded-[10px] border-[#E5E5E5]">
+          <SelectTrigger className="w-full sm:w-56 rounded-[10px] border-[#E5E5E5]">
             <SelectValue placeholder="All Stages" />
           </SelectTrigger>
           <SelectContent>
             <SelectItem value="all">All Stages</SelectItem>
             {stagesByPipeline
-              ? stagesByPipeline.map((g) => (
-                  <div key={g.pipeline.id}>
-                    <div className="px-2 py-1 text-[10px] uppercase tracking-wide text-[#9CA3AF] font-semibold">
-                      {g.pipeline.name}
-                    </div>
-                    {g.stages.map((s) => (
-                      <SelectItem key={s.id} value={s.id}>
-                        {s.name}
-                      </SelectItem>
-                    ))}
-                  </div>
-                ))
+              ? stagesByPipeline.flatMap((g) =>
+                  g.stages.map((s) => (
+                    <SelectItem key={s.id} value={s.id}>
+                      {g.pipeline.name} → {s.name}
+                    </SelectItem>
+                  ))
+                )
               : stages.map((s) => (
                   <SelectItem key={s.id} value={s.id}>
                     {s.name}
@@ -411,43 +400,24 @@ export default function ContactsTable({
                           <SelectTrigger
                             className="h-7 rounded-[8px] border-[#E5E5E5] text-xs px-2 py-0 min-w-[13rem]"
                           >
-                            <SelectValue placeholder="No stage">
-                              {stage ? (
-                                <span className="flex items-center gap-1.5 text-[#6B7280]">
-                                  <span
-                                    className="w-2 h-2 rounded-full"
-                                    style={{ backgroundColor: stage.colour }}
-                                  />
-                                  {pipelineNameByStageId.get(stage.id)
-                                    ? `${pipelineNameByStageId.get(stage.id)} → ${stage.name}`
-                                    : stage.name}
-                                </span>
-                              ) : (
-                                <span className="text-[#9CA3AF]">No stage</span>
-                              )}
-                            </SelectValue>
+                            <SelectValue placeholder="No stage" />
                           </SelectTrigger>
                           <SelectContent>
                             <SelectItem value="__none__">No stage</SelectItem>
                             {stagesByPipeline
-                              ? stagesByPipeline.map((g) => (
-                                  <div key={g.pipeline.id}>
-                                    <div className="px-2 py-1 text-[10px] uppercase tracking-wide text-[#9CA3AF] font-semibold">
-                                      {g.pipeline.name}
-                                    </div>
-                                    {g.stages.map((s) => (
-                                      <SelectItem key={s.id} value={s.id}>
-                                        <span className="flex items-center gap-1.5">
-                                          <span
-                                            className="w-2 h-2 rounded-full"
-                                            style={{ backgroundColor: s.colour }}
-                                          />
-                                          {s.name}
-                                        </span>
-                                      </SelectItem>
-                                    ))}
-                                  </div>
-                                ))
+                              ? stagesByPipeline.flatMap((g) =>
+                                  g.stages.map((s) => (
+                                    <SelectItem key={s.id} value={s.id}>
+                                      <span className="flex items-center gap-1.5">
+                                        <span
+                                          className="w-2 h-2 rounded-full"
+                                          style={{ backgroundColor: s.colour }}
+                                        />
+                                        {g.pipeline.name} → {s.name}
+                                      </span>
+                                    </SelectItem>
+                                  ))
+                                )
                               : stages.map((s) => (
                                   <SelectItem key={s.id} value={s.id}>
                                     {s.name}
