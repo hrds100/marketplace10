@@ -55,26 +55,42 @@ async function fetchPipelineContacts(pipelineId?: string): Promise<SmsContact[]>
     if (stageIds.length === 0) return [];
   }
 
-  let q = (supabase
-    .from('sms_contacts' as never)
-    .select(`
-      id, phone_number, display_name, notes, pipeline_stage_id,
-      assigned_to, opted_out, batch_name, created_at, updated_at,
-      sms_contact_labels (
-        sms_labels!label_id ( id, name, colour, position )
-      )
-    `)
-    .not('pipeline_stage_id', 'is', null)
-    .order('updated_at', { ascending: false }) as never);
+  // PostgREST caps responses at db.max_rows (~1000) regardless of .limit().
+  // Page through with .range() so all columns on the board see every
+  // contact — otherwise columns with older updated_at (Cold SMS Sent /
+  // Brochure Sent / Closed) appear empty when the pipeline holds 1k+ rows.
+  const pageSize = 1000;
+  const maxPages = 100;
+  const all: ContactRow[] = [];
 
-  if (stageIds) {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    q = (q as any).in('pipeline_stage_id', stageIds);
+  for (let page = 0; page < maxPages; page++) {
+    const from = page * pageSize;
+    let q = (supabase
+      .from('sms_contacts' as never)
+      .select(`
+        id, phone_number, display_name, notes, pipeline_stage_id,
+        assigned_to, opted_out, batch_name, created_at, updated_at,
+        sms_contact_labels (
+          sms_labels!label_id ( id, name, colour, position )
+        )
+      `)
+      .not('pipeline_stage_id', 'is', null)
+      .order('updated_at', { ascending: false })
+      .range(from, from + pageSize - 1) as never);
+
+    if (stageIds) {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      q = (q as any).in('pipeline_stage_id', stageIds);
+    }
+
+    const { data, error } = await q;
+    if (error) throw error;
+    const rows = (data as ContactRow[]) ?? [];
+    all.push(...rows);
+    if (rows.length < pageSize) break;
   }
 
-  const { data, error } = await q;
-  if (error) throw error;
-  return ((data as ContactRow[]) ?? []).map(mapRow);
+  return all.map(mapRow);
 }
 
 async function fetchStages(pipelineId?: string): Promise<SmsPipelineStage[]> {
