@@ -357,15 +357,17 @@ async function pushLeadToCrmDialer(
     '+' + args.fromNumber.replace(/^\+/, ''),
   ];
 
-  // 1. Get display_name from sms_contacts
+  // 1. Get display_name + company_name from sms_contacts. Company name
+  //    is stashed in wk_contacts.custom_fields so the CRM side keeps it
+  //    visible (wk_contacts has no dedicated company column).
   const { data: smsContactRow } = await supabase
     .from('sms_contacts')
-    .select('display_name')
+    .select('display_name, company_name')
     .eq('id', args.contactId)
     .maybeSingle();
-  const displayName =
-    (smsContactRow as { display_name?: string } | null)?.display_name ||
-    args.fromNumber;
+  const smsRow = smsContactRow as { display_name?: string | null; company_name?: string | null } | null;
+  const displayName = smsRow?.display_name?.trim() || args.fromNumber;
+  const companyName = smsRow?.company_name?.trim() || null;
 
   // 2. Resolve pipeline_column_id — explicit on node wins, else first
   //    column on the (only) active pipeline.
@@ -399,6 +401,8 @@ async function pushLeadToCrmDialer(
     //     (e.g. created by unipile_poll without a stage), assign them
     //     "New Leads" so they show up on the pipeline board.
     // Always flip is_hot=true and bump last_contact_at.
+    // 2026-05-19: also merge company_name into custom_fields if we have
+    // one and the existing record doesn't (won't overwrite operator edits).
     const existingRow = existingWk as { id: string; pipeline_column_id: string | null };
     wkContactId = existingRow.id;
     const updatePatch: Record<string, unknown> = {
@@ -409,11 +413,29 @@ async function pushLeadToCrmDialer(
     if (!existingRow.pipeline_column_id && pipelineColumnId) {
       updatePatch.pipeline_column_id = pipelineColumnId;
     }
+    if (companyName) {
+      const { data: existingFields } = await supabase
+        .from('wk_contacts')
+        .select('custom_fields')
+        .eq('id', wkContactId)
+        .maybeSingle();
+      const fields = ((existingFields as { custom_fields?: Record<string, unknown> } | null)?.custom_fields) || {};
+      if (!fields.company_name) {
+        updatePatch.custom_fields = { ...fields, company_name: companyName };
+      }
+    }
     await supabase.from('wk_contacts').update(updatePatch).eq('id', wkContactId);
   } else {
     const e164 = args.fromNumber.startsWith('+')
       ? args.fromNumber
       : '+' + args.fromNumber;
+    const insertCustomFields: Record<string, unknown> = {
+      source: `sms_automation_${args.source}`,
+      automation_id: args.automationId,
+      node_id: args.nodeId,
+      transferred_at: nowTs,
+    };
+    if (companyName) insertCustomFields.company_name = companyName;
     const { data: inserted } = await supabase
       .from('wk_contacts')
       .insert({
@@ -422,12 +444,7 @@ async function pushLeadToCrmDialer(
         owner_agent_id: null,
         pipeline_column_id: pipelineColumnId,
         is_hot: true,
-        custom_fields: {
-          source: `sms_automation_${args.source}`,
-          automation_id: args.automationId,
-          node_id: args.nodeId,
-          transferred_at: nowTs,
-        },
+        custom_fields: insertCustomFields,
       })
       .select('id')
       .single();
@@ -1521,6 +1538,18 @@ serve(async (req: Request) => {
         `[sms-automation-run] positive intent detected ("${body.slice(0, 60)}") — pushing to CRM dialer`
       );
 
+      // Pull display_name + company_name once so the ack template
+      // substitution + Telegram monitor below have them available.
+      // Cheaper than two separate selects later in the same block.
+      const { data: piContactRow } = await supabase
+        .from('sms_contacts')
+        .select('display_name, company_name')
+        .eq('id', contact_id)
+        .maybeSingle();
+      const piRow = piContactRow as { display_name?: string | null; company_name?: string | null } | null;
+      const piContactName = piRow?.display_name?.trim() || '';
+      const piContactCompany = piRow?.company_name?.trim() || '';
+
       const priority = Math.max(
         1,
         Math.floor(Number(flowJson.transferDialerPriority ?? 9999))
@@ -1539,10 +1568,17 @@ serve(async (req: Request) => {
       // Send a brief acknowledgment so the lead knows a call is coming.
       // Operator-configurable via flow_json.transferAckMessage; falls back
       // to a warm default. Skipped if explicitly set to empty string.
-      const ackTemplate =
+      // Template variables ({name}/{phone}/{company_name}) are substituted
+      // so operators can personalize the ack with the lead's company.
+      const ackTemplateRaw =
         flowJson.transferAckMessage !== undefined
           ? flowJson.transferAckMessage
           : "Sure — I'll get one of our team to give you a quick call shortly 👍";
+      const ackTemplate = substituteTemplate(ackTemplateRaw, {
+        displayName: piContactName,
+        phone: from_number,
+        company: piContactCompany,
+      });
       if (ackTemplate && ackTemplate.trim().length > 0) {
         try {
           const sendUrl = `${SUPABASE_URL}/functions/v1/sms-send`;
@@ -1571,18 +1607,12 @@ serve(async (req: Request) => {
             );
             // Telegram monitor — pre-walk transfer fires both A (the ack
             // SMS) and trigger (the CRM move) so operators see the full
-            // Q/A pair plus the destination.
+            // Q/A pair plus the destination. Reuse the piContactName we
+            // already loaded above for the ack template substitution.
             if (flowJson.telegramMonitorEnabled === true) {
-              const { data: smsContactRow } = await supabase
-                .from('sms_contacts')
-                .select('display_name')
-                .eq('id', contact_id)
-                .maybeSingle();
-              const contactName =
-                (smsContactRow as { display_name?: string } | null)?.display_name || '';
               await notifyTelegram({
                 automationName: automation.name || '(unnamed)',
-                contactName,
+                contactName: piContactName,
                 contactPhone: from_number,
                 inboundBody: body,
                 aiReply: ackTemplate,
