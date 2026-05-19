@@ -203,18 +203,13 @@ export default function ContactForm({
               <SelectContent>
                 <SelectItem value="none">No stage</SelectItem>
                 {stagesByPipeline
-                  ? stagesByPipeline.map((g) => (
-                      <div key={g.pipeline.id}>
-                        <div className="px-2 py-1 text-[10px] uppercase tracking-wide text-[#9CA3AF] font-semibold">
-                          {g.pipeline.name}
-                        </div>
-                        {g.stages.map((s) => (
-                          <SelectItem key={s.id} value={s.id}>
-                            {s.name}
-                          </SelectItem>
-                        ))}
-                      </div>
-                    ))
+                  ? stagesByPipeline.flatMap((g) =>
+                      g.stages.map((s) => (
+                        <SelectItem key={s.id} value={s.id}>
+                          {g.pipeline.name} → {s.name}
+                        </SelectItem>
+                      ))
+                    )
                   : stages.map((s) => (
                       <SelectItem key={s.id} value={s.id}>
                         {s.name}
