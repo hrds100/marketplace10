@@ -77,9 +77,13 @@ export function DialerProContent({ autoCallContactId, pipelineColumnId, onAutoCa
 
   // Toasts
   const [toasts, setToasts] = useState<Array<{ id: number; msg: string; type: string }>>([]);
+  // Debug log — keeps last 12 toasts so the ?debug=1 overlay can show
+  // the sequence of events when something goes wrong intermittently.
+  const [debugLog, setDebugLog] = useState<Array<{ t: number; msg: string; type: string }>>([]);
   const onToast = useCallback((msg: string, type: 'success' | 'error' | 'info') => {
     const id = Date.now();
     setToasts((prev) => [...prev.slice(-4), { id, msg, type }]);
+    setDebugLog((prev) => [...prev.slice(-11), { t: id, msg, type }]);
     setTimeout(() => setToasts((prev) => prev.filter((t) => t.id !== id)), 4000);
   }, []);
 
@@ -943,6 +947,132 @@ export function DialerProContent({ autoCallContactId, pipelineColumnId, onAutoCa
           contact={{ id: contact.id, name: contact.name, phone: contact.phone || null, email: contact.email || null }}
           onClose={() => setShowAgreement(false)}
         />
+      )}
+
+      <DialerDebugOverlay
+        phase={state.phase}
+        deviceReady={deviceReady}
+        sessionStarted={state.sessionStarted}
+        currentLeadName={state.currentLead?.name ?? null}
+        currentCallId={state.currentCallId}
+        endReason={state.endReason}
+        error={state.error}
+        queueLen={queue.length}
+        campaignName={camp?.name ?? null}
+        userId={userId}
+        spendBlocked={spend.isLimitReached}
+        killSwitchOn={ks.allDialers}
+        log={debugLog}
+      />
+    </div>
+  );
+}
+
+// ─── DialerDebugOverlay ─────────────────────────────────────────────
+// Visible only when the URL has ?debug=1. Shows live machine state and
+// a rolling log of the last 12 toasts so agents can screenshot what's
+// happening when the dialer behaves unexpectedly.
+
+interface DialerDebugOverlayProps {
+  phase: string;
+  deviceReady: boolean;
+  sessionStarted: boolean;
+  currentLeadName: string | null;
+  currentCallId: string | null;
+  endReason: string | null;
+  error: string | null;
+  queueLen: number;
+  campaignName: string | null;
+  userId: string | null;
+  spendBlocked: boolean;
+  killSwitchOn: boolean;
+  log: Array<{ t: number; msg: string; type: string }>;
+}
+
+function DialerDebugOverlay(props: DialerDebugOverlayProps) {
+  const [enabled, setEnabled] = useState(false);
+  const [collapsed, setCollapsed] = useState(false);
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    setEnabled(new URLSearchParams(window.location.search).get('debug') === '1');
+  }, []);
+  if (!enabled) return null;
+
+  const ts = (n: number) => new Date(n).toLocaleTimeString();
+  const copyAll = () => {
+    const lines = [
+      `phase=${props.phase}`,
+      `deviceReady=${props.deviceReady}`,
+      `sessionStarted=${props.sessionStarted}`,
+      `currentLead=${props.currentLeadName ?? '-'}`,
+      `currentCallId=${props.currentCallId ?? '-'}`,
+      `endReason=${props.endReason ?? '-'}`,
+      `error=${props.error ?? '-'}`,
+      `queue=${props.queueLen}`,
+      `camp=${props.campaignName ?? '-'}`,
+      `user=${props.userId ?? '-'}`,
+      `spendBlocked=${props.spendBlocked}`,
+      `killSwitch=${props.killSwitchOn}`,
+      '--- log ---',
+      ...props.log.map((l) => `${ts(l.t)} [${l.type}] ${l.msg}`),
+    ].join('\n');
+    void navigator.clipboard?.writeText(lines).catch(() => { /* ignore */ });
+  };
+
+  return (
+    <div
+      className="fixed bottom-2 left-2 z-[300] bg-black/85 text-white text-[10px] font-mono p-2 rounded-lg max-w-[320px] border border-white/20 shadow-xl"
+      data-testid="dialer-debug-overlay"
+    >
+      <div className="flex items-center gap-2 mb-1">
+        <span className="font-bold text-[#1E9A80]">DIALER DEBUG</span>
+        <button
+          onClick={copyAll}
+          className="ml-auto px-1.5 py-0.5 bg-white/10 rounded hover:bg-white/20"
+          title="Copy debug snapshot"
+        >copy</button>
+        <button
+          onClick={() => setCollapsed((c) => !c)}
+          className="px-1.5 py-0.5 bg-white/10 rounded hover:bg-white/20"
+        >{collapsed ? '▾' : '▴'}</button>
+      </div>
+      {!collapsed && (
+        <>
+          <div className="space-y-0.5">
+            <div>phase: <span className="text-[#7BD389]">{props.phase}</span></div>
+            <div>deviceReady: <span className={props.deviceReady ? 'text-[#7BD389]' : 'text-[#F87171]'}>{String(props.deviceReady)}</span></div>
+            <div>sessionStarted: {String(props.sessionStarted)}</div>
+            <div>currentLead: {props.currentLeadName ?? '-'}</div>
+            <div className="truncate">currentCallId: {props.currentCallId ?? '-'}</div>
+            <div>endReason: {props.endReason ?? '-'}</div>
+            {props.error && <div className="text-[#F87171] break-words">error: {props.error}</div>}
+            <div>queue: {props.queueLen}</div>
+            <div className="truncate">camp: {props.campaignName ?? '-'}</div>
+            <div className="truncate">user: {props.userId ?? '-'}</div>
+            {(props.spendBlocked || props.killSwitchOn) && (
+              <div className="text-[#FBBF24]">
+                {props.spendBlocked && 'spend-blocked '}
+                {props.killSwitchOn && 'kill-switch'}
+              </div>
+            )}
+          </div>
+          <div className="mt-1.5 pt-1.5 border-t border-white/15">
+            <div className="text-white/60 mb-0.5">log (last {props.log.length})</div>
+            <div className="space-y-0.5 max-h-32 overflow-y-auto">
+              {props.log.length === 0 && <div className="text-white/40">no events yet</div>}
+              {props.log.slice().reverse().map((l) => (
+                <div key={l.t} className={cn(
+                  'leading-tight',
+                  l.type === 'error' && 'text-[#F87171]',
+                  l.type === 'success' && 'text-[#7BD389]',
+                  l.type === 'info' && 'text-white/80',
+                )}>
+                  {ts(l.t)} {l.msg}
+                </div>
+              ))}
+            </div>
+          </div>
+        </>
       )}
     </div>
   );
