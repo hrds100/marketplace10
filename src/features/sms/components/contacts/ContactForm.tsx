@@ -38,6 +38,7 @@ interface ContactFormProps {
   onClose: () => void;
   onSave: (data: {
     displayName: string;
+    companyName: string | null;
     phoneNumber: string;
     labels: SmsLabel[];
     pipelineStageId: string | null;
@@ -74,6 +75,7 @@ export default function ContactForm({
       }));
   })();
   const [name, setName] = useState('');
+  const [company, setCompany] = useState('');
   const [phone, setPhone] = useState('');
   const [selectedLabels, setSelectedLabels] = useState<string[]>([]);
   const [stageId, setStageId] = useState<string>('none');
@@ -82,12 +84,14 @@ export default function ContactForm({
   useEffect(() => {
     if (contact) {
       setName(contact.displayName || '');
+      setCompany(contact.companyName || '');
       setPhone(contact.phoneNumber);
       setSelectedLabels(contact.labels.map((l) => l.id));
       setStageId(contact.pipelineStageId || 'none');
       setNotes(contact.notes);
     } else {
       setName('');
+      setCompany('');
       setPhone('');
       setSelectedLabels([]);
       setStageId('none');
@@ -103,6 +107,7 @@ export default function ContactForm({
 
     onSave({
       displayName: name.trim() || '',
+      companyName: company.trim() || null,
       phoneNumber: phone.trim(),
       labels: labels.filter((l) => selectedLabels.includes(l.id)),
       pipelineStageId: stageId === 'none' ? null : stageId,
@@ -140,6 +145,18 @@ export default function ContactForm({
               onChange={(e) => setName(e.target.value)}
               className="rounded-[10px] border-[#E5E5E5]"
             />
+          </div>
+
+          {/* Company name */}
+          <div className="space-y-1.5">
+            <Label className="text-sm font-medium text-[#525252]">Company name</Label>
+            <Input
+              placeholder="Acme Plumbing Ltd"
+              value={company}
+              onChange={(e) => setCompany(e.target.value)}
+              className="rounded-[10px] border-[#E5E5E5]"
+            />
+            <p className="text-[11px] text-[#9CA3AF]">Use <code className="bg-[#F3F3EE] px-1 rounded">{`{company_name}`}</code> in SMS templates to insert this.</p>
           </div>
 
           {/* Phone */}

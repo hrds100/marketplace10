@@ -333,6 +333,7 @@ export default function ContactsTable({
                 />
               </TableHead>
               <TableHead className="text-[#1A1A1A] font-semibold text-xs">Name</TableHead>
+              <TableHead className="text-[#1A1A1A] font-semibold text-xs">Company</TableHead>
               <TableHead className="text-[#1A1A1A] font-semibold text-xs">Phone</TableHead>
               <TableHead className="text-[#1A1A1A] font-semibold text-xs">Group</TableHead>
               <TableHead className="text-[#1A1A1A] font-semibold text-xs">Labels</TableHead>
@@ -345,7 +346,7 @@ export default function ContactsTable({
           <TableBody>
             {paginated.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={9} className="text-center py-10 text-[#6B7280]">
+                <TableCell colSpan={10} className="text-center py-10 text-[#6B7280]">
                   No contacts match your filters.
                 </TableCell>
               </TableRow>
@@ -369,6 +370,13 @@ export default function ContactsTable({
                     </TableCell>
                     <TableCell className="text-sm font-medium text-[#1A1A1A]">
                       {contact.displayName || 'Unknown'}
+                    </TableCell>
+                    <TableCell className="text-sm text-[#6B7280]">
+                      {contact.companyName?.trim() ? (
+                        contact.companyName
+                      ) : (
+                        <span className="text-[#9CA3AF]">--</span>
+                      )}
                     </TableCell>
                     <TableCell>
                       <PhoneNumber number={contact.phoneNumber} className="text-sm text-[#6B7280]" />

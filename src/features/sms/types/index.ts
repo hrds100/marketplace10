@@ -25,6 +25,10 @@ export interface SmsContact {
   id: string;
   phoneNumber: string;
   displayName: string | null;
+  /** Optional company / business name. Available as {company_name}
+   *  in message templates (sms-bulk-send + literal text nodes in
+   *  the automation engine). */
+  companyName: string | null;
   labels: SmsLabel[];
   pipelineStageId: string | null;
   notes: string;

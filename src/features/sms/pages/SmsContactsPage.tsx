@@ -42,6 +42,7 @@ export default function SmsContactsPage() {
 
   async function handleSaveContact(data: {
     displayName: string;
+    companyName: string | null;
     phoneNumber: string;
     labels: SmsLabel[];
     pipelineStageId: string | null;
@@ -53,6 +54,7 @@ export default function SmsContactsPage() {
           id: editingContact.id,
           phone_number: data.phoneNumber,
           display_name: data.displayName || null,
+          company_name: data.companyName,
           notes: data.notes,
           pipeline_stage_id: data.pipelineStageId,
           labelIds: data.labels.map((l) => l.id),
@@ -61,6 +63,7 @@ export default function SmsContactsPage() {
         await createContact({
           phone_number: data.phoneNumber,
           display_name: data.displayName || undefined,
+          company_name: data.companyName,
           notes: data.notes || undefined,
           pipeline_stage_id: data.pipelineStageId,
           labelIds: data.labels.map((l) => l.id),

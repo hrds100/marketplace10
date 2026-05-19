@@ -274,7 +274,7 @@ serve(async (req: Request) => {
         // ---- LOAD CONTACT ----
         const { data: contact } = await supabase
           .from('sms_contacts')
-          .select('id, phone_number, display_name')
+          .select('id, phone_number, display_name, company_name')
           .eq('id', recipient.contact_id)
           .single();
 
@@ -306,9 +306,19 @@ serve(async (req: Request) => {
         templateIndex++;
 
         // ---- RESOLVE MESSAGE ----
+        // Supported template variables (case-insensitive, optional space
+        // or underscore between words):
+        //   {name}                -> contact.display_name  (default "there")
+        //   {phone}               -> contact.phone_number
+        //   {company_name} / {company name} -> contact.company_name (default "")
         let messageBody = selectedTemplate;
-        messageBody = messageBody.replace(/\{name\}/g, contact.display_name ?? 'there');
-        messageBody = messageBody.replace(/\{phone\}/g, contact.phone_number);
+        messageBody = messageBody.replace(/\{name\}/gi, contact.display_name ?? 'there');
+        messageBody = messageBody.replace(/\{phone\}/gi, contact.phone_number);
+        messageBody = messageBody.replace(
+          /\{company[\s_-]?name\}/gi,
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          (contact as any).company_name ?? ''
+        );
 
         if (campaign.include_opt_out) {
           messageBody += '\n\nReply STOP to unsubscribe';

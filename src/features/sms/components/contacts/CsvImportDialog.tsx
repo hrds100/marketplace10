@@ -44,13 +44,20 @@ interface CsvImportDialogProps {
   pipelines?: SmsPipeline[];
   stages?: SmsPipelineStage[];
   onImport?: (
-    rows: { phone_number: string; display_name?: string; batch_name?: string; pipeline_stage_id?: string | null }[]
+    rows: {
+      phone_number: string;
+      display_name?: string;
+      company_name?: string | null;
+      batch_name?: string;
+      pipeline_stage_id?: string | null;
+    }[]
   ) => Promise<ImportResult | void>;
 }
 
 interface ParsedRow {
   name?: string;
   phone?: string;
+  company?: string;
   [key: string]: string | undefined;
 }
 
@@ -102,9 +109,15 @@ export default function CsvImportDialog({ open, onClose, existingContacts, pipel
       /^(phone[\s_]?number?|mobile|tel(ephone)?|contact[\s_]?number?)$/i.test(k.trim())
     ) || firstKeys.find((k) => /phone|mobile|tel/i.test(k));
     // Find name column — matches: name, full name, contact name, first name, display name
+    // (excluded: anything containing "company" so it doesn't grab company name)
     const nameKey = firstKeys.find((k) =>
       /^(full[\s_]?name|contact[\s_]?name|display[\s_]?name|first[\s_]?name|name)$/i.test(k.trim())
-    ) || firstKeys.find((k) => /name/i.test(k));
+    ) || firstKeys.find((k) => /name/i.test(k) && !/company|business|organ/i.test(k));
+    // Find company column — matches: company, company name, business, business name,
+    // organization, organisation
+    const companyKey = firstKeys.find((k) =>
+      /^(company([\s_]?name)?|business([\s_]?name)?|organi[sz]ation([\s_]?name)?)$/i.test(k.trim())
+    ) || firstKeys.find((k) => /company|business|organ/i.test(k));
 
     if (!phoneKey) return raw; // can't map, return as-is
 
@@ -112,6 +125,7 @@ export default function CsvImportDialog({ open, onClose, existingContacts, pipel
       ...row,
       phone: row[phoneKey]?.trim() || undefined,
       name: nameKey ? (row[nameKey]?.trim() || undefined) : undefined,
+      company: companyKey ? (row[companyKey]?.trim() || undefined) : undefined,
     }));
   }
 
@@ -164,6 +178,7 @@ export default function CsvImportDialog({ open, onClose, existingContacts, pipel
           toImport.map((r) => ({
             phone_number: r.phone!,
             display_name: r.name || undefined,
+            company_name: r.company || null,
             batch_name: batchName,
             pipeline_stage_id: targetStageId,
           }))
