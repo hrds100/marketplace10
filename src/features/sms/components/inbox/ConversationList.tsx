@@ -10,8 +10,9 @@ import {
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Skeleton } from '@/components/ui/skeleton';
 import ConversationRow from './ConversationRow';
-import type { SmsConversation, SmsLabel, SmsPipelineStage } from '../../types';
+import type { SmsConversation, SmsLabel, SmsPipeline, SmsPipelineStage } from '../../types';
 import { useMemo, useState } from 'react';
+import { usePipelines } from '../../hooks/usePipelines';
 
 interface ConversationListProps {
   conversations: SmsConversation[];
@@ -34,6 +35,28 @@ export default function ConversationList({
   stages,
   isLoading,
 }: ConversationListProps) {
+  const { pipelines } = usePipelines();
+
+  // Group stages by pipeline so the filter dropdown shows
+  // "Plumber → New Leads" / "Real Estate → Cold SMS Sent" etc.
+  const stagesByPipeline = useMemo(() => {
+    if (!pipelines || pipelines.length === 0) return null;
+    const byId = new Map(pipelines.map((p) => [p.id, p] as const));
+    const grouped = new Map<string, { pipeline: SmsPipeline; stages: SmsPipelineStage[] }>();
+    for (const s of stages) {
+      const p = byId.get(s.pipelineId);
+      if (!p) continue;
+      const bucket = grouped.get(p.id) ?? { pipeline: p, stages: [] };
+      bucket.stages.push(s);
+      grouped.set(p.id, bucket);
+    }
+    return Array.from(grouped.values())
+      .sort((a, b) => a.pipeline.position - b.pipeline.position)
+      .map((g) => ({
+        pipeline: g.pipeline,
+        stages: g.stages.sort((a, b) => a.position - b.position),
+      }));
+  }, [pipelines, stages]);
   const [labelFilter, setLabelFilter] = useState<string>('all');
   const [stageFilter, setStageFilter] = useState<string>('all');
   const [statusFilter, setStatusFilter] = useState<string>('inbox');
@@ -139,17 +162,31 @@ export default function ConversationList({
           <SelectContent>
             <SelectItem value="all">All Stages</SelectItem>
             <SelectItem value="none">No Stage</SelectItem>
-            {stages.map((s) => (
-              <SelectItem key={s.id} value={s.id}>
-                <span className="flex items-center gap-1.5">
-                  <span
-                    className="h-2 w-2 rounded-full shrink-0"
-                    style={{ backgroundColor: s.colour }}
-                  />
-                  {s.name}
-                </span>
-              </SelectItem>
-            ))}
+            {stagesByPipeline
+              ? stagesByPipeline.flatMap((g) =>
+                  g.stages.map((s) => (
+                    <SelectItem key={s.id} value={s.id}>
+                      <span className="flex items-center gap-1.5">
+                        <span
+                          className="h-2 w-2 rounded-full shrink-0"
+                          style={{ backgroundColor: s.colour }}
+                        />
+                        {g.pipeline.name} → {s.name}
+                      </span>
+                    </SelectItem>
+                  ))
+                )
+              : stages.map((s) => (
+                  <SelectItem key={s.id} value={s.id}>
+                    <span className="flex items-center gap-1.5">
+                      <span
+                        className="h-2 w-2 rounded-full shrink-0"
+                        style={{ backgroundColor: s.colour }}
+                      />
+                      {s.name}
+                    </span>
+                  </SelectItem>
+                ))}
           </SelectContent>
         </Select>
       </div>
