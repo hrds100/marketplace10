@@ -849,14 +849,20 @@ async function executeNode(
         });
       }
 
-      // Pipeline auto-bucket: detect the Brochure node by name or by
-      // the canonical brochure URL in the literal text. Either heuristic
-      // is enough to recognise that this DEFAULT node sent the brochure.
+      // Pipeline auto-bucket — detect well-known DEFAULT nodes by name
+      // and/or content. Brochure must win if both match (it carries the
+      // URL signal). Day 2 Check-in is identified purely by node name —
+      // any node whose name contains "day 2" / "day2" routes the
+      // contact to a "Day2 Sent" column if the pipeline has one.
       const nodeName = String(node.data.name || '').toLowerCase();
       const replyHasBrochure = reply.toLowerCase().includes('nfstay.com/brochure');
       const looksLikeBrochure = nodeName.includes('brochure') || replyHasBrochure;
+      const looksLikeDay2 = /\bday\s*2\b/.test(nodeName);
+
       if (looksLikeBrochure) {
         await moveContactToStageByName(supabase, contactId, 'Brochure Sent');
+      } else if (looksLikeDay2) {
+        await moveContactToStageByName(supabase, contactId, 'Day2 Sent');
       }
 
       return { shouldStop: false, sentMessage: true, output: { reply, message_id: sendData.message_id, status: 'sent' } };
