@@ -87,6 +87,13 @@ export default function ContactsTable({
         stages: g.stages.sort((a, b) => a.position - b.position),
       }));
   }, [pipelines, stages]);
+
+  // Lookup: stageId -> pipeline name (for the cell label).
+  const pipelineNameByStageId = useMemo(() => {
+    if (!pipelines) return new Map<string, string>();
+    const byId = new Map(pipelines.map((p) => [p.id, p.name] as const));
+    return new Map(stages.map((s) => [s.id, byId.get(s.pipelineId) ?? ''] as const));
+  }, [pipelines, stages]);
   const navigate = useNavigate();
   const [search, setSearch] = useState('');
   const [labelFilter, setLabelFilter] = useState('all');
@@ -402,7 +409,7 @@ export default function ContactsTable({
                           }}
                         >
                           <SelectTrigger
-                            className="h-7 rounded-[8px] border-[#E5E5E5] text-xs px-2 py-0 min-w-[10rem]"
+                            className="h-7 rounded-[8px] border-[#E5E5E5] text-xs px-2 py-0 min-w-[13rem]"
                           >
                             <SelectValue placeholder="No stage">
                               {stage ? (
@@ -411,7 +418,9 @@ export default function ContactsTable({
                                     className="w-2 h-2 rounded-full"
                                     style={{ backgroundColor: stage.colour }}
                                   />
-                                  {stage.name}
+                                  {pipelineNameByStageId.get(stage.id)
+                                    ? `${pipelineNameByStageId.get(stage.id)} → ${stage.name}`
+                                    : stage.name}
                                 </span>
                               ) : (
                                 <span className="text-[#9CA3AF]">No stage</span>
