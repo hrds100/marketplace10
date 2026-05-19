@@ -34,7 +34,7 @@ import {
 } from '@/components/ui/popover';
 import { cn } from '@/lib/utils';
 import { formatDistanceToNow } from 'date-fns';
-import type { SmsContact, SmsLabel, SmsPipelineStage } from '../../types';
+import type { SmsContact, SmsLabel, SmsPipeline, SmsPipelineStage } from '../../types';
 import LabelBadge from '../shared/LabelBadge';
 import PhoneNumber from '../shared/PhoneNumber';
 
@@ -42,6 +42,11 @@ interface ContactsTableProps {
   contacts: SmsContact[];
   labels: SmsLabel[];
   stages: SmsPipelineStage[];
+  /** Multi-pipeline (added 2026-05-19). Optional for back-compat. When
+   *  provided, the stage cell becomes an inline move-to-stage selector
+   *  showing options grouped by pipeline name. */
+  pipelines?: SmsPipeline[];
+  onMoveStage?: (contactId: string, stageId: string | null) => void | Promise<void>;
   onEdit: (contact: SmsContact) => void;
   onDelete: (contactId: string) => void;
   selectedIds: Set<string>;
@@ -54,11 +59,34 @@ export default function ContactsTable({
   contacts,
   labels,
   stages,
+  pipelines,
+  onMoveStage,
   onEdit,
   onDelete,
   selectedIds,
   onSelectionChange,
 }: ContactsTableProps) {
+  // Group stages by pipeline so the inline selector + stage filter
+  // show "Plumber → New Leads" / "Main → Contacted" etc. Falls back
+  // to ungrouped when pipelines aren't provided (legacy callers).
+  const stagesByPipeline = useMemo(() => {
+    if (!pipelines || pipelines.length === 0) return null;
+    const byId = new Map(pipelines.map((p) => [p.id, p] as const));
+    const grouped = new Map<string, { pipeline: SmsPipeline; stages: SmsPipelineStage[] }>();
+    for (const s of stages) {
+      const p = byId.get(s.pipelineId);
+      if (!p) continue;
+      const bucket = grouped.get(p.id) ?? { pipeline: p, stages: [] };
+      bucket.stages.push(s);
+      grouped.set(p.id, bucket);
+    }
+    return Array.from(grouped.values())
+      .sort((a, b) => a.pipeline.position - b.pipeline.position)
+      .map((g) => ({
+        pipeline: g.pipeline,
+        stages: g.stages.sort((a, b) => a.position - b.position),
+      }));
+  }, [pipelines, stages]);
   const navigate = useNavigate();
   const [search, setSearch] = useState('');
   const [labelFilter, setLabelFilter] = useState('all');
@@ -189,11 +217,24 @@ export default function ContactsTable({
           </SelectTrigger>
           <SelectContent>
             <SelectItem value="all">All Stages</SelectItem>
-            {stages.map((s) => (
-              <SelectItem key={s.id} value={s.id}>
-                {s.name}
-              </SelectItem>
-            ))}
+            {stagesByPipeline
+              ? stagesByPipeline.map((g) => (
+                  <div key={g.pipeline.id}>
+                    <div className="px-2 py-1 text-[10px] uppercase tracking-wide text-[#9CA3AF] font-semibold">
+                      {g.pipeline.name}
+                    </div>
+                    {g.stages.map((s) => (
+                      <SelectItem key={s.id} value={s.id}>
+                        {s.name}
+                      </SelectItem>
+                    ))}
+                  </div>
+                ))
+              : stages.map((s) => (
+                  <SelectItem key={s.id} value={s.id}>
+                    {s.name}
+                  </SelectItem>
+                ))}
           </SelectContent>
         </Select>
 
@@ -352,8 +393,60 @@ export default function ContactsTable({
                         ))}
                       </div>
                     </TableCell>
-                    <TableCell>
-                      {stage ? (
+                    <TableCell onClick={(e) => e.stopPropagation()}>
+                      {onMoveStage ? (
+                        <Select
+                          value={contact.pipelineStageId ?? '__none__'}
+                          onValueChange={(v) => {
+                            void onMoveStage(contact.id, v === '__none__' ? null : v);
+                          }}
+                        >
+                          <SelectTrigger
+                            className="h-7 rounded-[8px] border-[#E5E5E5] text-xs px-2 py-0 min-w-[10rem]"
+                          >
+                            <SelectValue placeholder="No stage">
+                              {stage ? (
+                                <span className="flex items-center gap-1.5 text-[#6B7280]">
+                                  <span
+                                    className="w-2 h-2 rounded-full"
+                                    style={{ backgroundColor: stage.colour }}
+                                  />
+                                  {stage.name}
+                                </span>
+                              ) : (
+                                <span className="text-[#9CA3AF]">No stage</span>
+                              )}
+                            </SelectValue>
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="__none__">No stage</SelectItem>
+                            {stagesByPipeline
+                              ? stagesByPipeline.map((g) => (
+                                  <div key={g.pipeline.id}>
+                                    <div className="px-2 py-1 text-[10px] uppercase tracking-wide text-[#9CA3AF] font-semibold">
+                                      {g.pipeline.name}
+                                    </div>
+                                    {g.stages.map((s) => (
+                                      <SelectItem key={s.id} value={s.id}>
+                                        <span className="flex items-center gap-1.5">
+                                          <span
+                                            className="w-2 h-2 rounded-full"
+                                            style={{ backgroundColor: s.colour }}
+                                          />
+                                          {s.name}
+                                        </span>
+                                      </SelectItem>
+                                    ))}
+                                  </div>
+                                ))
+                              : stages.map((s) => (
+                                  <SelectItem key={s.id} value={s.id}>
+                                    {s.name}
+                                  </SelectItem>
+                                ))}
+                          </SelectContent>
+                        </Select>
+                      ) : stage ? (
                         <span className="flex items-center gap-1.5 text-sm text-[#6B7280]">
                           <span
                             className="w-2 h-2 rounded-full"

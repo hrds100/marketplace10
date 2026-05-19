@@ -36,13 +36,26 @@ function mapRow(row: ContactRow): SmsContact {
     assignedTo: row.assigned_to,
     optedOut: row.opted_out,
     batchName: row.batch_name,
+    responseStatus: null,
     createdAt: row.created_at,
     updatedAt: row.updated_at,
   };
 }
 
-async function fetchPipelineContacts(): Promise<SmsContact[]> {
-  const { data, error } = await (supabase
+async function fetchPipelineContacts(pipelineId?: string): Promise<SmsContact[]> {
+  // If pipelineId is provided, scope contacts to stages in THAT pipeline.
+  // If omitted, show contacts on any stage (legacy/aggregate view).
+  let stageIds: string[] | null = null;
+  if (pipelineId) {
+    const { data: stagesData } = await (supabase
+      .from('sms_pipeline_stages' as never)
+      .select('id')
+      .eq('pipeline_id', pipelineId) as never);
+    stageIds = ((stagesData as { id: string }[] | null) ?? []).map((r) => r.id);
+    if (stageIds.length === 0) return [];
+  }
+
+  let q = (supabase
     .from('sms_contacts' as never)
     .select(`
       id, phone_number, display_name, notes, pipeline_stage_id,
@@ -54,33 +67,49 @@ async function fetchPipelineContacts(): Promise<SmsContact[]> {
     .not('pipeline_stage_id', 'is', null)
     .order('updated_at', { ascending: false }) as never);
 
+  if (stageIds) {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    q = (q as any).in('pipeline_stage_id', stageIds);
+  }
+
+  const { data, error } = await q;
   if (error) throw error;
   return ((data as ContactRow[]) ?? []).map(mapRow);
 }
 
-async function fetchStages(): Promise<SmsPipelineStage[]> {
-  const { data, error } = await (supabase
+async function fetchStages(pipelineId?: string): Promise<SmsPipelineStage[]> {
+  let q = (supabase
     .from('sms_pipeline_stages' as never)
-    .select('id, name, colour, position')
+    .select('id, name, colour, position, pipeline_id')
     .order('position', { ascending: true }) as never);
-
+  if (pipelineId) {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    q = (q as any).eq('pipeline_id', pipelineId);
+  }
+  const { data, error } = await q;
   if (error) throw error;
-  return ((data as { id: string; name: string; colour: string; position: number }[]) ?? []).map(
-    (row) => ({ id: row.id, name: row.name, colour: row.colour, position: row.position })
+  return ((data as { id: string; name: string; colour: string; position: number; pipeline_id: string }[]) ?? []).map(
+    (row) => ({
+      id: row.id,
+      name: row.name,
+      colour: row.colour,
+      position: row.position,
+      pipelineId: row.pipeline_id,
+    })
   );
 }
 
-export function usePipeline() {
+export function usePipeline(pipelineId?: string) {
   const queryClient = useQueryClient();
 
   const contactsQuery = useQuery({
-    queryKey: ['sms-pipeline-contacts'],
-    queryFn: fetchPipelineContacts,
+    queryKey: ['sms-pipeline-contacts', pipelineId ?? '__all__'],
+    queryFn: () => fetchPipelineContacts(pipelineId),
   });
 
   const stagesQuery = useQuery({
-    queryKey: ['sms-pipeline-stages'],
-    queryFn: fetchStages,
+    queryKey: ['sms-pipeline-stages', pipelineId ?? '__all__'],
+    queryFn: () => fetchStages(pipelineId),
   });
 
   const moveMutation = useMutation({
