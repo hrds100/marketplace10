@@ -105,6 +105,119 @@ function findOutgoingEdgeByLabel(
   return null;
 }
 
+// ---------------------------------------------------------------------
+// Stuck-campaign watchdog
+// ---------------------------------------------------------------------
+//
+// sms-bulk-send processes ~3 messages per 45s batch, then self-invokes
+// (via EdgeRuntime.waitUntil) to start the next batch. For a 2,000-lead
+// campaign that's ~1,000 self-invocations end-to-end. Any single failure
+// (cold-start race, network blip, runtime crash mid-loop) breaks the
+// chain — status gets stuck on 'sending' or 'draft' with pending rows
+// and no further activity. This watchdog detects those and resumes them.
+//
+// Safety rules:
+//   • Only kicks campaigns with pending recipients (otherwise complete).
+//   • Only kicks when no send activity for >3 minutes — a healthy chain
+//     emits a sent_at every 15-30s, so 3 min of silence = chain is dead.
+//   • Only kicks campaigns the user has actually started (sent_count > 0
+//     OR last_run_at is set), to avoid auto-launching newly-drafted ones.
+//   • Re-invoke is just a POST to sms-bulk-send — that function refuses
+//     to start unless status is 'draft' or 'scheduled', so a healthy
+//     chain in 'sending' state simply 422s the watchdog (no double-fire).
+async function runStuckCampaignWatchdog(
+  supabase: ReturnType<typeof createClient>
+): Promise<{ stuck_found: number; resumed: number }> {
+  const STUCK_THRESHOLD_MS = 3 * 60 * 1000;
+  const cutoffIso = new Date(Date.now() - STUCK_THRESHOLD_MS).toISOString();
+
+  // 1. Find campaigns in 'sending' or 'draft' with pending recipients.
+  //    Limit to 20 — most operators run 1-2 campaigns at a time.
+  const { data: candidates } = await supabase
+    .from('sms_campaigns')
+    .select('id, name, status, sent_count, updated_at')
+    .in('status', ['sending', 'draft'])
+    .gt('sent_count', 0)            // only resume started ones
+    .lt('updated_at', cutoffIso)    // and recently quiet
+    .limit(20);
+
+  const rows = (candidates ?? []) as Array<{
+    id: string;
+    name: string;
+    status: string;
+    sent_count: number;
+    updated_at: string;
+  }>;
+
+  if (!rows.length) return { stuck_found: 0, resumed: 0 };
+
+  let resumed = 0;
+  for (const camp of rows) {
+    // Confirm there ARE pending recipients (campaign counters can drift).
+    const { count: pendingCount } = await supabase
+      .from('sms_campaign_recipients')
+      .select('id', { count: 'exact', head: true })
+      .eq('campaign_id', camp.id)
+      .eq('status', 'pending');
+
+    if (!pendingCount) continue;
+
+    // Confirm no send activity in the last STUCK_THRESHOLD window.
+    const { data: latest } = await supabase
+      .from('sms_campaign_recipients')
+      .select('sent_at')
+      .eq('campaign_id', camp.id)
+      .order('sent_at', { ascending: false, nullsFirst: false })
+      .limit(1)
+      .maybeSingle();
+
+    const lastSentIso = (latest as { sent_at?: string | null } | null)?.sent_at ?? null;
+    if (lastSentIso && new Date(lastSentIso).getTime() > Date.now() - STUCK_THRESHOLD_MS) {
+      continue; // still active — leave alone
+    }
+
+    // Flip status='draft' so sms-bulk-send accepts the invoke.
+    if (camp.status !== 'draft') {
+      await supabase
+        .from('sms_campaigns')
+        .update({ status: 'draft' })
+        .eq('id', camp.id);
+    }
+
+    // Fire-and-forget the bulk-send (worker keeps running on its own).
+    const re = fetch(`${SUPABASE_URL}/functions/v1/sms-bulk-send`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${SUPABASE_SERVICE_KEY}`,
+      },
+      body: JSON.stringify({ campaign_id: camp.id }),
+    }).then(async (res) => {
+      if (!res.ok) {
+        const text = await res.text().catch(() => '');
+        console.warn(
+          `[watchdog] re-invoke non-2xx (${res.status}) for ${camp.id}: ${text.slice(0, 200)}`
+        );
+      } else {
+        console.log(`[watchdog] re-invoked stuck campaign ${camp.name} (${camp.id})`);
+      }
+    }).catch((err) =>
+      console.warn(`[watchdog] re-invoke fetch failed for ${camp.id}:`, err)
+    );
+
+    const er = (globalThis as { EdgeRuntime?: { waitUntil?: (p: Promise<unknown>) => void } }).EdgeRuntime;
+    if (er?.waitUntil) {
+      er.waitUntil(re);
+    } else {
+      await re;
+    }
+
+    resumed++;
+  }
+
+  return { stuck_found: rows.length, resumed };
+}
+
 serve(async (req: Request) => {
   if (req.method === 'OPTIONS') {
     return new Response('ok', { headers: corsHeaders });
@@ -147,8 +260,11 @@ serve(async (req: Request) => {
     }
 
     if (!dueTasks?.length) {
+      // No due tasks — but still run the stuck-campaign watchdog before
+      // returning. Watchdog must fire every tick to catch dead chains.
+      const wd = await runStuckCampaignWatchdog(supabase);
       return new Response(
-        JSON.stringify({ status: 'no_tasks' }),
+        JSON.stringify({ status: 'no_tasks', watchdog: wd }),
         { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
@@ -728,6 +844,10 @@ serve(async (req: Request) => {
       }
     }
 
+    // After processing scheduled tasks, also run the stuck-campaign
+    // watchdog so dead bulk-send chains get resumed within ~1 min.
+    const watchdog = await runStuckCampaignWatchdog(supabase);
+
     return new Response(
       JSON.stringify({
         status: 'ok',
@@ -735,6 +855,7 @@ serve(async (req: Request) => {
         resumed,
         skipped,
         failed,
+        watchdog,
       }),
       { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
