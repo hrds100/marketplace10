@@ -204,6 +204,7 @@ function isPositiveTransferIntent(body: string | null | undefined): boolean {
   if (isRejection(text)) return false; // rejections always win
 
   const callPhrases = [
+    // Explicit asks for a call
     'call me',
     'ring me',
     'phone me',
@@ -235,6 +236,39 @@ function isPositiveTransferIntent(body: string | null | undefined): boolean {
     'quick call',
     'call back',
     'callback',
+    // Softer phrasings real leads actually use (Hugo 2026-05-20)
+    'do you have some time',
+    'do you have time',
+    'have some time now',
+    'have time now',
+    'have a minute',
+    'got a minute',
+    'got a moment',
+    'speak to you',
+    'speak directly',
+    'rather speak',
+    'want to speak',
+    'would like to speak',
+    'arrange a call',
+    'schedule a call',
+    'book a call',
+    'have a call',
+    'on a call',
+    'jump on a call',
+    'hop on a call',
+    'set up a call',
+    'set a call',
+    'have a chat',
+    'jump on the phone',
+    'on the phone',
+    'on a chat',
+    'ring you',
+    'i can call',
+    "i'll call",
+    'ill call',
+    "i'll be in touch",
+    'will be in touch',
+    'be in touch',
   ];
   for (const p of callPhrases) {
     if (text.includes(p)) return true;
