@@ -578,13 +578,36 @@ serve(async (req: Request) => {
       });
     }
 
-    // All done
+    // All done — recompute counters from the recipient table so any
+    // drift from missed flushCounts calls (network errors, timeouts
+    // during self re-invoke) self-heals on completion. Hugo 2026-05-20:
+    // a 498-row campaign showed sent_count=351 in the UI because
+    // batched count updates were lost across invocations even though
+    // every recipient row was correctly stamped 'sent'/'delivered'.
+    const { data: finalCounts } = await supabase
+      .from('sms_campaign_recipients')
+      .select('status')
+      .eq('campaign_id', campaign_id);
+    const rows = (finalCounts ?? []) as Array<{ status: string }>;
+    const trueSent      = rows.filter((r) => r.status === 'sent' || r.status === 'delivered').length;
+    const trueDelivered = rows.filter((r) => r.status === 'delivered').length;
+    const trueFailed    = rows.filter((r) => r.status === 'failed').length;
+    const trueSkipped   = rows.filter((r) => r.status === 'skipped_opt_out').length;
+
     await supabase
       .from('sms_campaigns')
-      .update({ status: 'complete' })
+      .update({
+        status: 'complete',
+        sent_count: trueSent,
+        delivered_count: trueDelivered,
+        failed_count: trueFailed,
+        skipped_count: trueSkipped,
+      })
       .eq('id', campaign_id);
 
-    console.log(`Campaign "${campaign.name}" complete: ${sentCount} sent, ${failedCount} failed, ${skippedCount} skipped`);
+    console.log(
+      `Campaign "${campaign.name}" complete: ${trueSent} sent, ${trueDelivered} delivered, ${trueFailed} failed, ${trueSkipped} skipped (recomputed from recipients table)`
+    );
 
     return jsonResponse({
       status: 'complete',
