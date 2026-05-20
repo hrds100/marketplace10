@@ -391,7 +391,10 @@ async function loadConversationHistory(
 //     pipeline as a fallback).
 //   • Backfill the full sms_messages history for this contact into
 //     wk_sms_messages so the CRM inbox shows the conversation.
-//   • Upsert wk_dialer_queue (status=pending) at the configured priority.
+//   • (Hugo 2026-05-20) NO dialer queue insert — leads land in the
+//     "Scheduled Call" pipeline column for the agent to pick up
+//     manually. The campaignId / priority args are kept for
+//     compatibility but unused.
 async function pushLeadToCrmDialer(
   supabase: ReturnType<typeof createClient>,
   args: {
@@ -576,54 +579,20 @@ async function pushLeadToCrmDialer(
     }
   }
 
-  // 5. Upsert wk_dialer_queue at configured priority
-  let resolvedCampaignId: string | null = args.campaignId ?? null;
+  // 5. NO dialer queue insert.
+  //    Hugo 2026-05-20: leads moved to CRM via /sms positive-intent or
+  //    TRANSFER_TO_DIALER node should land in the "Scheduled Call"
+  //    pipeline column for an agent to pick up manually — they must
+  //    NOT be auto-queued in the dialer. The `priority` /
+  //    `campaignId` args are kept for compatibility but no longer
+  //    drive a queue insert. Mark return type's campaignId as null.
   if (wkContactId) {
-    if (!resolvedCampaignId) {
-      const { data: defaultCampaign } = await supabase
-        .from('wk_dialer_campaigns')
-        .select('id')
-        .eq('is_active', true)
-        .order('created_at', { ascending: false })
-        .limit(1)
-        .maybeSingle();
-      resolvedCampaignId =
-        (defaultCampaign as { id?: string } | null)?.id ?? null;
-    }
-    if (resolvedCampaignId) {
-      // No unique constraint exists on (campaign_id, contact_id) so we
-      // can't onConflict-upsert. Clear any prior pending row for this
-      // contact in this campaign, then insert a fresh one at the
-      // configured priority so they land at the top of the queue.
-      await supabase
-        .from('wk_dialer_queue')
-        .delete()
-        .eq('campaign_id', resolvedCampaignId)
-        .eq('contact_id', wkContactId)
-        .eq('status', 'pending');
-
-      const { error: queueErr } = await supabase
-        .from('wk_dialer_queue')
-        .insert({
-          campaign_id: resolvedCampaignId,
-          contact_id: wkContactId,
-          status: 'pending',
-          priority,
-          attempts: 0,
-          scheduled_for: null,
-        });
-      if (queueErr) {
-        console.error(
-          `[pushLeadToCrmDialer] queue insert failed: ${queueErr.message}`
-        );
-      }
-    }
     console.log(
-      `[pushLeadToCrmDialer] ${wkContactId} → priority ${priority}, campaign ${resolvedCampaignId}, column ${pipelineColumnId}`
+      `[pushLeadToCrmDialer] ${wkContactId} → pipeline column ${pipelineColumnId} (no dialer queue insert — Hugo's manual-call-only rule). Priority arg (${priority}) ignored.`
     );
   }
 
-  return { wkContactId, campaignId: resolvedCampaignId };
+  return { wkContactId, campaignId: null };
 }
 
 // ---- Pipeline stage auto-bucketing ----
@@ -709,7 +678,7 @@ async function notifyTelegram(args: {
   contactPhone: string;
   inboundBody: string;
   aiReply?: string;       // blank when AI didn't reply (silent actions)
-  trigger?: string;       // node action label (e.g. "Moved to CRM Dialer")
+  trigger?: string;       // node action label (e.g. "Moved to CRM (Scheduled Call)")
 }): Promise<void> {
   if (!TELEGRAM_BOT_TOKEN || !TELEGRAM_MONITOR_CHAT_ID) return;
 
@@ -1143,7 +1112,7 @@ async function executeNode(
           contactPhone: fromNumber,
           inboundBody: body,
           aiReply: '',
-          trigger: 'Moved to CRM Dialer',
+          trigger: 'Moved to CRM (Scheduled Call)',
         });
       }
 
@@ -1702,7 +1671,7 @@ serve(async (req: Request) => {
                 contactPhone: from_number,
                 inboundBody: body,
                 aiReply: ackTemplate,
-                trigger: 'Moved to CRM Dialer',
+                trigger: 'Moved to CRM (Scheduled Call)',
               });
             }
           }
