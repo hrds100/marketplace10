@@ -4,17 +4,12 @@
 // contact who EVER reached a stage, not just the ones sitting there
 // right now."
 //
-// Without a stage-transition event log we derive counts from existing
-// signals (outbound messages, CRM source, opt-out state). For stages
-// whose names match known events we use the event count; for unknown
-// stage names we fall back to "contacts currently in that stage".
-//
-// 2026-05-20 (v2): rewrote to be defensive — each source query is
-// wrapped in try/catch + logs, the nested PostgREST embedding for
-// "Closed" was replaced with two simple queries (some Supabase FK
-// relationship names don't resolve and that left the page in a
-// permanent loading spinner). Also caps query parallelism + chunk
-// sizes so a 1000-contact pipeline doesn't fire 100+ concurrent reqs.
+// 2026-05-20 (v3): switched to a single Postgres RPC
+// (`sms_stage_funnel_counts`) that does all five source counts
+// server-side in ~700ms. Previous client-side chunking burned 50+
+// round trips on the Real Estate pipeline (~5-10s). The RPC returns
+// one row per known source — we then merge with stage list and add
+// 'current_position' counts for any stage whose name doesn't classify.
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import type { SmsPipeline, SmsPipelineStage } from '../types';
@@ -28,11 +23,9 @@ export interface StageFunnelRow {
   source: 'cold_sms_sent' | 'brochure_sent' | 'day2_sent' | 'moved_crm' | 'closed' | 'current_position';
 }
 
-const BROCHURE_URL_MATCH = '%nfstay.com/brochure%';
-const DAY2_MATCH = '%did you get a chance to look at the deal%';
-const CHUNK = 300;
+type KnownSource = Exclude<StageFunnelRow['source'], 'current_position'>;
 
-function classifyStage(name: string): StageFunnelRow['source'] | null {
+function classifyStage(name: string): KnownSource | null {
   const n = name.toLowerCase().trim();
   if (/cold\s*sms/.test(n)) return 'cold_sms_sent';
   if (/brochure/.test(n)) return 'brochure_sent';
@@ -40,177 +33,6 @@ function classifyStage(name: string): StageFunnelRow['source'] | null {
   if (/moved\s*crm|scheduled\s*call/.test(n)) return 'moved_crm';
   if (/closed/.test(n)) return 'closed';
   return null;
-}
-
-function chunked<T>(arr: T[], size: number): T[][] {
-  const out: T[][] = [];
-  for (let i = 0; i < arr.length; i += size) out.push(arr.slice(i, i + size));
-  return out;
-}
-
-async function fetchPipelineContactIds(pipelineId: string): Promise<string[]> {
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const { data: stageRows, error: stageErr } = await (supabase
-    .from('sms_pipeline_stages' as never)
-    .select('id')
-    .eq('pipeline_id', pipelineId) as never);
-  if (stageErr) {
-    console.warn('[useStageFunnel] stage list failed', stageErr);
-    return [];
-  }
-  const stageIds = ((stageRows as { id: string }[] | null) ?? []).map((r) => r.id);
-  if (stageIds.length === 0) return [];
-
-  const ids: string[] = [];
-  const pageSize = 1000;
-  for (let page = 0; page < 100; page++) {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const { data, error } = await (supabase
-      .from('sms_contacts' as never)
-      .select('id')
-      .in('pipeline_stage_id', stageIds)
-      .range(page * pageSize, page * pageSize + pageSize - 1) as never);
-    if (error) {
-      console.warn('[useStageFunnel] contacts page failed', error);
-      break;
-    }
-    const rows = (data as { id: string }[] | null) ?? [];
-    rows.forEach((r) => ids.push(r.id));
-    if (rows.length < pageSize) break;
-  }
-  return ids;
-}
-
-async function fetchOutboundMatching(
-  contactIds: string[],
-  ilike: string,
-  campaignOnly = false,
-): Promise<Set<string>> {
-  const matched = new Set<string>();
-  if (contactIds.length === 0) return matched;
-  for (const chunk of chunked(contactIds, CHUNK)) {
-    try {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      let q: any = (supabase
-        .from('sms_messages' as never)
-        .select('contact_id')
-        .eq('direction', 'outbound')
-        .in('contact_id', chunk) as never);
-      if (campaignOnly) q = q.not('campaign_id', 'is', null);
-      if (ilike) q = q.ilike('body', ilike);
-      const { data, error } = await q;
-      if (error) {
-        console.warn('[useStageFunnel] outbound query failed', error);
-        continue;
-      }
-      ((data as { contact_id: string }[] | null) ?? []).forEach((r) => matched.add(r.contact_id));
-    } catch (e) {
-      console.warn('[useStageFunnel] outbound query threw', e);
-    }
-  }
-  return matched;
-}
-
-async function fetchMovedCrm(contactIds: string[]): Promise<Set<string>> {
-  const matched = new Set<string>();
-  if (contactIds.length === 0) return matched;
-  // 1. /sms contact ids -> phone numbers
-  const phoneToContact = new Map<string, string>();
-  for (const chunk of chunked(contactIds, CHUNK)) {
-    try {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const { data, error } = await (supabase
-        .from('sms_contacts' as never)
-        .select('id, phone_number')
-        .in('id', chunk) as never);
-      if (error) {
-        console.warn('[useStageFunnel] sms_contacts phone fetch failed', error);
-        continue;
-      }
-      ((data as { id: string; phone_number: string }[] | null) ?? []).forEach((r) => {
-        if (!r.phone_number) return;
-        const trimmed = r.phone_number.trim();
-        phoneToContact.set(trimmed, r.id);
-        phoneToContact.set('+' + trimmed.replace(/^\+/, ''), r.id);
-      });
-    } catch (e) {
-      console.warn('[useStageFunnel] sms_contacts phone fetch threw', e);
-    }
-  }
-  // 2. wk_contacts where phone matches AND custom_fields.source LIKE 'sms_automation_%'
-  const phones = Array.from(phoneToContact.keys());
-  for (const chunk of chunked(phones, CHUNK)) {
-    try {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const { data, error } = await (supabase
-        .from('wk_contacts' as never)
-        .select('phone, custom_fields')
-        .in('phone', chunk) as never);
-      if (error) {
-        console.warn('[useStageFunnel] wk_contacts query failed', error);
-        continue;
-      }
-      ((data as { phone: string; custom_fields: Record<string, unknown> | null }[] | null) ?? []).forEach((w) => {
-        const src = (w.custom_fields?.source as string | undefined) ?? '';
-        if (src.startsWith('sms_automation_')) {
-          const cid = phoneToContact.get(w.phone);
-          if (cid) matched.add(cid);
-        }
-      });
-    } catch (e) {
-      console.warn('[useStageFunnel] wk_contacts query threw', e);
-    }
-  }
-  return matched;
-}
-
-async function fetchClosed(contactIds: string[]): Promise<Set<string>> {
-  // Simple two-query approach (no PostgREST embedding):
-  //   1. sms_conversations for contact ids -> conversation ids
-  //   2. sms_automation_state for those conversations with terminal exit_reason
-  const matched = new Set<string>();
-  if (contactIds.length === 0) return matched;
-  const convToContact = new Map<string, string>();
-  for (const chunk of chunked(contactIds, CHUNK)) {
-    try {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const { data, error } = await (supabase
-        .from('sms_conversations' as never)
-        .select('id, contact_id')
-        .in('contact_id', chunk) as never);
-      if (error) {
-        console.warn('[useStageFunnel] sms_conversations query failed', error);
-        continue;
-      }
-      ((data as { id: string; contact_id: string }[] | null) ?? []).forEach((r) => {
-        convToContact.set(r.id, r.contact_id);
-      });
-    } catch (e) {
-      console.warn('[useStageFunnel] sms_conversations query threw', e);
-    }
-  }
-  const convIds = Array.from(convToContact.keys());
-  for (const chunk of chunked(convIds, CHUNK)) {
-    try {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const { data, error } = await (supabase
-        .from('sms_automation_state' as never)
-        .select('conversation_id, exit_reason')
-        .in('conversation_id', chunk)
-        .in('exit_reason', ['opted_out', 'stop_node']) as never);
-      if (error) {
-        console.warn('[useStageFunnel] sms_automation_state query failed', error);
-        continue;
-      }
-      ((data as { conversation_id: string }[] | null) ?? []).forEach((r) => {
-        const cid = convToContact.get(r.conversation_id);
-        if (cid) matched.add(cid);
-      });
-    } catch (e) {
-      console.warn('[useStageFunnel] sms_automation_state query threw', e);
-    }
-  }
-  return matched;
 }
 
 async function fetchStageCurrent(stageId: string): Promise<number> {
@@ -226,63 +48,68 @@ async function fetchStageCurrent(stageId: string): Promise<number> {
   return count ?? 0;
 }
 
+async function fetchSourceCounts(pipelineId: string): Promise<Map<KnownSource, number>> {
+  const map = new Map<KnownSource, number>();
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { data, error } = await (supabase.rpc('sms_stage_funnel_counts' as never, {
+    p_pipeline_id: pipelineId,
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  }) as any);
+  if (error) {
+    console.warn('[useStageFunnel] RPC sms_stage_funnel_counts failed', error);
+    return map;
+  }
+  ((data as { source: string; contact_count: number | string }[] | null) ?? []).forEach((r) => {
+    map.set(r.source as KnownSource, Number(r.contact_count));
+  });
+  return map;
+}
+
 async function fetchFunnel(
   pipeline: SmsPipeline | null,
   stages: SmsPipelineStage[],
 ): Promise<StageFunnelRow[]> {
   if (!pipeline) return [];
   console.log('[useStageFunnel] computing for', pipeline.name, 'stages', stages.length);
+  const t0 = performance.now();
 
-  const contactIds = await fetchPipelineContactIds(pipeline.id);
-  console.log('[useStageFunnel] pipeline contacts', contactIds.length);
+  // 1. Server-side: counts for all five known sources in one round trip.
+  const sourceCounts = await fetchSourceCounts(pipeline.id);
+  console.log('[useStageFunnel] rpc ms', Math.round(performance.now() - t0), 'sources', Object.fromEntries(sourceCounts));
 
-  // Which signal-derived sources do we actually need this pipeline?
-  const needed = new Set<StageFunnelRow['source']>();
-  for (const s of stages) {
-    const c = classifyStage(s.name);
-    if (c) needed.add(c);
-  }
+  // 2. For unclassified stages, count contacts currently in that stage.
+  //    Run them in parallel — each is a cheap HEAD count query.
+  const sortedStages = [...stages].sort((a, b) => a.position - b.position);
+  const fallbackCounts = await Promise.all(
+    sortedStages.map(async (s) => {
+      const src = classifyStage(s.name);
+      return src ? null : await fetchStageCurrent(s.id);
+    }),
+  );
 
-  // Run the heavy queries in parallel — most independent of each other.
-  const [coldSet, brochureSet, day2Set, crmSet, closedSet] = await Promise.all([
-    needed.has('cold_sms_sent') ? fetchOutboundMatching(contactIds, '', true) : Promise.resolve(new Set<string>()),
-    needed.has('brochure_sent') ? fetchOutboundMatching(contactIds, BROCHURE_URL_MATCH, false) : Promise.resolve(new Set<string>()),
-    needed.has('day2_sent') ? fetchOutboundMatching(contactIds, DAY2_MATCH, false) : Promise.resolve(new Set<string>()),
-    needed.has('moved_crm') ? fetchMovedCrm(contactIds) : Promise.resolve(new Set<string>()),
-    needed.has('closed') ? fetchClosed(contactIds) : Promise.resolve(new Set<string>()),
-  ]);
-  console.log('[useStageFunnel] sets',
-    { cold: coldSet.size, brochure: brochureSet.size, day2: day2Set.size, crm: crmSet.size, closed: closedSet.size });
-
-  const sourceToSet: Record<Exclude<StageFunnelRow['source'], 'current_position'>, Set<string>> = {
-    cold_sms_sent: coldSet,
-    brochure_sent: brochureSet,
-    day2_sent: day2Set,
-    moved_crm: crmSet,
-    closed: closedSet,
-  };
-
-  const out: StageFunnelRow[] = [];
-  for (const s of [...stages].sort((a, b) => a.position - b.position)) {
+  const out: StageFunnelRow[] = sortedStages.map((s, i) => {
     const src = classifyStage(s.name);
-    let count: number;
-    let source: StageFunnelRow['source'];
     if (src) {
-      count = sourceToSet[src].size;
-      source = src;
-    } else {
-      count = await fetchStageCurrent(s.id);
-      source = 'current_position';
+      return {
+        stageId: s.id,
+        stageName: s.name,
+        position: s.position,
+        colour: s.colour,
+        count: sourceCounts.get(src) ?? 0,
+        source: src,
+      };
     }
-    out.push({
+    return {
       stageId: s.id,
       stageName: s.name,
       position: s.position,
       colour: s.colour,
-      count,
-      source,
-    });
-  }
+      count: fallbackCounts[i] ?? 0,
+      source: 'current_position',
+    };
+  });
+
+  console.log('[useStageFunnel] total ms', Math.round(performance.now() - t0));
   return out;
 }
 
