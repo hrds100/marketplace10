@@ -193,15 +193,18 @@ function isRejection(body: string | null | undefined): boolean {
   return false;
 }
 
-// Detects POSITIVE transfer intent — contact is clearly asking for a call
-// or signalling strong interest. Used by the per-automation
-// `transferOnPositiveIntent` flag to short-circuit the canvas walk and
-// push the lead to the CRM dialer at ANY stage of the flow. Conservative
-// to avoid false positives on neutral phrases.
-function isPositiveTransferIntent(body: string | null | undefined): boolean {
+// EXPLICIT call request — phrases that ONLY mean "I want a call" or
+// "I'm signing up". Always safe to fire the CRM transfer on these,
+// regardless of where the contact is in the flow.
+//
+// Hugo 2026-05-20: soft yes signals ("sounds great", "sounds good",
+// "lets do it") moved out because they're context-dependent — after
+// a cold SMS "Want a brochure?" the same words mean "yes, send the
+// brochure", not "yes, call me". See isSoftYesSignal below.
+function isExplicitCallAsk(body: string | null | undefined): boolean {
   const text = (body || '').trim().toLowerCase();
   if (!text) return false;
-  if (isRejection(text)) return false; // rejections always win
+  if (isRejection(text)) return false;
 
   const callPhrases = [
     // Explicit asks for a call
@@ -274,30 +277,49 @@ function isPositiveTransferIntent(body: string | null | undefined): boolean {
     if (text.includes(p)) return true;
   }
 
-  const strongInterest = [
-    "i'm interested",
-    'im interested',
-    'i am interested',
-    'very interested',
-    'really interested',
-    'sounds great',
-    'sounds good',
+  // Strong-interest phrases that imply a commitment to join/invest —
+  // these always fire (no ambiguity, never just "yes to brochure").
+  const strongCommit = [
     'count me in',
     'sign me up',
     'how do i sign up',
     'how do i invest',
     'how do i join',
+    'i want in',
+    'where do i sign',
+  ];
+  for (const p of strongCommit) {
+    if (text.includes(p)) return true;
+  }
+
+  return false;
+}
+
+// SOFT yes signals — same words mean different things depending on
+// where the contact is in the flow. After "Want a brochure?" they mean
+// "yes, send the brochure". After Day 2 / brochure-sent they mean
+// "yes, call me". Caller must gate these by stage context.
+function isSoftYesSignal(body: string | null | undefined): boolean {
+  const text = (body || '').trim().toLowerCase();
+  if (!text) return false;
+  if (isRejection(text)) return false;
+
+  const soft = [
+    'sounds great',
+    'sounds good',
     'lets do it',
     "let's do it",
     'lets go',
     "let's go",
-    'i want in',
-    'where do i sign',
+    "i'm interested",
+    'im interested',
+    'i am interested',
+    'very interested',
+    'really interested',
   ];
-  for (const p of strongInterest) {
+  for (const p of soft) {
     if (text.includes(p)) return true;
   }
-
   return false;
 }
 
@@ -1562,14 +1584,44 @@ serve(async (req: Request) => {
 
     // ---- POSITIVE-INTENT TRANSFER (per-automation opt-in) ----
     // If the automation has transferOnPositiveIntent=true and the inbound
-    // message matches the positive-intent detector ("call me", "i'm
-    // interested", etc.), push the lead to the CRM dialer immediately and
-    // complete the automation. This is the "any stage if they ask to call"
-    // trigger Hugo asked for — opt-in per automation so campaigns that
-    // shouldn't escalate to CRM don't.
-    if (flowJson.transferOnPositiveIntent === true && isPositiveTransferIntent(body)) {
+    // matches an EXPLICIT call ask ("call me", "give me a ring", "speak
+    // to you", etc.), push to CRM immediately.
+    //
+    // Soft-yes phrases ("sounds great", "lets do it", "i'm interested")
+    // are AMBIGUOUS — after "Want a brochure?" they mean "yes, send the
+    // brochure", not "yes, call me". So for soft signals we only fire
+    // the transfer if the brochure has already been sent to this
+    // contact (any outbound containing nfstay.com/brochure). Otherwise
+    // the AI classifier on the canvas handles routing — typically to
+    // the Send Brochure node. Hugo 2026-05-20.
+    let positiveIntentMatch = false;
+    let positiveIntentReason = '';
+    if (flowJson.transferOnPositiveIntent === true) {
+      if (isExplicitCallAsk(body)) {
+        positiveIntentMatch = true;
+        positiveIntentReason = 'explicit_call_ask';
+      } else if (isSoftYesSignal(body)) {
+        const { data: brochureSent } = await supabase
+          .from('sms_messages')
+          .select('id')
+          .eq('contact_id', contact_id)
+          .eq('direction', 'outbound')
+          .ilike('body', '%nfstay.com/brochure%')
+          .limit(1)
+          .maybeSingle();
+        if (brochureSent) {
+          positiveIntentMatch = true;
+          positiveIntentReason = 'soft_yes_post_brochure';
+        } else {
+          console.log(
+            `[sms-automation-run] soft-yes "${body.slice(0, 40)}" but brochure not sent yet — letting canvas AI handle (likely brochure route)`
+          );
+        }
+      }
+    }
+    if (positiveIntentMatch) {
       console.log(
-        `[sms-automation-run] positive intent detected ("${body.slice(0, 60)}") — pushing to CRM dialer`
+        `[sms-automation-run] positive intent (${positiveIntentReason}) — "${body.slice(0, 60)}" — pushing to CRM dialer`
       );
 
       // Pull display_name + company_name once so the ack template
