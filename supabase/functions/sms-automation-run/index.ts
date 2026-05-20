@@ -883,6 +883,36 @@ async function executeNode(
         reply = aiData.reply;
       }
 
+      // Hugo 2026-05-20: prompts may instruct the AI to return the literal
+      // sentinel "NO_REPLY" when the inbound is just a thanks/acknowledgement
+      // and no actual response is warranted (e.g. "thanks", "be happy to look
+      // at it", "cheers"). In that case we skip the SMS send entirely AND
+      // skip the pipeline auto-bucket — but still park the flow at this node
+      // so the next inbound is handled. Routing-via-classifier has already
+      // happened upstream; this is purely "don't pester them this turn".
+      if ((reply || '').trim().toUpperCase() === 'NO_REPLY') {
+        console.log(
+          `AI returned NO_REPLY for "${body.substring(0, 60)}" — skipping SMS send, parking at ${node.id}`,
+        );
+        if (context.telegramMonitorEnabled) {
+          await notifyTelegram({
+            automationName: context.automationName,
+            contactName,
+            contactPhone: fromNumber,
+            inboundBody: body,
+            aiReply: '(silent — no question asked)',
+            trigger: '',
+          });
+        }
+        // sentMessage=true breaks the walk and parks state.current_node_id
+        // at this node so the next inbound re-enters cleanly.
+        return {
+          shouldStop: false,
+          sentMessage: true,
+          output: { status: 'silent_no_reply', reply: 'NO_REPLY' },
+        };
+      }
+
       // Send immediately (no delay support in turn-based mode — delays handled by follow-up nodes)
       const sendUrl = `${SUPABASE_URL}/functions/v1/sms-send`;
       const sendPayload: Record<string, string | undefined> = {
