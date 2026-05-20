@@ -125,6 +125,55 @@ function findOutgoingEdgeByLabel(
 //   • Re-invoke is just a POST to sms-bulk-send — that function refuses
 //     to start unless status is 'draft' or 'scheduled', so a healthy
 //     chain in 'sending' state simply 422s the watchdog (no double-fire).
+// ---- Pipeline stage auto-bucketing (mirrors sms-automation-run) ----
+// Moves a contact to a named stage within their CURRENT pipeline,
+// forward-only by position. Skips silently if the contact has no
+// pipeline_stage_id or if the named stage doesn't exist in their
+// pipeline. Used by the scheduled_delay handler to advance a contact
+// from "Brochure Sent" to "Day2 Sent" once the drip fires.
+async function moveContactToStageByName(
+  supabase: ReturnType<typeof createClient>,
+  contactId: string,
+  targetStageName: string
+): Promise<void> {
+  try {
+    const { data: contactRow } = await supabase
+      .from('sms_contacts')
+      .select('pipeline_stage_id')
+      .eq('id', contactId)
+      .maybeSingle();
+    const currentStageId = (contactRow as { pipeline_stage_id?: string | null } | null)?.pipeline_stage_id;
+    if (!currentStageId) return;
+    const { data: currentStage } = await supabase
+      .from('sms_pipeline_stages')
+      .select('id, position, pipeline_id')
+      .eq('id', currentStageId)
+      .maybeSingle();
+    const cur = currentStage as { id: string; position: number; pipeline_id: string } | null;
+    if (!cur) return;
+    const { data: targetStage } = await supabase
+      .from('sms_pipeline_stages')
+      .select('id, position')
+      .eq('pipeline_id', cur.pipeline_id)
+      .eq('name', targetStageName)
+      .maybeSingle();
+    const target = targetStage as { id: string; position: number } | null;
+    if (!target || target.id === cur.id) return;
+    if (target.position <= cur.position) return;
+    const { error: upErr } = await supabase
+      .from('sms_contacts')
+      .update({ pipeline_stage_id: target.id, updated_at: new Date().toISOString() })
+      .eq('id', contactId);
+    if (upErr) {
+      console.warn(`[moveContactToStageByName] update failed: ${upErr.message}`);
+    } else {
+      console.log(`[moveContactToStageByName] contact ${contactId} -> "${targetStageName}"`);
+    }
+  } catch (err) {
+    console.warn('[moveContactToStageByName] threw:', err);
+  }
+}
+
 async function runStuckCampaignWatchdog(
   supabase: ReturnType<typeof createClient>
 ): Promise<{ stuck_found: number; resumed: number }> {
@@ -452,6 +501,16 @@ serve(async (req: Request) => {
             .eq('id', taskRow.id);
           resumed++;
           console.log(`[scheduled_delay] task ${taskRow.id}: fired "${text.substring(0, 60)}" to ${contact.phone_number}`);
+
+          // Pipeline auto-bucket: if the target node is the Day 2
+          // Check-in (matched by name "day 2" / "day2"), move the
+          // contact's /sms pipeline stage forward to "Day2 Sent" so the
+          // board reflects that the drip has been sent. Mirrors the
+          // sms-automation-run DEFAULT case heuristic.
+          const targetName = String((targetNode.data as { name?: string }).name || '').toLowerCase();
+          if (/\bday\s*2\b/.test(targetName)) {
+            await moveContactToStageByName(supabase, contact.id, 'Day2 Sent');
+          }
         } catch (innerErr) {
           console.error(`[scheduled_delay] task ${taskRow.id} threw:`, innerErr);
           await supabase
