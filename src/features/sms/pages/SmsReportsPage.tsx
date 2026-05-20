@@ -26,7 +26,7 @@ export default function SmsReportsPage() {
 
   const activePipeline = pipelines.find((p) => p.id === activePipelineId) ?? null;
   const { stages, isLoading: stagesLoading } = useStages(activePipelineId ?? undefined);
-  const { rows, isLoading: funnelLoading, refetch } = useStageFunnel(activePipeline, stages);
+  const { rows, isLoading: funnelLoading, error: funnelError, refetch } = useStageFunnel(activePipeline, stages);
 
   const totalEntries = rows.length > 0 ? rows[0].count : 0;
   const loading = pipelinesLoading || stagesLoading || funnelLoading;
@@ -70,9 +70,20 @@ export default function SmsReportsPage() {
         </Button>
       </div>
 
-      {loading && rows.length === 0 ? (
-        <div className="flex items-center justify-center py-20">
+      {funnelError ? (
+        <div className="bg-white border border-[#FECACA] rounded-2xl px-4 py-6 text-center">
+          <p className="text-sm font-medium text-[#B91C1C] mb-1">Couldn't load the funnel</p>
+          <p className="text-xs text-[#6B7280] mb-3">
+            {funnelError instanceof Error ? funnelError.message : 'Unknown error'}
+          </p>
+          <Button size="sm" variant="outline" onClick={() => void refetch()}>Try again</Button>
+        </div>
+      ) : loading && rows.length === 0 ? (
+        <div className="flex flex-col items-center justify-center py-20 gap-3">
           <Loader2 className="h-6 w-6 animate-spin text-[#1E9A80]" />
+          <p className="text-xs text-[#9CA3AF]">
+            Computing funnel for {activePipeline?.name ?? 'pipeline'}…
+          </p>
         </div>
       ) : !activePipeline ? (
         <div className="flex flex-col items-center justify-center py-20 text-center">
