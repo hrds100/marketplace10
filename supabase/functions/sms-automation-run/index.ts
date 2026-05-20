@@ -1345,6 +1345,47 @@ serve(async (req: Request) => {
     const automationId = conv.automation_id;
 
 
+    // ---- TERMINAL-STAGE GATE (Hugo 2026-05-20) ----
+    // If the contact's pipeline stage is "Moved CRM" / "Scheduled Call"
+    // / "Closed", the lead is handed off to humans (dialer / opted-out)
+    // and the AI must not respond to any further inbound. This is a
+    // hard stop independent of automation_state.status — protects
+    // against drift where a contact gets manually dragged to a terminal
+    // column but their automation_state was left active.
+    {
+      const { data: contactStage } = await supabase
+        .from('sms_contacts')
+        .select('id, pipeline_stage_id, sms_pipeline_stages(name)')
+        .eq('id', contact_id)
+        .maybeSingle();
+      const stageName = ((contactStage as {
+        sms_pipeline_stages?: { name?: string } | null;
+      } | null)?.sms_pipeline_stages?.name || '').toLowerCase().trim();
+      const isTerminal =
+        /moved\s*crm|scheduled\s*call/.test(stageName) || /closed/.test(stageName);
+      if (isTerminal) {
+        console.log(
+          `[sms-automation-run] contact ${contact_id} is in terminal stage "${stageName}" — skipping AI`,
+        );
+        // Best-effort: also close out any lingering state so the funnel
+        // report and downstream queries see consistent data.
+        await supabase
+          .from('sms_automation_state')
+          .update({
+            status: 'completed',
+            exit_reason: 'terminal_stage',
+            completed_at: new Date().toISOString(),
+          })
+          .eq('conversation_id', conversation_id)
+          .in('status', ['active', 'waiting']);
+        return new Response(
+          JSON.stringify({ status: 'terminal_stage', stage: stageName }),
+          { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } },
+        );
+      }
+    }
+
+
     // ---- GLOBAL OPT-OUT SAFETY NET (Hugo 2026-05-15) ----
     // If the contact says no/nope/not interested/stop/spam/etc. at ANY
     // point in the flow, kill all future outreach immediately:
