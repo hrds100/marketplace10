@@ -12,6 +12,7 @@ import {
   Webhook,
   ChevronLeft,
   ChevronRight,
+  TrendingUp,
 } from 'lucide-react';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { cn } from '@/lib/utils';
@@ -27,6 +28,7 @@ const NAV_ITEMS = [
   { label: 'Contacts', path: '/sms/contacts', icon: Users },
   { label: 'Automations', path: '/sms/automations', icon: Workflow },
   { label: 'Campaigns', path: '/sms/campaigns', icon: Megaphone },
+  { label: 'Report', path: '/sms/reports', icon: TrendingUp },
   { label: 'Templates', path: '/sms/templates', icon: FileText },
   { label: 'Numbers', path: '/sms/numbers', icon: Phone },
   { label: 'Settings', path: '/sms/settings', icon: Settings },

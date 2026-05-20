@@ -112,6 +112,7 @@ import { setupDebugCapture } from '@/core/debug/useDebugCapture';
 import SmsLayout from '@/features/sms/layout/SmsLayout';
 import SmsInboxPage from '@/features/sms/pages/SmsInboxPage';
 import SmsPipelinePage from '@/features/sms/pages/SmsPipelinePage';
+import SmsReportsPage from '@/features/sms/pages/SmsReportsPage';
 import SmsContactsPage from '@/features/sms/pages/SmsContactsPage';
 import SmsAutomationsPage from '@/features/sms/pages/SmsAutomationsPage';
 import SmsFlowEditorPage from '@/features/sms/pages/SmsFlowEditorPage';
@@ -321,6 +322,7 @@ const App = () => (
             <Route path="automations" element={<SmsAutomationsPage />} />
             <Route path="automations/:id" element={<SmsFlowEditorPage />} />
             <Route path="campaigns" element={<SmsCampaignsPage />} />
+            <Route path="reports" element={<SmsReportsPage />} />
             <Route path="templates" element={<SmsTemplatesPage />} />
             <Route path="numbers" element={<SmsNumbersPage />} />
             <Route path="settings" element={<SmsSettingsPage />} />
