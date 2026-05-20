@@ -28,7 +28,11 @@ export default function SmsReportsPage() {
   const { stages, isLoading: stagesLoading } = useStages(activePipelineId ?? undefined);
   const { rows, isLoading: funnelLoading, error: funnelError, refetch } = useStageFunnel(activePipeline, stages);
 
-  const totalEntries = rows.length > 0 ? rows[0].count : 0;
+  // Funnel % is "what fraction of the top of the funnel reached this stage".
+  // We use the MAX count as the denominator (not rows[0]) because the lowest-
+  // position stage (e.g. "New Leads") is often empty once contacts have moved
+  // on — using it as the divider made everything show 0%.
+  const totalEntries = rows.length > 0 ? Math.max(...rows.map((r) => r.count)) : 0;
   const loading = pipelinesLoading || stagesLoading || funnelLoading;
 
   function selectPipeline(id: string) {
