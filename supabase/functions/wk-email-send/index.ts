@@ -105,11 +105,16 @@ serve(async (req: Request) => {
     const toEmail = (contact.email as string | null)?.trim();
     if (!toEmail) return json(400, { error: 'Contact has no email' });
 
-    // 2. Resolve sender row. Precedence (mirrors unipile-send + wk-dialer-start):
+    // 2. Resolve sender row. Precedence:
     //    1. explicit channel_id
-    //    2. campaign_id → first wk_campaign_numbers row whose wk_numbers
+    //    2. agent's assigned email row (wk_numbers.assigned_agent_id = agentId)
+    //       — added 2026-05-21 so Elijah sends from elijah@, Georgia from
+    //         georgia@, etc. Was workspace-wide first-by-created_at before,
+    //         which broke when two rows shared a timestamp.
+    //    3. campaign_id → first wk_campaign_numbers row whose wk_numbers
     //       row is email + active
-    //    3. workspace default — first active email row
+    //    4. workspace default — first UNASSIGNED active email row (typically
+    //       crm@mail.nfstay.com); never falls through to another agent's box
     let fromEmail = DEFAULT_FROM_EMAIL;
     let channelRowId: string | null = null;
     let resolvedRow: { id: string; e164: string } | null = null;
@@ -124,6 +129,20 @@ serve(async (req: Request) => {
       if (r && r.channel === 'email' && r.provider === 'resend' && r.is_active) {
         resolvedRow = { id: r.id, e164: r.e164 };
       }
+    }
+
+    if (!resolvedRow) {
+      // 2.2 — per-agent assigned row. Each agent owns at most one email
+      // address in wk_numbers (assigned_agent_id = profiles.id).
+      const { data } = await supa
+        .from('wk_numbers')
+        .select('id, e164')
+        .eq('channel', 'email')
+        .eq('provider', 'resend')
+        .eq('is_active', true)
+        .eq('assigned_agent_id', agentId)
+        .maybeSingle();
+      resolvedRow = (data as { id: string; e164: string } | null) ?? null;
     }
 
     if (!resolvedRow && payload.campaign_id) {
@@ -147,12 +166,16 @@ serve(async (req: Request) => {
     }
 
     if (!resolvedRow) {
+      // 2.4 — workspace fallback. Only pick UNASSIGNED rows so we never
+      // accidentally send as another agent. Typically this is
+      // crm@mail.nfstay.com.
       const { data } = await supa
         .from('wk_numbers')
         .select('id, e164')
         .eq('channel', 'email')
         .eq('provider', 'resend')
         .eq('is_active', true)
+        .is('assigned_agent_id', null)
         .order('created_at', { ascending: true })
         .limit(1)
         .maybeSingle();
