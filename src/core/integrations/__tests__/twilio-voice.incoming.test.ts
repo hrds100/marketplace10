@@ -3,11 +3,11 @@
 // Device whose `.on('incoming', cb)` fires when we manually invoke the
 // captured handler.
 //
-// Contract:
+// Contract (2026-05-21, after IncomingCallModal):
 //   1. createDevice() registers a Device.on('incoming') handler.
 //   2. When the SDK delivers an incoming call, the handler:
-//        a. calls call.accept() so the agent's audio is connected
-//        b. notifies any addIncomingCallListener subscribers with the call
+//        a. notifies any addIncomingCallListener subscribers with the call
+//        b. does NOT auto-accept — the modal owns accept/reject UI now.
 
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 
@@ -95,7 +95,7 @@ describe('twilio-voice incoming call wiring', () => {
     expect(deviceState.handlers.incoming.length).toBeGreaterThan(0);
   });
 
-  it('on incoming, the handler calls call.accept() and notifies subscribers', async () => {
+  it('on incoming, the handler notifies subscribers WITHOUT auto-accepting', async () => {
     const { createDevice, addIncomingCallListener } = await import('../twilio-voice');
     await createDevice();
 
@@ -107,10 +107,11 @@ describe('twilio-voice incoming call wiring', () => {
       on: vi.fn(),
       parameters: new Map([['CallSid', 'CA-123']]),
     };
-    // Simulate Twilio SDK firing the incoming event.
     deviceState.handlers.incoming.forEach((cb) => cb(fakeCall));
 
-    expect(fakeCall.accept).toHaveBeenCalledTimes(1);
+    // IncomingCallModal owns accept/reject — the core wrapper must NOT
+    // call accept on its own, otherwise the agent never sees a ring.
+    expect(fakeCall.accept).not.toHaveBeenCalled();
     expect(listener).toHaveBeenCalledWith(fakeCall);
   });
 
@@ -125,8 +126,7 @@ describe('twilio-voice incoming call wiring', () => {
     const fakeCall = { accept: vi.fn(), on: vi.fn(), parameters: new Map() };
     deviceState.handlers.incoming.forEach((cb) => cb(fakeCall));
 
-    // accept still fires (auto-answer is still on), listener does NOT
-    expect(fakeCall.accept).toHaveBeenCalledTimes(1);
+    expect(fakeCall.accept).not.toHaveBeenCalled();
     expect(listener).not.toHaveBeenCalled();
   });
 });

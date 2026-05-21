@@ -289,46 +289,45 @@ export function ActiveCallProvider({ children }: { children: ReactNode }) {
   }, [store]);
 
   // Inbound PSTN calls — Twilio routes to the agent's browser <Client>.
-  // The core voice wrapper auto-accepts and notifies us; we morph into the
-  // live-call screen the same way we do for the dialer-winner broadcast.
+  // IncomingCallModal owns the "ringing" UI (ringtone + accept/decline).
+  // We morph into the live-call screen only AFTER call.accept() fires,
+  // by listening for the SDK's 'accept' event. If the agent declines,
+  // the modal calls call.reject() and we never run this setup.
   useEffect(() => {
     const unsubscribe = addIncomingCallListener((call) => {
       const fromParam = call.parameters?.get?.('From') ?? '';
       const callSid = call.parameters?.get?.('CallSid') ?? '';
-      // Try to look up an existing contact by phone before we name them
-      // "Inbound" — keeps continuity with their existing wk_contacts row.
       const phone = typeof fromParam === 'string' ? fromParam : '';
-      const matched = phone
-        ? store.contacts.find((c) => c.phone === phone)
-        : undefined;
-      setCall({
-        contactId: matched?.id ?? `inbound-${callSid || Date.now()}`,
-        contactName: matched?.name ?? 'Inbound caller',
-        phone,
-        startedAt: Date.now(),
-        callId: null, // server fills the wk_calls row via wk-voice-twiml-incoming
-      });
-      activeTwilioCallRef.current = call;
-      setPhase('in_call');
-      setFullScreen(true);
-      setMuted(false);
 
-      // Same stale-call guard as the outbound path: only mutate state if
-      // THIS Call is still the current one. Without this, an old leaked
-      // inbound Call's late 'disconnect' would stomp on a fresh dial.
-      const isThisCall = () => activeTwilioCallRef.current === call;
-      const onEnd = () => {
-        if (!isThisCall()) return;
-        activeTwilioCallRef.current = null;
-        setPhase('post_call');
-      };
-      call.on('disconnect', onEnd);
-      call.on('cancel', onEnd);
-      call.on('reject', onEnd);
-      // SDK is the source of truth for mute state — wire it into React.
-      call.on('mute', (isMuted: boolean) => {
-        console.info('[mute] sdk event', isMuted);
-        setMuted(isMuted);
+      call.on('accept', () => {
+        const matched = phone
+          ? store.contacts.find((c) => c.phone === phone)
+          : undefined;
+        setCall({
+          contactId: matched?.id ?? `inbound-${callSid || Date.now()}`,
+          contactName: matched?.name ?? 'Inbound caller',
+          phone,
+          startedAt: Date.now(),
+          callId: null,
+        });
+        activeTwilioCallRef.current = call;
+        setPhase('in_call');
+        setFullScreen(true);
+        setMuted(false);
+
+        const isThisCall = () => activeTwilioCallRef.current === call;
+        const onEnd = () => {
+          if (!isThisCall()) return;
+          activeTwilioCallRef.current = null;
+          setPhase('post_call');
+        };
+        call.on('disconnect', onEnd);
+        call.on('cancel', onEnd);
+        call.on('reject', onEnd);
+        call.on('mute', (isMuted: boolean) => {
+          console.info('[mute] sdk event', isMuted);
+          setMuted(isMuted);
+        });
       });
     });
     return unsubscribe;

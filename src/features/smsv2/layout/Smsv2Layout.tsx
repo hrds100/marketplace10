@@ -7,6 +7,7 @@ import Smsv2Sidebar from './Smsv2Sidebar';
 import Smsv2StatusBar from './Smsv2StatusBar';
 import Softphone from '../components/softphone/Softphone';
 import { ActiveCallProvider } from '../components/live-call/ActiveCallContext';
+import IncomingCallModal from '../components/live-call/IncomingCallModal';
 import { SmsV2Provider } from '../store/SmsV2Store';
 import GlobalToasts from '../store/GlobalToasts';
 import { useHydrateContacts } from '../hooks/useHydrateContacts';
@@ -79,6 +80,7 @@ export default function Smsv2Layout() {
               {/* Softphone hidden on /crm/dialer — CallerPad inside DialerPage handles it */}
               {!onDialerPage && <Softphone />}
               <DialerProModal />
+              <IncomingCallModal />
               <GlobalToasts />
             </div>
           </DialerProModalProvider>
