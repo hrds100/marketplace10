@@ -90,17 +90,21 @@ serve(async (req: Request) => {
     let agentId: string | null = num?.assigned_agent_id ?? null;
     let agentClientIdentity: string | null = null;
 
-    // PR 145 (Hugo 2026-04-28): REVERT PR 143's wk_voice_sessions lookup.
-    // Identity = profile UUID (matches what wk-voice-token grants).
-    // The colon-suffixed form broke outbound calls with 13224 — same
-    // pattern would break inbound routing too.
+    // 2026-05-21 (Hugo): always ring the assigned agent if their profile
+    // exists. The old `agent_status !== 'offline'` gate sent calls to
+    // voicemail whenever the agent hadn't manually toggled to 'available',
+    // which was almost never. Now: if the number has an assigned agent,
+    // we ring them; Twilio's <Dial timeout="25"> falls through to the
+    // voicemail block below if their browser isn't open / doesn't pick up.
+    // Identity = profile UUID (matches what wk-voice-token grants — same
+    // value the agent's Device registers under).
     if (agentId) {
       const { data: profile } = await supabase
         .from('profiles')
-        .select('id, agent_status')
+        .select('id')
         .eq('id', agentId)
         .maybeSingle();
-      if (profile && profile.agent_status !== 'offline') {
+      if (profile) {
         agentClientIdentity = profile.id;
       }
     }

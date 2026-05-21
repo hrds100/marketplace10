@@ -301,14 +301,12 @@ export async function createDevice(): Promise<DeviceHandle> {
 
   // Inbound calls — wk-voice-twiml-incoming routes a PSTN ring to a Client
   // identity. The agent's browser receives an 'incoming' Call here. We
-  // auto-accept (matches the dialer-winner flow) and notify subscribers so
-  // ActiveCallProvider can morph straight into the live-call view.
+  // DO NOT auto-accept anymore — IncomingCallModal subscribes via
+  // addIncomingCallListener, shows a ringing UI with caller info, and
+  // calls call.accept() / call.reject() based on the agent's choice.
+  // Twilio's 25s <Dial timeout> falls through to voicemail automatically
+  // if the agent ignores the ring.
   d.on('incoming', (call: TwilioCall) => {
-    try {
-      call.accept();
-    } catch (e) {
-      console.warn('[twilio-voice] incoming call accept failed:', e);
-    }
     incomingCallListeners.forEach((listener) => {
       try {
         listener(call);
