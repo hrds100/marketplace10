@@ -577,6 +577,7 @@ export function DialerProContent({ autoCallContactId, pipelineColumnId, onAutoCa
                     contactEmail={contact.email}
                     agentFirstName={agentFirstName}
                     campaignId={camp?.id ?? null}
+                    pipelineId={camp?.pipelineId ?? null}
                   />
                   <button
                     onClick={() => setShowAgreement(true)}

@@ -66,6 +66,11 @@ interface Props {
    *  this campaign (matching channel) before falling back to workspace
    *  default. Same precedence rule wk-dialer-start uses for voice. */
   campaignId?: string | null;
+  /** Forwarded to the embedded StageSelector so the stage dropdown
+   *  shows only this pipeline's columns instead of every workspace
+   *  pipeline. Required for the dialer-pro mid-call surface; without
+   *  it the dropdown flattens 16 columns from 2 pipelines into one. */
+  pipelineId?: string | null;
 }
 
 const CHANNEL_LABEL: Record<Channel, string> = {
@@ -81,6 +86,7 @@ export default function MidCallSmsSender({
   contactEmail,
   agentFirstName,
   campaignId = null,
+  pipelineId = null,
 }: Props) {
   const { pushToast, columns, patchContact, contacts } = useSmsV2();
   const currentContact = contacts.find((c) => c.id === contactId);
@@ -405,6 +411,7 @@ export default function MidCallSmsSender({
           value={pickedStageId ?? undefined}
           onChange={(col) => setPickedStageId(col)}
           size="xs"
+          pipelineId={pipelineId}
         />
         {!stageMissing && targetStage && targetStage.id === pickedStageId && (
           <span className="text-[10px] text-[#1E9A80] inline-flex items-center gap-0.5 ml-auto">
