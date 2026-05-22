@@ -61,6 +61,24 @@ const PHONE_KEYS = ['phone', 'mobile', 'number', 'tel', 'whatsapp'];
 const NAME_KEYS = ['name', 'full_name', 'fullname', 'contact_name'];
 const EMAIL_KEYS = ['email', 'e-mail', 'mail'];
 
+// Header aliases that should be normalised to the canonical custom_fields
+// key so they appear in the dedicated "Property address" / "Property URL"
+// columns on /crm/contacts. CSV authors don't have to remember the exact
+// underscored key — Property Address / address / street_address all work.
+const PROPERTY_ADDRESS_KEYS = [
+  'property_address', 'property address', 'address', 'street_address',
+  'street address', 'street', 'location', 'property location',
+];
+const PROPERTY_URL_KEYS = [
+  'property_url', 'property url', 'url', 'website', 'web', 'link',
+  'listing_url', 'listing url', 'property link', 'listing',
+];
+
+const CUSTOM_FIELD_ALIASES: Array<{ canonical: string; keys: string[] }> = [
+  { canonical: 'property_address', keys: PROPERTY_ADDRESS_KEYS },
+  { canonical: 'property_url', keys: PROPERTY_URL_KEYS },
+];
+
 function pickKey(row: Record<string, string>, candidates: string[]): string | undefined {
   const lowered = Object.keys(row).reduce<Record<string, string>>((acc, k) => {
     acc[k.toLowerCase().trim()] = k;
@@ -242,14 +260,26 @@ export default function BulkUploadModal({
             }
           }
 
-          // Custom fields: anything that wasn't phone/name/email
+          // Custom fields: anything that wasn't phone/name/email. Headers
+          // matching one of CUSTOM_FIELD_ALIASES (e.g. "address",
+          // "Property Address", "website") are renamed to their canonical
+          // key (property_address / property_url) so they populate the
+          // dedicated columns on /crm/contacts. Everything else is stored
+          // under its original header name.
           const customFields: Record<string, string> = {};
           for (const [k, v] of Object.entries(raw)) {
             if (k === phoneKey || k === nameKey || k === emailKey) continue;
             const lk = k.toLowerCase().trim();
             if (PHONE_KEYS.includes(lk) || NAME_KEYS.includes(lk) || EMAIL_KEYS.includes(lk)) continue;
             const val = (v ?? '').trim();
-            if (val) customFields[k] = val;
+            if (!val) continue;
+            const alias = CUSTOM_FIELD_ALIASES.find((a) => a.keys.includes(lk));
+            const targetKey = alias ? alias.canonical : k;
+            // First-write wins so an explicit "property_address" column
+            // overrides a vague "address" column if both happen to exist.
+            if (customFields[targetKey] === undefined) {
+              customFields[targetKey] = val;
+            }
           }
 
           accepted.push({ name, phone, rawPhone: phoneRaw, email, customFields });
