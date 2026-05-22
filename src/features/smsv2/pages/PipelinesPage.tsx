@@ -1,7 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Bell, Flame, GripVertical, Pencil, MessageSquare, Mail, Phone } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { ACTIVE_PIPELINE } from '../data/mockPipelines';
 import { formatPence, formatRelativeTime } from '../data/helpers';
 import EditContactModal from '../components/contacts/EditContactModal';
 import EditableName from '../components/contacts/EditableName';
@@ -15,9 +14,60 @@ import { rowToContact } from '../hooks/useHydrateContacts';
 import { supabase } from '@/integrations/supabase/client';
 import type { Contact } from '../types';
 
+const PIPELINE_LS_KEY = 'crm_pipelines_selected_id';
+
+interface PipelineRow {
+  id: string;
+  name: string;
+}
+
 export default function PipelinesPage() {
   const { contacts, columns, upsertContact, patchContact, pushToast } = useSmsV2();
   const persist = useContactPersistence();
+
+  // Load pipelines from wk_pipelines so the picker is real, not a mock
+  // dropdown. Pre-2026-05-22 this page hard-coded ACTIVE_PIPELINE and
+  // rendered every column from every pipeline as one flat board.
+  const [pipelines, setPipelines] = useState<PipelineRow[]>([]);
+  const [activePipelineId, setActivePipelineId] = useState<string | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    void (async () => {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const { data, error } = await (supabase.from('wk_pipelines' as any) as any)
+        .select('id, name')
+        .eq('is_active', true)
+        .order('created_at', { ascending: true });
+      if (cancelled) return;
+      if (error) {
+        console.warn('[pipelines] load failed:', error.message);
+        return;
+      }
+      const rows = ((data ?? []) as PipelineRow[]);
+      setPipelines(rows);
+      if (rows.length === 0) return;
+      const stored = typeof window !== 'undefined' ? localStorage.getItem(PIPELINE_LS_KEY) : null;
+      const match = stored && rows.find((p) => p.id === stored);
+      setActivePipelineId(match ? stored : rows[0].id);
+    })();
+    return () => { cancelled = true; };
+  }, []);
+
+  const onPickPipeline = (id: string) => {
+    setActivePipelineId(id);
+    try { localStorage.setItem(PIPELINE_LS_KEY, id); } catch { /* ignore */ }
+  };
+
+  // Only show columns belonging to the active pipeline. Falls back to
+  // ALL columns if pipelines haven't loaded yet (transient empty render).
+  const visibleColumns = useMemo(() => {
+    if (!activePipelineId) return columns;
+    return columns.filter((c) => c.pipelineId === activePipelineId);
+  }, [columns, activePipelineId]);
+
+  const activePipelineName =
+    pipelines.find((p) => p.id === activePipelineId)?.name ?? 'Pipelines';
   const renameContact = async (id: string, name: string) => {
     patchContact(id, { name });
     const res = await persist.patchContact(id, { name });
@@ -153,17 +203,23 @@ export default function PipelinesPage() {
         <div>
           <h1 className="text-[26px] font-bold text-[#1A1A1A] tracking-tight">Pipelines</h1>
           <p className="text-[13px] text-[#6B7280]">
-            {ACTIVE_PIPELINE.name} · click any card to edit · columns are live outcome buttons
+            {activePipelineName} · click any card to edit · columns are live outcome buttons
           </p>
         </div>
-        <select className="text-[12px] px-3 py-2 bg-white border border-[#E5E7EB] rounded-[10px]">
-          <option>{ACTIVE_PIPELINE.name}</option>
-          <option>+ New pipeline</option>
+        <select
+          value={activePipelineId ?? ''}
+          onChange={(e) => onPickPipeline(e.target.value)}
+          className="text-[12px] px-3 py-2 bg-white border border-[#E5E7EB] rounded-[10px]"
+        >
+          {pipelines.length === 0 && <option value="">Loading…</option>}
+          {pipelines.map((p) => (
+            <option key={p.id} value={p.id}>{p.name}</option>
+          ))}
         </select>
       </header>
 
       <div className="flex gap-3 overflow-x-auto pb-3">
-        {columns.map((col) => {
+        {visibleColumns.map((col) => {
           const cards = contacts.filter((c) => c.pipelineColumnId === col.id);
           const totalValue = cards.reduce((s, c) => s + (c.dealValuePence ?? 0), 0);
           return (
