@@ -93,25 +93,60 @@ serve(async (req: Request) => {
       });
     }
 
-    // Resolve caller-ID number for the agent
+    // Resolve caller-ID number. Precedence:
+    //   1. Campaign pin — wk_campaign_numbers row joined to a voice-
+    //      enabled wk_numbers entry, lowest priority wins. Mirrors how
+    //      wk-email-send + unipile-send pick their from-line.
+    //   2. Agent profile default (profiles.default_caller_id_number_id).
+    //   3. Workspace fallback — first voice-enabled number ever created.
+    //
+    // 2026-05-22 (Hugo): added step 1. Previously the function only
+    // consulted profile + workspace fallback, so a campaign-level pin
+    // (e.g. Property Agent → +447380308316) was silently ignored and
+    // outbound calls fell through to the agent's own default line.
     let fromE164: string | null = null;
     let numberId: string | null = null;
-    const { data: profile } = await supa
-      .from('profiles')
-      .select('default_caller_id_number_id')
-      .eq('id', agentId)
-      .maybeSingle();
-    if (profile?.default_caller_id_number_id) {
-      const { data: num } = await supa
-        .from('wk_numbers')
-        .select('id, e164')
-        .eq('id', profile.default_caller_id_number_id)
-        .maybeSingle();
-      if (num) {
-        fromE164 = num.e164;
-        numberId = num.id;
+
+    const campaignIdForCaller = body.campaign_id ?? null;
+    if (campaignIdForCaller) {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const { data: pinned } = await (supa.from('wk_campaign_numbers' as any) as any)
+        .select('priority, wk_numbers(id, e164, voice_enabled, is_active)')
+        .eq('campaign_id', campaignIdForCaller)
+        .order('priority', { ascending: true });
+      const rows = (pinned ?? []) as Array<{
+        priority: number;
+        wk_numbers: { id: string; e164: string; voice_enabled: boolean; is_active: boolean } | null;
+      }>;
+      for (const r of rows) {
+        const n = r.wk_numbers;
+        if (n && n.voice_enabled && n.is_active) {
+          fromE164 = n.e164;
+          numberId = n.id;
+          break;
+        }
       }
     }
+
+    if (!fromE164) {
+      const { data: profile } = await supa
+        .from('profiles')
+        .select('default_caller_id_number_id')
+        .eq('id', agentId)
+        .maybeSingle();
+      if (profile?.default_caller_id_number_id) {
+        const { data: num } = await supa
+          .from('wk_numbers')
+          .select('id, e164')
+          .eq('id', profile.default_caller_id_number_id)
+          .maybeSingle();
+        if (num) {
+          fromE164 = num.e164;
+          numberId = num.id;
+        }
+      }
+    }
+
     if (!fromE164) {
       const { data: anyNum } = await supa
         .from('wk_numbers')
