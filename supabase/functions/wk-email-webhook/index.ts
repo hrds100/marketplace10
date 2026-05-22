@@ -312,6 +312,17 @@ serve(async (req: Request) => {
     return ok({ note: 'no from' });
   }
 
+  // 2026-05-21 (Hugo): only accept emails delivered to *@mail.nfstay.com.
+  // Resend's MX also catches hub.nfstay.com (DMARC reports, postmaster
+  // bounces) and any other domain that's pointed at it — those landed in
+  // the inbox as noise. Drop them at webhook intake so the CRM only ever
+  // sees mail.nfstay.com traffic.
+  const toEmail = toAddr.toLowerCase().trim();
+  if (!toEmail.endsWith('@mail.nfstay.com')) {
+    console.log(`[wk-email-webhook] dropping non-mail.nfstay.com recipient: ${toEmail}`);
+    return ok({ note: 'recipient outside mail.nfstay.com — dropped', to: toEmail });
+  }
+
   const subject = d.subject ?? '';
 
   // PR 103: fetch html + text from the dedicated inbound endpoint.
