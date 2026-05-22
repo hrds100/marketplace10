@@ -756,6 +756,28 @@ export function DialerProContent({ autoCallContactId, pipelineColumnId, onAutoCa
                 </div>
                 <div className="text-[15px] font-semibold text-[#1A1A1A] truncate max-w-full">{state.currentLead.name}</div>
                 <div className="text-[13px] text-[#6B7280] tabular-nums mt-0.5">{state.currentLead.phone}</div>
+                {contact?.customFields?.property_address && (
+                  <div className="text-[11px] text-[#6B7280] mt-1.5 truncate max-w-full px-2 text-center" title={contact.customFields.property_address}>
+                    📍 {contact.customFields.property_address}
+                  </div>
+                )}
+                {contact?.customFields?.property_url && (() => {
+                  const raw = contact.customFields.property_url.trim();
+                  const href = /^https?:\/\//i.test(raw) ? raw : `https://${raw}`;
+                  const label = raw.replace(/^https?:\/\//i, '').replace(/^www\./i, '');
+                  return (
+                    <a
+                      href={href}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      onClick={(e) => e.stopPropagation()}
+                      className="text-[11px] text-[#1E9A80] underline decoration-[#1E9A80]/40 hover:decoration-[#1E9A80] cursor-pointer mt-0.5 truncate max-w-full px-2 text-center inline-block"
+                      title={href}
+                    >
+                      {label}
+                    </a>
+                  );
+                })()}
                 <div className="text-[18px] font-semibold text-[#1A1A1A] tabular-nums mt-2">
                   {state.phase === 'connected' ? formatDuration(liveDuration) : (
                     <span className="inline-flex gap-1">
