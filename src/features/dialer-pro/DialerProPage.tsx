@@ -583,6 +583,26 @@ export function DialerProContent({ autoCallContactId, pipelineColumnId, onAutoCa
                   <div className="mt-2"><ContactMetaCompact contact={contact} /></div>
                 </div>
                 <div className="flex-1 overflow-y-auto px-4 py-3 space-y-3 text-[12px]">
+                  {/* IVR keypad — touch tones for "Press 1 for sales"
+                      menus. Always visible during a call (greyed when
+                      not yet connected) so agents see it the moment
+                      they need it. Sends DTMF via Twilio Call.sendDigits;
+                      keyboard 0-9, *, # also work. */}
+                  <div className="bg-white border border-[#1E9A80]/30 rounded-xl p-2 shadow-sm">
+                    <div className="text-[10px] uppercase tracking-wide text-[#1E9A80] font-semibold mb-1.5 flex items-center gap-1.5">
+                      <Hash className="w-3 h-3" /> Keypad
+                      <span className="ml-auto text-[9px] text-[#9CA3AF] normal-case font-normal">
+                        {state.phase === 'connected' ? 'press 1, 2…' : 'enabled once connected'}
+                      </span>
+                    </div>
+                    <DtmfKeypad
+                      enabled={state.phase === 'connected'}
+                      onDigit={machine.sendDigit}
+                      callId={state.currentCallId}
+                      size="inline"
+                    />
+                  </div>
+
                   <MidCallSmsSender
                     contactId={contact.id}
                     contactName={contact.name}
@@ -598,21 +618,6 @@ export function DialerProContent({ autoCallContactId, pipelineColumnId, onAutoCa
                   >
                     <FileSignature className="w-4 h-4" /> Send Agreement
                   </button>
-
-                  {/* IVR keypad — touch tones for "Press 1 for sales" menus.
-                      Only active while the call is connected; ringing or
-                      wrap-up grey it out. Keyboard 0-9, *, # also work. */}
-                  <div className="bg-[#F3F3EE]/60 border border-[#E5E7EB] rounded-xl p-2">
-                    <div className="text-[10px] uppercase tracking-wide text-[#9CA3AF] font-semibold mb-1.5 flex items-center gap-1.5">
-                      <Hash className="w-3 h-3" /> Keypad (IVR tones)
-                    </div>
-                    <DtmfKeypad
-                      enabled={state.phase === 'connected'}
-                      onDigit={machine.sendDigit}
-                      callId={state.currentCallId}
-                      size="inline"
-                    />
-                  </div>
 
                   <CallTimeline callId={state.currentCallId} />
                 </div>
