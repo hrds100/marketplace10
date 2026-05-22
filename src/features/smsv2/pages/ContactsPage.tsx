@@ -185,6 +185,8 @@ export default function ContactsPage() {
       'Email',
       'Stage',
       'Owner',
+      'Property address',
+      'Property URL',
       'Value (GBP)',
       'Tags',
       'Hot',
@@ -199,6 +201,8 @@ export default function ContactsPage() {
       c.email ?? '',
       c.pipelineColumnId ? (stageById.get(c.pipelineColumnId) ?? '') : '',
       c.ownerAgentId ? (ownerById.get(c.ownerAgentId) ?? '') : '',
+      c.customFields?.property_address ?? '',
+      c.customFields?.property_url ?? '',
       c.dealValuePence ? (c.dealValuePence / 100).toFixed(2) : '',
       (c.tags ?? []).join('; '),
       c.isHot ? 'yes' : '',
@@ -316,6 +320,8 @@ export default function ContactsPage() {
               <th className="text-left px-2 py-2.5 font-semibold">Phone</th>
               <th className="text-left px-2 py-2.5 font-semibold">Stage</th>
               <th className="text-left px-2 py-2.5 font-semibold">Owner</th>
+              <th className="text-left px-2 py-2.5 font-semibold">Property address</th>
+              <th className="text-left px-2 py-2.5 font-semibold">Property URL</th>
               <th className="text-right px-2 py-2.5 font-semibold">Value</th>
               <th className="text-left px-2 py-2.5 font-semibold">Last contact</th>
               <th className="px-2 py-2.5"></th>
@@ -349,6 +355,25 @@ export default function ContactsPage() {
                     />
                   </td>
                   <td className="px-2 py-2.5 text-[#6B7280]">{owner?.name ?? 'Unassigned'}</td>
+                  <td className="px-2 py-2.5 text-[#6B7280] max-w-[220px] truncate" title={c.customFields?.property_address ?? ''}>
+                    {c.customFields?.property_address || '—'}
+                  </td>
+                  <td className="px-2 py-2.5 max-w-[200px]">
+                    {c.customFields?.property_url ? (
+                      <a
+                        href={c.customFields.property_url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        onClick={(e) => e.stopPropagation()}
+                        className="text-[#1E9A80] hover:underline truncate inline-block max-w-full align-bottom"
+                        title={c.customFields.property_url}
+                      >
+                        {c.customFields.property_url.replace(/^https?:\/\//, '').replace(/^www\./, '')}
+                      </a>
+                    ) : (
+                      <span className="text-[#9CA3AF]">—</span>
+                    )}
+                  </td>
                   <td className="px-2 py-2.5 text-right tabular-nums text-[#1A1A1A] font-medium">
                     {c.dealValuePence ? formatPence(c.dealValuePence) : '—'}
                   </td>
@@ -435,7 +460,7 @@ export default function ContactsPage() {
             })}
             {filtered.length === 0 && (
               <tr>
-                <td colSpan={7} className="px-4 py-8 text-center text-[12px] text-[#9CA3AF] italic">
+                <td colSpan={9} className="px-4 py-8 text-center text-[12px] text-[#9CA3AF] italic">
                   No contacts match your filters.
                 </td>
               </tr>

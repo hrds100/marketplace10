@@ -286,11 +286,49 @@ export default function EditContactModal({ contact, onClose, onSave, agents }: P
             </div>
           </div>
 
+          {/* Property fields — first-class custom fields surfaced as
+              dedicated columns on /crm/contacts. Stored under standard
+              keys property_address / property_url inside customFields so
+              the data layer stays jsonb-flat (no schema change). */}
+          <div className="grid grid-cols-1 gap-2">
+            <div>
+              <Label>Property address</Label>
+              <input
+                value={draft.customFields.property_address ?? ''}
+                onChange={(e) =>
+                  set('customFields', {
+                    ...draft.customFields,
+                    property_address: e.target.value,
+                  })
+                }
+                placeholder="e.g. 12 Acacia Avenue, London W1"
+                className="w-full px-3 py-1.5 text-[13px] border border-[#E5E7EB] rounded-[10px]"
+              />
+            </div>
+            <div>
+              <Label>Property URL</Label>
+              <input
+                value={draft.customFields.property_url ?? ''}
+                onChange={(e) =>
+                  set('customFields', {
+                    ...draft.customFields,
+                    property_url: e.target.value,
+                  })
+                }
+                placeholder="https://…"
+                type="url"
+                className="w-full px-3 py-1.5 text-[13px] border border-[#E5E7EB] rounded-[10px]"
+              />
+            </div>
+          </div>
+
           {/* Custom fields */}
           <div>
             <Label>Custom fields</Label>
             <div className="space-y-1.5 mb-2">
-              {Object.entries(draft.customFields).map(([k, v]) => (
+              {Object.entries(draft.customFields)
+                .filter(([k]) => k !== 'property_address' && k !== 'property_url')
+                .map(([k, v]) => (
                 <div key={k} className="flex gap-1.5 items-center">
                   <input
                     value={k}
