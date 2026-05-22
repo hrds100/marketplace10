@@ -26,6 +26,7 @@ import type { Contact } from '../../types';
 import { supabase } from '@/integrations/supabase/client';
 import { useSmsV2 } from '../../store/SmsV2Store';
 import { useCurrentAgent } from '../../hooks/useCurrentAgent';
+import { useDialerCampaigns } from '../../hooks/useDialerCampaigns';
 import {
   formatDuration,
   formatPence,
@@ -48,6 +49,13 @@ export default function LiveCallScreen() {
   } = useActiveCallCtx();
   const store = useSmsV2();
   const { agent: me, firstName: myFirstName, talkRatioPercent } = useCurrentAgent();
+  // Resolve the active call's pipeline_id so MidCallSmsSender's stage
+  // picker scopes to the right pipeline. Without this the dropdown
+  // lists every pipeline's columns flattened.
+  const { campaigns } = useDialerCampaigns({ includeInactive: true });
+  const callPipelineId = call?.campaignId
+    ? campaigns.find((c) => c.id === call.campaignId)?.pipelineId ?? null
+    : null;
   const [editing, setEditing] = useState<Contact | null>(null);
 
   // Preview mode (PR 10): no active call, but agent opened the room for
@@ -330,6 +338,7 @@ export default function LiveCallScreen() {
               contactEmail={contact.email}
               agentFirstName={myFirstName ?? ''}
               campaignId={call?.campaignId ?? null}
+              pipelineId={callPipelineId}
             />
             {/* Phase 6 (Hugo 2026-04-30): timeline below SMS — sends,
                 coach lines, stage moves, notes. Reads wk_call_timeline. */}

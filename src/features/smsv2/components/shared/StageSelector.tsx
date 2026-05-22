@@ -10,6 +10,12 @@ interface Props {
   onChange: (columnId: string) => void;
   size?: 'xs' | 'sm' | 'md';
   className?: string;
+  /** When set, the popover lists ONLY columns belonging to this
+   *  pipeline. Used by the dialer-pro live-call + wrap-up surfaces so
+   *  agents don't see every workspace pipeline mixed together.
+   *  Cross-pipeline callers (contacts list, inbox) omit it and get
+   *  the unfiltered list as before. */
+  pipelineId?: string | null;
 }
 
 /**
@@ -26,7 +32,7 @@ interface Props {
  *   - sm: default
  *   - md: pipeline cards / detail header
  */
-export default function StageSelector({ value, onChange, size = 'sm', className }: Props) {
+export default function StageSelector({ value, onChange, size = 'sm', className, pipelineId }: Props) {
   const [open, setOpen] = useState(false);
   const triggerRef = useRef<HTMLButtonElement>(null);
   const popoverRef = useRef<HTMLDivElement>(null);
@@ -37,11 +43,17 @@ export default function StageSelector({ value, onChange, size = 'sm', className 
   // mock IDs aren't UUIDs, so persist.moveToColumn skipped DB writes
   // and the stage didn't stick on reload.
   const { columns: storeCols } = useSmsV2();
-  const columns = useMemo(
-    () => (storeCols.length > 0 ? storeCols : ACTIVE_PIPELINE.columns),
-    [storeCols]
-  );
-  const current = columns.find((c) => c.id === value);
+  const columns = useMemo(() => {
+    const all = storeCols.length > 0 ? storeCols : ACTIVE_PIPELINE.columns;
+    if (!pipelineId) return all;
+    return all.filter((c) => c.pipelineId === pipelineId);
+  }, [storeCols, pipelineId]);
+  // Always look up the current stage in the FULL list so we still
+  // render a label when the contact's existing column belongs to a
+  // different pipeline than the active one (UX: don't pretend the
+  // contact has no stage just because the picker is scoped).
+  const allColumnsForLookup = storeCols.length > 0 ? storeCols : ACTIVE_PIPELINE.columns;
+  const current = allColumnsForLookup.find((c) => c.id === value);
 
   // Compute viewport position whenever opening or on resize/scroll.
   useEffect(() => {
