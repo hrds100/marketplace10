@@ -1,11 +1,31 @@
-import { useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import Papa from 'papaparse';
-import { X, Upload, FileText, Users, Lock, AlertTriangle, Phone } from 'lucide-react';
+import { X, Upload, FileText, Users, Lock, AlertTriangle, Phone, Columns3 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toE164 } from '@/core/utils/phone';
 import { useSmsV2 } from '../../store/SmsV2Store';
 import { useAgentsToday } from '../../hooks/useAgentsToday';
 import { useDialerCampaigns } from '../../hooks/useDialerCampaigns';
+
+const PIPELINE_LS_KEY = 'crm_bulk_import_pipeline_id';
+
+interface PipelineRow {
+  id: string;
+  name: string;
+}
+
+/** First column of a pipeline, preferring one literally named "New Leads"
+ *  (case-insensitive) so imports default to the same starting stage even
+ *  if the agent reordered columns. Falls back to lowest position. */
+function pickDefaultStage(
+  cols: Array<{ id: string; name: string; pipelineId: string; position: number }>,
+  pipelineId: string,
+): string | undefined {
+  const inPipeline = cols.filter((c) => c.pipelineId === pipelineId);
+  const newLeads = inPipeline.find((c) => c.name.toLowerCase().trim() === 'new leads');
+  if (newLeads) return newLeads.id;
+  return [...inPipeline].sort((a, b) => a.position - b.position)[0]?.id;
+}
 
 interface Props {
   open: boolean;
@@ -69,7 +89,59 @@ export default function BulkUploadModal({
   const { columns, pushToast } = useSmsV2();
   const { agents } = useAgentsToday();
   const { campaigns } = useDialerCampaigns({ includeInactive: true });
-  const [stageId, setStageId] = useState<string>(columns[0]?.id ?? '');
+
+  // Pipeline picker — was missing before, so all imports flattened into
+  // "New Leads" of whichever pipeline's column happened to be first
+  // after hydration. Now the admin chooses the destination pipeline
+  // explicitly; the stage dropdown re-scopes to that pipeline's columns,
+  // defaulting to its "New Leads" stage.
+  const [pipelines, setPipelines] = useState<PipelineRow[]>([]);
+  const [pipelineId, setPipelineId] = useState<string>('');
+  const [stageId, setStageId] = useState<string>('');
+
+  useEffect(() => {
+    if (!open) return;
+    let cancelled = false;
+    void (async () => {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const { data, error } = await (supabase.from('wk_pipelines' as any) as any)
+        .select('id, name')
+        .eq('is_active', true)
+        .order('created_at', { ascending: true });
+      if (cancelled) return;
+      if (error) {
+        console.warn('[bulk-upload] pipelines load failed:', error.message);
+        return;
+      }
+      const rows = (data ?? []) as PipelineRow[];
+      setPipelines(rows);
+      if (rows.length === 0) return;
+      const stored = typeof window !== 'undefined' ? localStorage.getItem(PIPELINE_LS_KEY) : null;
+      const pick = stored && rows.find((p) => p.id === stored) ? stored : rows[0].id;
+      setPipelineId(pick);
+    })();
+    return () => { cancelled = true; };
+  }, [open]);
+
+  // When pipelineId changes (or columns hydrate after the picker mounts),
+  // reset stage to that pipeline's "New Leads" (or first column).
+  useEffect(() => {
+    if (!pipelineId || columns.length === 0) return;
+    const next = pickDefaultStage(columns, pipelineId);
+    if (next) setStageId(next);
+  }, [pipelineId, columns]);
+
+  const stageOptions = useMemo(() => {
+    if (!pipelineId) return columns;
+    return columns
+      .filter((c) => c.pipelineId === pipelineId)
+      .sort((a, b) => a.position - b.position);
+  }, [columns, pipelineId]);
+
+  const onPickPipeline = (id: string) => {
+    setPipelineId(id);
+    try { localStorage.setItem(PIPELINE_LS_KEY, id); } catch { /* ignore */ }
+  };
   // PR 22: optional "add to campaign queue" — when set, the imported
   // contacts are also INSERTed into wk_dialer_queue for that campaign
   // so wk-dialer-start has leads to pick from.
@@ -425,27 +497,42 @@ export default function BulkUploadModal({
 
               <div className="grid grid-cols-2 gap-3">
                 <div>
+                  <Label icon={<Columns3 className="w-3.5 h-3.5" />}>Pipeline</Label>
+                  <select
+                    value={pipelineId}
+                    onChange={(e) => onPickPipeline(e.target.value)}
+                    className="w-full px-3 py-2 text-[13px] border border-[#E5E7EB] rounded-[10px] bg-white"
+                  >
+                    {pipelines.length === 0 && <option value="">Loading…</option>}
+                    {pipelines.map((p) => (
+                      <option key={p.id} value={p.id}>{p.name}</option>
+                    ))}
+                  </select>
+                </div>
+                <div>
                   <Label>Initial stage</Label>
                   <select
                     value={stageId}
                     onChange={(e) => setStageId(e.target.value)}
                     className="w-full px-3 py-2 text-[13px] border border-[#E5E7EB] rounded-[10px] bg-white"
                   >
-                    {columns.map((c) => (
+                    {stageOptions.length === 0 && <option value="">No stages</option>}
+                    {stageOptions.map((c) => (
                       <option key={c.id} value={c.id}>
                         {c.name}
                       </option>
                     ))}
                   </select>
                 </div>
-                <div>
-                  <Label>Tags (comma-separated)</Label>
-                  <input
-                    value={tags}
-                    onChange={(e) => setTags(e.target.value)}
-                    className="w-full px-3 py-2 text-[13px] border border-[#E5E7EB] rounded-[10px]"
-                  />
-                </div>
+              </div>
+
+              <div>
+                <Label>Tags (comma-separated)</Label>
+                <input
+                  value={tags}
+                  onChange={(e) => setTags(e.target.value)}
+                  className="w-full px-3 py-2 text-[13px] border border-[#E5E7EB] rounded-[10px]"
+                />
               </div>
 
               {/* PR 22: optional campaign queue. When set, every uploaded
