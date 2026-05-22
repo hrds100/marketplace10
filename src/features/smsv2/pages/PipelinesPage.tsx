@@ -12,47 +12,31 @@ import { useFollowups } from '../hooks/useFollowups';
 import { useDialerProModal } from '../layout/DialerProModalContext';
 import { rowToContact } from '../hooks/useHydrateContacts';
 import { supabase } from '@/integrations/supabase/client';
+import { usePipelines } from '../hooks/usePipelines';
 import type { Contact } from '../types';
 
 const PIPELINE_LS_KEY = 'crm_pipelines_selected_id';
-
-interface PipelineRow {
-  id: string;
-  name: string;
-}
 
 export default function PipelinesPage() {
   const { contacts, columns, upsertContact, patchContact, pushToast } = useSmsV2();
   const persist = useContactPersistence();
 
-  // Load pipelines from wk_pipelines so the picker is real, not a mock
-  // dropdown. Pre-2026-05-22 this page hard-coded ACTIVE_PIPELINE and
-  // rendered every column from every pipeline as one flat board.
-  const [pipelines, setPipelines] = useState<PipelineRow[]>([]);
+  // Load pipelines via shared hook (TanStack Query cache). Prevents the
+  // "Loading…" hang Hugo reported on 2026-05-22 — previously this page
+  // ran its own one-shot supabase fetch with no retry / cache, which
+  // sometimes failed silently after tab navigation and never recovered.
+  const { pipelines } = usePipelines();
   const [activePipelineId, setActivePipelineId] = useState<string | null>(null);
 
+  // Resolve the active id once pipelines arrive (or fall back if the
+  // stored choice was removed from wk_pipelines).
   useEffect(() => {
-    let cancelled = false;
-    void (async () => {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const { data, error } = await (supabase.from('wk_pipelines' as any) as any)
-        .select('id, name')
-        .eq('is_active', true)
-        .order('created_at', { ascending: true });
-      if (cancelled) return;
-      if (error) {
-        console.warn('[pipelines] load failed:', error.message);
-        return;
-      }
-      const rows = ((data ?? []) as PipelineRow[]);
-      setPipelines(rows);
-      if (rows.length === 0) return;
-      const stored = typeof window !== 'undefined' ? localStorage.getItem(PIPELINE_LS_KEY) : null;
-      const match = stored && rows.find((p) => p.id === stored);
-      setActivePipelineId(match ? stored : rows[0].id);
-    })();
-    return () => { cancelled = true; };
-  }, []);
+    if (pipelines.length === 0) return;
+    if (activePipelineId && pipelines.some((p) => p.id === activePipelineId)) return;
+    const stored = typeof window !== 'undefined' ? localStorage.getItem(PIPELINE_LS_KEY) : null;
+    const match = stored && pipelines.find((p) => p.id === stored) ? stored : pipelines[0].id;
+    setActivePipelineId(match);
+  }, [pipelines, activePipelineId]);
 
   const onPickPipeline = (id: string) => {
     setActivePipelineId(id);

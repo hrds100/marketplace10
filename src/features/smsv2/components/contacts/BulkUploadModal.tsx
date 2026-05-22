@@ -6,13 +6,9 @@ import { toE164 } from '@/core/utils/phone';
 import { useSmsV2 } from '../../store/SmsV2Store';
 import { useAgentsToday } from '../../hooks/useAgentsToday';
 import { useDialerCampaigns } from '../../hooks/useDialerCampaigns';
+import { usePipelines } from '../../hooks/usePipelines';
 
 const PIPELINE_LS_KEY = 'crm_bulk_import_pipeline_id';
-
-interface PipelineRow {
-  id: string;
-  name: string;
-}
 
 /** First column of a pipeline, preferring one literally named "New Leads"
  *  (case-insensitive) so imports default to the same starting stage even
@@ -108,12 +104,10 @@ export default function BulkUploadModal({
   const { agents } = useAgentsToday();
   const { campaigns } = useDialerCampaigns({ includeInactive: true });
 
-  // Pipeline picker — was missing before, so all imports flattened into
-  // "New Leads" of whichever pipeline's column happened to be first
-  // after hydration. Now the admin chooses the destination pipeline
-  // explicitly; the stage dropdown re-scopes to that pipeline's columns,
-  // defaulting to its "New Leads" stage.
-  const [pipelines, setPipelines] = useState<PipelineRow[]>([]);
+  // Pipeline picker uses the shared usePipelines() cache so this modal
+  // doesn't repeat the silent-hang failure mode the page-level picker
+  // had before 2026-05-22.
+  const { pipelines } = usePipelines();
   const [pipelineId, setPipelineId] = useState<string>('');
   const [stageId, setStageId] = useState<string>('');
 
@@ -127,34 +121,19 @@ export default function BulkUploadModal({
     return c?.pipelineId || null;
   }, [campaigns, prefillCampaignId]);
 
+  // Pick a pipeline once the cache has rows (and re-pick when the modal
+  // re-opens or when the locked campaign changes).
   useEffect(() => {
     if (!open) return;
-    let cancelled = false;
-    void (async () => {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const { data, error } = await (supabase.from('wk_pipelines' as any) as any)
-        .select('id, name')
-        .eq('is_active', true)
-        .order('created_at', { ascending: true });
-      if (cancelled) return;
-      if (error) {
-        console.warn('[bulk-upload] pipelines load failed:', error.message);
-        return;
-      }
-      const rows = (data ?? []) as PipelineRow[];
-      setPipelines(rows);
-      if (rows.length === 0) return;
-      // Precedence: campaign-linked pipeline > localStorage > first.
-      if (lockedPipelineId && rows.some((r) => r.id === lockedPipelineId)) {
-        setPipelineId(lockedPipelineId);
-        return;
-      }
-      const stored = typeof window !== 'undefined' ? localStorage.getItem(PIPELINE_LS_KEY) : null;
-      const pick = stored && rows.find((p) => p.id === stored) ? stored : rows[0].id;
-      setPipelineId(pick);
-    })();
-    return () => { cancelled = true; };
-  }, [open, lockedPipelineId]);
+    if (pipelines.length === 0) return;
+    if (lockedPipelineId && pipelines.some((r) => r.id === lockedPipelineId)) {
+      setPipelineId(lockedPipelineId);
+      return;
+    }
+    const stored = typeof window !== 'undefined' ? localStorage.getItem(PIPELINE_LS_KEY) : null;
+    const pick = stored && pipelines.find((p) => p.id === stored) ? stored : pipelines[0].id;
+    setPipelineId(pick);
+  }, [open, lockedPipelineId, pipelines]);
 
   // If the user navigates between campaigns (modal stays mounted), or
   // the campaigns hook resolves AFTER the initial load, snap back to

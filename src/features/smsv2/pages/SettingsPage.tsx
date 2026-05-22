@@ -39,6 +39,7 @@ import { formatPence } from '../data/helpers';
 import { useKillSwitch } from '../hooks/useKillSwitch';
 import { useAiSettings } from '../hooks/useAiSettings';
 import { useDialerCampaigns } from '../hooks/useDialerCampaigns';
+import { usePipelines } from '../hooks/usePipelines';
 import { useDefaultCallScript } from '../hooks/useDefaultCallScript';
 import { useAgentScript } from '../hooks/useAgentScript';
 import { useSmsTemplates } from '../hooks/useSmsTemplates';
@@ -642,20 +643,7 @@ function CampaignBundleHeader({
 function CampaignOverviewTab({ campaignId }: { campaignId: string }) {
   const { campaigns, refetch } = useDialerCampaigns({ includeInactive: true });
   const camp = campaigns.find((c) => c.id === campaignId);
-  const [pipelines, setPipelines] = useState<WkPipelineRow[]>([]);
-
-  useEffect(() => {
-    let cancelled = false;
-    void (async () => {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const { data } = await (supabase.from('wk_pipelines' as any) as any)
-        .select('id, name')
-        .eq('is_active', true)
-        .order('created_at', { ascending: true });
-      if (!cancelled) setPipelines((data ?? []) as WkPipelineRow[]);
-    })();
-    return () => { cancelled = true; };
-  }, []);
+  const { pipelines } = usePipelines();
 
   if (!camp) return null;
   return (
@@ -920,10 +908,6 @@ function Card({
 }
 
 // ─── Pipelines tab — fully editable ────────────────────────────────
-interface WkPipelineRow {
-  id: string;
-  name: string;
-}
 
 const SETTINGS_PIPELINES_LS_KEY = 'crm_settings_pipelines_selected_id';
 
@@ -933,31 +917,16 @@ function PipelinesTab({ campaignId }: { campaignId: string | null }) {
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const { campaigns } = useDialerCampaigns({ includeInactive: true });
 
-  // Pipeline picker — was missing before, so the tab rendered every
-  // column across every pipeline as one giant list, the same
-  // PipelinesPage flatten bug. In campaign scope we auto-lock to the
-  // campaign's linked pipeline. In workspace scope the admin picks.
-  const [pipelines, setPipelines] = useState<WkPipelineRow[]>([]);
+  // Pipeline picker — uses the shared usePipelines() hook so this tab
+  // benefits from the same TanStack Query cache used by /crm/pipelines
+  // and the BulkUploadModal. Stops the modal-open / tab-switch hang.
+  const { pipelines } = usePipelines();
   const campaignPipelineId = useMemo(() => {
     if (!campaignId) return null;
     const c = campaigns.find((c) => c.id === campaignId);
     return c?.pipelineId || null;
   }, [campaigns, campaignId]);
   const [pickedPipelineId, setPickedPipelineId] = useState<string>('');
-
-  useEffect(() => {
-    let cancelled = false;
-    void (async () => {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const { data, error } = await (supabase.from('wk_pipelines' as any) as any)
-        .select('id, name')
-        .eq('is_active', true)
-        .order('created_at', { ascending: true });
-      if (cancelled || error) return;
-      setPipelines((data ?? []) as WkPipelineRow[]);
-    })();
-    return () => { cancelled = true; };
-  }, []);
 
   // Resolve the active pipeline: campaign-locked > localStorage > first.
   const activePipelineId = useMemo(() => {
