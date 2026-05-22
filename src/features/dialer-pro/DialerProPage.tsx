@@ -42,6 +42,7 @@ import { useQueuePro } from './useQueuePro';
 import type { QueueLead } from './types';
 import CallHistoryPro from './history/CallHistoryPro';
 import QueueManagerPro from './history/QueueManagerPro';
+import DtmfKeypad from './controls/DtmfKeypad';
 
 function formatDuration(sec: number): string {
   const h = Math.floor(sec / 3600);
@@ -353,6 +354,10 @@ export function DialerProContent({ autoCallContactId, pipelineColumnId, onAutoCa
 
   const [historyCount, setHistoryCount] = useState(0);
   const [minimized, setMinimized] = useState(false);
+  // 2026-05-22 (Hugo): toggle for the keypad popover inside the floating
+  // GHL call card. The 4-column live-call layout shows the keypad
+  // inline; this is the compact-card equivalent.
+  const [keypadOpen, setKeypadOpen] = useState(false);
   useEffect(() => {
     if (state.phase === 'dialing') setMinimized(false);
   }, [state.phase]);
@@ -593,6 +598,22 @@ export function DialerProContent({ autoCallContactId, pipelineColumnId, onAutoCa
                   >
                     <FileSignature className="w-4 h-4" /> Send Agreement
                   </button>
+
+                  {/* IVR keypad — touch tones for "Press 1 for sales" menus.
+                      Only active while the call is connected; ringing or
+                      wrap-up grey it out. Keyboard 0-9, *, # also work. */}
+                  <div className="bg-[#F3F3EE]/60 border border-[#E5E7EB] rounded-xl p-2">
+                    <div className="text-[10px] uppercase tracking-wide text-[#9CA3AF] font-semibold mb-1.5 flex items-center gap-1.5">
+                      <Hash className="w-3 h-3" /> Keypad (IVR tones)
+                    </div>
+                    <DtmfKeypad
+                      enabled={state.phase === 'connected'}
+                      onDigit={machine.sendDigit}
+                      callId={state.currentCallId}
+                      size="inline"
+                    />
+                  </div>
+
                   <CallTimeline callId={state.currentCallId} />
                 </div>
               </>
@@ -869,13 +890,37 @@ export function DialerProContent({ autoCallContactId, pipelineColumnId, onAutoCa
                     <FileText className="w-4 h-4" strokeWidth={1.8} />
                     Scripts
                   </button>
-                  <button disabled
-                    className="flex flex-col items-center gap-1 py-2 rounded-lg text-[10px] font-medium text-[#9CA3AF] cursor-not-allowed">
+                  <button
+                    onClick={() => setKeypadOpen((v) => !v)}
+                    disabled={state.phase !== 'connected'}
+                    className={cn(
+                      'flex flex-col items-center gap-1 py-2 rounded-lg text-[10px] font-medium transition-colors',
+                      state.phase !== 'connected'
+                        ? 'text-[#9CA3AF] cursor-not-allowed'
+                        : keypadOpen
+                          ? 'bg-[#1E9A80] text-white'
+                          : 'text-[#6B7280] hover:bg-[#F3F3EE] hover:text-[#1A1A1A]',
+                    )}
+                    title="Open IVR keypad"
+                  >
                     <Hash className="w-4 h-4" strokeWidth={1.8} />
                     Dial
                   </button>
                 </div>
               </div>
+
+              {/* IVR keypad — collapses inline when toggled on. Sends
+                  DTMF tones over the active call via Call.sendDigits. */}
+              {keypadOpen && state.phase === 'connected' && (
+                <div className="px-3 pb-2">
+                  <DtmfKeypad
+                    enabled
+                    onDigit={machine.sendDigit}
+                    callId={state.currentCallId}
+                    size="compact"
+                  />
+                </div>
+              )}
 
               {/* End Call button */}
               <div className="px-3 pb-3">

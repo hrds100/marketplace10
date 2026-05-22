@@ -428,6 +428,24 @@ export function useDialerMachine({ userId, campaignId, pipelineId, onToast }: Us
     dispatch({ type: 'MUTE_TOGGLE' });
   }, [state.isMuted]);
 
+  // DTMF — send a touch-tone digit on the active call so the agent can
+  // navigate IVR menus ("Press 1 for sales") from inside the CRM.
+  // Twilio's Voice SDK exposes Call.sendDigits which accepts '0'-'9',
+  // '*', '#', and 'w' (half-second pause). Returns the digit sent (or
+  // null if no active call to send on) so the UI can keep a history.
+  const sendDigit = useCallback((digit: string): string | null => {
+    const call = twilioCallRef.current;
+    if (!call) return null;
+    try {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      (call as any).sendDigits?.(digit);
+      return digit;
+    } catch (e) {
+      console.warn('[dialer-pro] sendDigits failed', e);
+      return null;
+    }
+  }, []);
+
   // Hold toggle — Twilio hold requires server-side TwiML update which
   // isn't wired yet, so we mute the agent's mic as a practical fallback.
   const holdToggle = useCallback(() => {
@@ -533,6 +551,7 @@ export function useDialerMachine({ userId, campaignId, pipelineId, onToast }: Us
     hangUp,
     muteToggle,
     holdToggle,
+    sendDigit,
     applyOutcome,
     skip,
     pause,
