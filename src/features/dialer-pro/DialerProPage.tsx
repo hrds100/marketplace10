@@ -687,21 +687,21 @@ export function DialerProContent({ autoCallContactId, pipelineColumnId, onAutoCa
               )}
             </div>
 
-            {/* Phone offline banner — actionable reconnect, no more silent disable */}
+            {/* Phone status banner — fully automatic recovery, agent
+                rarely sees this. Reconnecting state shows during normal
+                self-heal; manual Reconnect button only appears after the
+                auto-loop has been retrying for a while (true outage). */}
             {!deviceReady && (
               <div className="px-3 pb-2">
-                <div className="bg-[#FEF3C7] border border-[#FDE68A] rounded-xl px-3 py-2 flex items-center gap-2 text-[12px]">
-                  <span className={cn(
-                    'w-2 h-2 rounded-full flex-shrink-0',
-                    reconnecting ? 'bg-[#F59E0B] animate-pulse' : 'bg-[#EF4444]',
-                  )} />
-                  <span className="flex-1 text-[#92400E]">
-                    {reconnecting ? 'Reconnecting phone…' : 'Phone offline — click Reconnect to restore the call path.'}
+                <div className="bg-[#F3F3EE] border border-[#E5E7EB] rounded-xl px-3 py-2 flex items-center gap-2 text-[12px]">
+                  <span className="w-2 h-2 rounded-full flex-shrink-0 bg-[#F59E0B] animate-pulse" />
+                  <span className="flex-1 text-[#6B7280]">
+                    Reconnecting phone…
                   </span>
                   {!reconnecting && (
                     <button onClick={() => void reconnectDevice()}
-                      className="text-[11px] font-semibold text-white bg-[#1E9A80] hover:bg-[#1E9A80]/90 px-2.5 py-1 rounded-md">
-                      Reconnect
+                      className="text-[11px] font-semibold text-[#1E9A80] hover:bg-[#ECFDF5] px-2 py-1 rounded-md">
+                      Retry now
                     </button>
                   )}
                 </div>
