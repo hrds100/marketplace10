@@ -1184,22 +1184,32 @@ function WrapUpCard({ lead, endReason, durationSec, columns, suggestedId, applyi
         {/* Disposition grid — from pipeline columns (wk_pipeline_columns) */}
         <div className="px-4 py-2">
           <p className="text-[10px] font-semibold text-[#9CA3AF] uppercase tracking-wide mb-2">Custom Disposition</p>
-          <div className="grid grid-cols-2 gap-2">
-            {visibleCols.map(renderButton)}
-          </div>
-
-          {/* More Dispositions — inline expand */}
-          {moreCols.length > 0 && (
+          {columns.length === 0 ? (
+            <div className="text-[12px] text-[#92400E] bg-[#FEF3C7] border border-[#FDE68A] rounded-lg px-3 py-2 leading-relaxed">
+              No pipeline linked to this campaign. Open{' '}
+              <span className="font-semibold">Settings → Overview</span> for this
+              campaign and pick a pipeline so outcomes route correctly.
+            </div>
+          ) : (
             <>
-              <button onClick={() => setShowMore(!showMore)}
-                className="flex items-center gap-1.5 mt-2 text-[12px] font-medium text-[#6B7280] hover:text-[#1A1A1A]">
-                <ChevronDown className={cn('w-3.5 h-3.5 transition-transform', showMore && 'rotate-180')} />
-                {showMore ? 'Less' : 'More Dispositions'}
-              </button>
-              {showMore && (
-                <div className="grid grid-cols-2 gap-2 mt-2">
-                  {moreCols.map(renderButton)}
-                </div>
+              <div className="grid grid-cols-2 gap-2">
+                {visibleCols.map(renderButton)}
+              </div>
+
+              {/* More Dispositions — inline expand */}
+              {moreCols.length > 0 && (
+                <>
+                  <button onClick={() => setShowMore(!showMore)}
+                    className="flex items-center gap-1.5 mt-2 text-[12px] font-medium text-[#6B7280] hover:text-[#1A1A1A]">
+                    <ChevronDown className={cn('w-3.5 h-3.5 transition-transform', showMore && 'rotate-180')} />
+                    {showMore ? 'Less' : 'More Dispositions'}
+                  </button>
+                  {showMore && (
+                    <div className="grid grid-cols-2 gap-2 mt-2">
+                      {moreCols.map(renderButton)}
+                    </div>
+                  )}
+                </>
               )}
             </>
           )}

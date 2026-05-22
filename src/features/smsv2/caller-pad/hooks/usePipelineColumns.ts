@@ -1,6 +1,12 @@
 // Caller — usePipelineColumns.
-// Reads wk_pipeline_columns for a given pipeline_id (or all if null).
-// Used by OutcomeSelector + (later) PipelinesPage Kanban board.
+// Reads wk_pipeline_columns for a given pipeline_id.
+//
+// Pre-2026-05-22 a null pipelineId returned EVERY column from EVERY
+// pipeline (the "no filter" path). That broke the wrap-up disposition
+// grid for any campaign without pipeline_id set — agents saw all
+// pipelines' columns flattened. Now a null pipelineId returns an empty
+// array so call sites can render a "Link a pipeline to this campaign"
+// empty state instead of misleading buttons.
 
 import { useEffect, useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
@@ -27,12 +33,19 @@ export function usePipelineColumns(pipelineId: string | null) {
       setLoading(true);
       setError(null);
 
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      let q = (supabase.from('wk_pipeline_columns' as any) as any)
-        .select('id, pipeline_id, name, position, colour, icon, requires_followup')
-        .order('position', { ascending: true });
+      // 2026-05-22: short-circuit when no pipeline is selected so we
+      // don't accidentally surface a cross-pipeline column dump.
+      if (!pipelineId) {
+        setColumns([]);
+        setLoading(false);
+        return;
+      }
 
-      if (pipelineId) q = q.eq('pipeline_id', pipelineId);
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const q = (supabase.from('wk_pipeline_columns' as any) as any)
+        .select('id, pipeline_id, name, position, colour, icon, requires_followup')
+        .eq('pipeline_id', pipelineId)
+        .order('position', { ascending: true });
 
       const { data, error: e } = await q;
       if (cancelled) return;
