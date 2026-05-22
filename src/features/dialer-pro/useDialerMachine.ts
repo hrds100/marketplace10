@@ -135,46 +135,109 @@ export function useDialerMachine({ userId, campaignId, pipelineId, onToast }: Us
     return () => { cancelled = true; setDeviceReady(false); };
   }, []);
 
-  // 2026-05-22 (Hugo): background health-check so a silently-dropped
-  // Device doesn't leave the dialer stuck with "Start Dialer disabled
-  // and I don't know why". Every 30s we ask the SDK for its current
-  // state; if it's anything other than 'registered', we kick off
-  // ensureDeviceReady() which destroys + recreates. The 'unregistered'
-  // event listener inside twilio-voice.ts catches the obvious cases;
-  // this poll catches the corner cases the listener misses (transport
-  // dropped silently, browser tab suspended, etc.).
+  // 2026-05-22 (Hugo, round 2): fully automatic recovery. Three things
+  // working together so the agent never sees an offline phone:
+  //   • Fast health-check (every 8s while deviceReady=true) — detects
+  //     drops the 'unregistered' event listener missed.
+  //   • Instant reconnect-on-drop: any transition to deviceReady=false
+  //     (initial-mount failure, listener-triggered, health-check) fires
+  //     ensureDeviceReady() immediately, with exponential backoff.
+  //   • Backoff: 2s → 4s → 8s → 16s → 30s (cap). The toast surfaces
+  //     only after 3 failed attempts so transient blips don't pop noise.
+  const reconnectAttemptsRef = useRef(0);
+  const reconnectTimerRef = useRef<number | null>(null);
+
+  // Fast health-check while phone is up.
   useEffect(() => {
     if (!deviceReady) return;
     const id = window.setInterval(() => {
       const status = getDeviceStatus();
       if (status === 'registered') return;
-      console.warn('[dialer-pro] health-check: device state =', status, '— recovering');
-      setReconnecting(true);
-      void ensureDeviceReady()
-        .then((ok) => {
-          setDeviceReady(ok);
-          if (!ok) onToast('Phone offline — click Start Dialer to retry', 'error');
-        })
-        .finally(() => setReconnecting(false));
-    }, 30_000);
+      console.warn('[dialer-pro] health-check: device state =', status, '— flipping to recovering');
+      setDeviceReady(false); // triggers the auto-recover effect below
+    }, 8_000);
     return () => window.clearInterval(id);
+  }, [deviceReady]);
+
+  // Auto-recover loop. Runs whenever deviceReady is false (and the
+  // initial mount-effect has had a chance to try). On success we reset
+  // attempts; on failure we schedule the next attempt with backoff.
+  useEffect(() => {
+    if (deviceReady) {
+      reconnectAttemptsRef.current = 0;
+      if (reconnectTimerRef.current !== null) {
+        window.clearTimeout(reconnectTimerRef.current);
+        reconnectTimerRef.current = null;
+      }
+      return;
+    }
+    let cancelled = false;
+    const attempt = reconnectAttemptsRef.current;
+    // Skip the very first render where the initial-mount effect is
+    // still doing its own 4-retry boot. After that, take over.
+    if (attempt === 0 && !reconnecting) {
+      // schedule a quick first attempt so initial-mount has time to win
+      reconnectTimerRef.current = window.setTimeout(() => {
+        if (cancelled) return;
+        void tryReconnect();
+      }, 1_500);
+      return () => {
+        cancelled = true;
+        if (reconnectTimerRef.current !== null) {
+          window.clearTimeout(reconnectTimerRef.current);
+          reconnectTimerRef.current = null;
+        }
+      };
+    }
+    async function tryReconnect() {
+      if (cancelled) return;
+      setReconnecting(true);
+      const ok = await ensureDeviceReady().catch(() => false);
+      if (cancelled) return;
+      setReconnecting(false);
+      if (ok) {
+        setDeviceReady(true);
+        reconnectAttemptsRef.current = 0;
+        return;
+      }
+      reconnectAttemptsRef.current += 1;
+      const n = reconnectAttemptsRef.current;
+      // Surface a single toast once we've truly failed a few times.
+      if (n === 3) onToast('Phone reconnecting…', 'info');
+      if (n === 8) onToast('Phone offline — refresh the page if it keeps trying', 'error');
+      const delays = [2_000, 4_000, 8_000, 16_000, 30_000];
+      const delay = delays[Math.min(n - 1, delays.length - 1)];
+      reconnectTimerRef.current = window.setTimeout(() => {
+        if (!cancelled) void tryReconnect();
+      }, delay);
+    }
+    return () => {
+      cancelled = true;
+      if (reconnectTimerRef.current !== null) {
+        window.clearTimeout(reconnectTimerRef.current);
+        reconnectTimerRef.current = null;
+      }
+    };
+    // We intentionally exclude `reconnecting` from deps — the closure
+    // reads it once at the top to skip-during-initial-boot, but we
+    // don't want every reconnecting flip to re-create the schedule.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [deviceReady, onToast]);
 
-  // Manual reconnect — called by the UI when the agent clicks Start
-  // Dialer while deviceReady=false, so a stuck phone can recover
-  // without a hard refresh. Re-uses ensureDeviceReady's destroy+rebuild.
+  // Kept around for the (rare) case where an admin wants to force a
+  // manual retry — used by the optional "Reconnect" button in the UI
+  // shown only after the auto-loop has failed N times.
   const reconnectDevice = useCallback(async (): Promise<boolean> => {
+    reconnectAttemptsRef.current = 0;
     setReconnecting(true);
     try {
       const ok = await ensureDeviceReady();
       setDeviceReady(ok);
-      if (ok) onToast('Phone reconnected', 'success');
-      else onToast('Could not reconnect — try again or refresh the page', 'error');
       return ok;
     } finally {
       setReconnecting(false);
     }
-  }, [onToast]);
+  }, []);
 
   // Disconnect any active call on unmount (e.g. modal close). Without
   // this, a Call left on the shared Device singleton becomes a zombie
