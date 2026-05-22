@@ -775,9 +775,9 @@ function CampaignLeadsCsvPanel({
           <button
             onClick={() => {
               const csv =
-                'name,phone,email,company,notes\n' +
-                'Jane Doe,+447700900001,jane@example.com,Acme Lettings,Knows the area\n' +
-                'John Smith,+447700900002,,,\n';
+                'name,phone,email,property_address,property_url,company,notes\n' +
+                'Jane Doe,+447700900001,jane@example.com,12 Acacia Avenue London W1 5AB,https://www.rightmove.co.uk/properties/123,Acme Lettings,Knows the area\n' +
+                'John Smith,023 8210 9587,,5 High Street Manchester M1 1AA,https://example.com/listing/456,,\n';
               const blob = new Blob([csv], { type: 'text/csv;charset=utf-8' });
               const url = URL.createObjectURL(blob);
               const a = document.createElement('a');
@@ -800,7 +800,12 @@ function CampaignLeadsCsvPanel({
           <code className="bg-[#F3F3EE] px-1 rounded">mobile</code> /{' '}
           <code className="bg-[#F3F3EE] px-1 rounded">number</code> + optional{' '}
           <code className="bg-[#F3F3EE] px-1 rounded">name</code>,{' '}
-          <code className="bg-[#F3F3EE] px-1 rounded">email</code>. Anything else is stored as a custom field.
+          <code className="bg-[#F3F3EE] px-1 rounded">email</code>,{' '}
+          <code className="bg-[#F3F3EE] px-1 rounded">property_address</code> (also accepts{' '}
+          <em>address</em>, <em>street_address</em>, <em>location</em>),{' '}
+          <code className="bg-[#F3F3EE] px-1 rounded">property_url</code> (also accepts{' '}
+          <em>url</em>, <em>website</em>, <em>link</em>, <em>listing_url</em>).
+          Anything else is stored as a custom field under its column name.
           <br />
           The pipeline + initial stage selectors appear after you pick a file.
         </div>
