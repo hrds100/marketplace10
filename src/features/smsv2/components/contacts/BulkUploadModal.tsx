@@ -99,6 +99,16 @@ export default function BulkUploadModal({
   const [pipelineId, setPipelineId] = useState<string>('');
   const [stageId, setStageId] = useState<string>('');
 
+  // When opened with prefillCampaignId, follow the campaign's
+  // pipeline_id so contacts uploaded from a campaign's Leads tab
+  // ALWAYS land in that campaign's pipeline — not localStorage's
+  // last pick. Resolved once pipelines + campaigns have loaded.
+  const lockedPipelineId = useMemo(() => {
+    if (!prefillCampaignId) return null;
+    const c = campaigns.find((cc) => cc.id === prefillCampaignId);
+    return c?.pipelineId || null;
+  }, [campaigns, prefillCampaignId]);
+
   useEffect(() => {
     if (!open) return;
     let cancelled = false;
@@ -116,12 +126,27 @@ export default function BulkUploadModal({
       const rows = (data ?? []) as PipelineRow[];
       setPipelines(rows);
       if (rows.length === 0) return;
+      // Precedence: campaign-linked pipeline > localStorage > first.
+      if (lockedPipelineId && rows.some((r) => r.id === lockedPipelineId)) {
+        setPipelineId(lockedPipelineId);
+        return;
+      }
       const stored = typeof window !== 'undefined' ? localStorage.getItem(PIPELINE_LS_KEY) : null;
       const pick = stored && rows.find((p) => p.id === stored) ? stored : rows[0].id;
       setPipelineId(pick);
     })();
     return () => { cancelled = true; };
-  }, [open]);
+  }, [open, lockedPipelineId]);
+
+  // If the user navigates between campaigns (modal stays mounted), or
+  // the campaigns hook resolves AFTER the initial load, snap back to
+  // the locked pipeline. Cheap because pipelineId only updates when
+  // it actually differs.
+  useEffect(() => {
+    if (lockedPipelineId && pipelineId !== lockedPipelineId) {
+      setPipelineId(lockedPipelineId);
+    }
+  }, [lockedPipelineId, pipelineId]);
 
   // When pipelineId changes (or columns hydrate after the picker mounts),
   // reset stage to that pipeline's "New Leads" (or first column).
@@ -139,6 +164,7 @@ export default function BulkUploadModal({
   }, [columns, pipelineId]);
 
   const onPickPipeline = (id: string) => {
+    if (lockedPipelineId) return; // can't override the campaign's pipeline
     setPipelineId(id);
     try { localStorage.setItem(PIPELINE_LS_KEY, id); } catch { /* ignore */ }
   };
@@ -501,13 +527,20 @@ export default function BulkUploadModal({
                   <select
                     value={pipelineId}
                     onChange={(e) => onPickPipeline(e.target.value)}
-                    className="w-full px-3 py-2 text-[13px] border border-[#E5E7EB] rounded-[10px] bg-white"
+                    disabled={!!lockedPipelineId}
+                    className="w-full px-3 py-2 text-[13px] border border-[#E5E7EB] rounded-[10px] bg-white disabled:bg-[#F3F3EE] disabled:text-[#6B7280]"
                   >
                     {pipelines.length === 0 && <option value="">Loading…</option>}
                     {pipelines.map((p) => (
                       <option key={p.id} value={p.id}>{p.name}</option>
                     ))}
                   </select>
+                  {lockedPipelineId && (
+                    <div className="mt-1 flex items-center gap-1.5 text-[11px] text-[#1E9A80]">
+                      <Lock className="w-3 h-3" />
+                      Pinned by the campaign — uploads land in this pipeline
+                    </div>
+                  )}
                 </div>
                 <div>
                   <Label>Initial stage</Label>
