@@ -1,6 +1,6 @@
 import { useState, useMemo, useCallback, useEffect } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
-import { Search, Phone, MessageSquare, Mail, Flame, Pencil, Upload, Trash2, Download, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Search, Phone, MessageSquare, Mail, Flame, Pencil, Upload, Trash2, Download, ChevronLeft, ChevronRight, ExternalLink } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { formatPence, formatRelativeTime } from '../data/helpers';
 import StageSelector from '../components/shared/StageSelector';
@@ -359,20 +359,28 @@ export default function ContactsPage() {
                     {c.customFields?.property_address || '—'}
                   </td>
                   <td className="px-2 py-2.5 max-w-[200px]">
-                    {c.customFields?.property_url ? (
-                      <a
-                        href={c.customFields.property_url}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        onClick={(e) => e.stopPropagation()}
-                        className="text-[#1E9A80] hover:underline truncate inline-block max-w-full align-bottom"
-                        title={c.customFields.property_url}
-                      >
-                        {c.customFields.property_url.replace(/^https?:\/\//, '').replace(/^www\./, '')}
-                      </a>
-                    ) : (
-                      <span className="text-[#9CA3AF]">—</span>
-                    )}
+                    {(() => {
+                      const raw = c.customFields?.property_url?.trim();
+                      if (!raw) return <span className="text-[#9CA3AF]">—</span>;
+                      // Tolerate stored values that lack a protocol so the
+                      // anchor opens the real site instead of treating the
+                      // value as a relative path under hub.nfstay.com.
+                      const href = /^https?:\/\//i.test(raw) ? raw : `https://${raw}`;
+                      const display = raw.replace(/^https?:\/\//i, '').replace(/^www\./i, '');
+                      return (
+                        <a
+                          href={href}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          onClick={(e) => e.stopPropagation()}
+                          className="text-[#1E9A80] underline decoration-[#1E9A80]/40 hover:decoration-[#1E9A80] cursor-pointer truncate inline-flex items-center gap-1 max-w-full align-bottom"
+                          title={href}
+                        >
+                          <span className="truncate">{display}</span>
+                          <ExternalLink className="w-3 h-3 flex-shrink-0" strokeWidth={2} />
+                        </a>
+                      );
+                    })()}
                   </td>
                   <td className="px-2 py-2.5 text-right tabular-nums text-[#1A1A1A] font-medium">
                     {c.dealValuePence ? formatPence(c.dealValuePence) : '—'}
