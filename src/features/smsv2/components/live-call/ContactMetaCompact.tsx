@@ -10,7 +10,7 @@
 // "Interested" was rendering the same word twice. Filter out any tag
 // whose lowercase matches the stage label before rendering.
 
-import { Tag, Flame } from 'lucide-react';
+import { Tag, Flame, MapPin, ExternalLink } from 'lucide-react';
 import { useSmsV2 } from '../../store/SmsV2Store';
 import { formatPence, formatRelativeTime } from '../../data/helpers';
 import type { Contact } from '../../types';
@@ -32,8 +32,43 @@ export default function ContactMetaCompact({ contact }: Props) {
     ? formatRelativeTime(contact.lastContactAt)
     : 'Never';
 
+  // Property fields (custom_fields.property_address / property_url) so
+  // agents see the listing context during a live call without having
+  // to jump back to /crm/contacts.
+  const propertyAddress = contact.customFields?.property_address?.trim() || '';
+  const rawPropertyUrl = contact.customFields?.property_url?.trim() || '';
+  const propertyUrl = rawPropertyUrl
+    ? (/^https?:\/\//i.test(rawPropertyUrl) ? rawPropertyUrl : `https://${rawPropertyUrl}`)
+    : '';
+  const propertyUrlLabel = rawPropertyUrl
+    .replace(/^https?:\/\//i, '')
+    .replace(/^www\./i, '');
+
   return (
     <div className="space-y-1.5">
+      {/* Property address + URL — only render when one or both are set. */}
+      {(propertyAddress || propertyUrl) && (
+        <div className="space-y-1 pb-1.5 border-b border-[#E5E7EB]/70">
+          {propertyAddress && (
+            <div className="flex items-start gap-1.5 text-[11px] text-[#1A1A1A]">
+              <MapPin className="w-3 h-3 mt-0.5 flex-shrink-0 text-[#1E9A80]" />
+              <span className="truncate" title={propertyAddress}>{propertyAddress}</span>
+            </div>
+          )}
+          {propertyUrl && (
+            <a
+              href={propertyUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex items-start gap-1.5 text-[11px] text-[#1E9A80] underline decoration-[#1E9A80]/40 hover:decoration-[#1E9A80] cursor-pointer"
+              title={propertyUrl}
+            >
+              <ExternalLink className="w-3 h-3 mt-0.5 flex-shrink-0" />
+              <span className="truncate">{propertyUrlLabel}</span>
+            </a>
+          )}
+        </div>
+      )}
       {/* Inline meta: Stage + Last contact, separated by a thin dot. */}
       <div className="flex items-center gap-2 text-[11px] text-[#1A1A1A] flex-wrap">
         <span className="inline-flex items-center gap-1.5 min-w-0">
