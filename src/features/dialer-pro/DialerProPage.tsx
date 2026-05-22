@@ -108,7 +108,7 @@ export function DialerProContent({ autoCallContactId, pipelineColumnId, onAutoCa
   );
 
   // Pipeline columns for disposition (wired to /crm/pipelines)
-  const { columns: outcomeColumns } = usePipelineColumns(camp?.pipelineId ?? null);
+  const { columns: outcomeColumns, loading: outcomeColumnsLoading } = usePipelineColumns(camp?.pipelineId ?? null);
   const spend = useSpendLimit();
   const ks = useKillSwitch();
 
@@ -858,6 +858,8 @@ export function DialerProContent({ autoCallContactId, pipelineColumnId, onAutoCa
               endReason={state.endReason}
               durationSec={state.durationSec}
               columns={outcomeColumns}
+              columnsLoading={outcomeColumnsLoading}
+              campaignPipelineId={camp?.pipelineId ?? null}
               suggestedId={suggestedOutcomeId}
               applying={machine.applying}
               onNext={handleWrapUpNext}
@@ -1111,6 +1113,14 @@ interface WrapUpCardProps {
   endReason: string | null;
   durationSec: number | null;
   columns: PipelineColumnRow[];
+  /** True while usePipelineColumns is still fetching. Lets us show a
+   *  spinner instead of the "No pipeline linked" hint during the
+   *  brief window between call-ended and columns-resolved. */
+  columnsLoading?: boolean;
+  /** Resolved pipeline_id for the campaign. Used to disambiguate the
+   *  empty-state copy: null → "Link a pipeline"; set but no columns →
+   *  "Pipeline has no columns". */
+  campaignPipelineId?: string | null;
   suggestedId: string | null;
   applying: boolean;
   onNext: (columnId: string | null, notes: string) => void;
@@ -1124,7 +1134,7 @@ interface WrapUpCardProps {
   onMinimize: () => void;
 }
 
-function WrapUpCard({ lead, endReason, durationSec, columns, suggestedId, applying, onNext, onSkip, onRedial, onPause, onSendAgreement, onDragStart, onDragMove, onDragEnd, onMinimize }: WrapUpCardProps) {
+function WrapUpCard({ lead, endReason, durationSec, columns, columnsLoading = false, campaignPipelineId = null, suggestedId, applying, onNext, onSkip, onRedial, onPause, onSendAgreement, onDragStart, onDragMove, onDragEnd, onMinimize }: WrapUpCardProps) {
   const [pickedId, setPickedId] = useState<string | null>(suggestedId);
   const [notes, setNotes] = useState('');
   const [showMore, setShowMore] = useState(false);
@@ -1208,11 +1218,24 @@ function WrapUpCard({ lead, endReason, durationSec, columns, suggestedId, applyi
         <div className="px-4 py-2">
           <p className="text-[10px] font-semibold text-[#9CA3AF] uppercase tracking-wide mb-2">Custom Disposition</p>
           {columns.length === 0 ? (
-            <div className="text-[12px] text-[#92400E] bg-[#FEF3C7] border border-[#FDE68A] rounded-lg px-3 py-2 leading-relaxed">
-              No pipeline linked to this campaign. Open{' '}
-              <span className="font-semibold">Settings → Overview</span> for this
-              campaign and pick a pipeline so outcomes route correctly.
-            </div>
+            columnsLoading ? (
+              <div className="text-[12px] text-[#6B7280] bg-[#F3F3EE] rounded-lg px-3 py-2 flex items-center gap-2">
+                <span className="w-3 h-3 rounded-full border-2 border-[#1E9A80] border-t-transparent animate-spin" />
+                Loading pipeline stages…
+              </div>
+            ) : !campaignPipelineId ? (
+              <div className="text-[12px] text-[#92400E] bg-[#FEF3C7] border border-[#FDE68A] rounded-lg px-3 py-2 leading-relaxed">
+                No pipeline linked to this campaign. Open{' '}
+                <span className="font-semibold">Settings → Overview</span> for
+                this campaign and pick a pipeline so outcomes route correctly.
+              </div>
+            ) : (
+              <div className="text-[12px] text-[#92400E] bg-[#FEF3C7] border border-[#FDE68A] rounded-lg px-3 py-2 leading-relaxed">
+                The linked pipeline has no columns yet. Open{' '}
+                <span className="font-semibold">Settings → Pipelines</span> and
+                add stages so outcomes can be saved.
+              </div>
+            )
           ) : (
             <>
               <div className="grid grid-cols-2 gap-2">
