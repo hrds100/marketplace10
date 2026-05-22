@@ -459,7 +459,7 @@ function WorkspaceBundle({ tab, onTabChange }: { tab: string; onTabChange: (t: s
           </button>
         ))}
       </div>
-      {validTab === 'pipelines' && <PipelinesTab />}
+      {validTab === 'pipelines' && <PipelinesTab campaignId={null} />}
       {validTab === 'templates' && <TemplatesTab />}
       {validTab === 'ai' && <UnifiedCoachTab campaignId={null} />}
     </>
@@ -516,7 +516,7 @@ function CampaignBundle({
         ))}
       </div>
       {validTab === 'overview' && <CampaignOverviewTab campaignId={campaignId} />}
-      {validTab === 'pipelines' && <PipelinesTab />}
+      {validTab === 'pipelines' && <PipelinesTab campaignId={campaignId} />}
       {validTab === 'templates' && <TemplatesTab campaignId={campaignId} />}
       {validTab === 'ai' && <UnifiedCoachTab campaignId={campaignId} />}
       {validTab === 'agents' && <CampaignAgentsPanelStandalone campaignId={campaignId} />}
@@ -642,10 +642,48 @@ function CampaignBundleHeader({
 function CampaignOverviewTab({ campaignId }: { campaignId: string }) {
   const { campaigns, refetch } = useDialerCampaigns({ includeInactive: true });
   const camp = campaigns.find((c) => c.id === campaignId);
+  const [pipelines, setPipelines] = useState<WkPipelineRow[]>([]);
+
+  useEffect(() => {
+    let cancelled = false;
+    void (async () => {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const { data } = await (supabase.from('wk_pipelines' as any) as any)
+        .select('id, name')
+        .eq('is_active', true)
+        .order('created_at', { ascending: true });
+      if (!cancelled) setPipelines((data ?? []) as WkPipelineRow[]);
+    })();
+    return () => { cancelled = true; };
+  }, []);
+
   if (!camp) return null;
   return (
     <Card title="Settings" hint="Per-campaign defaults that the dialer uses on Start">
       <div className="grid grid-cols-2 gap-3">
+        <div className="col-span-2">
+          <Label>Pipeline</Label>
+          <select
+            value={camp.pipelineId || ''}
+            onChange={async (e) => {
+              const next = e.target.value || null;
+              // eslint-disable-next-line @typescript-eslint/no-explicit-any
+              await (supabase.from('wk_dialer_campaigns' as any) as any)
+                .update({ pipeline_id: next })
+                .eq('id', campaignId);
+              refetch();
+            }}
+            className="w-full px-2 py-1.5 text-[13px] border border-[#E5E7EB] rounded-[8px] bg-white"
+          >
+            <option value="">— none —</option>
+            {pipelines.map((p) => (
+              <option key={p.id} value={p.id}>{p.name}</option>
+            ))}
+          </select>
+          <div className="text-[11px] text-[#6B7280] mt-1">
+            Outcome buttons + queue routing on the dialer use this pipeline's columns.
+          </div>
+        </div>
         <div>
           <Label>Parallel lines (1–5)</Label>
           <input
@@ -877,10 +915,69 @@ function Card({
 }
 
 // ─── Pipelines tab — fully editable ────────────────────────────────
-function PipelinesTab() {
-  const { columns: cols, patchColumn, upsertColumn, removeColumn } = useSmsV2();
+interface WkPipelineRow {
+  id: string;
+  name: string;
+}
+
+const SETTINGS_PIPELINES_LS_KEY = 'crm_settings_pipelines_selected_id';
+
+function PipelinesTab({ campaignId }: { campaignId: string | null }) {
+  const { columns: allCols, patchColumn, upsertColumn, removeColumn } = useSmsV2();
   const persist = useColumnPersistence();
   const [expandedId, setExpandedId] = useState<string | null>(null);
+  const { campaigns } = useDialerCampaigns({ includeInactive: true });
+
+  // Pipeline picker — was missing before, so the tab rendered every
+  // column across every pipeline as one giant list, the same
+  // PipelinesPage flatten bug. In campaign scope we auto-lock to the
+  // campaign's linked pipeline. In workspace scope the admin picks.
+  const [pipelines, setPipelines] = useState<WkPipelineRow[]>([]);
+  const campaignPipelineId = useMemo(() => {
+    if (!campaignId) return null;
+    const c = campaigns.find((c) => c.id === campaignId);
+    return c?.pipelineId || null;
+  }, [campaigns, campaignId]);
+  const [pickedPipelineId, setPickedPipelineId] = useState<string>('');
+
+  useEffect(() => {
+    let cancelled = false;
+    void (async () => {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const { data, error } = await (supabase.from('wk_pipelines' as any) as any)
+        .select('id, name')
+        .eq('is_active', true)
+        .order('created_at', { ascending: true });
+      if (cancelled || error) return;
+      setPipelines((data ?? []) as WkPipelineRow[]);
+    })();
+    return () => { cancelled = true; };
+  }, []);
+
+  // Resolve the active pipeline: campaign-locked > localStorage > first.
+  const activePipelineId = useMemo(() => {
+    if (campaignPipelineId) return campaignPipelineId;
+    if (pickedPipelineId) return pickedPipelineId;
+    const stored = typeof window !== 'undefined'
+      ? localStorage.getItem(SETTINGS_PIPELINES_LS_KEY)
+      : null;
+    if (stored && pipelines.some((p) => p.id === stored)) return stored;
+    return pipelines[0]?.id ?? null;
+  }, [campaignPipelineId, pickedPipelineId, pipelines]);
+
+  const onPickPipeline = (id: string) => {
+    setPickedPipelineId(id);
+    try { localStorage.setItem(SETTINGS_PIPELINES_LS_KEY, id); } catch { /* ignore */ }
+  };
+
+  // Only show columns for the active pipeline. Falls back to everything
+  // if we haven't resolved yet (transient).
+  const cols = useMemo(() => {
+    if (!activePipelineId) return allCols;
+    return allCols.filter((c) => c.pipelineId === activePipelineId);
+  }, [allCols, activePipelineId]);
+
+  const activePipelineName = pipelines.find((p) => p.id === activePipelineId)?.name ?? '—';
   // PR 90: real templates from wk_sms_templates (was iterating MOCK_TEMPLATES,
   // so admin couldn't see actual templates in the stage-automation dropdown).
   const { items: realTemplates } = useSmsTemplates();
@@ -959,7 +1056,7 @@ function PipelinesTab() {
 
   const addColumn = async () => {
     const tempId = `col-new-${Date.now()}`;
-    const realPipelineId = cols[0]?.pipelineId ?? ACTIVE_PIPELINE.id;
+    const realPipelineId = activePipelineId ?? cols[0]?.pipelineId ?? ACTIVE_PIPELINE.id;
     const draft: PipelineColumn = {
       id: tempId,
       pipelineId: realPipelineId,
@@ -1003,10 +1100,34 @@ function PipelinesTab() {
   return (
     <>
       <Card
+        title="Pipeline"
+        hint={campaignPipelineId
+          ? `Locked to "${activePipelineName}" — change it on the Overview tab to switch this campaign to a different pipeline.`
+          : 'Choose which pipeline you are editing. Only this pipeline\'s columns appear below.'}
+      >
+        <select
+          value={activePipelineId ?? ''}
+          onChange={(e) => onPickPipeline(e.target.value)}
+          disabled={!!campaignPipelineId}
+          className="w-full max-w-md px-3 py-2 text-[13px] border border-[#E5E7EB] rounded-[10px] bg-white disabled:bg-[#F3F3EE] disabled:text-[#6B7280]"
+        >
+          {pipelines.length === 0 && <option value="">Loading…</option>}
+          {pipelines.map((p) => (
+            <option key={p.id} value={p.id}>{p.name}</option>
+          ))}
+        </select>
+      </Card>
+
+      <Card
         title="Pipeline columns = outcome buttons (CRITICAL)"
         hint="Click a row to edit automations · drag rows or use ↑↓ to reorder · 1–9 = keyboard"
       >
         <div className="space-y-2">
+          {cols.length === 0 && (
+            <div className="text-[12px] text-[#6B7280] italic">
+              No columns in this pipeline yet. Click "Add column" below.
+            </div>
+          )}
           {[...cols].sort((a, b) => a.position - b.position).map((col, idx, sortedArr) => {
             const Icon = ICON_MAP[col.icon] ?? Sparkles;
             const a = col.automation;
