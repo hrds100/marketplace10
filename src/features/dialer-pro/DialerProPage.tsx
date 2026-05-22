@@ -119,7 +119,7 @@ export function DialerProContent({ autoCallContactId, pipelineColumnId, onAutoCa
     pipelineId: camp?.pipelineId ?? null,
     onToast,
   });
-  const { state, deviceReady } = machine;
+  const { state, deviceReady, reconnecting, reconnectDevice } = machine;
 
   // Refresh call history when a call wraps up or outcome is saved
   const queryClient = useQueryClient();
@@ -303,15 +303,23 @@ export function DialerProContent({ autoCallContactId, pipelineColumnId, onAutoCa
     return null;
   }, [state.phase, state.endReason, state.durationSec, outcomeColumns, contact?.pipelineColumnId, pipelineColumnId]);
 
-  // Start dialer
+  // Start dialer. 2026-05-22 (Hugo): when deviceReady is false (phone
+  // dropped silently), attempt reconnect inline instead of bouncing
+  // the user off a disabled button — that was the recurring "Start
+  // Dialer doesn't work, hard refresh fixes it" symptom.
   const startDialer = useCallback(async () => {
-    if (!camp || !deviceReady) { onToast('Phone is starting up — try again', 'error'); return; }
+    if (!camp) { onToast('Pick a campaign first', 'error'); return; }
+    if (!deviceReady) {
+      onToast('Phone is reconnecting — please wait…', 'info');
+      const ok = await reconnectDevice();
+      if (!ok) return;
+    }
     if (spend.isLimitReached) { onToast('Daily spend limit reached', 'error'); return; }
     if (ks.allDialers) { onToast('All dialers paused (kill switch)', 'error'); return; }
     const next = await machine.pickNextLead(queue);
     if (!next) { onToast('No leads in queue', 'info'); return; }
     void machine.dialLead(next);
-  }, [camp, deviceReady, spend.isLimitReached, ks.allDialers, machine, queue, onToast]);
+  }, [camp, deviceReady, reconnectDevice, spend.isLimitReached, ks.allDialers, machine, queue, onToast]);
 
   // Live call timer
   const [liveDuration, setLiveDuration] = useState(0);
@@ -679,11 +687,37 @@ export function DialerProContent({ autoCallContactId, pipelineColumnId, onAutoCa
               )}
             </div>
 
-            {/* Start / Resume / Dial next button */}
+            {/* Phone offline banner — actionable reconnect, no more silent disable */}
+            {!deviceReady && (
+              <div className="px-3 pb-2">
+                <div className="bg-[#FEF3C7] border border-[#FDE68A] rounded-xl px-3 py-2 flex items-center gap-2 text-[12px]">
+                  <span className={cn(
+                    'w-2 h-2 rounded-full flex-shrink-0',
+                    reconnecting ? 'bg-[#F59E0B] animate-pulse' : 'bg-[#EF4444]',
+                  )} />
+                  <span className="flex-1 text-[#92400E]">
+                    {reconnecting ? 'Reconnecting phone…' : 'Phone offline — click Reconnect to restore the call path.'}
+                  </span>
+                  {!reconnecting && (
+                    <button onClick={() => void reconnectDevice()}
+                      className="text-[11px] font-semibold text-white bg-[#1E9A80] hover:bg-[#1E9A80]/90 px-2.5 py-1 rounded-md">
+                      Reconnect
+                    </button>
+                  )}
+                </div>
+              </div>
+            )}
+
+            {/* Start / Resume / Dial next button.
+                2026-05-22 (Hugo): button no longer disables on !deviceReady —
+                startDialer() now triggers an inline reconnect when the phone
+                is down, so the agent doesn't get the "button greyed out and
+                I don't know why" failure mode. Spend/kill-switch/empty-queue
+                still disable as before. */}
             <div className="px-3 pb-3">
               {state.phase === 'paused' ? (
                 <div className="flex gap-2">
-                  <button onClick={() => { machine.resume(); void startDialer(); }} disabled={blocked}
+                  <button onClick={() => { machine.resume(); void startDialer(); }} disabled={spend.isLimitReached || ks.allDialers || reconnecting}
                     className="flex-1 flex items-center justify-center gap-2 bg-[#1E9A80] hover:bg-[#1E9A80]/90 text-white text-[14px] font-semibold py-3 rounded-xl transition-colors shadow-[0_4px_12px_rgba(30,154,128,0.35)] disabled:opacity-50">
                     <Play className="w-4 h-4" /> Resume
                   </button>
@@ -693,7 +727,7 @@ export function DialerProContent({ autoCallContactId, pipelineColumnId, onAutoCa
                   </button>
                 </div>
               ) : (
-                <button onClick={() => void startDialer()} disabled={blocked || !camp || queue.length === 0}
+                <button onClick={() => void startDialer()} disabled={spend.isLimitReached || ks.allDialers || !camp || queue.length === 0 || reconnecting}
                   className="w-full flex items-center justify-center gap-2 bg-[#1E9A80] hover:bg-[#1E9A80]/90 text-white text-[14px] font-semibold py-3 rounded-xl transition-colors shadow-[0_4px_12px_rgba(30,154,128,0.35)] disabled:opacity-50 disabled:cursor-not-allowed">
                   <Phone className="w-4 h-4" /> {state.sessionStarted ? 'Dial next' : 'Start dialer'}
                 </button>

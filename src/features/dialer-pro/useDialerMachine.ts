@@ -2,7 +2,7 @@ import { useCallback, useEffect, useReducer, useRef, useState } from 'react';
 import type { Call as TwilioCall } from '@twilio/voice-sdk';
 import { supabase } from '@/integrations/supabase/client';
 import {
-  createDevice, dial as twilioDial, disconnectAllCalls,
+  createDevice, dial as twilioDial, disconnectAllCalls, ensureDeviceReady, getDeviceStatus,
   disconnectAllCallsAndWait, muteAllCalls, getDeviceCalls,
   addTokenRefreshFailListener,
 } from '@/core/integrations/twilio-voice';
@@ -114,6 +114,7 @@ export function useDialerMachine({ userId, campaignId, pipelineId, onToast }: Us
 
   // Twilio Device lifecycle — retry up to 4 times with 2s delay
   const [deviceReady, setDeviceReady] = useState(false);
+  const [reconnecting, setReconnecting] = useState(false);
   useEffect(() => {
     let cancelled = false;
     void (async () => {
@@ -133,6 +134,47 @@ export function useDialerMachine({ userId, campaignId, pipelineId, onToast }: Us
     })();
     return () => { cancelled = true; setDeviceReady(false); };
   }, []);
+
+  // 2026-05-22 (Hugo): background health-check so a silently-dropped
+  // Device doesn't leave the dialer stuck with "Start Dialer disabled
+  // and I don't know why". Every 30s we ask the SDK for its current
+  // state; if it's anything other than 'registered', we kick off
+  // ensureDeviceReady() which destroys + recreates. The 'unregistered'
+  // event listener inside twilio-voice.ts catches the obvious cases;
+  // this poll catches the corner cases the listener misses (transport
+  // dropped silently, browser tab suspended, etc.).
+  useEffect(() => {
+    if (!deviceReady) return;
+    const id = window.setInterval(() => {
+      const status = getDeviceStatus();
+      if (status === 'registered') return;
+      console.warn('[dialer-pro] health-check: device state =', status, '— recovering');
+      setReconnecting(true);
+      void ensureDeviceReady()
+        .then((ok) => {
+          setDeviceReady(ok);
+          if (!ok) onToast('Phone offline — click Start Dialer to retry', 'error');
+        })
+        .finally(() => setReconnecting(false));
+    }, 30_000);
+    return () => window.clearInterval(id);
+  }, [deviceReady, onToast]);
+
+  // Manual reconnect — called by the UI when the agent clicks Start
+  // Dialer while deviceReady=false, so a stuck phone can recover
+  // without a hard refresh. Re-uses ensureDeviceReady's destroy+rebuild.
+  const reconnectDevice = useCallback(async (): Promise<boolean> => {
+    setReconnecting(true);
+    try {
+      const ok = await ensureDeviceReady();
+      setDeviceReady(ok);
+      if (ok) onToast('Phone reconnected', 'success');
+      else onToast('Could not reconnect — try again or refresh the page', 'error');
+      return ok;
+    } finally {
+      setReconnecting(false);
+    }
+  }, [onToast]);
 
   // Disconnect any active call on unmount (e.g. modal close). Without
   // this, a Call left on the shared Device singleton becomes a zombie
@@ -420,6 +462,8 @@ export function useDialerMachine({ userId, campaignId, pipelineId, onToast }: Us
     state,
     dispatch,
     deviceReady,
+    reconnecting,
+    reconnectDevice,
     applying,
     dialLead,
     pickNextLead,

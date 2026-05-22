@@ -298,6 +298,18 @@ export async function createDevice(): Promise<DeviceHandle> {
     console.info('[twilio-voice] tokenWillExpire — refreshing');
     void refreshDeviceToken('tokenWillExpire');
   });
+  // 2026-05-22 (Hugo): the SDK fires 'unregistered' when the WebSocket
+  // drops without an explicit error code (network blip, gateway
+  // failover, etc.). Before, we never caught this — Device.state went
+  // to 'unregistered' but our deviceReady React state stayed true,
+  // leaving the dialer "ready" UI but no actual call path. Now we
+  // try a token refresh + re-register; ensureDeviceReady() also
+  // polls in the background to catch any case this listener misses.
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  (d as any).on?.('unregistered', () => {
+    console.warn('[twilio-voice] device unregistered — attempting re-register');
+    void refreshDeviceToken('unregistered');
+  });
 
   // Inbound calls — wk-voice-twiml-incoming routes a PSTN ring to a Client
   // identity. The agent's browser receives an 'incoming' Call here. We
@@ -713,6 +725,43 @@ export function getDeviceStatus(): string | null {
     return ((device as any).state as string) ?? null;
   } catch {
     return null;
+  }
+}
+
+/**
+ * 2026-05-22 (Hugo): defensive recovery primitive used by the dialer to
+ * keep the Twilio Device alive across long idle windows. Returns true
+ * if the device is currently registered (or got recovered to that
+ * state), false if recovery failed.
+ *
+ * Behaviour:
+ *   • No device exists yet → call createDevice() (4-retry already
+ *     baked into the caller's mount-effect, so we only try once here).
+ *   • Device exists and state === 'registered' → no-op, return true.
+ *   • Device exists but state is 'unregistered' / 'destroyed' / null
+ *     → tear it down via destroyDevice() and rebuild via createDevice().
+ *     Mirrors the manual hard-refresh that has been the workaround.
+ */
+export async function ensureDeviceReady(): Promise<boolean> {
+  if (!device) {
+    try {
+      await createDevice();
+      return getDeviceStatus() === 'registered';
+    } catch (e) {
+      console.warn('[twilio-voice] ensureDeviceReady: createDevice failed', e);
+      return false;
+    }
+  }
+  const status = getDeviceStatus();
+  if (status === 'registered') return true;
+  console.warn('[twilio-voice] ensureDeviceReady: device state =', status, '— recreating');
+  try {
+    await destroyDevice();
+    await createDevice();
+    return getDeviceStatus() === 'registered';
+  } catch (e) {
+    console.warn('[twilio-voice] ensureDeviceReady: recreate failed', e);
+    return false;
   }
 }
 
