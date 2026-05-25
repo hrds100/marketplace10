@@ -5,6 +5,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { usePipeline, useCallAnswers } from "./hooks/usePipeline";
+import { usePushToCrm } from "./hooks/usePushToCrm";
 import { QuestionnaireForm } from "./components/QuestionnaireForm";
 import { FloorPlanViewer } from "./components/FloorPlanViewer";
 import { filterRent, filterSaleTarget, parsePrice, fmt } from "./lib/gdv";
@@ -122,10 +123,22 @@ function CardDetail({
 }) {
   const { answers, saveAnswers } = useCallAnswers(card.id);
   const { floorplans, comps } = useCardExtras(card.property_id);
+  const { push } = usePushToCrm();
   const [suggestion, setSuggestion] = useState<{ stage: PipelineStage; reason: string } | null>(null);
   const [agentName, setAgentName] = useState(card.agent_name ?? "");
   const [agentPhone, setAgentPhone] = useState(card.agent_phone ?? "");
   const [notes, setNotes] = useState(card.notes ?? "");
+  const [pushing, setPushing] = useState(false);
+  const [pushError, setPushError] = useState<string | null>(null);
+
+  async function handlePushToCrm() {
+    setPushing(true);
+    setPushError(null);
+    const result = await push(card);
+    setPushing(false);
+    if (!result.ok) setPushError(result.error);
+    // On success, push() already navigated to /crm/dialer-pro
+  }
 
   const compsSummary = useMemo(() => {
     const sold = filterSaleTarget(comps).map((c) => parsePrice(c.price)).filter((v) => v > 0);
@@ -234,8 +247,28 @@ function CardDetail({
                 value={agentPhone}
                 onChange={(e) => setAgentPhone(e.target.value)}
                 onBlur={() => onUpdateCall({ agent_phone: agentPhone })}
-                className="w-full px-2 py-1.5 border border-slate-300 rounded text-sm"
+                className="w-full px-2 py-1.5 border border-slate-300 rounded text-sm mb-2"
               />
+              <button
+                type="button"
+                onClick={handlePushToCrm}
+                disabled={pushing || !agentPhone}
+                className={`w-full px-2 py-2 rounded text-sm font-semibold transition ${
+                  pushing
+                    ? "bg-slate-200 text-slate-400 cursor-wait"
+                    : agentPhone
+                    ? "bg-emerald-500 hover:bg-emerald-600 text-white"
+                    : "bg-slate-200 text-slate-400 cursor-not-allowed"
+                }`}
+              >
+                {pushing ? "Pushing to CRM…" : "📞 Push to CRM dialer"}
+              </button>
+              <p className="text-[10px] text-slate-400 mt-1.5 leading-tight">
+                Opens /crm/dialer-pro with this agent queued in the BRRRR campaign. Twilio dials from there.
+              </p>
+              {pushError && (
+                <p className="text-[10px] text-rose-600 mt-1.5">{pushError}</p>
+              )}
             </section>
 
             <section className="bg-slate-50 rounded-lg p-3">
