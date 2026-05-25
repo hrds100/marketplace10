@@ -17,7 +17,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
 import { NfsLogo } from '@/components/nfstay/NfsLogo';
 
-const FULL_BLEED_ROUTES = ['/dashboard/deals', '/tinder'];
+const FULL_BLEED_ROUTES = ['/dashboard/deals'];
 const INVEST_ROUTES_PREFIX = '/dashboard/invest';
 
 export interface DashboardContext {
