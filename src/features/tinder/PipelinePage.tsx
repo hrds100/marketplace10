@@ -1,11 +1,36 @@
 // Kanban board for the BRRRR calling pipeline.
-// Click a card → expand for property details + VA questionnaire + stage controls.
+// Click a card → expand for property details + floor plans + comps summary
+// + VA questionnaire + stage controls (matches TAJU-BUILD-BRIEF Phase 2 spec).
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
+import { supabase } from "@/integrations/supabase/client";
 import { usePipeline, useCallAnswers } from "./hooks/usePipeline";
 import { QuestionnaireForm } from "./components/QuestionnaireForm";
+import { FloorPlanViewer } from "./components/FloorPlanViewer";
+import { filterRent, filterSaleTarget, parsePrice, fmt } from "./lib/gdv";
 import { PIPELINE_STAGES, STAGE_LABEL } from "./types";
-import type { PipelineStage, PipelineCard } from "./types";
+import type { BrrrrComp, BrrrrFloorplan, PipelineStage, PipelineCard } from "./types";
+
+const t = (name: string) => (supabase.from as any)(name);
+
+function useCardExtras(property_id: string) {
+  const [floorplans, setFloorplans] = useState<BrrrrFloorplan[]>([]);
+  const [comps, setComps] = useState<BrrrrComp[]>([]);
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      const [{ data: fps }, { data: cs }] = await Promise.all([
+        t("brrrr_floorplans").select("*").eq("property_id", property_id).order("page_number", { ascending: true }),
+        t("brrrr_comps").select("*").eq("property_id", property_id),
+      ]);
+      if (cancelled) return;
+      setFloorplans(((fps as BrrrrFloorplan[] | null) ?? []));
+      setComps(((cs as BrrrrComp[] | null) ?? []));
+    })();
+    return () => { cancelled = true; };
+  }, [property_id]);
+  return { floorplans, comps };
+}
 
 const STAGE_COLOR: Record<PipelineStage, string> = {
   to_call: "bg-slate-100 text-slate-700",
@@ -96,10 +121,23 @@ function CardDetail({
   onUpdateCall: (patch: Partial<PipelineCard>) => Promise<void>;
 }) {
   const { answers, saveAnswers } = useCallAnswers(card.id);
+  const { floorplans, comps } = useCardExtras(card.property_id);
   const [suggestion, setSuggestion] = useState<{ stage: PipelineStage; reason: string } | null>(null);
   const [agentName, setAgentName] = useState(card.agent_name ?? "");
   const [agentPhone, setAgentPhone] = useState(card.agent_phone ?? "");
   const [notes, setNotes] = useState(card.notes ?? "");
+
+  const compsSummary = useMemo(() => {
+    const sold = filterSaleTarget(comps).map((c) => parsePrice(c.price)).filter((v) => v > 0);
+    const rent = filterRent(comps).map((c) => parsePrice(c.price)).filter((v) => v > 0);
+    const avg = (xs: number[]) => (xs.length ? Math.round(xs.reduce((a, b) => a + b, 0) / xs.length) : 0);
+    return {
+      soldCount: sold.length,
+      soldAvg: avg(sold),
+      rentCount: rent.length,
+      rentAvg: avg(rent),
+    };
+  }, [comps]);
 
   return (
     <div className="fixed inset-0 bg-slate-900/60 z-50 flex items-center justify-center p-4">
@@ -157,6 +195,31 @@ function CardDetail({
           </div>
 
           <aside className="space-y-4">
+            <section className="bg-slate-50 rounded-lg overflow-hidden">
+              <h4 className="px-3 pt-3 text-xs font-semibold uppercase tracking-wide text-slate-600">Floor plan</h4>
+              <div className="h-56 bg-white">
+                <FloorPlanViewer floorplans={floorplans} />
+              </div>
+            </section>
+
+            <section className="bg-slate-50 rounded-lg p-3">
+              <h4 className="text-xs font-semibold uppercase tracking-wide text-slate-600 mb-2">Comps summary</h4>
+              {compsSummary.soldCount === 0 && compsSummary.rentCount === 0 ? (
+                <p className="text-xs text-slate-400">No comps fetched yet for this property.</p>
+              ) : (
+                <ul className="text-xs space-y-1">
+                  <li className="flex justify-between">
+                    <span className="text-slate-500">Target-bed sold avg ({compsSummary.soldCount})</span>
+                    <span className="font-medium text-slate-800">{compsSummary.soldAvg ? fmt(compsSummary.soldAvg) : "—"}</span>
+                  </li>
+                  <li className="flex justify-between">
+                    <span className="text-slate-500">Rent avg ({compsSummary.rentCount})</span>
+                    <span className="font-medium text-slate-800">{compsSummary.rentAvg ? `${fmt(compsSummary.rentAvg)} pcm` : "—"}</span>
+                  </li>
+                </ul>
+              )}
+            </section>
+
             <section className="bg-slate-50 rounded-lg p-3">
               <h4 className="text-xs font-semibold uppercase tracking-wide text-slate-600 mb-2">Agent</h4>
               <input
