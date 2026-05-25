@@ -37,6 +37,7 @@ import { useSmsV2 } from '@/features/smsv2/store/SmsV2Store';
 import { useContactPersistence } from '@/features/smsv2/hooks/useContactPersistence';
 import EditableName from '@/features/smsv2/components/contacts/EditableName';
 import SendAgreementModal from '@/features/agreements/components/SendAgreementModal';
+import BrrrrCallPanel from '@/features/tinder/components/BrrrrCallPanel';
 import { useDialerMachine } from './useDialerMachine';
 import { useQueuePro } from './useQueuePro';
 import type { QueueLead } from './types';
@@ -1352,6 +1353,11 @@ function WrapUpCard({ lead, endReason, durationSec, columns, columnsLoading = fa
             className="w-full text-[13px] border border-[#E5E7EB] rounded-lg px-3 py-2 resize-none focus:outline-none focus:ring-1 focus:ring-[#1E9A80]/30 focus:border-[#1E9A80]"
             rows={2} />
         </div>
+
+        {/* BRRRR questionnaire \u2014 only renders when this contact was pushed from
+            /tinder/pipeline (custom_fields.source === 'brrrr'). Invisible to
+            every other CRM call. */}
+        {lead?.contactId && <BrrrrCallPanel contactId={lead.contactId} />}
 
         {/* Send Agreement */}
         <div className="px-4 pb-3">
