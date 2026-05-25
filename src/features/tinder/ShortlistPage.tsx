@@ -4,12 +4,14 @@ import { useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import { useListings } from "./hooks/useListings";
 import { usePipeline } from "./hooks/usePipeline";
+import { useCompsCoverage } from "./hooks/useCompsCoverage";
 import { PushToPipelineModal } from "./components/PushToPipelineModal";
 import type { ListingWithFloorplans } from "./types";
 
 export default function ShortlistPage() {
   const { listings, loading } = useListings();
   const { cards, pushToPipeline, reload } = usePipeline();
+  const { hasComps, loading: compsLoading } = useCompsCoverage();
   const [pushing, setPushing] = useState<ListingWithFloorplans | null>(null);
 
   const shortlisted = useMemo(
@@ -46,20 +48,22 @@ export default function ShortlistPage() {
               <th className="text-left px-4 py-3">Type</th>
               <th className="text-left px-4 py-3">Size</th>
               <th className="text-left px-4 py-3">Agent</th>
+              <th className="text-left px-4 py-3">Comps</th>
               <th className="text-right px-4 py-3">Action</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-slate-100">
             {loading && (
-              <tr><td colSpan={7} className="px-4 py-8 text-center text-slate-400">Loading…</td></tr>
+              <tr><td colSpan={8} className="px-4 py-8 text-center text-slate-400">Loading…</td></tr>
             )}
             {!loading && shortlisted.length === 0 && (
-              <tr><td colSpan={7} className="px-4 py-8 text-center text-slate-400">No shortlist yet — swipe right on properties in /tinder.</td></tr>
+              <tr><td colSpan={8} className="px-4 py-8 text-center text-slate-400">No shortlist yet — swipe right on properties in /tinder.</td></tr>
             )}
             {shortlisted.map((l) => {
               const price = l.price_qualifier ? `${l.price_qualifier} ${l.price}` : l.price || "";
               const size = l.floor_area_sqm ? `${l.floor_area_sqm} sqm` : l.floor_area_sqft ? `${l.floor_area_sqft} sqft` : "—";
               const inPipe = inPipeline.has(l.property_id);
+              const compsReady = hasComps(l.property_id);
               return (
                 <tr key={l.property_id} className="hover:bg-slate-50">
                   <td className="px-4 py-3 text-slate-800 max-w-md">
@@ -82,14 +86,29 @@ export default function ShortlistPage() {
                       </div>
                     ) : <span className="text-slate-300">—</span>}
                   </td>
+                  <td className="px-4 py-3">
+                    {compsLoading ? (
+                      <span className="text-xs text-slate-400">…</span>
+                    ) : compsReady ? (
+                      <span className="text-[11px] bg-amber-100 text-amber-800 px-1.5 py-0.5 rounded font-medium">Comps ready</span>
+                    ) : (
+                      <Link to="/tinder/comps" className="text-[11px] bg-slate-100 text-slate-500 hover:bg-slate-200 px-1.5 py-0.5 rounded font-medium">Fetch comps →</Link>
+                    )}
+                  </td>
                   <td className="px-4 py-3 text-right">
                     {inPipe ? (
                       <Link to="/tinder/pipeline" className="text-xs text-slate-500 hover:underline">In pipeline →</Link>
-                    ) : (
+                    ) : compsReady ? (
                       <button
                         onClick={() => setPushing(l)}
                         className="px-3 py-1.5 text-xs bg-emerald-500 hover:bg-emerald-600 text-white rounded-lg font-medium"
                       >Push to pipeline</button>
+                    ) : (
+                      <button
+                        disabled
+                        title="Fetch comps for this property before pushing to the pipeline — the offer amount needs GDV evidence."
+                        className="px-3 py-1.5 text-xs bg-slate-200 text-slate-400 rounded-lg font-medium cursor-not-allowed"
+                      >Comps needed</button>
                     )}
                   </td>
                 </tr>
