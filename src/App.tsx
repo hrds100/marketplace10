@@ -22,6 +22,7 @@ import ApplyPage from "./pages/ApplyPage";
 // Layouts (stay in src/layouts/ — locked)
 import DashboardLayout from "./layouts/DashboardLayout";
 // Features
+import { TinderPage, ShortlistPage as TinderShortlistPage, CompsPage as TinderCompsPage, PipelinePage as TinderPipelinePage } from "@/features/tinder";
 import DealsPage from "@/features/deals/DealsPage";
 import DealDetail from "@/features/deals/DealDetail";
 import CRMPage from "@/features/crm/CRMPage";
@@ -223,6 +224,13 @@ const App = () => (
             <Route path="invest/portfolio" element={<InvestPortfolioPage />} />
             <Route path="invest/payouts" element={<InvestPayoutsPage />} />
             <Route path="invest/proposals" element={<InvestProposalsPage />} />
+          </Route>
+          {/* Tinder (BRRRR property tool) — top-level URL, reuses DashboardLayout chrome */}
+          <Route path="/tinder" element={<DashboardLayout />}>
+            <Route index element={<TinderPage />} />
+            <Route path="shortlist" element={<TinderShortlistPage />} />
+            <Route path="comps" element={<TinderCompsPage />} />
+            <Route path="pipeline" element={<TinderPipelinePage />} />
           </Route>
           <Route path="/university/:moduleId" element={<DashboardLayout />}>
             <Route index element={<ModuleOverviewPage />} />

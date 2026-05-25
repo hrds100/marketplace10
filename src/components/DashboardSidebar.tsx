@@ -1,5 +1,5 @@
 import { NavLink, useLocation, useNavigate } from 'react-router-dom';
-import { LayoutGrid, Heart, Kanban, GraduationCap, Users, PlusCircle, Settings, LogOut, ChevronLeft, ChevronRight, ChevronDown, Globe, TrendingUp, Store, Wallet, Receipt, Vote } from 'lucide-react';
+import { LayoutGrid, Heart, Kanban, GraduationCap, Users, PlusCircle, Settings, LogOut, ChevronLeft, ChevronRight, ChevronDown, Globe, TrendingUp, Store, Wallet, Receipt, Vote, Home } from 'lucide-react';
 import { useState, useCallback } from 'react';
 import { useAuth } from '@/hooks/useAuth';
 import { useTranslation } from 'react-i18next';
@@ -12,6 +12,7 @@ function useNavItems() {
   return [
     // Deals, CRM, List A Deal, University hidden — JV pivot 2026-05-02
     // backup branch: backup/pre-homepage-pivot-2026-05-02
+    { to: '/tinder', icon: Home, label: 'Tinder' },
     { to: '/dashboard/affiliates', icon: Users, label: t('nav.becomeAnAgent') },
     { to: '/dashboard/booking-site', icon: Globe, label: t('nav.bookingSite'), highlight: true },
   ] as Array<{ to: string; icon: typeof LayoutGrid; label: string; highlight?: boolean }>;
