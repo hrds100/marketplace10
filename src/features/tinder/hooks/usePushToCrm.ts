@@ -33,14 +33,17 @@ export function usePushToCrm() {
       return { ok: false, error: "No agent phone — can't push to dialer." };
     }
 
-    // 1. Find the BRRRR campaign
+    // 1. Find the BRRRR campaign. It deliberately has no pipeline_id —
+    //    /tinder/pipeline is the source of truth for BRRRR pipeline state
+    //    (brrrr_calls.stage). The CRM campaign exists only to give us a
+    //    dialer queue to drop contacts into.
     const { data: campaign, error: campErr } = await t("wk_dialer_campaigns")
-      .select("id, default_outcome_column_id")
+      .select("id")
       .eq("name", BRRRR_CAMPAIGN_NAME)
       .eq("is_active", true)
       .maybeSingle();
     if (campErr) return { ok: false, error: `Campaign lookup failed: ${campErr.message}` };
-    if (!campaign) return { ok: false, error: `BRRRR campaign not found — run the brrrr_create_crm_pipeline_and_campaign migration.` };
+    if (!campaign) return { ok: false, error: `BRRRR campaign not found in wk_dialer_campaigns.` };
 
     const phoneNorm = normalisePhone(card.agent_phone);
     const propertyAddress = card.listing?.address ?? "";
@@ -79,11 +82,13 @@ export function usePushToCrm() {
         .eq("id", contactId);
       if (upErr) return { ok: false, error: `Contact update failed: ${upErr.message}` };
     } else {
+      // New contact, BRRRR-only. pipeline_column_id stays null on purpose so
+      // this contact doesn't clutter the existing CRM kanbans — it'll only
+      // appear in the BRRRR dialer queue.
       const { data: created, error: insErr } = await t("wk_contacts")
         .insert({
           name: card.agent_name ?? "(unknown agent)",
           phone: phoneNorm,
-          pipeline_column_id: campaign.default_outcome_column_id ?? null,
           custom_fields: {
             source: "brrrr",
             brrrr: brrrrTag,
