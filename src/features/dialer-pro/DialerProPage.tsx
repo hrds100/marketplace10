@@ -98,8 +98,14 @@ export function DialerProContent({ autoCallContactId, pipelineColumnId, onAutoCa
 
   // Campaign — honour ?campaign=<id> in the URL (used by /tinder/pipeline
   // "Push to CRM dialer" deep links); fall back to first available campaign.
+  //
+  // useSearchParams is read again here (not just in DialerProPage) because
+  // DialerProContent doesn't receive the param object as a prop. Calling
+  // useSearchParams twice in the same tree is safe — it subscribes to the
+  // same router context.
+  const [contentSearchParams] = useSearchParams();
   const { campaigns } = useDialerCampaigns({ scopedToAgentId: isAdmin ? null : userId, includeInactive: true });
-  const requestedCampaignId = searchParams.get('campaign');
+  const requestedCampaignId = contentSearchParams.get('campaign');
   const [activeCampaignId, setActiveCampaignId] = useState<string>('');
   useEffect(() => {
     if (campaigns.length === 0) return;
