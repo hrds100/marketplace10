@@ -22,7 +22,13 @@ import ApplyPage from "./pages/ApplyPage";
 // Layouts (stay in src/layouts/ — locked)
 import DashboardLayout from "./layouts/DashboardLayout";
 // Features
-import { TinderPage, ShortlistPage as TinderShortlistPage, CompsPage as TinderCompsPage, PipelinePage as TinderPipelinePage } from "@/features/tinder";
+import {
+  TinderPage,
+  ShortlistPage as TinderShortlistPage,
+  CompsPage as TinderCompsPage,
+  PipelinePage as TinderPipelinePage,
+  AgentsPage as TinderAgentsPage,
+} from "@/features/tinder";
 import TinderLayout from "@/features/tinder/layout/TinderLayout";
 import DealsPage from "@/features/deals/DealsPage";
 import DealDetail from "@/features/deals/DealDetail";
@@ -232,6 +238,8 @@ const App = () => (
             <Route path="shortlist" element={<TinderShortlistPage />} />
             <Route path="comps" element={<TinderCompsPage />} />
             <Route path="pipeline" element={<TinderPipelinePage />} />
+            {/* Admin-only — AgentsPage itself redirects non-admins back to /tinder */}
+            <Route path="agents" element={<TinderAgentsPage />} />
           </Route>
           <Route path="/university/:moduleId" element={<DashboardLayout />}>
             <Route index element={<ModuleOverviewPage />} />
