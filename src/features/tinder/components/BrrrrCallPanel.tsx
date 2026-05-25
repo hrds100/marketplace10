@@ -12,7 +12,9 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useCallAnswers } from "../hooks/usePipeline";
+import { useDerivedOffer } from "../hooks/useDerivedOffer";
 import { QuestionnaireForm } from "./QuestionnaireForm";
+import { formatGBP } from "../lib/offer";
 import { PIPELINE_STAGES, STAGE_LABEL } from "../types";
 import type { PipelineStage } from "../types";
 
@@ -119,6 +121,21 @@ function Panel({
   const [applying, setApplying] = useState(false);
   const [doneMsg, setDoneMsg] = useState<string | null>(null);
   const [currentStage, setCurrentStage] = useState<PipelineStage | null>(null);
+  const [overrideAmount, setOverrideAmount] = useState<string | null>(null);
+
+  // Fetch the brrrr_calls.offer_amount (override) so the derived offer
+  // reflects what Hugo set (if anything).
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      const { data } = await t("brrrr_calls").select("offer_amount").eq("id", tag.brrrr_call_id).maybeSingle();
+      if (cancelled) return;
+      setOverrideAmount((data?.offer_amount as string | null) ?? null);
+    })();
+    return () => { cancelled = true; };
+  }, [tag.brrrr_call_id]);
+
+  const { offer } = useDerivedOffer(tag.brrrr_property_id, overrideAmount);
 
   // Load the current stage so the quick-pick grid can highlight it.
   useEffect(() => {
@@ -174,6 +191,33 @@ function Panel({
           rel="noreferrer"
           className="shrink-0 text-[10px] font-medium text-emerald-700 hover:underline whitespace-nowrap"
         >Open card ↗</a>
+      </div>
+
+      {/* Offer to float — the headline number the VA quotes to the agent. */}
+      <div className={`px-3 py-3 border-b border-emerald-200 ${
+        offer?.source === "override" ? "bg-violet-50"
+        : offer?.source === "calculated" ? "bg-white"
+        : "bg-amber-50"
+      }`}>
+        <div className="text-[10px] font-semibold uppercase tracking-wide text-slate-600 mb-0.5">
+          What to offer
+          {offer?.source === "override" && <span className="ml-1.5 normal-case text-violet-700">· Hugo override</span>}
+          {offer?.source === "calculated" && <span className="ml-1.5 normal-case text-emerald-700">· auto from GDV</span>}
+          {offer?.source === "unavailable" && <span className="ml-1.5 normal-case text-amber-700">· not calculated</span>}
+        </div>
+        <div className={`text-3xl font-bold ${
+          offer?.source === "override" ? "text-violet-800"
+          : offer?.source === "calculated" ? "text-emerald-700"
+          : "text-amber-800"
+        }`}>
+          {offer?.amount != null ? formatGBP(offer.amount) : "—"}
+        </div>
+        <div className="text-[11px] text-slate-600 mt-1 leading-tight">{offer?.reason ?? ""}</div>
+        {offer?.source === "unavailable" && (
+          <p className="text-[10px] text-amber-700 mt-1.5">
+            Hugo needs to set an override on this card before the next call.
+          </p>
+        )}
       </div>
 
       {/* Stage quick-pick — writes brrrr_calls.stage directly. /tinder/pipeline
