@@ -1,21 +1,36 @@
 // Comps + GDV per shortlisted property. Left list, right comps + calculator.
 
 import { useMemo, useState } from "react";
+import { Link } from "react-router-dom";
 import { useShortlistedWithComps } from "./hooks/useComps";
+import { usePipeline } from "./hooks/usePipeline";
 import { CompTable } from "./components/CompTable";
 import { GDVCalculator } from "./components/GDVCalculator";
 import { DealCalculator } from "./components/DealCalculator";
-import { filterRent, filterSaleSame, filterSaleTarget } from "./lib/gdv";
+import { PushToPipelineModal } from "./components/PushToPipelineModal";
+import { filterRent, filterSaleSame, filterSaleTarget, fmt } from "./lib/gdv";
+import type { ShortlistedSubject } from "./hooks/useComps";
 
 export default function CompsPage() {
   const { subjects, loading } = useShortlistedWithComps();
+  const { cards, pushToPipeline, reload: reloadPipeline } = usePipeline();
   const [selectedPid, setSelectedPid] = useState<string | null>(null);
   const [gdv, setGdv] = useState(0);
+  const [pushing, setPushing] = useState<ShortlistedSubject | null>(null);
 
   const subject = useMemo(
     () => subjects.find((s) => s.property_id === selectedPid) ?? subjects[0] ?? null,
     [subjects, selectedPid]
   );
+
+  const inPipeline = useMemo(
+    () => new Set(cards.map((c) => c.property_id)),
+    [cards]
+  );
+  const compsReady = !!subject && subject.comps.length > 0;
+  const isInPipeline = !!subject && inPipeline.has(subject.property_id);
+  // Suggested offer = 70% of GDV (opening) — what gets pre-filled in the modal.
+  const suggestedOffer = gdv > 0 ? Math.round(gdv * 0.70) : null;
 
   return (
     <div className="flex h-full bg-white">
@@ -57,14 +72,40 @@ export default function CompsPage() {
           <div className="text-slate-400 text-sm">Select a property.</div>
         ) : (
           <>
-            <header className="mb-6">
-              <h1 className="text-2xl font-bold text-slate-800">
-                {subject.price_qualifier ? `${subject.price_qualifier} ${subject.price}` : subject.price}
-              </h1>
-              <p className="text-sm text-slate-600 mt-1">{subject.address}</p>
-              <p className="text-xs text-slate-500">
-                {subject.bedrooms || "?"} bed {subject.property_type || ""} → converting to {(parseInt(subject.bedrooms ?? "1") || 1) + 1}-bed
-              </p>
+            <header className="mb-6 flex items-start justify-between gap-4">
+              <div className="min-w-0">
+                <h1 className="text-2xl font-bold text-slate-800">
+                  {subject.price_qualifier ? `${subject.price_qualifier} ${subject.price}` : subject.price}
+                </h1>
+                <p className="text-sm text-slate-600 mt-1">{subject.address}</p>
+                <p className="text-xs text-slate-500">
+                  {subject.bedrooms || "?"} bed {subject.property_type || ""} → converting to {(parseInt(subject.bedrooms ?? "1") || 1) + 1}-bed
+                </p>
+              </div>
+              <div className="shrink-0 flex flex-col items-end gap-1.5">
+                {isInPipeline ? (
+                  <Link
+                    to="/tinder/pipeline"
+                    className="px-4 py-2 text-sm bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg font-medium"
+                  >Already in pipeline →</Link>
+                ) : compsReady ? (
+                  <button
+                    onClick={() => setPushing(subject)}
+                    className="px-4 py-2 text-sm bg-emerald-500 hover:bg-emerald-600 text-white rounded-lg font-semibold shadow-sm"
+                  >📞 Push to pipeline</button>
+                ) : (
+                  <button
+                    disabled
+                    className="px-4 py-2 text-sm bg-slate-200 text-slate-400 rounded-lg font-semibold cursor-not-allowed"
+                    title="Run the comps fetcher first — pipeline needs comps for the offer math."
+                  >Comps needed</button>
+                )}
+                {suggestedOffer && !isInPipeline && compsReady && (
+                  <p className="text-[11px] text-slate-500">
+                    Suggested offer from GDV: {fmt(suggestedOffer)} (70%)
+                  </p>
+                )}
+              </div>
             </header>
 
             <GDVCalculator
@@ -97,6 +138,18 @@ export default function CompsPage() {
           </>
         )}
       </main>
+
+      {pushing && (
+        <PushToPipelineModal
+          listing={pushing}
+          suggestedOffer={suggestedOffer ?? undefined}
+          onClose={() => setPushing(null)}
+          onConfirm={async (offer) => {
+            await pushToPipeline(pushing.property_id, offer);
+            await reloadPipeline();
+          }}
+        />
+      )}
     </div>
   );
 }

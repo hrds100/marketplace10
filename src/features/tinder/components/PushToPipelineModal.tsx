@@ -4,12 +4,14 @@ import type { BrrrrListing } from "../types";
 
 type Props = {
   listing: BrrrrListing;
+  /** Pre-fill the offer input (e.g. 70% of GDV when pushed from /tinder/comps). */
+  suggestedOffer?: number;
   onClose: () => void;
   onConfirm: (offer_amount: string | null) => Promise<void>;
 };
 
-export function PushToPipelineModal({ listing, onClose, onConfirm }: Props) {
-  const [offer, setOffer] = useState("");
+export function PushToPipelineModal({ listing, suggestedOffer, onClose, onConfirm }: Props) {
+  const [offer, setOffer] = useState(suggestedOffer ? String(suggestedOffer) : "");
   const [busy, setBusy] = useState(false);
   // RLS lets only brrrr_admins set the offer_amount. Mirror that in the UI so
   // VAs see a disabled field with explanation instead of a cryptic error.
