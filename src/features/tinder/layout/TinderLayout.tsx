@@ -1,81 +1,61 @@
-// Standalone layout for the Tinder (BRRRR) workspace — does NOT use
-// DashboardLayout. Same pattern as Smsv2Layout for /crm.
-//
-// Provides:
-//   - Auth gate (via ProtectedRoute)
-//   - A slim top bar with the four Tinder section tabs
-//   - <Outlet /> for the active subroute
-//
-// Deliberately minimal. The Tinder pages own their own internal layout
-// (two-pane lists, kanban, etc.) and take the full viewport below the
-// top bar.
+// Standalone layout for the Tinder (BRRRR) workspace — mirrors Smsv2Layout
+// for /crm. Topbar + left sidebar + Outlet. Auth gated by ProtectedRoute.
 
-import { Outlet, NavLink, Link } from "react-router-dom";
+import { Link, Outlet } from "react-router-dom";
+import { useState } from "react";
 import ProtectedRoute from "@/components/ProtectedRoute";
-
-const TABS = [
-  { to: "/tinder",            label: "Review",   end: true  },
-  { to: "/tinder/shortlist",  label: "Shortlist", end: false },
-  { to: "/tinder/comps",      label: "Comps",     end: false },
-  { to: "/tinder/pipeline",   label: "Pipeline",  end: false },
-];
+import { useAuth } from "@/hooks/useAuth";
+import TinderSidebar from "./TinderSidebar";
 
 export default function TinderLayout() {
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+  const { isAdmin } = useAuth();
+
   return (
     <ProtectedRoute>
-      <div className="h-screen flex flex-col bg-white">
-        {/* Top bar */}
-        <header className="h-14 bg-white border-b border-slate-200 flex items-center px-5 z-[101] flex-shrink-0 gap-4">
+      <div
+        data-feature="TINDER__LAYOUT"
+        className="h-screen flex flex-col bg-[#F3F3EE]"
+      >
+        {/* Top bar — slim, brand-only. All nav lives in the sidebar (matches /crm). */}
+        <header className="h-14 bg-white border-b border-[#E5E7EB] flex items-center px-5 z-[101] flex-shrink-0 gap-3">
           <Link
             to="/tinder"
-            className="flex items-center"
-            style={{ gap: 3 }}
+            className="text-[17px] font-extrabold text-[#1A1A1A] tracking-tight hover:opacity-70 transition-opacity"
           >
-            <div
-              style={{
-                width: 28, height: 28, border: "1.5px solid #0a0a0a", borderRadius: 6,
-                display: "flex", alignItems: "center", justifyContent: "center",
-                fontFamily: "'Sora', sans-serif", fontWeight: 700, fontSize: 12,
-                color: "#0a0a0a", lineHeight: 1,
-              }}
-            >nf</div>
-            <span
-              style={{
-                fontFamily: "'Sora', sans-serif", fontWeight: 400, fontSize: 18,
-                color: "#0a0a0a", letterSpacing: 2, lineHeight: 1,
-              }}
-            >stay</span>
+            nfstay
           </Link>
-          <span className="text-sm font-medium text-slate-400">Tinder</span>
-
-          <nav className="ml-6 flex items-center gap-1">
-            {TABS.map((t) => (
-              <NavLink
-                key={t.to}
-                to={t.to}
-                end={t.end}
-                className={({ isActive }) =>
-                  `px-3 py-1.5 rounded-md text-sm font-medium transition-colors ${
-                    isActive
-                      ? "bg-emerald-100 text-emerald-800"
-                      : "text-slate-600 hover:text-slate-900 hover:bg-slate-100"
-                  }`
-                }
-              >
-                {t.label}
-              </NavLink>
-            ))}
-          </nav>
+          <span className="text-sm font-medium text-[#9CA3AF]">Tinder</span>
 
           <div className="ml-auto flex items-center gap-3">
-            {/* Reserved for future actions (e.g. trigger floor-plan refetch) */}
+            {isAdmin && (
+              <Link
+                to="/admin"
+                className="text-[12px] font-medium text-[#9CA3AF] hover:text-[#1A1A1A] px-2 py-1 rounded-lg hover:bg-[#F3F3EE] transition-colors"
+              >
+                Admin
+              </Link>
+            )}
+            <Link
+              to="/crm"
+              className="text-[12px] font-medium text-[#9CA3AF] hover:text-[#1A1A1A] px-2 py-1 rounded-lg hover:bg-[#F3F3EE] transition-colors"
+            >
+              CRM
+            </Link>
           </div>
         </header>
 
-        {/* Content fills the rest of the viewport */}
-        <main className="flex-1 overflow-hidden">
-          <Outlet />
-        </main>
+        {/* Sidebar + main content */}
+        <div className="flex-1 flex overflow-hidden">
+          <TinderSidebar collapsed={sidebarCollapsed} onCollapse={setSidebarCollapsed} />
+          {/* min-h-0 lets flex children shrink; overflow-y-auto provides default
+              scroll for pages that don't manage their own. Pages with their
+              own h-full + inner overflow (TinderPage, CompsPage, AgentsPage)
+              still work because they sit inside this scroll container. */}
+          <main className="flex-1 min-h-0 overflow-y-auto">
+            <Outlet />
+          </main>
+        </div>
       </div>
     </ProtectedRoute>
   );
