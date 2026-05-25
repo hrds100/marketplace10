@@ -13,7 +13,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useCallAnswers } from "../hooks/usePipeline";
 import { QuestionnaireForm } from "./QuestionnaireForm";
-import { STAGE_LABEL } from "../types";
+import { PIPELINE_STAGES, STAGE_LABEL } from "../types";
 import type { PipelineStage } from "../types";
 
 const t = (name: string) => (supabase.from as any)(name);
@@ -32,9 +32,30 @@ type ContactCustomFields = {
   brrrr_history?: BrrrrTag[];
 };
 
-type Props = { contactId: string };
+type Props = {
+  contactId: string;
+  /** Optional: when this comes from /crm/dialer-pro the parent passes the
+   *  active wk_dialer_queue.id so the panel can mark it done after the agent
+   *  picks a stage — keeps the BRRRR contact from showing up again. */
+  queueRowId?: string | null;
+};
 
-export default function BrrrrCallPanel({ contactId }: Props) {
+// Stage groupings for the quick-pick grid. Mirrors the columns on
+// /tinder/pipeline. brrrr_calls.stage is the single source of truth.
+const STAGE_TONE: Record<PipelineStage, string> = {
+  to_call:          "bg-slate-100 text-slate-700 hover:bg-slate-200",
+  called_no_answer: "bg-amber-100 text-amber-800 hover:bg-amber-200",
+  called_waiting:   "bg-blue-100 text-blue-800 hover:bg-blue-200",
+  offer_made:       "bg-emerald-100 text-emerald-800 hover:bg-emerald-200",
+  offer_rejected:   "bg-rose-100 text-rose-800 hover:bg-rose-200",
+  offer_accepted:   "bg-emerald-500 text-white hover:bg-emerald-600",
+  viewing_booked:   "bg-indigo-100 text-indigo-800 hover:bg-indigo-200",
+  under_offer:      "bg-violet-100 text-violet-800 hover:bg-violet-200",
+  exchanged:        "bg-green-600 text-white hover:bg-green-700",
+  dead:             "bg-slate-300 text-slate-700 hover:bg-slate-400",
+};
+
+export default function BrrrrCallPanel({ contactId, queueRowId }: Props) {
   const [tag, setTag] = useState<BrrrrTag | null>(null);
   const [history, setHistory] = useState<BrrrrTag[]>([]);
   const [loading, setLoading] = useState(true);
@@ -81,32 +102,58 @@ export default function BrrrrCallPanel({ contactId }: Props) {
   }, [tag?.brrrr_property_id]);
 
   if (loading || !tag) return null;
-  return <Panel tag={tag} history={history} setTag={setTag} askingPrice={askingPrice} />;
+  return <Panel tag={tag} history={history} setTag={setTag} askingPrice={askingPrice} queueRowId={queueRowId} />;
 }
 
 function Panel({
-  tag, history, setTag, askingPrice,
+  tag, history, setTag, askingPrice, queueRowId,
 }: {
   tag: BrrrrTag;
   history: BrrrrTag[];
   setTag: (t: BrrrrTag) => void;
   askingPrice: string | null;
+  queueRowId?: string | null;
 }) {
   const { answers, saveAnswers } = useCallAnswers(tag.brrrr_call_id);
   const [savedSuggestion, setSavedSuggestion] = useState<{ stage: PipelineStage; reason: string } | null>(null);
   const [applying, setApplying] = useState(false);
   const [doneMsg, setDoneMsg] = useState<string | null>(null);
+  const [currentStage, setCurrentStage] = useState<PipelineStage | null>(null);
+
+  // Load the current stage so the quick-pick grid can highlight it.
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      const { data } = await t("brrrr_calls")
+        .select("stage")
+        .eq("id", tag.brrrr_call_id)
+        .maybeSingle();
+      if (cancelled) return;
+      setCurrentStage((data?.stage as PipelineStage | undefined) ?? null);
+    })();
+    return () => { cancelled = true; };
+  }, [tag.brrrr_call_id]);
 
   const applyStage = useCallback(async (stage: PipelineStage) => {
     setApplying(true);
+    setDoneMsg(null);
     const { error } = await t("brrrr_calls")
       .update({ stage, called_at: new Date().toISOString() })
       .eq("id", tag.brrrr_call_id);
+    if (error) { setApplying(false); setDoneMsg(`Failed to sync stage: ${error.message}`); return; }
+
+    // Mark the dialer queue row as done so the lead exits the BRRRR queue.
+    if (queueRowId) {
+      await t("wk_dialer_queue")
+        .update({ status: "done", last_attempt_at: new Date().toISOString() })
+        .eq("id", queueRowId);
+    }
+
+    setCurrentStage(stage);
     setApplying(false);
-    if (error) { setDoneMsg(`Failed to sync stage: ${error.message}`); return; }
-    setDoneMsg(`Synced to /tinder/pipeline → ${STAGE_LABEL[stage]}`);
     setSavedSuggestion(null);
-  }, [tag.brrrr_call_id]);
+    setDoneMsg(`Synced to /tinder/pipeline → ${STAGE_LABEL[stage]}`);
+  }, [tag.brrrr_call_id, queueRowId]);
 
   return (
     <div className="mx-4 mb-3 rounded-lg border-2 border-emerald-300 bg-emerald-50/50 overflow-hidden">
@@ -127,6 +174,34 @@ function Panel({
           rel="noreferrer"
           className="shrink-0 text-[10px] font-medium text-emerald-700 hover:underline whitespace-nowrap"
         >Open card ↗</a>
+      </div>
+
+      {/* Stage quick-pick — writes brrrr_calls.stage directly. /tinder/pipeline
+          reads the same column, so the card moves there in real time. */}
+      <div className="px-3 py-3 border-b border-emerald-200 bg-white">
+        <div className="text-[10px] font-semibold uppercase tracking-wide text-emerald-700 mb-2">
+          Pick stage <span className="font-normal text-emerald-600 normal-case">— syncs to /tinder/pipeline</span>
+        </div>
+        <div className="grid grid-cols-3 gap-1.5">
+          {PIPELINE_STAGES.map((stage) => {
+            const isCurrent = currentStage === stage;
+            const tone = STAGE_TONE[stage];
+            return (
+              <button
+                key={stage}
+                type="button"
+                disabled={applying}
+                onClick={() => applyStage(stage)}
+                className={`text-[11px] font-medium rounded px-2 py-1.5 transition disabled:opacity-50 ${tone} ${
+                  isCurrent ? "ring-2 ring-offset-1 ring-emerald-600" : ""
+                }`}
+                title={isCurrent ? "Current stage" : `Move to ${STAGE_LABEL[stage]}`}
+              >
+                {STAGE_LABEL[stage]}
+              </button>
+            );
+          })}
+        </div>
       </div>
 
       {/* Multi-property picker (only if this agent covers multiple BRRRR listings) */}
