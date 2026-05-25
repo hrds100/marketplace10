@@ -6,9 +6,12 @@ import { useEffect, useMemo, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { usePipeline, useCallAnswers } from "./hooks/usePipeline";
 import { usePushToCrm } from "./hooks/usePushToCrm";
+import { useIsBrrrrAdmin } from "./hooks/useIsBrrrrAdmin";
+import { useDerivedOffer, useDerivedOffers } from "./hooks/useDerivedOffer";
 import { QuestionnaireForm } from "./components/QuestionnaireForm";
 import { FloorPlanViewer } from "./components/FloorPlanViewer";
 import { filterRent, filterSaleTarget, parsePrice, fmt } from "./lib/gdv";
+import { formatGBP } from "./lib/offer";
 import { PIPELINE_STAGES, STAGE_LABEL } from "./types";
 import type { BrrrrComp, BrrrrFloorplan, PipelineStage, PipelineCard } from "./types";
 
@@ -58,6 +61,15 @@ export default function PipelinePage() {
     return m;
   }, [cards]);
 
+  // Bulk-derive the calculated offer (or override) for every card.
+  const propertyIds = useMemo(() => cards.map((c) => c.property_id), [cards]);
+  const overrides = useMemo(() => {
+    const m: Record<string, string | null> = {};
+    cards.forEach((c) => { m[c.property_id] = c.offer_amount; });
+    return m;
+  }, [cards]);
+  const { offers } = useDerivedOffers(propertyIds, overrides);
+
   return (
     <div className="p-4 bg-slate-50 min-h-full">
       <header className="mb-4 flex items-center justify-between">
@@ -73,26 +85,33 @@ export default function PipelinePage() {
             </div>
             <div className="p-2 space-y-2 max-h-[calc(100vh-13rem)] overflow-y-auto">
               {loading && stage === "to_call" && <div className="text-xs text-slate-400 p-2">Loading…</div>}
-              {grouped[stage].map((c) => (
-                <button
-                  key={c.id}
-                  onClick={() => setOpenId(c.id)}
-                  className="block w-full text-left bg-white border border-slate-200 rounded-lg p-2 hover:border-emerald-500 transition"
-                >
-                  <div className="text-xs font-medium text-slate-800 truncate">{c.listing.address}</div>
-                  <div className="text-xs text-slate-500 mt-0.5">{c.listing.price}</div>
-                  <div className="flex items-center justify-between mt-1.5">
-                    {c.offer_amount ? (
-                      <span className="text-[10px] bg-emerald-50 text-emerald-700 px-1.5 py-0.5 rounded">
-                        Offer £{parseInt(c.offer_amount).toLocaleString()}
+              {grouped[stage].map((c) => {
+                const offer = offers.get(c.property_id);
+                const offerBadge =
+                  offer?.source === "override"
+                    ? { tone: "bg-violet-100 text-violet-700", label: `Offer ${formatGBP(offer.amount)}`, hint: "Hugo override" }
+                    : offer?.source === "calculated"
+                    ? { tone: "bg-emerald-50 text-emerald-700", label: `Offer ${formatGBP(offer.amount)}`, hint: "calculated from GDV" }
+                    : { tone: "bg-slate-100 text-slate-500", label: "Offer pending", hint: "No GDV data — Hugo to override" };
+                return (
+                  <button
+                    key={c.id}
+                    onClick={() => setOpenId(c.id)}
+                    className="block w-full text-left bg-white border border-slate-200 rounded-lg p-2 hover:border-emerald-500 transition"
+                  >
+                    <div className="text-xs font-medium text-slate-800 truncate">{c.listing.address}</div>
+                    <div className="text-xs text-slate-500 mt-0.5">{c.listing.price}</div>
+                    <div className="flex items-center justify-between mt-1.5 gap-1">
+                      <span className={`text-[10px] px-1.5 py-0.5 rounded ${offerBadge.tone}`} title={offerBadge.hint}>
+                        {offerBadge.label}
                       </span>
-                    ) : <span />}
-                    {c.agent_name && (
-                      <span className="text-[10px] text-slate-400 truncate">{c.agent_name}</span>
-                    )}
-                  </div>
-                </button>
-              ))}
+                      {c.agent_name && (
+                        <span className="text-[10px] text-slate-400 truncate">{c.agent_name}</span>
+                      )}
+                    </div>
+                  </button>
+                );
+              })}
             </div>
           </div>
         ))}
@@ -124,12 +143,38 @@ function CardDetail({
   const { answers, saveAnswers } = useCallAnswers(card.id);
   const { floorplans, comps } = useCardExtras(card.property_id);
   const { push } = usePushToCrm();
+  const { isAdmin } = useIsBrrrrAdmin();
+  const { offer: derivedOffer } = useDerivedOffer(card.property_id, card.offer_amount);
   const [suggestion, setSuggestion] = useState<{ stage: PipelineStage; reason: string } | null>(null);
   const [agentName, setAgentName] = useState(card.agent_name ?? "");
   const [agentPhone, setAgentPhone] = useState(card.agent_phone ?? "");
   const [notes, setNotes] = useState(card.notes ?? "");
+  const [overrideInput, setOverrideInput] = useState(card.offer_amount ?? "");
+  const [savingOverride, setSavingOverride] = useState(false);
   const [pushing, setPushing] = useState(false);
   const [pushError, setPushError] = useState<string | null>(null);
+
+  async function applyOverride() {
+    if (!isAdmin) return;
+    const trimmed = overrideInput.trim();
+    setSavingOverride(true);
+    try {
+      // Send null when admin clears the field — reverts to calculated.
+      await onUpdateCall({ offer_amount: trimmed || null });
+    } finally {
+      setSavingOverride(false);
+    }
+  }
+  async function clearOverride() {
+    if (!isAdmin) return;
+    setSavingOverride(true);
+    try {
+      await onUpdateCall({ offer_amount: null });
+      setOverrideInput("");
+    } finally {
+      setSavingOverride(false);
+    }
+  }
 
   async function handlePushToCrm() {
     setPushing(true);
@@ -160,7 +205,6 @@ function CardDetail({
             <h2 className="text-lg font-bold text-slate-800">{card.listing.address}</h2>
             <p className="text-sm text-slate-500">
               {card.listing.price} · {card.listing.bedrooms || "?"} bed · {card.listing.property_type || ""}
-              {card.offer_amount && <span className="ml-2 text-emerald-700 font-medium">Offer: £{parseInt(card.offer_amount).toLocaleString()}</span>}
             </p>
             <div className="mt-2 flex items-center gap-2">
               <span className="text-xs text-slate-500">Stage:</span>
@@ -174,6 +218,68 @@ function CardDetail({
             </div>
           </div>
           <button onClick={onClose} className="text-slate-400 hover:text-slate-600 text-2xl leading-none">×</button>
+        </div>
+
+        {/* Offer panel — derived from GDV by default. Hugo can override. */}
+        <div className={`mx-6 mt-4 rounded-lg border p-4 ${
+          derivedOffer?.source === "override" ? "border-violet-200 bg-violet-50"
+          : derivedOffer?.source === "calculated" ? "border-emerald-200 bg-emerald-50"
+          : "border-amber-200 bg-amber-50"
+        }`}>
+          <div className="flex items-baseline justify-between gap-4">
+            <div className="min-w-0">
+              <div className="text-[10px] font-semibold uppercase tracking-wide text-slate-600">
+                Offer to float
+                {derivedOffer?.source === "override" && (
+                  <span className="ml-1.5 normal-case text-violet-700">· Hugo override</span>
+                )}
+                {derivedOffer?.source === "calculated" && (
+                  <span className="ml-1.5 normal-case text-emerald-700">· auto from GDV</span>
+                )}
+                {derivedOffer?.source === "unavailable" && (
+                  <span className="ml-1.5 normal-case text-amber-700">· needs override</span>
+                )}
+              </div>
+              <div className={`text-2xl font-bold ${
+                derivedOffer?.source === "override" ? "text-violet-800"
+                : derivedOffer?.source === "calculated" ? "text-emerald-800"
+                : "text-amber-800"
+              }`}>
+                {derivedOffer?.amount != null ? formatGBP(derivedOffer.amount) : "—"}
+              </div>
+              <div className="text-xs text-slate-600 mt-0.5">{derivedOffer?.reason ?? ""}</div>
+            </div>
+          </div>
+
+          {isAdmin && (
+            <div className="mt-3 pt-3 border-t border-slate-200 flex items-end gap-2">
+              <label className="flex-1">
+                <span className="text-[10px] font-medium text-slate-500 uppercase tracking-wide">Override offer (£)</span>
+                <input
+                  type="number"
+                  value={overrideInput}
+                  onChange={(e) => setOverrideInput(e.target.value)}
+                  placeholder={derivedOffer?.source === "calculated" ? `${derivedOffer.amount} (calculated)` : "Hugo sets the number"}
+                  disabled={savingOverride}
+                  className="mt-0.5 w-full px-2 py-1.5 border border-slate-300 rounded text-sm"
+                />
+              </label>
+              <button
+                type="button"
+                onClick={applyOverride}
+                disabled={savingOverride || overrideInput.trim() === (card.offer_amount ?? "")}
+                className="px-3 py-1.5 text-xs font-medium bg-violet-600 hover:bg-violet-700 text-white rounded disabled:opacity-50"
+              >Save override</button>
+              {card.offer_amount && (
+                <button
+                  type="button"
+                  onClick={clearOverride}
+                  disabled={savingOverride}
+                  className="px-3 py-1.5 text-xs font-medium text-slate-600 hover:text-slate-900"
+                >Clear → use calculated</button>
+              )}
+            </div>
+          )}
         </div>
 
         <div className="grid grid-cols-3 gap-4 p-6">
