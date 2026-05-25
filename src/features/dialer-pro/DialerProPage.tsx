@@ -96,14 +96,23 @@ export function DialerProContent({ autoCallContactId, pipelineColumnId, onAutoCa
     return res;
   }, [storePatch, persistApi, onToast]);
 
-  // Campaign (auto-select first)
+  // Campaign — honour ?campaign=<id> in the URL (used by /tinder/pipeline
+  // "Push to CRM dialer" deep links); fall back to first available campaign.
   const { campaigns } = useDialerCampaigns({ scopedToAgentId: isAdmin ? null : userId, includeInactive: true });
+  const requestedCampaignId = searchParams.get('campaign');
   const [activeCampaignId, setActiveCampaignId] = useState<string>('');
   useEffect(() => {
-    if (campaigns.length > 0 && !campaigns.some((c) => c.id === activeCampaignId)) {
+    if (campaigns.length === 0) return;
+    // 1. URL ?campaign=… wins if it matches a real campaign
+    if (requestedCampaignId && campaigns.some((c) => c.id === requestedCampaignId) && activeCampaignId !== requestedCampaignId) {
+      setActiveCampaignId(requestedCampaignId);
+      return;
+    }
+    // 2. Otherwise auto-select the first campaign when none is set
+    if (!campaigns.some((c) => c.id === activeCampaignId)) {
       setActiveCampaignId(campaigns[0].id);
     }
-  }, [campaigns, activeCampaignId]);
+  }, [campaigns, activeCampaignId, requestedCampaignId]);
   const camp: Campaign | null = useMemo(
     () => campaigns.find((c) => c.id === activeCampaignId) ?? campaigns[0] ?? null,
     [campaigns, activeCampaignId],
