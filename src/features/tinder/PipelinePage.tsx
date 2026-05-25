@@ -73,24 +73,38 @@ export default function PipelinePage() {
             <div className="p-2 space-y-2 max-h-[calc(100vh-13rem)] overflow-y-auto">
               {loading && stage === "to_call" && <div className="text-xs text-slate-400 p-2">Loading…</div>}
               {grouped[stage].map((c) => (
-                <button
+                <div
                   key={c.id}
-                  onClick={() => setOpenId(c.id)}
                   className="block w-full text-left bg-white border border-slate-200 rounded-lg p-2 hover:border-emerald-500 transition"
                 >
-                  <div className="text-xs font-medium text-slate-800 truncate">{c.listing.address}</div>
-                  <div className="text-xs text-slate-500 mt-0.5">{c.listing.price}</div>
-                  <div className="flex items-center justify-between mt-1.5">
-                    {c.offer_amount ? (
-                      <span className="text-[10px] bg-emerald-50 text-emerald-700 px-1.5 py-0.5 rounded">
-                        Offer £{parseInt(c.offer_amount).toLocaleString()}
-                      </span>
-                    ) : <span />}
-                    {c.agent_name && (
-                      <span className="text-[10px] text-slate-400 truncate">{c.agent_name}</span>
-                    )}
-                  </div>
-                </button>
+                  <button
+                    type="button"
+                    onClick={() => setOpenId(c.id)}
+                    className="block w-full text-left"
+                  >
+                    <div className="text-xs font-medium text-slate-800 truncate">{c.listing.address}</div>
+                    <div className="text-xs text-slate-500 mt-0.5">{c.listing.price}</div>
+                    <div className="flex items-center justify-between mt-1.5">
+                      {c.offer_amount ? (
+                        <span className="text-[10px] bg-emerald-50 text-emerald-700 px-1.5 py-0.5 rounded">
+                          Offer £{parseInt(c.offer_amount).toLocaleString()}
+                        </span>
+                      ) : <span />}
+                      {c.agent_name && (
+                        <span className="text-[10px] text-slate-400 truncate">{c.agent_name}</span>
+                      )}
+                    </div>
+                  </button>
+                  {c.agent_phone && (
+                    <a
+                      href={`tel:${c.agent_phone.replace(/\s+/g, "")}`}
+                      onClick={(e) => e.stopPropagation()}
+                      className="mt-1.5 flex items-center justify-center gap-1 text-[10px] font-mono bg-emerald-50 hover:bg-emerald-100 text-emerald-700 rounded px-1.5 py-1 transition"
+                    >
+                      ☎ {c.agent_phone}
+                    </a>
+                  )}
+                </div>
               ))}
             </div>
           </div>
@@ -234,8 +248,32 @@ function CardDetail({
                 value={agentPhone}
                 onChange={(e) => setAgentPhone(e.target.value)}
                 onBlur={() => onUpdateCall({ agent_phone: agentPhone })}
-                className="w-full px-2 py-1.5 border border-slate-300 rounded text-sm"
+                className="w-full px-2 py-1.5 border border-slate-300 rounded text-sm mb-2"
               />
+              <a
+                href={agentPhone ? `tel:${agentPhone.replace(/\s+/g, "")}` : undefined}
+                onClick={(e) => {
+                  if (!agentPhone) { e.preventDefault(); return; }
+                  // Stamp the call on the record so the pipeline knows it was dialled.
+                  onUpdateCall({ called_at: new Date().toISOString() });
+                  // If we were in "to_call", advance to "called_no_answer" by default —
+                  // the VA can change to "called_waiting" or "offer_made" after the call.
+                  if (card.stage === "to_call") onStageChange("called_no_answer");
+                }}
+                className={`block w-full text-center px-2 py-2 rounded text-sm font-semibold transition ${
+                  agentPhone
+                    ? "bg-emerald-500 hover:bg-emerald-600 text-white"
+                    : "bg-slate-200 text-slate-400 cursor-not-allowed"
+                }`}
+                aria-disabled={!agentPhone}
+              >
+                {agentPhone ? `☎ Call ${agentPhone}` : "No phone number"}
+              </a>
+              {card.called_at && (
+                <p className="text-[10px] text-slate-400 mt-1.5 text-center">
+                  Last dialled: {new Date(card.called_at).toLocaleString("en-GB", { dateStyle: "short", timeStyle: "short" })}
+                </p>
+              )}
             </section>
 
             <section className="bg-slate-50 rounded-lg p-3">
