@@ -142,6 +142,14 @@
       "destination": "/app.html"
     },
     {
+      "source": "/tinder",
+      "destination": "/app.html"
+    },
+    {
+      "source": "/tinder/:path*",
+      "destination": "/app.html"
+    },
+    {
       "source": "/caller",
       "destination": "/app.html"
     },
