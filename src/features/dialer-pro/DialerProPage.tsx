@@ -954,6 +954,7 @@ export function DialerProContent({ autoCallContactId, pipelineColumnId, onAutoCa
               columns={outcomeColumns}
               columnsLoading={outcomeColumnsLoading}
               campaignPipelineId={camp?.pipelineId ?? null}
+              isBrrrrCampaign={camp?.name === "BRRRR"}
               suggestedId={suggestedOutcomeId}
               applying={machine.applying}
               onNext={handleWrapUpNext}
@@ -1215,6 +1216,10 @@ interface WrapUpCardProps {
    *  empty-state copy: null → "Link a pipeline"; set but no columns →
    *  "Pipeline has no columns". */
   campaignPipelineId?: string | null;
+  /** True if this is the BRRRR campaign — by design no CRM pipeline is
+   *  linked because /tinder/pipeline owns BRRRR stages. Shown a friendly
+   *  hint instead of the "No pipeline linked" warning. */
+  isBrrrrCampaign?: boolean;
   suggestedId: string | null;
   applying: boolean;
   onNext: (columnId: string | null, notes: string) => void;
@@ -1228,7 +1233,7 @@ interface WrapUpCardProps {
   onMinimize: () => void;
 }
 
-function WrapUpCard({ lead, endReason, durationSec, columns, columnsLoading = false, campaignPipelineId = null, suggestedId, applying, onNext, onSkip, onRedial, onPause, onSendAgreement, onDragStart, onDragMove, onDragEnd, onMinimize }: WrapUpCardProps) {
+function WrapUpCard({ lead, endReason, durationSec, columns, columnsLoading = false, campaignPipelineId = null, isBrrrrCampaign = false, suggestedId, applying, onNext, onSkip, onRedial, onPause, onSendAgreement, onDragStart, onDragMove, onDragEnd, onMinimize }: WrapUpCardProps) {
   const [pickedId, setPickedId] = useState<string | null>(suggestedId);
   const [notes, setNotes] = useState('');
   const [showMore, setShowMore] = useState(false);
@@ -1318,11 +1323,19 @@ function WrapUpCard({ lead, endReason, durationSec, columns, columnsLoading = fa
                 Loading pipeline stages…
               </div>
             ) : !campaignPipelineId ? (
-              <div className="text-[12px] text-[#92400E] bg-[#FEF3C7] border border-[#FDE68A] rounded-lg px-3 py-2 leading-relaxed">
-                No pipeline linked to this campaign. Open{' '}
-                <span className="font-semibold">Settings → Overview</span> for
-                this campaign and pick a pipeline so outcomes route correctly.
-              </div>
+              isBrrrrCampaign ? (
+                <div className="text-[12px] text-emerald-800 bg-emerald-50 border border-emerald-200 rounded-lg px-3 py-2 leading-relaxed">
+                  <span className="font-semibold">BRRRR campaign</span> — use the
+                  BRRRR panel below to set the stage. It writes
+                  straight to <span className="font-mono text-[11px]">/tinder/pipeline</span>.
+                </div>
+              ) : (
+                <div className="text-[12px] text-[#92400E] bg-[#FEF3C7] border border-[#FDE68A] rounded-lg px-3 py-2 leading-relaxed">
+                  No pipeline linked to this campaign. Open{' '}
+                  <span className="font-semibold">Settings → Overview</span> for
+                  this campaign and pick a pipeline so outcomes route correctly.
+                </div>
+              )
             ) : (
               <div className="text-[12px] text-[#92400E] bg-[#FEF3C7] border border-[#FDE68A] rounded-lg px-3 py-2 leading-relaxed">
                 The linked pipeline has no columns yet. Open{' '}
@@ -1365,8 +1378,9 @@ function WrapUpCard({ lead, endReason, durationSec, columns, columnsLoading = fa
 
         {/* BRRRR questionnaire \u2014 only renders when this contact was pushed from
             /tinder/pipeline (custom_fields.source === 'brrrr'). Invisible to
-            every other CRM call. */}
-        {lead?.contactId && <BrrrrCallPanel contactId={lead.contactId} />}
+            every other CRM call. lead.id is the wk_dialer_queue row id so the
+            panel can mark the lead 'done' after the agent picks a stage. */}
+        {lead?.contactId && <BrrrrCallPanel contactId={lead.contactId} queueRowId={lead.id ?? null} />}
 
         {/* Send Agreement */}
         <div className="px-4 pb-3">
