@@ -3,16 +3,16 @@
 
 import { Link, Outlet } from "react-router-dom";
 import { useState } from "react";
-import ProtectedRoute from "@/components/ProtectedRoute";
 import { useAuth } from "@/hooks/useAuth";
 import TinderSidebar from "./TinderSidebar";
+import TinderGuard from "./TinderGuard";
 
 export default function TinderLayout() {
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const { isAdmin } = useAuth();
 
   return (
-    <ProtectedRoute>
+    <TinderGuard>
       <div
         data-feature="TINDER__LAYOUT"
         className="h-screen flex flex-col bg-[#F3F3EE]"
@@ -57,6 +57,6 @@ export default function TinderLayout() {
           </main>
         </div>
       </div>
-    </ProtectedRoute>
+    </TinderGuard>
   );
 }

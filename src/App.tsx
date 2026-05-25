@@ -30,6 +30,7 @@ import {
   AgentsPage as TinderAgentsPage,
 } from "@/features/tinder";
 import TinderLayout from "@/features/tinder/layout/TinderLayout";
+import TinderLoginPage from "@/features/tinder/TinderLoginPage";
 import DealsPage from "@/features/deals/DealsPage";
 import DealDetail from "@/features/deals/DealDetail";
 import CRMPage from "@/features/crm/CRMPage";
@@ -232,6 +233,8 @@ const App = () => (
             <Route path="invest/payouts" element={<InvestPayoutsPage />} />
             <Route path="invest/proposals" element={<InvestProposalsPage />} />
           </Route>
+          {/* Tinder login — pre-auth, outside TinderLayout's ProtectedRoute */}
+          <Route path="/tinder/login" element={<TinderLoginPage />} />
           {/* Tinder (BRRRR property tool) — standalone workspace, no dashboard chrome. Mirrors /crm. */}
           <Route path="/tinder" element={<TinderLayout />}>
             <Route index element={<TinderPage />} />
