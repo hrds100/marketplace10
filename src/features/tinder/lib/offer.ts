@@ -60,16 +60,28 @@ export function calculateOffer(
   }
 
   // Subject property's sqft — prefer scraped value, fall back to converted sqm.
+  //
+  // Sanity floor: a real flat is at least ~100 sqft. The scraper occasionally
+  // misreads a value (e.g. property 171839915 came through as "4 sqft" because
+  // the regex picked up the digit '4' from another part of the page) which
+  // would otherwise produce nonsense offers like £409. When sqft looks too
+  // small, fall back to the more reliable sqm field × 10.764.
+  const MIN_REASONABLE_SQFT = 100;
   let sqft = parseFloat(listing.floor_area_sqft ?? "");
-  if (!sqft || sqft <= 0) {
-    const sqm = parseFloat(listing.floor_area_sqm ?? "");
+  const sqm = parseFloat(listing.floor_area_sqm ?? "");
+
+  if (!sqft || sqft <= 0 || sqft < MIN_REASONABLE_SQFT) {
     if (sqm && sqm > 0) sqft = Math.round(sqmToSqft(sqm));
   }
-  if (!sqft || sqft <= 0) {
+
+  if (!sqft || sqft < MIN_REASONABLE_SQFT) {
     return {
       source: "unavailable",
       amount: null,
-      reason: "Subject property's floor area is unknown — Hugo needs to set an override.",
+      reason:
+        sqft && sqft > 0
+          ? `Floor area on the listing (${sqft} sqft) looks wrong — Hugo needs to set an override.`
+          : "Subject property's floor area is unknown — Hugo needs to set an override.",
     };
   }
 
