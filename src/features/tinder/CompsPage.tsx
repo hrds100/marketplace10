@@ -4,6 +4,7 @@ import { useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import { useShortlistedWithComps } from "./hooks/useComps";
 import { usePipeline } from "./hooks/usePipeline";
+import { useRefreshComps } from "./hooks/useRefreshComps";
 import { CompTable } from "./components/CompTable";
 import { GDVCalculator } from "./components/GDVCalculator";
 import { DealCalculator } from "./components/DealCalculator";
@@ -12,11 +13,26 @@ import { filterRent, filterSaleSame, filterSaleTarget, fmt } from "./lib/gdv";
 import type { ShortlistedSubject } from "./hooks/useComps";
 
 export default function CompsPage() {
-  const { subjects, loading } = useShortlistedWithComps();
+  const { subjects, loading, reload: reloadComps } = useShortlistedWithComps();
   const { cards, pushToPipeline, reload: reloadPipeline } = usePipeline();
+  const { refresh: refreshComps, isBusy: isRefreshing, error: refreshError } = useRefreshComps();
   const [selectedPid, setSelectedPid] = useState<string | null>(null);
   const [gdv, setGdv] = useState(0);
   const [pushing, setPushing] = useState<ShortlistedSubject | null>(null);
+  const [refreshMsg, setRefreshMsg] = useState<string | null>(null);
+
+  async function handleRefreshComps(property_id: string) {
+    setRefreshMsg(null);
+    const result = await refreshComps(property_id);
+    if (result.ok) {
+      setRefreshMsg(`✓ Fetched ${result.count} comp${result.count === 1 ? "" : "s"}`);
+      await reloadComps();
+      // Clear the success message after 5 seconds
+      setTimeout(() => setRefreshMsg((m) => (m?.startsWith("✓") ? null : m)), 5000);
+    } else {
+      setRefreshMsg(`✗ ${result.error}`);
+    }
+  }
 
   const subject = useMemo(
     () => subjects.find((s) => s.property_id === selectedPid) ?? subjects[0] ?? null,
@@ -83,22 +99,46 @@ export default function CompsPage() {
                 </p>
               </div>
               <div className="shrink-0 flex flex-col items-end gap-1.5">
-                {isInPipeline ? (
-                  <Link
-                    to="/tinder/pipeline"
-                    className="px-4 py-2 text-sm bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg font-medium"
-                  >Already in pipeline →</Link>
-                ) : compsReady ? (
+                <div className="flex items-center gap-2">
                   <button
-                    onClick={() => setPushing(subject)}
-                    className="px-4 py-2 text-sm bg-emerald-500 hover:bg-emerald-600 text-white rounded-lg font-semibold shadow-sm"
-                  >📞 Push to pipeline</button>
-                ) : (
-                  <button
-                    disabled
-                    className="px-4 py-2 text-sm bg-slate-200 text-slate-400 rounded-lg font-semibold cursor-not-allowed"
-                    title="Run the comps fetcher first — pipeline needs comps for the offer math."
-                  >Comps needed</button>
+                    onClick={() => handleRefreshComps(subject.property_id)}
+                    disabled={isRefreshing(subject.property_id)}
+                    title="Runs Playwright + Land Registry on the scraper server. Takes 30–90 seconds."
+                    className={`px-3 py-2 text-sm rounded-lg font-medium transition ${
+                      isRefreshing(subject.property_id)
+                        ? "bg-slate-100 text-slate-400 cursor-wait"
+                        : "bg-white border border-slate-300 hover:bg-slate-50 text-slate-700"
+                    }`}
+                  >
+                    {isRefreshing(subject.property_id) ? (
+                      <span className="inline-flex items-center gap-2">
+                        <span className="w-3 h-3 border-2 border-emerald-500 border-t-transparent rounded-full animate-spin" />
+                        Fetching comps…
+                      </span>
+                    ) : compsReady ? "🔄 Refresh comps" : "🔄 Fetch comps"}
+                  </button>
+                  {isInPipeline ? (
+                    <Link
+                      to="/tinder/pipeline"
+                      className="px-4 py-2 text-sm bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg font-medium"
+                    >Already in pipeline →</Link>
+                  ) : compsReady ? (
+                    <button
+                      onClick={() => setPushing(subject)}
+                      className="px-4 py-2 text-sm bg-emerald-500 hover:bg-emerald-600 text-white rounded-lg font-semibold shadow-sm"
+                    >📞 Push to pipeline</button>
+                  ) : (
+                    <button
+                      disabled
+                      className="px-4 py-2 text-sm bg-slate-200 text-slate-400 rounded-lg font-semibold cursor-not-allowed"
+                      title="Run the comps fetcher first — pipeline needs comps for the offer math."
+                    >Comps needed</button>
+                  )}
+                </div>
+                {refreshMsg && (
+                  <span className={`text-[11px] ${refreshMsg.startsWith("✓") ? "text-emerald-700" : "text-rose-600"}`}>
+                    {refreshMsg}
+                  </span>
                 )}
                 {suggestedOffer && !isInPipeline && compsReady && (
                   <p className="text-[11px] text-slate-500">
