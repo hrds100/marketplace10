@@ -45,12 +45,43 @@ export function usePushToCrm() {
     if (campErr) return { ok: false, error: `Campaign lookup failed: ${campErr.message}` };
     if (!campaign) return { ok: false, error: `BRRRR campaign not found in wk_dialer_campaigns.` };
 
+    // 1b. Ownership model:
+    //
+    //     Every wk_contact is OWNED by an admin (workspace_role='admin').
+    //     Agents never own contacts — they only access them through
+    //     wk_lead_assignments rows in 'assigned' or 'in_progress' status.
+    //     This way, deleting an agent just CASCADEs their assignments away
+    //     and no contact/listing/call history is lost.
+    //
+    //     For this push we resolve:
+    //       • ownerAdminId — the admin whose inbox this contact lives in.
+    //         Defaults to the primary admin (hugo@nfstay.com); the DB has
+    //         a column default that handles unknown cases too.
+    //       • soleAgentId — the agent currently on the BRRRR campaign, if
+    //         exactly one. We give them a wk_lead_assignments row and
+    //         stamp the queue row's agent_id so they pick it up.
+    const { data: admins } = await t("profiles")
+      .select("id, email")
+      .eq("workspace_role", "admin");
+    const ownerAdminId: string | null =
+      (admins ?? []).find((a: { email: string | null }) => a.email === "hugo@nfstay.com")?.id
+      ?? (admins ?? [])[0]?.id
+      ?? null;
+
+    const { data: campaignAgents } = await t("wk_campaign_agents")
+      .select("agent_id")
+      .eq("campaign_id", campaign.id);
+    const agentIds: string[] = (campaignAgents ?? [])
+      .map((r: { agent_id: string | null }) => r.agent_id)
+      .filter((id: string | null): id is string => !!id);
+    const soleAgentId = agentIds.length === 1 ? agentIds[0] : null;
+
     const phoneNorm = normalisePhone(card.agent_phone);
     const propertyAddress = card.listing?.address ?? "";
 
     // 2. Find or create the wk_contact (phone is UNIQUE)
     const { data: existingContact } = await t("wk_contacts")
-      .select("id, custom_fields, name")
+      .select("id, custom_fields, name, owner_agent_id")
       .eq("phone", phoneNorm)
       .maybeSingle();
 
@@ -77,18 +108,30 @@ export function usePushToCrm() {
         brrrr: brrrrTag,
         brrrr_history: [brrrrTag, ...history.filter((h: any) => h?.brrrr_call_id !== card.id)].slice(0, 20),
       };
+      // If the contact has no owner yet (legacy data), park it with admin.
+      // Never overwrite an existing owner — that contact is already managed.
+      const ownerPatch =
+        ownerAdminId && !(existingContact as any).owner_agent_id
+          ? { owner_agent_id: ownerAdminId }
+          : {};
       const { error: upErr } = await t("wk_contacts")
-        .update({ custom_fields: nextCustom, name: existingContact.name || (card.agent_name ?? null) })
+        .update({
+          custom_fields: nextCustom,
+          name: existingContact.name || (card.agent_name ?? null),
+          ...ownerPatch,
+        })
         .eq("id", contactId);
       if (upErr) return { ok: false, error: `Contact update failed: ${upErr.message}` };
     } else {
       // New contact, BRRRR-only. pipeline_column_id stays null on purpose so
       // this contact doesn't clutter the existing CRM kanbans — it'll only
-      // appear in the BRRRR dialer queue.
+      // appear in the BRRRR dialer queue. Owner is admin; agent gets visibility
+      // via the wk_lead_assignments insert further down.
       const { data: created, error: insErr } = await t("wk_contacts")
         .insert({
           name: card.agent_name ?? "(unknown agent)",
           phone: phoneNorm,
+          owner_agent_id: ownerAdminId,
           custom_fields: {
             source: "brrrr",
             brrrr: brrrrTag,
@@ -101,13 +144,39 @@ export function usePushToCrm() {
       contactId = created.id;
     }
 
+    // 2b. Give the sole campaign agent (if any) read access via a
+    //     wk_lead_assignments row. Idempotent — skip if they already have an
+    //     active assignment for this contact.
+    if (soleAgentId) {
+      const { data: existingAssignment } = await t("wk_lead_assignments")
+        .select("id")
+        .eq("contact_id", contactId)
+        .eq("agent_id", soleAgentId)
+        .in("status", ["assigned", "in_progress"])
+        .maybeSingle();
+      if (!existingAssignment) {
+        await t("wk_lead_assignments").insert({
+          contact_id: contactId,
+          agent_id: soleAgentId,
+          campaign_id: campaign.id,
+          status: "assigned",
+          assigned_at: new Date().toISOString(),
+        });
+      }
+    }
+
     // 3. Drop into the dialer queue (pending). Don't reuse an existing pending
     //    row — each push is a discrete intent ("call this agent about THIS
     //    property"), so a new row per push is correct.
+    //
+    //    Stamp agent_id when there's a single agent on the campaign — the
+    //    dialer-pro UI uses this for the "my queue" view. NULL is OK when
+    //    multiple agents share the campaign (admin assigns later).
     const { data: queueRow, error: qErr } = await t("wk_dialer_queue")
       .insert({
         campaign_id: campaign.id,
         contact_id: contactId,
+        agent_id: soleAgentId,
         status: "pending",
         priority: 0,
       })
