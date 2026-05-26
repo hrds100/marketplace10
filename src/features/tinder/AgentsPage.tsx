@@ -79,6 +79,9 @@ function AgentsTable() {
   const [error, setError] = useState<string | null>(null);
   const [confirmRemove, setConfirmRemove] = useState<AgentRow | null>(null);
   const [showInvite, setShowInvite] = useState(false);
+  const [resettingPw, setResettingPw] = useState<AgentRow | null>(null);
+  const [confirmLogout, setConfirmLogout] = useState<AgentRow | null>(null);
+  const [flash, setFlash] = useState<{ kind: "ok" | "err"; msg: string } | null>(null);
 
   const load = async () => {
     setLoading(true);
@@ -111,6 +114,50 @@ function AgentsTable() {
       await load();
     } catch (e: any) {
       setError(`Failed to change role: ${e?.message ?? String(e)}`);
+    } finally {
+      setBusy(null);
+    }
+  }
+
+  async function setPassword(agent: AgentRow, newPassword: string) {
+    setBusy(agent.id);
+    setError(null);
+    setFlash(null);
+    try {
+      const { data, error: e } = await (supabase.functions as unknown as SupabaseFunctionsTyped).invoke<
+        { agent_id: string; new_password: string }, { ok: boolean; error?: string }
+      >("wk-set-agent-password", { body: { agent_id: agent.id, new_password: newPassword } });
+      if (e) throw e;
+      if (!data?.ok) throw new Error(data?.error || "Unknown error");
+      setResettingPw(null);
+      setFlash({ kind: "ok", msg: `Password reset for ${agent.email}. Share the new password with them.` });
+      setTimeout(() => setFlash(null), 6000);
+    } catch (e: any) {
+      setError(`Failed to set password: ${e?.message ?? String(e)}`);
+    } finally {
+      setBusy(null);
+    }
+  }
+
+  async function logoutEverywhere(agent: AgentRow) {
+    setBusy(agent.id);
+    setError(null);
+    setFlash(null);
+    try {
+      const { data, error: e } = await (supabase.functions as unknown as SupabaseFunctionsTyped).invoke<
+        { agent_id: string }, { ok: boolean; sessions_revoked?: number; error?: string }
+      >("wk-logout-agent-everywhere", { body: { agent_id: agent.id } });
+      if (e) throw e;
+      if (!data?.ok) throw new Error(data?.error || "Unknown error");
+      setConfirmLogout(null);
+      const n = data.sessions_revoked ?? 0;
+      setFlash({
+        kind: "ok",
+        msg: `Signed ${agent.email} out (${n} session${n === 1 ? "" : "s"} revoked). They'll be kicked within an hour or immediately if you also reset their password.`,
+      });
+      setTimeout(() => setFlash(null), 8000);
+    } catch (e: any) {
+      setError(`Failed to log out: ${e?.message ?? String(e)}`);
     } finally {
       setBusy(null);
     }
@@ -204,11 +251,25 @@ function AgentsTable() {
                   </select>
                 </td>
                 <td className="px-4 py-3 text-right">
-                  <button
-                    onClick={() => setConfirmRemove(a)}
-                    disabled={busy === a.id}
-                    className="text-xs text-rose-600 hover:text-rose-800 font-medium disabled:opacity-50"
-                  >Remove</button>
+                  <div className="inline-flex items-center gap-3">
+                    <button
+                      onClick={() => setResettingPw(a)}
+                      disabled={busy === a.id}
+                      title="Set a new password — the agent will need to use it next time they sign in."
+                      className="text-xs text-blue-700 hover:text-blue-900 font-medium disabled:opacity-50"
+                    >Change password</button>
+                    <button
+                      onClick={() => setConfirmLogout(a)}
+                      disabled={busy === a.id}
+                      title="Sign this agent out of every device. Their access tokens will expire within an hour."
+                      className="text-xs text-amber-700 hover:text-amber-900 font-medium disabled:opacity-50"
+                    >Log out everywhere</button>
+                    <button
+                      onClick={() => setConfirmRemove(a)}
+                      disabled={busy === a.id}
+                      className="text-xs text-rose-600 hover:text-rose-800 font-medium disabled:opacity-50"
+                    >Remove</button>
+                  </div>
                 </td>
               </tr>
             ))}
@@ -235,6 +296,34 @@ function AgentsTable() {
           onCancel={() => setConfirmRemove(null)}
           onConfirm={() => removeAgent(confirmRemove)}
         />
+      )}
+
+      {resettingPw && (
+        <ChangePasswordModal
+          agent={resettingPw}
+          busy={busy === resettingPw.id}
+          onCancel={() => setResettingPw(null)}
+          onConfirm={(pw) => setPassword(resettingPw, pw)}
+        />
+      )}
+
+      {confirmLogout && (
+        <ConfirmLogoutModal
+          agent={confirmLogout}
+          busy={busy === confirmLogout.id}
+          onCancel={() => setConfirmLogout(null)}
+          onConfirm={() => logoutEverywhere(confirmLogout)}
+        />
+      )}
+
+      {flash && (
+        <div className={`fixed bottom-6 right-6 z-50 px-4 py-3 rounded-lg shadow-lg border max-w-sm text-sm ${
+          flash.kind === "ok"
+            ? "bg-emerald-50 border-emerald-200 text-emerald-800"
+            : "bg-rose-50 border-rose-200 text-rose-800"
+        }`}>
+          {flash.msg}
+        </div>
       )}
     </>
   );
@@ -349,6 +438,113 @@ function InviteModal({ onClose, onCreated }: { onClose: () => void; onCreated: (
           </button>
         </div>
       </form>
+    </div>
+  );
+}
+
+function ChangePasswordModal({
+  agent, busy, onCancel, onConfirm,
+}: {
+  agent: AgentRow;
+  busy: boolean;
+  onCancel: () => void;
+  onConfirm: (newPassword: string) => void;
+}) {
+  const [pw, setPw] = useState("");
+  const [confirm, setConfirm] = useState("");
+  const [show, setShow] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  function submit(e: React.FormEvent) {
+    e.preventDefault();
+    setError(null);
+    if (pw.length < 8) { setError("Password must be at least 8 characters."); return; }
+    if (pw !== confirm) { setError("Passwords don't match."); return; }
+    onConfirm(pw);
+  }
+
+  return (
+    <div className="fixed inset-0 bg-slate-900/60 z-50 flex items-center justify-center p-4">
+      <form onSubmit={submit} className="bg-white rounded-xl shadow-2xl w-full max-w-md p-6">
+        <h2 className="text-lg font-bold text-slate-800">Change password for {agent.name || agent.email}</h2>
+        <p className="text-sm text-slate-500 mt-1">
+          The new password takes effect immediately. Share it with the agent — they'll need it next time they sign in.
+        </p>
+
+        <label className="block mt-4 text-sm font-medium text-slate-700">New password
+          <div className="relative mt-1">
+            <input
+              type={show ? "text" : "password"}
+              value={pw}
+              onChange={(e) => setPw(e.target.value)}
+              disabled={busy}
+              autoComplete="new-password"
+              placeholder="At least 8 characters"
+              className="w-full px-3 py-2 pr-20 border border-slate-300 rounded-lg font-mono text-sm"
+            />
+            <button type="button" onClick={() => setShow((v) => !v)}
+              className="absolute right-2 top-1/2 -translate-y-1/2 text-[11px] text-slate-500 hover:text-slate-800 px-1">
+              {show ? "Hide" : "Show"}
+            </button>
+          </div>
+        </label>
+
+        <label className="block mt-3 text-sm font-medium text-slate-700">Confirm new password
+          <input
+            type={show ? "text" : "password"}
+            value={confirm}
+            onChange={(e) => setConfirm(e.target.value)}
+            disabled={busy}
+            autoComplete="new-password"
+            className="mt-1 w-full px-3 py-2 border border-slate-300 rounded-lg font-mono text-sm"
+          />
+        </label>
+
+        {error && <div className="mt-3 p-2 rounded bg-rose-50 text-rose-700 text-sm">{error}</div>}
+
+        <div className="flex justify-end gap-2 mt-6">
+          <button type="button" onClick={onCancel} disabled={busy}
+            className="px-4 py-2 text-sm font-medium text-slate-600 hover:text-slate-800 disabled:opacity-50">
+            Cancel
+          </button>
+          <button type="submit" disabled={busy}
+            className="px-4 py-2 text-sm font-medium bg-blue-600 hover:bg-blue-700 text-white rounded-lg disabled:opacity-50">
+            {busy ? "Setting…" : "Set new password"}
+          </button>
+        </div>
+      </form>
+    </div>
+  );
+}
+
+function ConfirmLogoutModal({
+  agent, busy, onCancel, onConfirm,
+}: {
+  agent: AgentRow;
+  busy: boolean;
+  onCancel: () => void;
+  onConfirm: () => void;
+}) {
+  return (
+    <div className="fixed inset-0 bg-slate-900/60 z-50 flex items-center justify-center p-4">
+      <div className="bg-white rounded-xl shadow-2xl w-full max-w-md p-6">
+        <h2 className="text-lg font-bold text-slate-800">Sign out {agent.name || agent.email} everywhere?</h2>
+        <p className="text-sm text-slate-500 mt-2">
+          Their existing sessions will be revoked — they'll need to sign in again on every device.
+          Already-issued access tokens may keep working for up to an hour (their natural TTL).
+          For an immediate kick, also change their password.
+        </p>
+        <div className="flex justify-end gap-2 mt-6">
+          <button onClick={onCancel} disabled={busy}
+            className="px-4 py-2 text-sm font-medium text-slate-600 hover:text-slate-800 disabled:opacity-50">
+            Cancel
+          </button>
+          <button onClick={onConfirm} disabled={busy}
+            className="px-4 py-2 text-sm font-medium bg-amber-600 hover:bg-amber-700 text-white rounded-lg disabled:opacity-50">
+            {busy ? "Signing out…" : "Sign out everywhere"}
+          </button>
+        </div>
+      </div>
     </div>
   );
 }

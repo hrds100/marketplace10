@@ -21,6 +21,8 @@ import {
   Voicemail,
   Ban,
   Key,
+  KeyRound,
+  LogOut,
   Eye,
   EyeOff,
   Mail,
@@ -2053,6 +2055,61 @@ function AgentsTab() {
   // MVP and it keeps the flow honest (admin sees the email being
   // deleted, can cancel).
   const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [pwAgentId, setPwAgentId] = useState<string | null>(null);
+  const [logoutAgentId, setLogoutAgentId] = useState<string | null>(null);
+  const [busyAgentId, setBusyAgentId] = useState<string | null>(null);
+
+  // Admin can set a new password for any agent. Edge function uses the
+  // service role to call supabase.auth.admin.updateUserById and is admin-
+  // gated server-side via wk_is_admin(), so even if someone bypasses the
+  // UI the password won't change unless they're really an admin.
+  const setAgentPassword = async (agentId: string, newPassword: string) => {
+    const target = agents.find((a) => a.id === agentId);
+    setBusyAgentId(agentId);
+    try {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const { data, error } = await (supabase.functions as any).invoke('wk-set-agent-password', {
+        body: { agent_id: agentId, new_password: newPassword },
+      });
+      if (error) { pushToast(`Failed: ${error.message}`, 'error'); return false; }
+      if (data?.error) { pushToast(`Failed: ${data.error}`, 'error'); return false; }
+      pushToast(`Password reset for ${target?.email ?? 'agent'} — share the new one with them`, 'success');
+      setPwAgentId(null);
+      return true;
+    } catch (e) {
+      pushToast(`Failed: ${e instanceof Error ? e.message : 'unknown error'}`, 'error');
+      return false;
+    } finally {
+      setBusyAgentId(null);
+    }
+  };
+
+  // Sign the agent out of every device by deleting all their refresh tokens.
+  // Already-issued access tokens may live for up to an hour (TTL); for an
+  // immediate kick, the admin should also reset the password.
+  const logoutAgentEverywhere = async (agentId: string) => {
+    const target = agents.find((a) => a.id === agentId);
+    setBusyAgentId(agentId);
+    try {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const { data, error } = await (supabase.functions as any).invoke('wk-logout-agent-everywhere', {
+        body: { agent_id: agentId },
+      });
+      if (error) { pushToast(`Failed: ${error.message}`, 'error'); return; }
+      if (data?.error) { pushToast(`Failed: ${data.error}`, 'error'); return; }
+      const n = data?.sessions_revoked ?? 0;
+      pushToast(
+        `Signed ${target?.email ?? 'agent'} out (${n} session${n === 1 ? '' : 's'} revoked)`,
+        'success',
+      );
+      setLogoutAgentId(null);
+    } catch (e) {
+      pushToast(`Failed: ${e instanceof Error ? e.message : 'unknown error'}`, 'error');
+    } finally {
+      setBusyAgentId(null);
+    }
+  };
+
   const remove = async (id: string) => {
     const target = agents.find((a) => a.id === id);
     if (!target) return;
@@ -2255,18 +2312,36 @@ function AgentsTab() {
                   />
                 </td>
                 <td className="py-2 text-right">
-                  {a.isAdmin ? (
-                    <span className="text-[10px] text-[#9CA3AF]">protected</span>
-                  ) : (
+                  <div className="inline-flex items-center gap-0.5">
                     <button
-                      onClick={() => void remove(a.id)}
-                      disabled={deletingId === a.id}
-                      className="text-[#9CA3AF] hover:text-[#EF4444] p-1.5 rounded disabled:opacity-40 disabled:cursor-wait"
-                      title="Remove agent"
+                      onClick={() => setPwAgentId(a.id)}
+                      disabled={busyAgentId === a.id || deletingId === a.id}
+                      className="text-[#9CA3AF] hover:text-[#2563EB] p-1.5 rounded disabled:opacity-40 disabled:cursor-wait"
+                      title="Change password"
                     >
-                      <Trash2 className="w-3.5 h-3.5" />
+                      <KeyRound className="w-3.5 h-3.5" />
                     </button>
-                  )}
+                    <button
+                      onClick={() => setLogoutAgentId(a.id)}
+                      disabled={busyAgentId === a.id || deletingId === a.id}
+                      className="text-[#9CA3AF] hover:text-[#D97706] p-1.5 rounded disabled:opacity-40 disabled:cursor-wait"
+                      title="Sign agent out of every device"
+                    >
+                      <LogOut className="w-3.5 h-3.5" />
+                    </button>
+                    {a.isAdmin ? (
+                      <span className="text-[10px] text-[#9CA3AF] ml-2">protected</span>
+                    ) : (
+                      <button
+                        onClick={() => void remove(a.id)}
+                        disabled={deletingId === a.id || busyAgentId === a.id}
+                        className="text-[#9CA3AF] hover:text-[#EF4444] p-1.5 rounded disabled:opacity-40 disabled:cursor-wait"
+                        title="Remove agent"
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
+                      </button>
+                    )}
+                  </div>
                 </td>
               </tr>
             ))}
@@ -2387,7 +2462,133 @@ function AgentsTab() {
           </div>
         )}
       </Card>
+
+      {pwAgentId && (
+        <AgentPasswordModal
+          agent={agents.find((a) => a.id === pwAgentId)}
+          busy={busyAgentId === pwAgentId}
+          onCancel={() => setPwAgentId(null)}
+          onConfirm={(pw) => void setAgentPassword(pwAgentId, pw)}
+        />
+      )}
+
+      {logoutAgentId && (
+        <AgentLogoutModal
+          agent={agents.find((a) => a.id === logoutAgentId)}
+          busy={busyAgentId === logoutAgentId}
+          onCancel={() => setLogoutAgentId(null)}
+          onConfirm={() => void logoutAgentEverywhere(logoutAgentId)}
+        />
+      )}
     </>
+  );
+}
+
+// ─── AgentPasswordModal — admin sets a new password for an agent ────
+function AgentPasswordModal({
+  agent, busy, onCancel, onConfirm,
+}: {
+  agent: { id: string; name?: string; email?: string } | undefined;
+  busy: boolean;
+  onCancel: () => void;
+  onConfirm: (newPassword: string) => void;
+}) {
+  const [pw, setPw] = useState('');
+  const [confirm, setConfirm] = useState('');
+  const [show, setShow] = useState(false);
+  const [err, setErr] = useState<string | null>(null);
+
+  function submit(e: React.FormEvent) {
+    e.preventDefault();
+    setErr(null);
+    if (pw.length < 8) { setErr('Password must be at least 8 characters.'); return; }
+    if (pw !== confirm) { setErr("Passwords don't match."); return; }
+    onConfirm(pw);
+  }
+
+  return (
+    <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+      <form onSubmit={submit} className="bg-white rounded-[12px] shadow-2xl w-full max-w-md p-5">
+        <h3 className="text-[14px] font-bold text-[#1A1A1A]">Change password for {agent?.name || agent?.email || 'agent'}</h3>
+        <p className="text-[11px] text-[#6B7280] mt-1">The new password takes effect immediately. Share it with the agent.</p>
+
+        <label className="block mt-3 text-[11px] font-semibold text-[#525252]">New password
+          <div className="relative mt-1">
+            <input
+              type={show ? 'text' : 'password'}
+              value={pw}
+              onChange={(e) => setPw(e.target.value)}
+              autoComplete="new-password"
+              placeholder="At least 8 characters"
+              disabled={busy}
+              className="w-full px-3 py-1.5 pr-12 border border-[#E5E5E5] rounded-[8px] font-mono text-[12px]"
+            />
+            <button type="button" onClick={() => setShow((v) => !v)}
+              className="absolute right-2 top-1/2 -translate-y-1/2 text-[10px] text-[#6B7280] hover:text-[#1A1A1A]">
+              {show ? 'Hide' : 'Show'}
+            </button>
+          </div>
+        </label>
+
+        <label className="block mt-2 text-[11px] font-semibold text-[#525252]">Confirm
+          <input
+            type={show ? 'text' : 'password'}
+            value={confirm}
+            onChange={(e) => setConfirm(e.target.value)}
+            autoComplete="new-password"
+            disabled={busy}
+            className="mt-1 w-full px-3 py-1.5 border border-[#E5E5E5] rounded-[8px] font-mono text-[12px]"
+          />
+        </label>
+
+        {err && (
+          <div className="mt-2 text-[11px] text-[#B91C1C] bg-[#FEF2F2] border border-[#FCA5A5] rounded px-2 py-1.5">{err}</div>
+        )}
+
+        <div className="flex justify-end gap-2 mt-4 pt-3 border-t border-[#E5E7EB]">
+          <button type="button" onClick={onCancel} disabled={busy}
+            className="text-[11px] text-[#6B7280] hover:text-[#1A1A1A] px-2 py-1 disabled:opacity-50">
+            Cancel
+          </button>
+          <button type="submit" disabled={busy}
+            className="bg-[#2563EB] text-white text-[12px] font-semibold px-3 py-1.5 rounded-[8px] hover:bg-[#1D4ED8] disabled:opacity-60">
+            {busy ? 'Setting…' : 'Set new password'}
+          </button>
+        </div>
+      </form>
+    </div>
+  );
+}
+
+// ─── AgentLogoutModal — admin signs an agent out of every device ────
+function AgentLogoutModal({
+  agent, busy, onCancel, onConfirm,
+}: {
+  agent: { id: string; name?: string; email?: string } | undefined;
+  busy: boolean;
+  onCancel: () => void;
+  onConfirm: () => void;
+}) {
+  return (
+    <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+      <div className="bg-white rounded-[12px] shadow-2xl w-full max-w-md p-5">
+        <h3 className="text-[14px] font-bold text-[#1A1A1A]">Sign {agent?.name || agent?.email || 'agent'} out everywhere?</h3>
+        <p className="text-[11px] text-[#6B7280] mt-2 leading-relaxed">
+          Their refresh tokens are revoked immediately. Already-issued access tokens may keep working up to one hour (their natural TTL).
+          For an immediate kick, also change their password.
+        </p>
+        <div className="flex justify-end gap-2 mt-4 pt-3 border-t border-[#E5E7EB]">
+          <button onClick={onCancel} disabled={busy}
+            className="text-[11px] text-[#6B7280] hover:text-[#1A1A1A] px-2 py-1 disabled:opacity-50">
+            Cancel
+          </button>
+          <button onClick={onConfirm} disabled={busy}
+            className="bg-[#D97706] text-white text-[12px] font-semibold px-3 py-1.5 rounded-[8px] hover:bg-[#B45309] disabled:opacity-60">
+            {busy ? 'Signing out…' : 'Sign out everywhere'}
+          </button>
+        </div>
+      </div>
+    </div>
   );
 }
 
