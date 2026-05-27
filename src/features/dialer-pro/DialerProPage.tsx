@@ -649,15 +649,37 @@ export function DialerProContent({ autoCallContactId, pipelineColumnId, onAutoCa
 
           <ResizableHandle withHandle />
 
-          {/* COL 2 — Live transcript + AI coach */}
+          {/* COL 2 — Live transcript + AI coach, OR the BRRRR questionnaire
+              for contacts pushed from /tinder/pipeline. For BRRRR calls the
+              VA needs the 19-question form + stage buttons visible WHILE on
+              the phone — the live transcript is secondary (Hugo: "tested but
+              not showing questions during call"). Non-BRRRR contacts keep
+              the existing transcript view. */}
           <ResizablePanel defaultSize={38} minSize={26} className="bg-white border-r border-[#E5E7EB] overflow-hidden">
             {(isLive || state.phase === 'wrap_up') && contact ? (
-              <LiveTranscriptPane
-                durationSec={liveDuration}
-                contactId={contact.id}
-                callId={state.currentCallId}
-                agentFirstName={agentFirstName}
-              />
+              (contact.customFields as Record<string, unknown> | undefined)?.source === 'brrrr' ? (
+                <div className="h-full overflow-y-auto bg-white">
+                  <div className="px-5 py-3 border-b border-[#E5E7EB]">
+                    <div className="text-[11px] uppercase tracking-wide text-[#9CA3AF] font-semibold">
+                      BRRRR call · {state.phase === 'connected' ? 'live' : state.phase === 'wrap_up' ? 'wrap-up' : 'dialling…'}
+                    </div>
+                    <div className="text-[13px] font-semibold text-[#1A1A1A] mt-0.5 truncate">
+                      {contact.name}
+                    </div>
+                  </div>
+                  <BrrrrCallPanel
+                    contactId={contact.id}
+                    queueRowId={state.currentLead?.id ?? null}
+                  />
+                </div>
+              ) : (
+                <LiveTranscriptPane
+                  durationSec={liveDuration}
+                  contactId={contact.id}
+                  callId={state.currentCallId}
+                  agentFirstName={agentFirstName}
+                />
+              )
             ) : (
               <div className="flex-1 flex items-center justify-center h-full text-sm text-[#9CA3AF]">
                 Transcript appears during calls
