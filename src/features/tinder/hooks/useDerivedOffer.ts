@@ -1,6 +1,9 @@
 // Returns the derived offer (calculated or override) for a set of properties.
-// Used by /tinder/pipeline Kanban cards and BrrrrCallPanel so the VA always
-// sees the same number Hugo can verify on /tinder/comps.
+// Used by the BRRRR detail modal on /crm/pipelines and BrrrrCallPanel so the
+// VA always sees the same number — derived from brrrr_listings + brrrr_comps
+// in Supabase, which the brrrr-promote-to-pipeline edge function populates
+// from the Flask scraper at 187.124.117.193:5001 (the /tinder/* React pages
+// are deprecated as of 2026-05-27).
 
 import { useEffect, useMemo, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
