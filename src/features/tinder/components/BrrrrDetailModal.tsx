@@ -316,6 +316,7 @@ function PropertyDetail({
       <section className={`rounded-lg border-2 p-4 ${
         offer?.source === "override" ? "border-violet-200 bg-violet-50"
         : offer?.source === "calculated" ? "border-emerald-200 bg-emerald-50"
+        : offer?.source === "approximate" ? "border-blue-200 bg-blue-50"
         : "border-amber-200 bg-amber-50"
       }`}>
         <div className="flex items-center gap-2 text-[11px] uppercase tracking-wide font-bold text-slate-600">
@@ -323,11 +324,13 @@ function PropertyDetail({
           What to offer
           {offer?.source === "override" && <span className="text-violet-700 normal-case">· Hugo override</span>}
           {offer?.source === "calculated" && <span className="text-emerald-700 normal-case">· auto from GDV</span>}
+          {offer?.source === "approximate" && <span className="text-blue-700 normal-case">· approximate (no subject sqft)</span>}
           {offer?.source === "unavailable" && <span className="text-amber-700 normal-case">· can't calculate</span>}
         </div>
         <div className={`text-3xl font-bold mt-1 ${
           offer?.source === "override" ? "text-violet-800"
           : offer?.source === "calculated" ? "text-emerald-700"
+          : offer?.source === "approximate" ? "text-blue-700"
           : "text-amber-800"
         }`}>
           {offer?.amount != null ? formatGBP(offer.amount) : "—"}
