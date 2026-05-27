@@ -23,7 +23,7 @@
 //   from the precise formula vs the rough one.
 
 import type { BrrrrComp, BrrrrListing } from "../types";
-import { filterSaleTarget, parsePrice, sqmToSqft } from "./gdv";
+import { filterSaleSame, filterSaleTarget, parsePrice, sqmToSqft } from "./gdv";
 
 export const OFFER_OPENING_PCT = 0.70;
 export const OFFER_MAX_BMV_PCT = 0.75;
@@ -88,87 +88,75 @@ export function calculateOffer(
     if (sqm && sqm > 0) sqft = Math.round(sqmToSqft(sqm));
   }
 
-  const subjectSqftMissing = !sqft || sqft < MIN_REASONABLE_SQFT;
-  const subjectSqftLooksWrong = sqft && sqft > 0 && sqft < MIN_REASONABLE_SQFT;
+  const subjectSqftUsable = sqft && sqft >= MIN_REASONABLE_SQFT;
 
-  // £/sqft from target-bed sold comps with EPC floor area
+  // ── Tier 1: strict £/sqft route ────────────────────────────────────
+  // Needs subject sqft AND target-bed comps with EPC floor area.
   const targetComps = filterSaleTarget(comps);
-  const compsWithArea = targetComps.filter(
+  const targetCompsWithArea = targetComps.filter(
     (c) => parseFloat(c.floor_area_sqm ?? "") > 0,
   );
-
-  // FALLBACK: no usable subject sqft. We can still float an approximate
-  // offer using the average target-comp sale price × 70%. Used when
-  // Rightmove didn't expose EPC floor area for the subject (~70% of pushes).
-  if (subjectSqftMissing) {
-    const compPrices = targetComps.map((c) => parsePrice(c.price)).filter((v) => v > 0);
-    if (compPrices.length === 0) {
+  if (subjectSqftUsable && targetCompsWithArea.length > 0) {
+    const ppsfValues = targetCompsWithArea.map((c) => {
+      const compSqft = sqmToSqft(parseFloat(c.floor_area_sqm!));
+      return compSqft > 0 ? parsePrice(c.price) / compSqft : 0;
+    }).filter((v) => v > 0);
+    if (ppsfValues.length > 0) {
+      const ppsf = Math.round(ppsfValues.reduce((a, b) => a + b, 0) / ppsfValues.length);
+      const gdv = ppsf * sqft;
       return {
-        source: "unavailable",
-        amount: null,
-        reason: subjectSqftLooksWrong
-          ? `Floor area looks wrong (${sqft} sqft) AND no target-bed sold comps — set an override.`
-          : targetComps.length === 0
-            ? "No subject floor area AND no target-bed sold comps — set an override."
-            : "No subject floor area AND target-bed comps have no prices — set an override.",
+        source: "calculated",
+        amount: Math.round(gdv * OFFER_OPENING_PCT),
+        ppsf,
+        gdv,
+        sqft,
+        compsUsed: targetCompsWithArea.length,
+        reason: `${Math.round(OFFER_OPENING_PCT * 100)}% of GDV (${targetCompsWithArea.length} target-bed comp${targetCompsWithArea.length === 1 ? "" : "s"} @ £${ppsf}/sqft × ${sqft} sqft = £${Math.round(gdv).toLocaleString()})`,
       };
     }
-    const avgGdv = Math.round(compPrices.reduce((a, b) => a + b, 0) / compPrices.length);
-    const amount = Math.round(avgGdv * OFFER_OPENING_PCT);
+  }
+
+  // ── Tier 2: target-bed avg price route ─────────────────────────────
+  // Used when subject sqft is missing OR target comps lack EPC area.
+  // Still uses target-bed (the BRRRR conversion target), so it accounts
+  // for the bed-uplift uplift — just lower precision than £/sqft.
+  const targetCompPrices = targetComps.map((c) => parsePrice(c.price)).filter((v) => v > 0);
+  if (targetCompPrices.length > 0) {
+    const avgGdv = Math.round(targetCompPrices.reduce((a, b) => a + b, 0) / targetCompPrices.length);
+    const reason = !subjectSqftUsable
+      ? `${Math.round(OFFER_OPENING_PCT * 100)}% of average target-bed comp price (${targetCompPrices.length} comp${targetCompPrices.length === 1 ? "" : "s"} avg £${avgGdv.toLocaleString()}). No subject sqft on listing — set an override if you know it.`
+      : `${Math.round(OFFER_OPENING_PCT * 100)}% of average target-bed comp price (${targetCompPrices.length} comp${targetCompPrices.length === 1 ? "" : "s"} avg £${avgGdv.toLocaleString()}). Comps lack EPC floor area so we can't run the £/sqft route.`;
     return {
       source: "approximate",
-      amount,
+      amount: Math.round(avgGdv * OFFER_OPENING_PCT),
       gdv: avgGdv,
-      compsUsed: compPrices.length,
-      reason: `${Math.round(OFFER_OPENING_PCT * 100)}% of average target-bed comp price (${compPrices.length} comp${compPrices.length === 1 ? "" : "s"} avg £${avgGdv.toLocaleString()}). No subject sqft on listing — set an override if you know it.`,
+      compsUsed: targetCompPrices.length,
+      reason,
     };
   }
 
-  if (compsWithArea.length === 0) {
-    // Subject has sqft but comps don't have EPC area. Same approximate
-    // route: avg comp price × 70% gives Hugo a workable number.
-    const compPrices = targetComps.map((c) => parsePrice(c.price)).filter((v) => v > 0);
-    if (compPrices.length === 0) {
-      return {
-        source: "unavailable",
-        amount: null,
-        reason:
-          targetComps.length === 0
-            ? "No target-bed sold comps yet — run /comps fetcher or set an override."
-            : "Target-bed comps have no prices — set an override.",
-      };
-    }
-    const avgGdv = Math.round(compPrices.reduce((a, b) => a + b, 0) / compPrices.length);
-    const amount = Math.round(avgGdv * OFFER_OPENING_PCT);
+  // ── Tier 3: same-bed avg price route (most conservative) ───────────
+  // Used when there are no target-bed (one-up) comps at all. Falls back
+  // to same-bed sold comps. The bed-uplift uplift isn't priced in here,
+  // so the resulting offer is more conservative — Hugo can still react
+  // to a real number rather than seeing "can't calculate".
+  const sameCompPrices = filterSaleSame(comps).map((c) => parsePrice(c.price)).filter((v) => v > 0);
+  if (sameCompPrices.length > 0) {
+    const avgGdv = Math.round(sameCompPrices.reduce((a, b) => a + b, 0) / sameCompPrices.length);
     return {
       source: "approximate",
-      amount,
+      amount: Math.round(avgGdv * OFFER_OPENING_PCT),
       gdv: avgGdv,
-      compsUsed: compPrices.length,
-      reason: `${Math.round(OFFER_OPENING_PCT * 100)}% of average target-bed comp price (${compPrices.length} comp${compPrices.length === 1 ? "" : "s"} avg £${avgGdv.toLocaleString()}). Comps lack EPC floor area so we can't run the £/sqft route.`,
+      compsUsed: sameCompPrices.length,
+      reason: `${Math.round(OFFER_OPENING_PCT * 100)}% of average same-bed comp price (${sameCompPrices.length} comp${sameCompPrices.length === 1 ? "" : "s"} avg £${avgGdv.toLocaleString()}). No target-bed sold comps yet — this is conservative (doesn't price in the +1 bed conversion).`,
     };
   }
 
-  const ppsfValues = compsWithArea.map((c) => {
-    const compSqft = sqmToSqft(parseFloat(c.floor_area_sqm!));
-    return compSqft > 0 ? parsePrice(c.price) / compSqft : 0;
-  }).filter((v) => v > 0);
-  if (ppsfValues.length === 0) {
-    return { source: "unavailable", amount: null, reason: "Comp prices missing." };
-  }
-
-  const ppsf = Math.round(ppsfValues.reduce((a, b) => a + b, 0) / ppsfValues.length);
-  const gdv = ppsf * sqft;
-  const amount = Math.round(gdv * OFFER_OPENING_PCT);
-
+  // ── No usable comps ────────────────────────────────────────────────
   return {
-    source: "calculated",
-    amount,
-    ppsf,
-    gdv,
-    sqft,
-    compsUsed: compsWithArea.length,
-    reason: `${Math.round(OFFER_OPENING_PCT * 100)}% of GDV (${compsWithArea.length} target-bed comp${compsWithArea.length === 1 ? "" : "s"} @ £${ppsf}/sqft × ${sqft} sqft = £${Math.round(gdv).toLocaleString()})`,
+    source: "unavailable",
+    amount: null,
+    reason: "No target-bed or same-bed sold comps yet — run the comps fetcher on /tinder/comps, or set an override on this card.",
   };
 }
 
