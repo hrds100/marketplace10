@@ -22,6 +22,7 @@ import ContactMetaCompact from './ContactMetaCompact';
 import CallTimeline from './CallTimeline';
 import PostCallPanel from './PostCallPanel';
 import EditContactModal from '../contacts/EditContactModal';
+import BrrrrCallPanel from '@/features/tinder/components/BrrrrCallPanel';
 import type { Contact } from '../../types';
 import { supabase } from '@/integrations/supabase/client';
 import { useSmsV2 } from '../../store/SmsV2Store';
@@ -69,6 +70,15 @@ export default function LiveCallScreen() {
     ) ?? store.contacts[0] ?? null;
 
   const contactFirstName = contact?.name?.trim().split(/\s+/)[0] ?? '';
+
+  // BRRRR contacts (pushed from /tinder/pipeline) get the questionnaire +
+  // stage picker in COL 2 instead of the generic transcript / pipeline-
+  // columns. Without this swap the VA had to wait until the dialer-pro
+  // wrap-up card finished animating to see the BRRRR panel — Hugo's call
+  // was effectively over before he could mark a stage. Now the panel is
+  // visible the moment the placing phase starts.
+  const isBrrrrContact =
+    (contact?.customFields as Record<string, unknown> | undefined)?.source === 'brrrr';
 
   if (!fullScreen) return null;
 
@@ -353,7 +363,24 @@ export default function LiveCallScreen() {
             known (during 'placing'), not just on 'in_call', so we don't miss
             the first transcript chunks Twilio fires before bridge-accept. */}
         <ResizablePanel defaultSize={38} minSize={26} className="bg-white border-r border-[#E5E7EB] overflow-hidden">
-          {phase === 'placing' || phase === 'in_call' ? (
+          {isBrrrrContact ? (
+            // BRRRR call — questionnaire + stage picker stay visible across
+            // placing / in_call / post_call so the VA can fill the answers
+            // and pick a stage WHILE on the phone. Hides PostCallPanel's
+            // generic CRM pipeline columns (Hugo: "showing crm stages
+            // … we don't want that on BRRRR").
+            <div className="h-full overflow-y-auto bg-white">
+              <div className="px-5 py-3 border-b border-[#E5E7EB]">
+                <div className="text-[11px] uppercase tracking-wide text-[#9CA3AF] font-semibold">
+                  BRRRR call · {phase === 'in_call' ? 'live' : phase === 'placing' ? 'dialling…' : 'wrap-up'}
+                </div>
+                <div className="text-[13px] font-semibold text-[#1A1A1A] mt-0.5 truncate">
+                  {call?.contactName ?? contact?.name}
+                </div>
+              </div>
+              <BrrrrCallPanel contactId={contact.id} queueRowId={null} />
+            </div>
+          ) : phase === 'placing' || phase === 'in_call' ? (
             <LiveTranscriptPane
               durationSec={durationSec}
               contactId={contact.id}
