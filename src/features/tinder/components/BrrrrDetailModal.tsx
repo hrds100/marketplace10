@@ -163,7 +163,7 @@ export default function BrrrrDetailModal({ contact, onClose, onOpenDialer }: Pro
         {/* Body — scrolls */}
         <div className="flex-1 overflow-y-auto">
           {selectedPid ? (
-            <PropertyDetail propertyId={selectedPid} historyEntry={selectedHistory} />
+            <PropertyDetail propertyId={selectedPid} historyEntry={selectedHistory} contactId={contact.id} />
           ) : (
             <div className="p-8 text-center text-slate-400 text-sm">
               No BRRRR property linked to this contact. (custom_fields.brrrr is missing.)
@@ -183,9 +183,11 @@ function truncate(s: string, n: number) {
 function PropertyDetail({
   propertyId,
   historyEntry,
+  contactId,
 }: {
   propertyId: string;
   historyEntry: BrrrrHistoryEntry | null;
+  contactId: string;
 }) {
   const [listing, setListing] = useState<BrrrrListing | null>(null);
   const [floorplans, setFloorplans] = useState<BrrrrFloorplan[]>([]);
@@ -259,9 +261,30 @@ function PropertyDetail({
     if (!call?.id) return;
     setStageBusy(true);
     const { error } = await t("brrrr_calls").update({ stage, updated_at: new Date().toISOString() }).eq("id", call.id);
-    setStageBusy(false);
     if (!error) setCall({ ...call, stage });
-  }, [call]);
+
+    // Also move the kanban card to the matching pipeline column so the
+    // /crm/pipelines board reflects the new stage immediately. Without
+    // this, brrrr_calls.stage advances but the card stays put on whatever
+    // column it was last dragged to (Hugo hit this 2026-05-28).
+    try {
+      const { data: pipeline } = await t("wk_pipelines")
+        .select("id").eq("name", "BRRRR").maybeSingle();
+      const pipelineId = pipeline?.id as string | undefined;
+      if (pipelineId) {
+        const { data: col } = await t("wk_pipeline_columns")
+          .select("id")
+          .eq("pipeline_id", pipelineId)
+          .eq("name", STAGE_LABEL[stage])
+          .maybeSingle();
+        if (col?.id) {
+          await t("wk_contacts").update({ pipeline_column_id: col.id }).eq("id", contactId);
+        }
+      }
+    } catch (_) { /* swallow — stage change still succeeded */ }
+
+    setStageBusy(false);
+  }, [call, contactId]);
 
   // Upsert brrrr_call_answers for the current call. Used by the
   // questionnaire's autosave (blur) AND the explicit Save button. Same

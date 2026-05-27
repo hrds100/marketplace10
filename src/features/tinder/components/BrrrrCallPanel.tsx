@@ -126,18 +126,20 @@ export default function BrrrrCallPanel({ contactId, queueRowId }: Props) {
       queueRowId={queueRowId}
       listing={listing}
       comps={comps}
+      contactId={contactId}
     />
   );
 }
 
 function Panel({
-  tag, history, setTag, askingPrice, queueRowId, listing, comps,
+  tag, history, setTag, askingPrice, queueRowId, listing, comps, contactId,
 }: {
   tag: BrrrrTag;
   history: BrrrrTag[];
   setTag: (t: BrrrrTag) => void;
   askingPrice: string | null;
   queueRowId?: string | null;
+  contactId: string;
   listing: BrrrrListing | null;
   comps: BrrrrComp[];
 }) {
@@ -190,6 +192,29 @@ function Panel({
       .eq("id", tag.brrrr_call_id);
     if (error) { setApplying(false); setDoneMsg(`Failed to sync stage: ${error.message}`); return; }
 
+    // Also move the kanban card to the column whose name matches this
+    // stage. Without this, brrrr_calls.stage advances but the contact's
+    // pipeline_column_id stays on whichever column the card was last
+    // dropped on (often "New leads") — so the kanban view goes out of
+    // sync with what the BRRRR panel claims. Hugo hit this 2026-05-28.
+    try {
+      const { data: pipeline } = await t("wk_pipelines")
+        .select("id").eq("name", "BRRRR").maybeSingle();
+      const pipelineId = pipeline?.id as string | undefined;
+      if (pipelineId) {
+        const { data: col } = await t("wk_pipeline_columns")
+          .select("id")
+          .eq("pipeline_id", pipelineId)
+          .eq("name", STAGE_LABEL[stage])
+          .maybeSingle();
+        if (col?.id) {
+          await t("wk_contacts")
+            .update({ pipeline_column_id: col.id })
+            .eq("id", contactId);
+        }
+      }
+    } catch (_) { /* don't fail the stage change just because column sync fell over */ }
+
     // Mark the dialer queue row as done so the lead exits the BRRRR queue.
     if (queueRowId) {
       await t("wk_dialer_queue")
@@ -200,8 +225,8 @@ function Panel({
     setCurrentStage(stage);
     setApplying(false);
     setSavedSuggestion(null);
-    setDoneMsg(`Synced to /tinder/pipeline → ${STAGE_LABEL[stage]}`);
-  }, [tag.brrrr_call_id, queueRowId]);
+    setDoneMsg(`Synced to pipeline → ${STAGE_LABEL[stage]}`);
+  }, [tag.brrrr_call_id, queueRowId, contactId]);
 
   return (
     <div className="mx-4 mb-3 rounded-lg border-2 border-emerald-300 bg-emerald-50/50 overflow-hidden">

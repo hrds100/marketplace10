@@ -14,6 +14,8 @@ import { useDialerProModal } from '../layout/DialerProModalContext';
 import { rowToContact } from '../hooks/useHydrateContacts';
 import { supabase } from '@/integrations/supabase/client';
 import { usePipelines } from '../hooks/usePipelines';
+import { STAGE_LABEL } from '@/features/tinder/types';
+import type { PipelineStage } from '@/features/tinder/types';
 import type { Contact } from '../types';
 
 const PIPELINE_LS_KEY = 'crm_pipelines_selected_id';
@@ -177,6 +179,34 @@ export default function PipelinesPage() {
           pushToast('Move failed — restored previous column', 'error');
         }
       });
+
+      // BRRRR sync (Hugo 2026-05-28): when a BRRRR-tagged card is dragged
+      // to a column whose name matches a BRRRR stage label (e.g. "Called
+      // — waiting"), also update brrrr_calls.stage so the in-call panel /
+      // detail modal don't drift out of sync. Non-BRRRR contacts are a
+      // no-op. The reverse direction (panel stage click → column move)
+      // is handled in BrrrrCallPanel + BrrrrDetailModal's applyStage.
+      const movedContact = contacts.find((c) => c.id === contactId);
+      const movedCol = visibleColumns.find((c) => c.id === colId);
+      const isBrrrrSource =
+        (movedContact?.customFields as Record<string, unknown> | undefined)?.source === 'brrrr';
+      if (isBrrrrSource && movedCol?.name) {
+        const stageEntry = Object.entries(STAGE_LABEL).find(([, label]) => label === movedCol.name);
+        const stage = stageEntry?.[0] as PipelineStage | undefined;
+        const brrrrCallId = ((movedContact?.customFields as Record<string, unknown> | undefined)
+          ?.brrrr as Record<string, unknown> | undefined)?.brrrr_call_id as string | undefined;
+        if (stage && brrrrCallId) {
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          void (supabase.from('brrrr_calls' as any) as any)
+            .update({ stage, updated_at: new Date().toISOString() })
+            .eq('id', brrrrCallId)
+            .then((res: { error: { message: string } | null }) => {
+              if (res.error) {
+                pushToast(`BRRRR stage sync failed: ${res.error.message}`, 'error');
+              }
+            });
+        }
+      }
     }
     setDraggingId(null);
     setDragOverColId(null);
