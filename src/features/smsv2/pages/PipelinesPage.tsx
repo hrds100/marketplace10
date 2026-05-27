@@ -5,6 +5,7 @@ import { formatPence, formatRelativeTime } from '../data/helpers';
 import EditContactModal from '../components/contacts/EditContactModal';
 import EditableName from '../components/contacts/EditableName';
 import ContactSmsModal from '../components/contacts/ContactSmsModal';
+import BrrrrDetailModal from '@/features/tinder/components/BrrrrDetailModal';
 import { useSmsV2 } from '../store/SmsV2Store';
 import { useContactPersistence } from '../hooks/useContactPersistence';
 import { useContactChannelStatus } from '../hooks/useContactSmsStatus';
@@ -59,6 +60,11 @@ export default function PipelinesPage() {
     return res;
   };
   const [editing, setEditing] = useState<Contact | null>(null);
+  // BRRRR contacts open a richer detail modal (floor plans, comps,
+  // questionnaire, push history, derived offer) instead of the plain
+  // EditContactModal — the standard CRM edit form doesn't surface any
+  // of the property data Hugo needs to see at a glance.
+  const [brrrrDetail, setBrrrrDetail] = useState<Contact | null>(null);
   const [draggingId, setDraggingId] = useState<string | null>(null);
   const [dragOverColId, setDragOverColId] = useState<string | null>(null);
   const [smsTo, setSmsTo] = useState<Contact | null>(null);
@@ -244,7 +250,14 @@ export default function PipelinesPage() {
                     draggable
                     onDragStart={(e) => onDragStart(e, c.id)}
                     onDragEnd={onDragEnd}
-                    onClick={() => setEditing(c)}
+                    onClick={() => {
+                      // BRRRR contacts get the rich detail modal; everyone
+                      // else keeps the standard edit modal.
+                      const isBrrrr =
+                        (c.customFields as Record<string, unknown> | undefined)?.source === 'brrrr';
+                      if (isBrrrr) setBrrrrDetail(c);
+                      else setEditing(c);
+                    }}
                     className={cn(
                       'group w-full text-left bg-white border border-[#E5E7EB] rounded-xl p-2.5 hover:shadow-[0_4px_12px_rgba(0,0,0,0.06)] hover:border-[#1E9A80]/40 transition-all cursor-grab active:cursor-grabbing',
                       draggingId === c.id && 'opacity-40'
@@ -417,6 +430,17 @@ export default function PipelinesPage() {
         onClose={() => setEditing(null)}
         onSave={save}
       />
+
+      {brrrrDetail && (
+        <BrrrrDetailModal
+          contact={brrrrDetail}
+          onClose={() => setBrrrrDetail(null)}
+          onOpenDialer={(contactId) => {
+            setBrrrrDetail(null);
+            openDialerPro(contactId, { pipelineColumnId: brrrrDetail.pipelineColumnId });
+          }}
+        />
+      )}
 
       {smsTo && (
         <ContactSmsModal
