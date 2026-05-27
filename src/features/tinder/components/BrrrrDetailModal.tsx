@@ -28,7 +28,7 @@
 // campaign will get an empty render — which is correct.
 
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { Phone, X, MapPin, Banknote, Home, ExternalLink, Calendar, ChevronRight, ChevronDown } from "lucide-react";
+import { Phone, X, MapPin, Banknote, Home, ExternalLink, Calendar } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import type {
   BrrrrCall,
@@ -44,7 +44,7 @@ import { formatGBP } from "../lib/offer";
 import { useDerivedOffer } from "../hooks/useDerivedOffer";
 import { CompTable } from "./CompTable";
 import { FloorPlanViewer } from "./FloorPlanViewer";
-import { QUESTIONS } from "../questionnaire";
+import { QuestionnaireForm } from "./QuestionnaireForm";
 
 // supabase.from is typed against generated DB types that don't include the
 // brrrr_* tables (those are managed outside the type generator). The (any)
@@ -192,7 +192,6 @@ function PropertyDetail({
   const [answers, setAnswers] = useState<Record<string, string>>({});
   const [loading, setLoading] = useState(true);
   const [stageBusy, setStageBusy] = useState(false);
-  const [showAnswers, setShowAnswers] = useState(false);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -258,6 +257,19 @@ function PropertyDetail({
     const { error } = await t("brrrr_calls").update({ stage, updated_at: new Date().toISOString() }).eq("id", call.id);
     setStageBusy(false);
     if (!error) setCall({ ...call, stage });
+  }, [call]);
+
+  // Upsert brrrr_call_answers for the current call. Used by the
+  // questionnaire's autosave (blur) AND the explicit Save button. Same
+  // mechanic as useCallAnswers.saveAnswers in usePipeline.ts.
+  const saveAnswers = useCallback(async (next: Record<string, string>) => {
+    if (!call?.id) return;
+    const rows = Object.entries(next).map(([question_key, answer]) => ({
+      call_id: call.id, question_key, answer,
+    }));
+    if (rows.length === 0) return;
+    await t("brrrr_call_answers").upsert(rows, { onConflict: "call_id,question_key" });
+    setAnswers(next);
   }, [call]);
 
   if (loading) {
@@ -367,46 +379,35 @@ function PropertyDetail({
         </section>
       )}
 
-      {/* Floor plan + Comps + Answers grid */}
-      <section className="grid md:grid-cols-2 gap-5">
-        {/* Floor plan */}
-        <div>
-          <div className="text-[11px] uppercase tracking-wide font-bold text-slate-500 mb-2">
-            Floor plan {floorplans.length > 1 && <span className="font-normal normal-case text-slate-400">— {floorplans.length} pages</span>}
-          </div>
-          <div className="h-[260px] rounded-lg border border-slate-200 overflow-hidden bg-slate-50">
-            <FloorPlanViewer floorplans={floorplans} />
-          </div>
+      {/* Floor plan (full width on its own) */}
+      <section>
+        <div className="text-[11px] uppercase tracking-wide font-bold text-slate-500 mb-2">
+          Floor plan {floorplans.length > 1 && <span className="font-normal normal-case text-slate-400">— {floorplans.length} pages</span>}
         </div>
+        <div className="h-[320px] rounded-lg border border-slate-200 overflow-hidden bg-slate-50">
+          <FloorPlanViewer floorplans={floorplans} />
+        </div>
+      </section>
 
-        {/* Questionnaire answers (read-only summary; expanded shows all) */}
-        <div>
-          <button
-            onClick={() => setShowAnswers((v) => !v)}
-            className="w-full text-left text-[11px] uppercase tracking-wide font-bold text-slate-500 mb-2 flex items-center gap-1.5 hover:text-slate-700"
-          >
-            {showAnswers ? <ChevronDown className="w-3.5 h-3.5" /> : <ChevronRight className="w-3.5 h-3.5" />}
-            Questionnaire answers
-            <span className="font-normal normal-case text-slate-400 ml-1">
-              ({Object.values(answers).filter((v) => v && v.trim()).length} / {QUESTIONS.length} filled)
-            </span>
-          </button>
-          {showAnswers && (
-            <div className="border border-slate-200 rounded-lg p-3 max-h-[260px] overflow-y-auto space-y-2.5 bg-slate-50/50">
-              {QUESTIONS.map((q) => {
-                const ans = (answers[q.key] ?? "").trim();
-                return (
-                  <div key={q.key} className="text-xs">
-                    <div className="font-medium text-slate-700">{q.label}</div>
-                    <div className={ans ? "text-slate-800" : "text-slate-400 italic"}>
-                      {ans || "(no answer)"}
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          )}
+      {/* Questionnaire — all 19 questions, editable, autosaves on blur.
+          Same form the in-call BrrrrCallPanel uses, so the VA can fill or
+          edit answers whether they're on a call or reviewing later from
+          the pipeline kanban. */}
+      <section>
+        <div className="text-[11px] uppercase tracking-wide font-bold text-slate-500 mb-2">
+          Questionnaire <span className="font-normal normal-case text-slate-400">— typing autosaves on blur</span>
         </div>
+        {call ? (
+          <div className="border border-slate-200 rounded-lg p-4 bg-slate-50/50">
+            <QuestionnaireForm
+              initialAnswers={answers}
+              onSave={async (ans) => { await saveAnswers(ans); }}
+              onAutoSave={saveAnswers}
+            />
+          </div>
+        ) : (
+          <div className="text-xs text-slate-400 italic">No call record yet — promote this property first.</div>
+        )}
       </section>
 
       {/* Comps */}

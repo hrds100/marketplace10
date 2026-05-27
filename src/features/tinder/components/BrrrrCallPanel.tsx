@@ -274,7 +274,9 @@ function Panel({
         </div>
       )}
 
-      {/* The 19-question form */}
+      {/* The 19-question form. Autosaves on every input blur so the VA
+          doesn't have to remember the green button — explicit Save still
+          fires the stage-suggestion banner below. */}
       <div className="p-3 bg-white">
         <QuestionnaireForm
           initialAnswers={answers}
@@ -282,6 +284,7 @@ function Panel({
             await saveAnswers(ans);
             setSavedSuggestion(suggested);
           }}
+          onAutoSave={saveAnswers}
         />
       </div>
 
