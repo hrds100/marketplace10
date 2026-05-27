@@ -45,6 +45,8 @@ import { useDerivedOffer } from "../hooks/useDerivedOffer";
 import { CompTable } from "./CompTable";
 import { FloorPlanViewer } from "./FloorPlanViewer";
 import { QuestionnaireForm } from "./QuestionnaireForm";
+import { GDVCalculator } from "./GDVCalculator";
+import { DealCalculator } from "./DealCalculator";
 
 // supabase.from is typed against generated DB types that don't include the
 // brrrr_* tables (those are managed outside the type generator). The (any)
@@ -192,6 +194,8 @@ function PropertyDetail({
   const [answers, setAnswers] = useState<Record<string, string>>({});
   const [loading, setLoading] = useState(true);
   const [stageBusy, setStageBusy] = useState(false);
+  // GDV flows from the GDV calculator into the Deal calculator below it.
+  const [gdv, setGdv] = useState(0);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -432,6 +436,24 @@ function PropertyDetail({
           </h4>
           <CompTable comps={rentComps} kind="rent" emptyText="No rental comps." />
         </div>
+      </section>
+
+      {/* GDV + Deal calculator — same math the scraper's /comps page shows.
+          Gives the VA the offer range (£/sqft × sqft × 70%-75%) plus the
+          BRRRR refi math (cash needed, JV gap, refi scenarios, monthly
+          profit) without leaving the dialer. The GDV flows from the
+          calculator into the deal calculator via the `gdv` state above. */}
+      <section className="space-y-4">
+        <GDVCalculator
+          subject={listing}
+          targetComps={targetComps}
+          onGdvChange={setGdv}
+        />
+        <DealCalculator
+          subject={listing}
+          rentComps={rentComps}
+          gdv={gdv}
+        />
       </section>
 
       {/* Push history mini-line */}

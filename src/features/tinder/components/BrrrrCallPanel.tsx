@@ -14,9 +14,13 @@ import { supabase } from "@/integrations/supabase/client";
 import { useCallAnswers } from "../hooks/usePipeline";
 import { useDerivedOffer } from "../hooks/useDerivedOffer";
 import { QuestionnaireForm } from "./QuestionnaireForm";
+import { CompTable } from "./CompTable";
+import { GDVCalculator } from "./GDVCalculator";
+import { DealCalculator } from "./DealCalculator";
+import { filterRent, filterSaleSame, filterSaleTarget } from "../lib/gdv";
 import { formatGBP } from "../lib/offer";
 import { PIPELINE_STAGES, STAGE_LABEL } from "../types";
-import type { PipelineStage } from "../types";
+import type { BrrrrComp, BrrrrListing, PipelineStage } from "../types";
 
 const t = (name: string) => (supabase.from as any)(name);
 
@@ -86,35 +90,56 @@ export default function BrrrrCallPanel({ contactId, queueRowId }: Props) {
     return () => { cancelled = true; };
   }, [contactId]);
 
-  // 2. When the selected BRRRR call changes, also grab the asking price for
-  //    quick reference at the top of the panel.
+  // 2. When the selected BRRRR call changes, pull the full listing + every
+  //    comp row so the GDV/Deal calculators below the questionnaire have
+  //    something to chew on. Same data /comps shows on the scraper page —
+  //    Hugo wants the dialer to mirror that view so the VA has every
+  //    number on screen during the call.
+  const [listing, setListing] = useState<BrrrrListing | null>(null);
+  const [comps, setComps] = useState<BrrrrComp[]>([]);
   useEffect(() => {
-    if (!tag) return;
+    if (!tag) { setListing(null); setComps([]); return; }
     let cancelled = false;
     (async () => {
-      const { data } = await t("brrrr_listings")
-        .select("price, price_qualifier")
-        .eq("property_id", tag.brrrr_property_id)
-        .maybeSingle();
+      const [{ data: l }, { data: c }] = await Promise.all([
+        t("brrrr_listings").select("*").eq("property_id", tag.brrrr_property_id).maybeSingle(),
+        t("brrrr_comps").select("*").eq("property_id", tag.brrrr_property_id),
+      ]);
       if (cancelled) return;
-      const p = data as { price?: string; price_qualifier?: string } | null;
-      setAskingPrice(p ? [p.price_qualifier, p.price].filter(Boolean).join(" ").trim() || null : null);
+      const lst = (l ?? null) as BrrrrListing | null;
+      setListing(lst);
+      setComps((c ?? []) as BrrrrComp[]);
+      // Backwards-compat: keep the old askingPrice state for the header
+      // banner so we don't break the existing render below.
+      setAskingPrice(lst ? [lst.price_qualifier, lst.price].filter(Boolean).join(" ").trim() || null : null);
     })();
     return () => { cancelled = true; };
   }, [tag?.brrrr_property_id]);
 
   if (loading || !tag) return null;
-  return <Panel tag={tag} history={history} setTag={setTag} askingPrice={askingPrice} queueRowId={queueRowId} />;
+  return (
+    <Panel
+      tag={tag}
+      history={history}
+      setTag={setTag}
+      askingPrice={askingPrice}
+      queueRowId={queueRowId}
+      listing={listing}
+      comps={comps}
+    />
+  );
 }
 
 function Panel({
-  tag, history, setTag, askingPrice, queueRowId,
+  tag, history, setTag, askingPrice, queueRowId, listing, comps,
 }: {
   tag: BrrrrTag;
   history: BrrrrTag[];
   setTag: (t: BrrrrTag) => void;
   askingPrice: string | null;
   queueRowId?: string | null;
+  listing: BrrrrListing | null;
+  comps: BrrrrComp[];
 }) {
   const { answers, saveAnswers } = useCallAnswers(tag.brrrr_call_id);
   const [savedSuggestion, setSavedSuggestion] = useState<{ stage: PipelineStage; reason: string } | null>(null);
@@ -122,6 +147,12 @@ function Panel({
   const [doneMsg, setDoneMsg] = useState<string | null>(null);
   const [currentStage, setCurrentStage] = useState<PipelineStage | null>(null);
   const [overrideAmount, setOverrideAmount] = useState<string | null>(null);
+  // GDV flows from the GDV calculator into the Deal calculator below it.
+  const [gdv, setGdv] = useState(0);
+
+  const targetComps = useMemo(() => filterSaleTarget(comps), [comps]);
+  const sameComps = useMemo(() => filterSaleSame(comps), [comps]);
+  const rentComps = useMemo(() => filterRent(comps), [comps]);
 
   // Fetch the brrrr_calls.offer_amount (override) so the derived offer
   // reflects what Hugo set (if anything).
@@ -314,6 +345,46 @@ function Panel({
       {doneMsg && (
         <div className="mx-3 mb-3 text-xs text-emerald-700 bg-emerald-100 rounded px-2 py-1.5">
           {doneMsg}
+        </div>
+      )}
+
+      {/* ──────────── Comps + Deal math ──────────────────────────────
+          Hugo's ask (2026-05-27): mirror everything the scraper's /comps
+          page shows so the VA has every reference number on screen during
+          the call. Order is the same as /comps:
+            1. Worth NOW (1-bed sold / same-bed)
+            2. Worth AFTER works (2-bed sold / target-bed)
+            3. Rental Listings
+            4. GDV Calculator (price per sqft → GDV)
+            5. Deal Calculator (purchase + bridge + refi + monthly profit)
+          The GDV value flows from #4 into #5 via the gdv state above.
+          Renders only when the listing has loaded so the calculators have
+          a subject to chew on.
+      */}
+      {listing && (
+        <div className="mx-3 mb-3 space-y-4">
+          <div>
+            <h4 className="font-bold text-slate-800 text-sm mb-2">Worth NOW (same-bed sold)</h4>
+            <CompTable comps={sameComps} kind="sale" emptyText="No same-bed sold comps." />
+          </div>
+          <div>
+            <h4 className="font-bold text-slate-800 text-sm mb-2">Worth AFTER works (target-bed sold)</h4>
+            <CompTable comps={targetComps} kind="sale" emptyText="No target-bed sold comps." />
+          </div>
+          <div>
+            <h4 className="font-bold text-slate-800 text-sm mb-2">Rental Listings (target-bed nearby)</h4>
+            <CompTable comps={rentComps} kind="rent" emptyText="No rental comps." />
+          </div>
+          <GDVCalculator
+            subject={listing}
+            targetComps={targetComps}
+            onGdvChange={setGdv}
+          />
+          <DealCalculator
+            subject={listing}
+            rentComps={rentComps}
+            gdv={gdv}
+          />
         </div>
       )}
     </div>
