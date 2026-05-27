@@ -5,7 +5,7 @@
 // from the formula (e.g. go higher to win a competitive deal, or lower for a
 // dog of a property).
 //
-// Math (preferred — mirrors the GDV calculator on /tinder/comps):
+// Math (preferred — same formula the scraper's /comps page uses):
 //   1. £/sqft = average of target-bed sold comps with EPC floor area
 //   2. GDV = £/sqft × subject property's floor area (sqft)
 //   3. Offer = GDV × 0.70  ← opening offer (the number the VA floats first)
@@ -156,7 +156,7 @@ export function calculateOffer(
   return {
     source: "unavailable",
     amount: null,
-    reason: "No target-bed or same-bed sold comps yet — run the comps fetcher on /tinder/comps, or set an override on this card.",
+    reason: "No sold comps found for this property (Land Registry + Rightmove came back empty for the target and same bedrooms). Set an override on this card with the price you want to offer.",
   };
 }
 
