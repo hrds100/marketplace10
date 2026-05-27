@@ -22,15 +22,9 @@ import ApplyPage from "./pages/ApplyPage";
 // Layouts (stay in src/layouts/ — locked)
 import DashboardLayout from "./layouts/DashboardLayout";
 // Features
-import {
-  TinderPage,
-  ShortlistPage as TinderShortlistPage,
-  CompsPage as TinderCompsPage,
-  PipelinePage as TinderPipelinePage,
-  AgentsPage as TinderAgentsPage,
-} from "@/features/tinder";
-import TinderLayout from "@/features/tinder/layout/TinderLayout";
-import TinderLoginPage from "@/features/tinder/TinderLoginPage";
+// /tinder/* now redirects to the Flask scraper at 187.124.117.193:5001/floorplans.
+// Individual /tinder page imports removed when the workflow moved to the scraper UI.
+import TinderRedirect from "@/features/tinder/TinderRedirect";
 import DealsPage from "@/features/deals/DealsPage";
 import DealDetail from "@/features/deals/DealDetail";
 import CRMPage from "@/features/crm/CRMPage";
@@ -233,17 +227,14 @@ const App = () => (
             <Route path="invest/payouts" element={<InvestPayoutsPage />} />
             <Route path="invest/proposals" element={<InvestProposalsPage />} />
           </Route>
-          {/* Tinder login — pre-auth, outside TinderLayout's ProtectedRoute */}
-          <Route path="/tinder/login" element={<TinderLoginPage />} />
-          {/* Tinder (BRRRR property tool) — standalone workspace, no dashboard chrome. Mirrors /crm. */}
-          <Route path="/tinder" element={<TinderLayout />}>
-            <Route index element={<TinderPage />} />
-            <Route path="shortlist" element={<TinderShortlistPage />} />
-            <Route path="comps" element={<TinderCompsPage />} />
-            <Route path="pipeline" element={<TinderPipelinePage />} />
-            {/* Admin-only — AgentsPage itself redirects non-admins back to /tinder */}
-            <Route path="agents" element={<TinderAgentsPage />} />
-          </Route>
+          {/* /tinder/* is deprecated. Hugo runs the BRRRR workflow from the
+              Flask scraper at 187.124.117.193:5001/floorplans now. Any old
+              link (review / shortlist / comps / pipeline / agents / login)
+              redirects to the scraper's /floorplans page. The "Potential"
+              button there pushes leads into /crm/pipelines + /crm/dialer-pro
+              via the brrrr-promote-to-pipeline edge function. */}
+          <Route path="/tinder" element={<TinderRedirect />} />
+          <Route path="/tinder/*" element={<TinderRedirect />} />
           <Route path="/university/:moduleId" element={<DashboardLayout />}>
             <Route index element={<ModuleOverviewPage />} />
             <Route path=":lessonId" element={<LessonPage />} />
