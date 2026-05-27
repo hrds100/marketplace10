@@ -197,17 +197,20 @@ function Panel({
       <div className={`px-3 py-3 border-b border-emerald-200 ${
         offer?.source === "override" ? "bg-violet-50"
         : offer?.source === "calculated" ? "bg-white"
+        : offer?.source === "approximate" ? "bg-blue-50"
         : "bg-amber-50"
       }`}>
         <div className="text-[10px] font-semibold uppercase tracking-wide text-slate-600 mb-0.5">
           What to offer
           {offer?.source === "override" && <span className="ml-1.5 normal-case text-violet-700">· Hugo override</span>}
           {offer?.source === "calculated" && <span className="ml-1.5 normal-case text-emerald-700">· auto from GDV</span>}
+          {offer?.source === "approximate" && <span className="ml-1.5 normal-case text-blue-700">· approximate</span>}
           {offer?.source === "unavailable" && <span className="ml-1.5 normal-case text-amber-700">· not calculated</span>}
         </div>
         <div className={`text-3xl font-bold ${
           offer?.source === "override" ? "text-violet-800"
           : offer?.source === "calculated" ? "text-emerald-700"
+          : offer?.source === "approximate" ? "text-blue-700"
           : "text-amber-800"
         }`}>
           {offer?.amount != null ? formatGBP(offer.amount) : "—"}
