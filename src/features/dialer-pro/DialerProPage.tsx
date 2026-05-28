@@ -38,6 +38,8 @@ import { useContactPersistence } from '@/features/smsv2/hooks/useContactPersiste
 import EditableName from '@/features/smsv2/components/contacts/EditableName';
 import SendAgreementModal from '@/features/agreements/components/SendAgreementModal';
 import BrrrrCallPanel from '@/features/tinder/components/BrrrrCallPanel';
+import { STAGE_LABEL } from '@/features/tinder/types';
+import type { PipelineStage } from '@/features/tinder/types';
 import { useDialerMachine } from './useDialerMachine';
 import { useQueuePro } from './useQueuePro';
 import type { QueueLead } from './types';
@@ -553,6 +555,52 @@ export function DialerProContent({ autoCallContactId, pipelineColumnId, onAutoCa
     setTimeout(() => machine.pause(), 200);
   }, [machine, state.currentLead, saveNotesToContact, removeFromQueue]);
 
+  // Hugo 2026-05-28: fire as soon as a Custom Disposition column is
+  // clicked, BEFORE "Next call". Saves the outcome via the same
+  // wk-outcome-apply edge function applyOutcome uses, but does NOT
+  // dispatch OUTCOME_DONE — the state machine stays in wrap_up so the
+  // VA can keep editing notes / change disposition before advancing.
+  // Also syncs brrrr_calls.stage for BRRRR contacts (column name →
+  // STAGE_LABEL reverse lookup) so the in-call BRRRR panel + pipeline
+  // detail modal don't drift.
+  const handleApplyOutcomeNow = useCallback(async (colId: string, notes: string) => {
+    const lead = state.currentLead;
+    if (!lead || !state.currentCallId) return;
+    try {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const { error } = await (supabase.functions as any).invoke('wk-outcome-apply', {
+        body: {
+          call_id: state.currentCallId,
+          contact_id: lead.contactId,
+          column_id: colId,
+          agent_note: notes?.trim() || null,
+        },
+      });
+      if (error) {
+        onToast(`Outcome failed: ${error.message}`, 'error');
+        return;
+      }
+      onToast('Outcome saved', 'success');
+
+      // BRRRR stage sync — same mapping the kanban drag uses.
+      const isBrrrr = (contact?.customFields as Record<string, unknown> | undefined)?.source === 'brrrr';
+      if (!isBrrrr) return;
+      const colName = outcomeColumns.find((c) => c.id === colId)?.name;
+      if (!colName) return;
+      const stageEntry = Object.entries(STAGE_LABEL).find(([, label]) => label === colName);
+      const stage = stageEntry?.[0] as PipelineStage | undefined;
+      const brrrrCallId = ((contact?.customFields as Record<string, unknown> | undefined)?.brrrr as Record<string, unknown> | undefined)?.brrrr_call_id as string | undefined;
+      if (stage && brrrrCallId) {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        await (supabase.from('brrrr_calls' as any) as any)
+          .update({ stage, updated_at: new Date().toISOString() })
+          .eq('id', brrrrCallId);
+      }
+    } catch (e) {
+      onToast(`Outcome failed: ${e instanceof Error ? e.message : String(e)}`, 'error');
+    }
+  }, [state.currentLead, state.currentCallId, contact, outcomeColumns, onToast]);
+
   return (
     <div className="relative h-full flex flex-col bg-[#F3F3EE]">
       {/* Toast stack */}
@@ -994,6 +1042,7 @@ export function DialerProContent({ autoCallContactId, pipelineColumnId, onAutoCa
               suggestedId={suggestedOutcomeId}
               applying={machine.applying}
               onNext={handleWrapUpNext}
+              onApply={handleApplyOutcomeNow}
               onSkip={machine.skip}
               onRedial={handleWrapUpRedial}
               onPause={handleWrapUpPause}
@@ -1259,6 +1308,11 @@ interface WrapUpCardProps {
   suggestedId: string | null;
   applying: boolean;
   onNext: (columnId: string | null, notes: string) => void;
+  /** Hugo 2026-05-28: fired the moment the VA clicks a Custom Disposition
+   *  button. Saves the outcome immediately so the VA gets feedback even
+   *  if they never click "Next call". The state machine stays in wrap_up
+   *  so they can keep editing notes / change column / etc. */
+  onApply?: (columnId: string, notes: string) => void | Promise<void>;
   onSkip: () => void;
   onRedial: (columnId: string | null, notes: string) => void;
   onPause: (columnId: string | null, notes: string) => void;
@@ -1269,7 +1323,7 @@ interface WrapUpCardProps {
   onMinimize: () => void;
 }
 
-function WrapUpCard({ lead, endReason, durationSec, columns, columnsLoading = false, campaignPipelineId = null, isBrrrrCampaign = false, suggestedId, applying, onNext, onSkip, onRedial, onPause, onSendAgreement, onDragStart, onDragMove, onDragEnd, onMinimize }: WrapUpCardProps) {
+function WrapUpCard({ lead, endReason, durationSec, columns, columnsLoading = false, campaignPipelineId = null, isBrrrrCampaign = false, suggestedId, applying, onNext, onApply, onSkip, onRedial, onPause, onSendAgreement, onDragStart, onDragMove, onDragEnd, onMinimize }: WrapUpCardProps) {
   const [pickedId, setPickedId] = useState<string | null>(suggestedId);
   const [notes, setNotes] = useState('');
   const [showMore, setShowMore] = useState(false);
@@ -1288,7 +1342,21 @@ function WrapUpCard({ lead, endReason, durationSec, columns, columnsLoading = fa
   const renderButton = (col: PipelineColumnRow) => {
     const isPicked = pickedId === col.id;
     return (
-      <button key={col.id} onClick={() => setPickedId(isPicked ? null : col.id)} disabled={applying}
+      <button
+        key={col.id}
+        onClick={() => {
+          const nextPicked = isPicked ? null : col.id;
+          setPickedId(nextPicked);
+          // Save the outcome immediately on selection (Hugo 2026-05-28).
+          // The "Next call" button is still the canonical advance — this
+          // is an early write-through so picking a column persists right
+          // away. Re-clicking the same column deselects locally; we don't
+          // unwrite the saved outcome (the server keeps the latest pick).
+          if (nextPicked && onApply) {
+            void onApply(nextPicked, notes);
+          }
+        }}
+        disabled={applying}
         className={cn(
           'flex items-center justify-between rounded-lg px-3 py-2.5 text-[13px] font-medium text-left transition-all',
           isPicked
