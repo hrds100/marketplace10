@@ -44,6 +44,12 @@ type Props = {
    *  active wk_dialer_queue.id so the panel can mark it done after the agent
    *  picks a stage — keeps the BRRRR contact from showing up again. */
   queueRowId?: string | null;
+  /** When true the panel hides its own stage picker. Hugo 2026-05-28:
+   *  during the dialer wrap-up phase the VA already gets a Custom
+   *  Disposition picker on the WrapUpCard column, so the second BRRRR
+   *  stage grid here is redundant + confusing. The picker stays visible
+   *  during placing / in_call and on the pipeline detail modal. */
+  hideStagePicker?: boolean;
 };
 
 // Stage groupings for the quick-pick grid. Mirrors the columns on
@@ -61,7 +67,7 @@ const STAGE_TONE: Record<PipelineStage, string> = {
   dead:             "bg-slate-300 text-slate-700 hover:bg-slate-400",
 };
 
-export default function BrrrrCallPanel({ contactId, queueRowId }: Props) {
+export default function BrrrrCallPanel({ contactId, queueRowId, hideStagePicker }: Props) {
   const [tag, setTag] = useState<BrrrrTag | null>(null);
   const [history, setHistory] = useState<BrrrrTag[]>([]);
   const [loading, setLoading] = useState(true);
@@ -127,12 +133,13 @@ export default function BrrrrCallPanel({ contactId, queueRowId }: Props) {
       listing={listing}
       comps={comps}
       contactId={contactId}
+      hideStagePicker={!!hideStagePicker}
     />
   );
 }
 
 function Panel({
-  tag, history, setTag, askingPrice, queueRowId, listing, comps, contactId,
+  tag, history, setTag, askingPrice, queueRowId, listing, comps, contactId, hideStagePicker,
 }: {
   tag: BrrrrTag;
   history: BrrrrTag[];
@@ -140,6 +147,7 @@ function Panel({
   askingPrice: string | null;
   queueRowId?: string | null;
   contactId: string;
+  hideStagePicker: boolean;
   listing: BrrrrListing | null;
   comps: BrrrrComp[];
 }) {
@@ -279,33 +287,38 @@ function Panel({
         )}
       </div>
 
-      {/* Stage quick-pick — writes brrrr_calls.stage directly. /tinder/pipeline
-          reads the same column, so the card moves there in real time. */}
-      <div className="px-3 py-3 border-b border-emerald-200 bg-white">
-        <div className="text-[10px] font-semibold uppercase tracking-wide text-emerald-700 mb-2">
-          Pick stage <span className="font-normal text-emerald-600 normal-case">— syncs to /tinder/pipeline</span>
+      {/* Stage quick-pick — writes brrrr_calls.stage directly. The pipeline
+          card moves there in real time via the kanban-column sync we added
+          alongside this. Hidden during the dialer wrap-up phase: that
+          surface already gives the VA a Custom Disposition picker so two
+          grids would just confuse them (Hugo 2026-05-28). */}
+      {!hideStagePicker && (
+        <div className="px-3 py-3 border-b border-emerald-200 bg-white">
+          <div className="text-[10px] font-semibold uppercase tracking-wide text-emerald-700 mb-2">
+            Pick stage <span className="font-normal text-emerald-600 normal-case">— syncs to /crm/pipelines</span>
+          </div>
+          <div className="grid grid-cols-3 gap-1.5">
+            {PIPELINE_STAGES.map((stage) => {
+              const isCurrent = currentStage === stage;
+              const tone = STAGE_TONE[stage];
+              return (
+                <button
+                  key={stage}
+                  type="button"
+                  disabled={applying}
+                  onClick={() => applyStage(stage)}
+                  className={`text-[11px] font-medium rounded px-2 py-1.5 transition disabled:opacity-50 ${tone} ${
+                    isCurrent ? "ring-2 ring-offset-1 ring-emerald-600" : ""
+                  }`}
+                  title={isCurrent ? "Current stage" : `Move to ${STAGE_LABEL[stage]}`}
+                >
+                  {STAGE_LABEL[stage]}
+                </button>
+              );
+            })}
+          </div>
         </div>
-        <div className="grid grid-cols-3 gap-1.5">
-          {PIPELINE_STAGES.map((stage) => {
-            const isCurrent = currentStage === stage;
-            const tone = STAGE_TONE[stage];
-            return (
-              <button
-                key={stage}
-                type="button"
-                disabled={applying}
-                onClick={() => applyStage(stage)}
-                className={`text-[11px] font-medium rounded px-2 py-1.5 transition disabled:opacity-50 ${tone} ${
-                  isCurrent ? "ring-2 ring-offset-1 ring-emerald-600" : ""
-                }`}
-                title={isCurrent ? "Current stage" : `Move to ${STAGE_LABEL[stage]}`}
-              >
-                {STAGE_LABEL[stage]}
-              </button>
-            );
-          })}
-        </div>
-      </div>
+      )}
 
       {/* Multi-property picker (only if this agent covers multiple BRRRR listings) */}
       {history.length > 1 && (
