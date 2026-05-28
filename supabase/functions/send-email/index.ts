@@ -479,6 +479,28 @@ function buildEmail(type: string, data: Record<string, unknown>): EmailConfig {
         `),
       };
 
+    case 'contractor-agreement-sent':
+      return {
+        to: String(data.recipientEmail),
+        subject: `Your agreement from nfstay is ready to sign`,
+        html: layout('Agreement Ready to Sign', `
+          <p style="font-size:14px;color:#374151;line-height:1.6;margin:0 0 16px;">
+            Hi ${data.recipientName || 'there'},
+          </p>
+          <p style="font-size:14px;color:#374151;line-height:1.6;margin:0 0 16px;">
+            An agreement has been prepared for you. Please review and sign it at your earliest convenience.
+          </p>
+          ${row('Agreement', String(data.title || 'Contractor Agreement'))}
+          ${row('From', String(data.senderName || 'nfstay'))}
+          <div style="text-align:center;margin:24px 0 8px;">
+            ${btn('Review & Sign Agreement →', `${BASE_URL}/contract/${data.token}`)}
+          </div>
+          <p style="font-size:12px;color:#9ca3af;margin:24px 0 0;line-height:1.5;">
+            This is an automated message from nfstay.
+          </p>
+        `),
+      };
+
     default:
       throw new Error(`Unknown email type: ${type}`);
   }
