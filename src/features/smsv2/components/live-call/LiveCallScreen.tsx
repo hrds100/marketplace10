@@ -378,10 +378,14 @@ export default function LiveCallScreen() {
                   {call?.contactName ?? contact?.name}
                 </div>
               </div>
+              {/* hideStagePicker — Hugo 2026-05-28 round 2: the post-call
+                  disposition picker on the smsv2 PostCallPanel covers
+                  stage selection. A redundant BRRRR grid here just gave
+                  the VA two places to click for the same thing. */}
               <BrrrrCallPanel
                 contactId={contact.id}
                 queueRowId={null}
-                hideStagePicker={phase === 'post_call'}
+                hideStagePicker
               />
             </div>
           ) : phase === 'placing' || phase === 'in_call' ? (
