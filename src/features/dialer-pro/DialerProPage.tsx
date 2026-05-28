@@ -667,10 +667,17 @@ export function DialerProContent({ autoCallContactId, pipelineColumnId, onAutoCa
                       {contact.name}
                     </div>
                   </div>
+                  {/* hideStagePicker — Hugo 2026-05-28 round 2: the
+                      Custom Disposition column buttons on the WrapUpCard
+                      handle stage selection for both live and wrap-up
+                      phases. A second BRRRR-specific picker next to them
+                      was confusing. The picker stays visible on the
+                      pipeline detail modal where there's no Custom
+                      Disposition surface. */}
                   <BrrrrCallPanel
                     contactId={contact.id}
                     queueRowId={state.currentLead?.id ?? null}
-                    hideStagePicker={state.phase === 'wrap_up'}
+                    hideStagePicker
                   />
                 </div>
               ) : (
