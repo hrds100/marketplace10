@@ -378,7 +378,11 @@ export default function LiveCallScreen() {
                   {call?.contactName ?? contact?.name}
                 </div>
               </div>
-              <BrrrrCallPanel contactId={contact.id} queueRowId={null} />
+              <BrrrrCallPanel
+                contactId={contact.id}
+                queueRowId={null}
+                hideStagePicker={phase === 'post_call'}
+              />
             </div>
           ) : phase === 'placing' || phase === 'in_call' ? (
             <LiveTranscriptPane

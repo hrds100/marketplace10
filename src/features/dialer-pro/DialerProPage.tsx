@@ -670,6 +670,7 @@ export function DialerProContent({ autoCallContactId, pipelineColumnId, onAutoCa
                   <BrrrrCallPanel
                     contactId={contact.id}
                     queueRowId={state.currentLead?.id ?? null}
+                    hideStagePicker={state.phase === 'wrap_up'}
                   />
                 </div>
               ) : (
@@ -1408,7 +1409,11 @@ function WrapUpCard({ lead, endReason, durationSec, columns, columnsLoading = fa
             /tinder/pipeline (custom_fields.source === 'brrrr'). Invisible to
             every other CRM call. lead.id is the wk_dialer_queue row id so the
             panel can mark the lead 'done' after the agent picks a stage. */}
-        {lead?.contactId && <BrrrrCallPanel contactId={lead.contactId} queueRowId={lead.id ?? null} />}
+        {/* hideStagePicker — the WrapUpCard is always wrap-up by definition,
+            and the Custom Disposition column buttons above are the VA's
+            primary picker. The redundant BRRRR grid was confusing (Hugo
+            2026-05-28). */}
+        {lead?.contactId && <BrrrrCallPanel contactId={lead.contactId} queueRowId={lead.id ?? null} hideStagePicker />}
 
         {/* Send Agreement */}
         <div className="px-4 pb-3">
