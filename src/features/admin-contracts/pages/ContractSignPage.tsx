@@ -5,6 +5,7 @@ import { Loader2, CheckCircle2, Download } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import SignaturePad from '../components/SignaturePad';
+import { plainTextToHtml } from '../AdminContracts';
 
 interface ContractData {
   id: string;
@@ -159,7 +160,7 @@ export default function ContractSignPage() {
           {contract.terms_html ? (
             <div
               className="prose prose-sm max-w-none text-[#1A1A1A]"
-              dangerouslySetInnerHTML={{ __html: contract.terms_html }}
+              dangerouslySetInnerHTML={{ __html: plainTextToHtml(contract.terms_html) }}
             />
           ) : (
             <p className="text-[#6B7280] italic">No agreement content provided.</p>

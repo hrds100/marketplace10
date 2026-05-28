@@ -11,6 +11,33 @@ import {
   type ContractTemplate,
 } from './hooks/useContractorAgreements';
 
+function plainTextToHtml(text: string): string {
+  if (!text) return '';
+  if (text.trim().startsWith('<')) return text;
+  return text
+    .split(/\n\n+/)
+    .map(block => {
+      const trimmed = block.trim();
+      if (!trimmed) return '';
+      if (trimmed.startsWith('# ')) {
+        return `<h2 style="margin-top:24px;margin-bottom:8px;font-size:18px;font-weight:700">${trimmed.slice(2)}</h2>`;
+      }
+      const lines = trimmed.split('\n').map(line => {
+        const l = line.trim();
+        if (l.startsWith('- ') || l.startsWith('* ')) return `<li>${l.slice(2)}</li>`;
+        return l;
+      });
+      const hasList = lines.some(l => l.startsWith('<li>'));
+      if (hasList) {
+        return `<ul style="margin:8px 0;padding-left:24px">${lines.filter(l => l.startsWith('<li>')).join('')}</ul>`;
+      }
+      return `<p style="margin:8px 0;line-height:1.6">${lines.join('<br/>')}</p>`;
+    })
+    .join('');
+}
+
+export { plainTextToHtml };
+
 function StatusBadge({ status }: { status: string }) {
   const styles: Record<string, string> = {
     draft: 'bg-[#F3F3EE] text-[#6B7280]',
@@ -170,7 +197,7 @@ function TemplateEditor({
 
       <div>
         <div className="flex items-center justify-between mb-1">
-          <label className="text-sm font-medium text-[#525252]">Agreement body (HTML)</label>
+          <label className="text-sm font-medium text-[#525252]">Agreement body</label>
           <button
             onClick={() => setPreview(!preview)}
             className="text-xs text-[#1E9A80] hover:underline"
@@ -178,18 +205,19 @@ function TemplateEditor({
             {preview ? 'Edit' : 'Preview'}
           </button>
         </div>
+        <p className="text-xs text-[#9CA3AF] mb-2">Write in plain text. Use blank lines to separate paragraphs. Lines starting with # become headings.</p>
         {preview ? (
           <div
             className="min-h-[200px] border border-[#E5E7EB] rounded-[10px] p-4 prose prose-sm max-w-none bg-white"
-            dangerouslySetInnerHTML={{ __html: termsHtml }}
+            dangerouslySetInnerHTML={{ __html: plainTextToHtml(termsHtml) }}
           />
         ) : (
           <textarea
             value={termsHtml}
             onChange={e => setTermsHtml(e.target.value)}
-            rows={10}
-            className="w-full rounded-[10px] border border-[#E5E5E5] p-3 text-sm font-mono resize-y focus:ring-[#1E9A80] focus:border-[#1E9A80]"
-            placeholder="<h2>1. Scope of Work</h2><p>The Contractor agrees to...</p>"
+            rows={20}
+            className="w-full rounded-[10px] border border-[#E5E5E5] p-3 text-sm resize-y focus:ring-[#1E9A80] focus:border-[#1E9A80]"
+            placeholder={"# 1. Scope of Work\n\nThe Contractor agrees to...\n\n# 2. Schedule\n\nMonday to Saturday, 10am to 7pm UK time"}
           />
         )}
       </div>
