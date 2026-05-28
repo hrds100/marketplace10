@@ -61,6 +61,8 @@ import AdminInvestPayouts from "./pages/admin/invest/AdminInvestPayouts";
 import AdminInvestProposals from "./pages/admin/invest/AdminInvestProposals";
 import AdminEndpoints from "./pages/admin/invest/AdminEndpoints";
 import AgreementPage from "@/features/agreements/pages/AgreementPage";
+import AdminContracts from "@/features/admin-contracts/AdminContracts";
+import ContractSignPage from "@/features/admin-contracts/pages/ContractSignPage";
 import ScriptPage from "./pages/script/ScriptPage";
 import AdminAgreementsPage from "@/features/agreements/pages/AdminAgreementsPage";
 import AdminTestConsole from "./pages/admin/invest/AdminTestConsole";
@@ -210,6 +212,7 @@ const App = () => (
           <Route path="/deals/:id" element={<DealDetail />} />
           {/* Lead details — token-based access, no login required */}
           <Route path="/agreement/:token" element={<AgreementPage />} />
+          <Route path="/contract/:token" element={<ContractSignPage />} />
           <Route path="/lead/:token" element={<LeadDetailsPage />} />
           <Route path="/lead/:token/nda" element={<LeadNDAPage />} />
           <Route path="/dashboard" element={<DashboardLayout />}>
@@ -261,6 +264,7 @@ const App = () => (
             <Route path="marketplace/settings" element={<AdminSettings />} />
             <Route path="marketplace/notifications" element={<AdminNotifications />} />
             <Route path="marketplace/growth" element={<AdminGrowth />} />
+            <Route path="marketplace/contracts" element={<AdminContracts />} />
 
             {/* Legacy routes (without /marketplace/) -- keep working */}
             <Route path="dashboard" element={<AdminDashboard />} />
