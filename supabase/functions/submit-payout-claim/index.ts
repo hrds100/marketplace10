@@ -45,22 +45,6 @@ serve(async (req) => {
       return new Response(JSON.stringify({ error: 'No bank details found. Please add bank details first.' }), { status: 400, headers: corsHeaders })
     }
 
-    // GUARD: Reject if user already has a pending or processing claim
-    const { data: existingClaim } = await supabase
-      .from('payout_claims')
-      .select('id, status')
-      .eq('user_id', user_id)
-      .in('status', ['pending', 'processing'])
-      .limit(1)
-      .maybeSingle()
-
-    if (existingClaim) {
-      return new Response(
-        JSON.stringify({ error: 'You already have a pending claim being processed. Please wait for it to complete.' }),
-        { status: 400, headers: corsHeaders }
-      )
-    }
-
     // Amount from frontend (read from blockchain getRentDetails)
     // Falls back to inv_payouts table if not provided
     let amount = Number(clientAmount) || 0

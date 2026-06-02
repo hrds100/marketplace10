@@ -718,7 +718,7 @@ export default function InvestPayoutsPage() {
   const hasPendingClaim = dbPayoutClaims.some(
     (c) => c.status === 'pending' || c.status === 'processing'
   );
-  const claimable = hasPendingClaim ? [] : payouts.filter((p) => p.status === 'claimable');
+  const claimable = payouts.filter((p) => p.status === 'claimable');
   const totalClaimable = claimable.reduce((sum, p) => sum + p.amount, 0);
   const history = payouts.filter((p) => p.status !== 'claimable');
 
@@ -876,8 +876,8 @@ export default function InvestPayoutsPage() {
                 <div className="flex items-center gap-3">
                   <Clock className="h-5 w-5 text-amber-500" />
                   <div>
-                    <p className="text-sm font-medium">You have a pending claim being processed</p>
-                    <p className="text-xs text-muted-foreground">New claims are available once your current claim is completed or cancelled.</p>
+                    <p className="text-sm font-medium">You have a claim being processed</p>
+                    <p className="text-xs text-muted-foreground">You can still submit new claims while this one is being processed.</p>
                   </div>
                 </div>
               </CardContent>
