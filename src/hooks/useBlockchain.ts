@@ -394,6 +394,18 @@ export function useBlockchain() {
     [ensureConnected],
   );
 
+  const reconnectParticle = useCallback(async () => {
+    const authConnector = connectors.find((c: any) => c.id === 'particleAuth' || c.type === 'particleAuth');
+    if (authConnector) {
+      await connectAsync({ connector: authConnector, chainId: 56 });
+    }
+  }, [connectors, connectAsync]);
+
+  const isSessionExpiredError = (err: unknown): boolean => {
+    const msg = err instanceof Error ? err.message : String(err);
+    return msg.includes('Token is expired') || msg.includes('login token') || msg.includes('Invalid login token');
+  };
+
   const castVote = useCallback(
     async (proposalId: number, inFavor: boolean) => {
       setLoading(true);
@@ -402,7 +414,6 @@ export function useBlockchain() {
         await ensureConnected();
         const contract = await getContract(CONTRACTS.VOTING, VOTING_ABI, true);
         if (!contract) throw new Error('Could not connect to voting contract');
-        // Dry-run first (same as legacy vote.js line 56)
         await contract.callStatic.vote(proposalId, inFavor);
         const tx = await contract.vote(proposalId, inFavor);
         const receipt = await tx.wait();
@@ -410,13 +421,31 @@ export function useBlockchain() {
         queryClient.invalidateQueries();
         return { txHash: receipt.transactionHash, success: true };
       } catch (err) {
+        if (isSessionExpiredError(err)) {
+          try {
+            await reconnectParticle();
+            const contract = await getContract(CONTRACTS.VOTING, VOTING_ABI, true);
+            if (!contract) throw new Error('Could not reconnect to voting contract');
+            await contract.callStatic.vote(proposalId, inFavor);
+            const tx = await contract.vote(proposalId, inFavor);
+            const receipt = await tx.wait();
+            setLoading(false);
+            queryClient.invalidateQueries();
+            return { txHash: receipt.transactionHash, success: true };
+          } catch (retryErr) {
+            const msg = 'Wallet session expired. Please refresh the page and try again.';
+            setError(msg);
+            setLoading(false);
+            throw new Error(msg);
+          }
+        }
         const msg = err instanceof Error ? err.message : 'Vote failed';
         setError(msg);
         setLoading(false);
         throw err;
       }
     },
-    [ensureConnected],
+    [ensureConnected, connectors, connectAsync, reconnectParticle],
   );
 
   // Boost APR — exact clone of legacy boostedCheckout.js handleBoost()
