@@ -119,6 +119,27 @@ function formatCurrency(amount: number): string {
   return `$${amount.toFixed(2)}`;
 }
 
+// Translate raw blockchain / ethers errors into a clean, user-friendly message.
+// Prevents the giant red ethers error dump from showing in the claim modal.
+function friendlyClaimError(err: unknown, fallback: string): string {
+  const raw = err instanceof Error ? err.message : String(err ?? '');
+  const lower = raw.toLowerCase();
+  if (lower.includes('user rejected') || lower.includes('user denied') || lower.includes('action_rejected')) {
+    return 'Transaction cancelled. You can try again whenever you’re ready.';
+  }
+  if (lower.includes('token is expired') || lower.includes('login token') || lower.includes('cognito')) {
+    return 'Your wallet session expired. Please refresh the page and try again.';
+  }
+  if (lower.includes('insufficient funds') || lower.includes('insufficient balance')) {
+    return 'Not enough BNB in your wallet to cover the network fee.';
+  }
+  if (lower.includes('execution reverted') || lower.includes('unpredictable_gas_limit') || lower.includes('cannot estimate gas')) {
+    return 'This payout can’t be claimed on-chain right now — it may already have been claimed, or there’s nothing available to withdraw yet. Try the Bank Transfer option instead.';
+  }
+  // Generic fallback — never dump the raw multi-line ethers error.
+  return fallback;
+}
+
 function BlockchainDot({ tooltip }: { tooltip?: string }) {
   return (
     <span className="relative inline-flex ml-1" title={tooltip || 'From blockchain'}>
@@ -225,7 +246,7 @@ function ClaimModal({
           property: payout.propertyTitle || '',
         });
       } catch (err) {
-        setClaimError(err instanceof Error ? err.message : 'Bank transfer failed. Please try again.');
+        setClaimError(friendlyClaimError(err, 'Bank transfer failed. Please try again.'));
         setClaimStep('choose');
       }
     } else if (selectedMethod === 'usdc' && payout && onClaimRent) {
@@ -235,7 +256,7 @@ function ClaimModal({
         setClaimStep('success'); playCelebrationSound();
         onClaimSuccess?.();
       } catch (err) {
-        setClaimError(err instanceof Error ? err.message : 'Claim failed. Check your wallet and try again.');
+        setClaimError(friendlyClaimError(err, 'Claim failed. Check your wallet and try again.'));
         setClaimStep('choose');
       }
     } else if (selectedMethod === 'stay_token' && payout && onBuyStayTokens) {
@@ -245,7 +266,7 @@ function ClaimModal({
         setClaimStep('success'); playCelebrationSound();
         onClaimSuccess?.();
       } catch (err) {
-        setClaimError(err instanceof Error ? err.message : 'STAY token claim failed. Check your wallet and try again.');
+        setClaimError(friendlyClaimError(err, 'STAY token claim failed. Check your wallet and try again.'));
         setClaimStep('choose');
       }
     } else if (selectedMethod === 'lp_token' && payout && onBuyLpTokens) {
@@ -255,7 +276,7 @@ function ClaimModal({
         setClaimStep('success'); playCelebrationSound();
         onClaimSuccess?.();
       } catch (err) {
-        setClaimError(err instanceof Error ? err.message : 'LP token claim failed. Check your wallet and try again.');
+        setClaimError(friendlyClaimError(err, 'LP token claim failed. Check your wallet and try again.'));
         setClaimStep('choose');
       }
     } else {
@@ -402,7 +423,7 @@ function ClaimModal({
                     });
                   })
                   .catch((err: unknown) => {
-                    setClaimError(err instanceof Error ? err.message : 'Bank transfer failed. Please try again.');
+                    setClaimError(friendlyClaimError(err, 'Bank transfer failed. Please try again.'));
                     setClaimStep('choose');
                   });
               }}
