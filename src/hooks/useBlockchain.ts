@@ -372,6 +372,20 @@ export function useBlockchain() {
     [address, ensureConnected, getSignerProvider],
   );
 
+  const refreshParticleSession = useCallback(async () => {
+    const authConnector = connectors.find((c: any) => c.id === 'particleAuth' || c.type === 'particleAuth');
+    if (authConnector) {
+      await connectAsync({ connector: authConnector, chainId: 56 });
+      await new Promise((r) => setTimeout(r, 300));
+    }
+  }, [connectors, connectAsync]);
+
+  const isSessionExpiredError = (err: unknown): boolean => {
+    const msg = err instanceof Error ? err.message : String(err);
+    const lower = msg.toLowerCase();
+    return lower.includes('token is expired') || lower.includes('login token') || lower.includes('invalid login token') || lower.includes('cognito');
+  };
+
   const claimRent = useCallback(
     async (propertyId: number) => {
       setLoading(true);
@@ -411,20 +425,6 @@ export function useBlockchain() {
     },
     [ensureConnected, refreshParticleSession],
   );
-
-  const refreshParticleSession = useCallback(async () => {
-    const authConnector = connectors.find((c: any) => c.id === 'particleAuth' || c.type === 'particleAuth');
-    if (authConnector) {
-      await connectAsync({ connector: authConnector, chainId: 56 });
-      await new Promise((r) => setTimeout(r, 300));
-    }
-  }, [connectors, connectAsync]);
-
-  const isSessionExpiredError = (err: unknown): boolean => {
-    const msg = err instanceof Error ? err.message : String(err);
-    const lower = msg.toLowerCase();
-    return lower.includes('token is expired') || lower.includes('login token') || lower.includes('invalid login token') || lower.includes('cognito');
-  };
 
   const castVote = useCallback(
     async (proposalId: number, inFavor: boolean) => {
