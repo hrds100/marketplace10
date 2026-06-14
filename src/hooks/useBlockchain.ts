@@ -1,6 +1,6 @@
 import { useCallback, useState, useEffect, useRef } from 'react';
 import { useEthereum } from '@particle-network/authkit';
-import { useAccount, useConnect, useConnectors } from '@particle-network/connectkit';
+import { useAccount, useConnect, useConnectors, useDisconnect } from '@particle-network/connectkit';
 import { useWallet } from '@/hooks/useWallet';
 import { useAuth } from '@/hooks/useAuth';
 import { CONTRACTS } from '@/lib/particle';
@@ -48,9 +48,12 @@ export function useBlockchain() {
   const { provider: particleProvider } = useEthereum();
   const connectors = useConnectors();
   const { connectAsync } = useConnect();
+  const { disconnectAsync } = useDisconnect();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const autoConnectAttempted = useRef(false);
+  const particleProviderRef = useRef(particleProvider);
+  useEffect(() => { particleProviderRef.current = particleProvider; }, [particleProvider]);
 
   // Auto-reconnect: if user is logged in (has address in DB) but ConnectKit
   // is disconnected (page refresh), reconnect via the auth connector.
@@ -73,14 +76,13 @@ export function useBlockchain() {
     const ethers = await getEthers();
     if (!ethers) return null;
 
-    if (!particleProvider) {
+    const pp = particleProviderRef.current as any;
+    if (!pp) {
       console.error('[getSignerProvider] No particleProvider from useEthereum()');
       return null;
     }
 
     try {
-      // Ensure BSC chain
-      const pp = particleProvider as any;
       if (pp.request) {
         try {
           const chainId = await pp.request({ method: 'eth_chainId' });
@@ -94,7 +96,7 @@ export function useBlockchain() {
       console.error('[getSignerProvider] Failed:', e);
       return null;
     }
-  }, [particleProvider]);
+  }, []);
 
   async function getContract(contractAddress: string, abi: string[], withSigner = false) {
     const ethers = await getEthers();
@@ -385,25 +387,46 @@ export function useBlockchain() {
         queryClient.invalidateQueries();
         return { txHash: receipt.transactionHash, success: true };
       } catch (err) {
+        if (isSessionExpiredError(err)) {
+          try {
+            await refreshParticleSession();
+            const contract = await getContract(CONTRACTS.RENT, RENT_ABI, true);
+            if (!contract) throw new Error('Could not reconnect to rent contract');
+            const tx = await contract.withdrawRent(propertyId);
+            const receipt = await tx.wait();
+            setLoading(false);
+            queryClient.invalidateQueries();
+            return { txHash: receipt.transactionHash, success: true };
+          } catch (retryErr) {
+            const msg = 'Wallet session expired. Please refresh the page and try again.';
+            setError(msg);
+            setLoading(false);
+            throw new Error(msg);
+          }
+        }
         const msg = err instanceof Error ? err.message : 'Claim failed';
         setError(msg);
         setLoading(false);
         throw err;
       }
     },
-    [ensureConnected],
+    [ensureConnected, refreshParticleSession],
   );
 
-  const reconnectParticle = useCallback(async () => {
+  const refreshParticleSession = useCallback(async () => {
+    await disconnectAsync();
+    await new Promise((r) => setTimeout(r, 500));
     const authConnector = connectors.find((c: any) => c.id === 'particleAuth' || c.type === 'particleAuth');
     if (authConnector) {
       await connectAsync({ connector: authConnector, chainId: 56 });
+      await new Promise((r) => setTimeout(r, 500));
     }
-  }, [connectors, connectAsync]);
+  }, [connectors, connectAsync, disconnectAsync]);
 
   const isSessionExpiredError = (err: unknown): boolean => {
     const msg = err instanceof Error ? err.message : String(err);
-    return msg.includes('Token is expired') || msg.includes('login token') || msg.includes('Invalid login token');
+    const lower = msg.toLowerCase();
+    return lower.includes('token is expired') || lower.includes('login token') || lower.includes('invalid login token') || lower.includes('cognito');
   };
 
   const castVote = useCallback(
@@ -423,7 +446,7 @@ export function useBlockchain() {
       } catch (err) {
         if (isSessionExpiredError(err)) {
           try {
-            await reconnectParticle();
+            await refreshParticleSession();
             const contract = await getContract(CONTRACTS.VOTING, VOTING_ABI, true);
             if (!contract) throw new Error('Could not reconnect to voting contract');
             await contract.callStatic.vote(proposalId, inFavor);
@@ -445,7 +468,7 @@ export function useBlockchain() {
         throw err;
       }
     },
-    [ensureConnected, connectors, connectAsync, reconnectParticle],
+    [ensureConnected, refreshParticleSession],
   );
 
   // Boost APR — exact clone of legacy boostedCheckout.js handleBoost()
