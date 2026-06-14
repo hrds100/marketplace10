@@ -1,6 +1,6 @@
 import { useCallback, useState, useEffect, useRef } from 'react';
 import { useEthereum } from '@particle-network/authkit';
-import { useAccount, useConnect, useConnectors, useDisconnect } from '@particle-network/connectkit';
+import { useAccount, useConnect, useConnectors } from '@particle-network/connectkit';
 import { useWallet } from '@/hooks/useWallet';
 import { useAuth } from '@/hooks/useAuth';
 import { CONTRACTS } from '@/lib/particle';
@@ -48,7 +48,6 @@ export function useBlockchain() {
   const { provider: particleProvider } = useEthereum();
   const connectors = useConnectors();
   const { connectAsync } = useConnect();
-  const { disconnectAsync } = useDisconnect();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const autoConnectAttempted = useRef(false);
@@ -414,14 +413,12 @@ export function useBlockchain() {
   );
 
   const refreshParticleSession = useCallback(async () => {
-    await disconnectAsync();
-    await new Promise((r) => setTimeout(r, 500));
     const authConnector = connectors.find((c: any) => c.id === 'particleAuth' || c.type === 'particleAuth');
     if (authConnector) {
       await connectAsync({ connector: authConnector, chainId: 56 });
-      await new Promise((r) => setTimeout(r, 500));
+      await new Promise((r) => setTimeout(r, 300));
     }
-  }, [connectors, connectAsync, disconnectAsync]);
+  }, [connectors, connectAsync]);
 
   const isSessionExpiredError = (err: unknown): boolean => {
     const msg = err instanceof Error ? err.message : String(err);
