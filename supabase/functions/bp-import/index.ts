@@ -54,12 +54,15 @@ async function bpGet<T = any>(path: string, bpKey: string): Promise<T> {
 // BP archive vocabulary — matches the tabs in BP's own admin UI.
 // See migration 20260620000002_bp_status_vocabulary.sql for the CHECK.
 type BpStatus = 'draft' | 'pending' | 'outstanding' | 'accepted' | 'lost';
-function mapStatus(bp: Record<string, unknown>, openedIds: Set<string>): BpStatus {
+// Matches BP's own UI: sent-but-not-actioned all show as Outstanding,
+// regardless of whether the recipient has opened it. Pending stays in the
+// schema as a future bucket but isn't populated today (BP's Pending tab is
+// empty for our account; the differentiation just confused the data).
+function mapStatus(bp: Record<string, unknown>, _openedIds: Set<string>): BpStatus {
   if (bp.MarkDead === '1' || bp.MarkDead === 1 || bp.Deleted === '1' || bp.Deleted === 1) return 'lost';
   if (bp.Signed === '1' || bp.Signed === 1 || bp.Paid === '1' || bp.Paid === 1) return 'accepted';
   if (!bp.DateSent || String(bp.DateSent).length === 0) return 'draft';
-  if (openedIds.has(String(bp.ID))) return 'outstanding';
-  return 'pending';
+  return 'outstanding';
 }
 
 // ---------- Datetime helpers -------------------------------------------------
@@ -398,6 +401,8 @@ async function syncProposals(
       description: p.Description ?? null,
       personal_message: p.PersonalMessage ?? null,
       date_sent: bpDate(p.DateSent),
+      bp_date_created: bpDate(p.DateCreated),
+      bp_date_edited: bpDate(p.DateEdited),
       pdf_storage_path: pdfStoragePath,
       imported_at: new Date().toISOString(),
 

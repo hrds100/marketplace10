@@ -40,6 +40,8 @@ export interface ArchiveRow {
   signed_at: string | null;
   created_at: string;
   imported_at: string | null;
+  bp_date_created: string | null;
+  bp_date_edited: string | null;
 }
 
 export interface ArchiveDetail extends ArchiveRow {
@@ -79,7 +81,8 @@ const LIST_COLUMNS = `
   id, source, bp_id, bp_type_id, bp_preview_url, bp_view_url, token,
   title, recipient_name, recipient_email, signer_name, signer_email,
   company_name, amount, currency, status,
-  date_sent, signed_at, created_at, imported_at
+  date_sent, signed_at, created_at, imported_at,
+  bp_date_created, bp_date_edited
 `;
 
 const DETAIL_COLUMNS = `
@@ -87,6 +90,7 @@ const DETAIL_COLUMNS = `
   title, recipient_name, recipient_email, signer_name, signer_email,
   company_name, amount, currency, status,
   date_sent, signed_at, created_at, imported_at,
+  bp_date_created, bp_date_edited,
   terms_html, description, subject_line, personal_message, bp_raw,
   html_storage_path, pdf_storage_path
 `;

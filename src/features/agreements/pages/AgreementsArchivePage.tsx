@@ -313,7 +313,10 @@ function ProposalsSection() {
                         </button>
                       </TableCell>
                       <TableCell className="text-sm text-[#6B7280]">
-                        {r.created_at ? new Date(r.created_at).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }) : '—'}
+                        {(() => {
+                          const d = r.bp_date_created ?? r.created_at;
+                          return d ? new Date(d).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }) : '—';
+                        })()}
                       </TableCell>
                     </TableRow>
                   ))
