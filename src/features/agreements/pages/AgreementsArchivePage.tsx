@@ -61,9 +61,17 @@ type Section = 'proposals' | 'templates';
 
 export default function AgreementsArchivePage() {
   const [section, setSection] = useState<Section>('proposals');
+  const [activeStatus, setActiveStatus] = useState<BpStatus>('draft');
   const { run, reload: reloadRun } = useLastImportRun();
   const [syncing, setSyncing] = useState<null | 'ping' | 'full-sync' | 'ids'>(null);
   const [idsModalOpen, setIdsModalOpen] = useState(false);
+  const titleByStatus: Record<BpStatus, string> = {
+    draft: 'Draft Documents',
+    pending: 'Pending Documents',
+    outstanding: 'Outstanding Documents',
+    accepted: 'Accepted Documents',
+    lost: 'Lost Documents',
+  };
 
   const handleSync = useCallback(async (action: 'ping' | 'full-sync') => {
     setSyncing(action);
@@ -127,8 +135,8 @@ export default function AgreementsArchivePage() {
             >
               <ArrowLeft className="h-5 w-5" />
             </Link>
-            <h1 className="text-[20px] font-bold text-[#1A1A1A] leading-tight">
-              {section === 'proposals' ? 'Proposals' : 'Templates'}
+            <h1 className="text-[26px] font-bold text-[#1A1A1A] leading-tight">
+              {section === 'templates' ? 'Templates' : titleByStatus[activeStatus]}
             </h1>
           </div>
           <div className="flex items-center gap-3">
@@ -159,7 +167,9 @@ export default function AgreementsArchivePage() {
           </div>
         </div>
 
-        {section === 'proposals' ? <ProposalsSection /> : <TemplatesSection />}
+        {section === 'proposals'
+          ? <ProposalsSection activeStatus={activeStatus} onStatusChange={setActiveStatus} />
+          : <TemplatesSection />}
       </div>
 
       {idsModalOpen && (
@@ -290,13 +300,16 @@ function RailButton({
 }
 
 // ─── PROPOSALS SECTION ──────────────────────────────────────────────────────
-function ProposalsSection() {
+function ProposalsSection({
+  activeStatus, onStatusChange,
+}: { activeStatus: BpStatus; onStatusChange: (s: BpStatus) => void }) {
   const [filters, setFilters] = useState<ArchiveFilters>({
     source: 'all',
     bpTypeId: null,
-    status: 'draft',
+    status: activeStatus,
     search: '',
   });
+  useEffect(() => { setFilters((f) => ({ ...f, status: activeStatus })); }, [activeStatus]);
   const [searchInput, setSearchInput] = useState('');
   const debouncedSearch = useDebouncedValue(searchInput, 300);
   useEffect(() => {
@@ -319,7 +332,7 @@ function ProposalsSection() {
             return (
               <button
                 key={s}
-                onClick={() => setFilters((f) => ({ ...f, status: s }))}
+                onClick={() => onStatusChange(s)}
                 className={cn(
                   'px-4 py-3 text-sm font-semibold transition border-b-2 capitalize',
                   active
@@ -371,18 +384,19 @@ function ProposalsSection() {
                   <TableHead className="text-[#1A1A1A] font-bold">Document type</TableHead>
                   <TableHead className="text-[#1A1A1A] font-bold">Value</TableHead>
                   <TableHead className="text-[#1A1A1A] font-bold">Date Created</TableHead>
+                  <TableHead className="text-[#1A1A1A] font-bold">Signed On</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {listLoading ? (
                   <TableRow>
-                    <TableCell colSpan={4} className="text-center py-16">
+                    <TableCell colSpan={5} className="text-center py-16">
                       <Loader2 className="h-6 w-6 animate-spin text-[#6B7280] mx-auto" />
                     </TableCell>
                   </TableRow>
                 ) : rows.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={4} className="text-center text-[#6B7280] py-16">
+                    <TableCell colSpan={5} className="text-center text-[#6B7280] py-16">
                       No proposals in this bucket.
                       {counts.bp === 0 && (
                         <div className="mt-1 text-xs">Click <b>Sync now</b> to import from Better Proposals.</div>
@@ -397,17 +411,17 @@ function ProposalsSection() {
                       className="cursor-pointer hover:bg-[#F3F3EE]/60 border-b border-[#E5E7EB]"
                     >
                       <TableCell className="py-4">
-                        <div className="font-semibold text-[#1A1A1A] truncate max-w-[400px]">
+                        <div className="font-semibold text-[#1A1A1A] truncate max-w-[460px]">
                           {r.company_name || r.title}
                         </div>
-                        {r.title && r.title !== r.company_name && (
-                          <div className="text-xs text-[#9CA3AF] truncate max-w-[400px] mt-0.5">
-                            {r.title}
+                        {(r.description || (r.title && r.title !== r.company_name)) && (
+                          <div className="text-xs text-[#9CA3AF] truncate max-w-[460px] mt-0.5">
+                            {r.description || r.title}
                           </div>
                         )}
                       </TableCell>
                       <TableCell>
-                        <DocTypePill typeId={r.bp_type_id} />
+                        <DocTypePill typeId={r.bp_type_id} typeName={r.bp_type_name} />
                       </TableCell>
                       <TableCell>
                         <div className="text-sm font-semibold text-[#1A1A1A]">
@@ -422,6 +436,11 @@ function ProposalsSection() {
                           const d = r.bp_date_created ?? r.created_at;
                           return d ? new Date(d).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }) : '—';
                         })()}
+                      </TableCell>
+                      <TableCell className="text-sm text-[#6B7280]">
+                        {r.signed_at
+                          ? new Date(r.signed_at).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })
+                          : '—'}
                       </TableCell>
                     </TableRow>
                   ))
@@ -605,12 +624,26 @@ function FolderRow({ active, label, onClick }: { active: boolean; label: string;
 }
 
 // ─── Reusable bits ──────────────────────────────────────────────────────────
-function DocTypePill({ typeId }: { typeId: number | null }) {
-  if (typeId === null || typeId === undefined) {
+function DocTypePill({ typeId, typeName }: { typeId: number | null; typeName?: string | null }) {
+  // Prefer the scraped BP type name; fall back to the doctype-id lookup.
+  // If we have NEITHER, render a dash.
+  const label = typeName || (typeId !== null && typeId !== undefined ? BP_TYPE_LABELS[typeId] : null);
+  if (!label) {
     return <span className="text-xs text-[#9CA3AF]">—</span>;
   }
-  const c = TYPE_BADGE[typeId] ?? { bg: 'bg-gray-50', text: 'text-gray-600', border: 'border-gray-200' };
-  const label = BP_TYPE_LABELS[typeId] ?? `Type ${typeId}`;
+  // Map the name to a badge color, with type_id fallback for legacy rows.
+  const nameToTypeId: Record<string, number> = {
+    proposal: 1, proposals: 1,
+    quote: 2, quotes: 2,
+    brochure: 3, brochures: 3,
+    'statement of work': 4, 'statements of work': 4,
+    contract: 5, contracts: 5,
+    'sign off': 6, signoff: 6, 'sign offs': 6, signoffs: 6,
+    'job offer': 7, 'job offers': 7,
+    agreement: 7200, agreements: 7200,
+  };
+  const tid = typeId ?? nameToTypeId[label.toLowerCase().replace(/\s+/g, ' ').trim()] ?? null;
+  const c = (tid !== null && TYPE_BADGE[tid]) ?? { bg: 'bg-gray-50', text: 'text-gray-600', border: 'border-gray-200' };
   return (
     <span className={cn('inline-flex items-center gap-1.5 px-3 py-1 rounded-md text-xs font-semibold border', c.bg, c.text, c.border)}>
       <FileSignature className="h-3 w-3" />
@@ -703,6 +736,46 @@ function formatMoney(amount: number, currency: string): string {
 }
 
 // ─── Detail panel (unchanged from previous version, kept inline) ────────────
+// ─── Activity timeline (rendered from bp_raw.activityLog) ───────────────────
+function ActivityTimeline({ raw }: { raw: unknown }) {
+  // bp_raw shape: either the full BP proposal record or our metadata-only
+  // wrapper. The scraper writes { _scraper, activityLog: [{action, date}] }.
+  const items: Array<{ action: string; date: string | null }> = (() => {
+    if (!raw || typeof raw !== 'object') return [];
+    const obj = raw as Record<string, unknown>;
+    const log = obj.activityLog;
+    return Array.isArray(log) ? (log as Array<{ action: string; date: string | null }>) : [];
+  })();
+
+  if (items.length === 0) {
+    return (
+      <div className="px-6 py-4 border-b border-[#E5E7EB] bg-[#F3F3EE]/30">
+        <div className="text-[11px] uppercase tracking-wide text-[#9CA3AF] font-semibold mb-2">
+          Document Activity
+        </div>
+        <div className="text-xs text-[#9CA3AF] italic">No activity captured for this row.</div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="px-6 py-4 border-b border-[#E5E7EB] bg-[#F3F3EE]/30">
+      <div className="text-[11px] uppercase tracking-wide text-[#9CA3AF] font-semibold mb-3">
+        Document Activity
+      </div>
+      <ol className="relative border-l-2 border-[#E5E7EB] pl-4 space-y-3 max-h-[260px] overflow-auto">
+        {items.map((it, i) => (
+          <li key={i} className="relative">
+            <span className="absolute -left-[22px] top-1.5 w-2.5 h-2.5 rounded-full bg-[#1E9A80] ring-2 ring-white" />
+            <div className="text-sm font-medium text-[#1A1A1A]">{it.action}</div>
+            {it.date && <div className="text-xs text-[#9CA3AF] mt-0.5">{it.date}</div>}
+          </li>
+        ))}
+      </ol>
+    </div>
+  );
+}
+
 function DetailPanel({ id, onClose }: { id: string; onClose: () => void }) {
   const { row, loading } = useArchiveDetail(id);
   const [signedHtmlUrl, setSignedHtmlUrl] = useState<string | null>(null);
@@ -763,15 +836,15 @@ function DetailPanel({ id, onClose }: { id: string; onClose: () => void }) {
                   <Badge variant="outline" className={cn('text-xs capitalize', STATUS_COLORS[row.status])}>
                     {row.status}
                   </Badge>
-                  <DocTypePill typeId={row.bp_type_id} />
+                  <DocTypePill typeId={row.bp_type_id} typeName={row.bp_type_name} />
                   <span className="text-xs text-[#9CA3AF] font-mono">
                     {row.source === 'bp_import' ? `BP #${row.bp_id}` : row.token}
                   </span>
                 </div>
-                <h2 className="text-lg font-bold text-[#1A1A1A] truncate">{row.title}</h2>
-                <p className="text-sm text-[#6B7280]">
-                  {row.recipient_name || row.signer_name || row.company_name || 'No recipient'}
-                </p>
+                <h2 className="text-lg font-bold text-[#1A1A1A] truncate">{row.company_name || row.title}</h2>
+                {row.description && (
+                  <p className="text-sm text-[#6B7280] truncate">{row.description}</p>
+                )}
               </div>
               <button onClick={onClose} className="p-1.5 rounded-lg hover:bg-[#F3F3EE] text-[#6B7280]">
                 <X className="h-5 w-5" />
@@ -788,6 +861,9 @@ function DetailPanel({ id, onClose }: { id: string; onClose: () => void }) {
               <MetaItem label="Company" value={row.company_name || '—'} />
               <MetaItem label="Imported" value={row.imported_at ? new Date(row.imported_at).toLocaleString('en-GB') : '—'} />
             </div>
+
+            <ActivityTimeline raw={row.bp_raw} />
+
 
             <div className="px-6 py-3 border-b border-[#E5E7EB] flex items-center gap-2 flex-wrap bg-[#F3F3EE]/50">
               {row.bp_preview_url && (
