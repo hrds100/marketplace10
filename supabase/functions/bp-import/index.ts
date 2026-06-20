@@ -231,26 +231,42 @@ async function syncProposals(
   bpKey: string,
   opts: { fetchHtml: boolean; runId: string },
 ) {
-  // BP /proposal returns TypeID=1 only. We also probe other TypeIDs that
-  // doctype exposes so we capture Contracts / Agreements / Brochures / Sign-offs.
-  const TYPE_IDS = [null, 3, 5, 6, 7200] as const; // null = default (Proposals)
+  // BP's /proposal returns just one bucket (~20 records). To get the full
+  // ~239 we have to hit every status-scoped endpoint and dedup. We also
+  // probe TypeID filters for non-Proposal doctypes (Contracts/Agreements/etc.)
+  const STATUS_ENDPOINTS = [
+    '/proposal',
+    '/proposal/new',
+    '/proposal/opened',
+    '/proposal/sent',
+    '/proposal/signed',
+    '/proposal/paid',
+  ];
+  const TYPE_IDS = [3, 5, 6, 7200];
   const seen = new Set<string>();
   const all: any[] = [];
 
-  for (const tid of TYPE_IDS) {
-    const path = tid === null ? '/proposal' : `/proposal?type=${tid}`;
+  const ingest = (list: any[]) => {
+    if (!Array.isArray(list)) return;
+    for (const p of list) {
+      const id = String(p.ID);
+      if (seen.has(id)) continue;
+      seen.add(id);
+      all.push(p);
+    }
+  };
+
+  for (const path of STATUS_ENDPOINTS) {
     try {
       const r = await bpGet<{ data: any[] }>(path, bpKey);
-      const list = Array.isArray(r.data) ? r.data : [];
-      for (const p of list) {
-        const id = String(p.ID);
-        if (seen.has(id)) continue;
-        seen.add(id);
-        all.push(p);
-      }
-    } catch {
-      // Type filter not supported by API — ignore and continue.
-    }
+      ingest(r.data);
+    } catch { /* endpoint may not exist — ignore */ }
+  }
+  for (const tid of TYPE_IDS) {
+    try {
+      const r = await bpGet<{ data: any[] }>(`/proposal?type=${tid}`, bpKey);
+      ingest(r.data);
+    } catch { /* type filter not supported — ignore */ }
   }
 
   // /proposal/opened lists proposals the recipient has actually viewed —
