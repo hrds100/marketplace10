@@ -325,7 +325,7 @@ export async function triggerImportByIds(ids: string[], fetchHtml = true) {
   const body = (await r.json().catch(() => ({}))) as {
     ok?: boolean;
     run_id?: string;
-    totals?: { pulled: number; inserted: number; notFound: number; pdfFetched: number; pdfFailed: number; errors: string[] };
+    totals?: { pulled: number; inserted: number; notFound: number; pdfFetched: number; pdfFailed: number; metadataOnly?: number; errors: string[] };
     error?: string;
   };
   if (!r.ok) throw new Error(body.error ?? `import-by-ids HTTP ${r.status}`);

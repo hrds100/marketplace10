@@ -93,7 +93,13 @@ export default function AgreementsArchivePage() {
     try {
       const res = await triggerImportByIds(ids, true);
       const t = res.totals;
-      toast.success(`Imported ${t?.inserted ?? 0}/${t?.pulled ?? 0} · ${t?.pdfFetched ?? 0} PDFs · ${t?.notFound ?? 0} not found`);
+      const parts = [
+        `Imported ${t?.inserted ?? 0}/${t?.pulled ?? 0}`,
+        `${t?.pdfFetched ?? 0} PDFs`,
+      ];
+      if (t?.metadataOnly && t.metadataOnly > 0) parts.push(`${t.metadataOnly} metadata-only`);
+      if (t?.notFound && t.notFound > 0) parts.push(`${t.notFound} not found`);
+      toast.success(parts.join(' · '));
       setIdsModalOpen(false);
       reloadRun();
       window.location.reload();
@@ -184,10 +190,10 @@ function ImportByIdsModal({
           <div>
             <h2 className="text-lg font-bold text-[#1A1A1A]">Import BP proposals by ID</h2>
             <p className="text-xs text-[#6B7280] mt-1">
-              Paste BP proposal IDs (one per line, or comma-separated). Useful for archived records the BP API listing endpoint won't return — single-record fetches still work.
+              Paste BP "proposal view IDs" (the number in <code className="text-[10px] bg-[#F3F3EE] px-1 rounded">betterproposals.io/2/proposals/view?id=N</code> URLs). One per line, or comma-separated.
             </p>
             <p className="text-xs text-[#9CA3AF] mt-1">
-              Find IDs in BP UI URLs: <code className="text-[10px] bg-[#F3F3EE] px-1 rounded">betterproposals.io/2/proposals/edit?id=<b>2761909</b></code>
+              Importer tries <b>/proposal/{'{id}'}</b> first for full record + PDF. If BP has deleted the proposal (older records), it falls back to <b>/quote/{'{id}'}</b> for metadata-only import (company, dates, amount — no PDF since BP no longer has it).
             </p>
           </div>
           <button onClick={onClose} className="p-1.5 rounded-lg hover:bg-[#F3F3EE] text-[#6B7280]">
