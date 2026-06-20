@@ -1,0 +1,17 @@
+{
+  "name": "bp-pdf-scraper",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Logs into Better Proposals once, then iterates view IDs to download each proposal's PDF and (optionally) upload to Supabase Storage + update agreements row.",
+  "scripts": {
+    "login": "node scrape.mjs --login",
+    "scrape": "node scrape.mjs --scrape",
+    "upload": "node scrape.mjs --upload",
+    "all": "node scrape.mjs --login --scrape --upload"
+  },
+  "dependencies": {
+    "@supabase/supabase-js": "^2.45.0",
+    "playwright": "^1.48.0"
+  }
+}
