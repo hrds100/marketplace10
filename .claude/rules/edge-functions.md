@@ -25,7 +25,7 @@ If you change what a function accepts or returns, update the contract.
 - auth: send-otp, verify-otp
 - inquiry: process-inquiry, receive-tenant-whatsapp
 - landlord: landlord-magic-login, claim-landlord-account, lead-magic-login
-- admin: hard-delete-user, hard-delete-property, ghl-enroll, reset-for-testing
+- admin: hard-delete-user, hard-delete-property, ghl-enroll, reset-for-testing, bp-import
 - ai: ai-chat, ai-description, airbnb-pricing, ai-parse-listing
 - smsv2 / live coach: wk-voice-transcription (streaming live coach — three-layer prompt system, see docs/runbooks/COACH_PROMPT_LAYERS.md)
 - crm / messaging: wk-sms-send, wk-sms-incoming, unipile-send, unipile-webhook, unipile-poll-messages, unipile-create-link, wk-email-send, wk-email-webhook
@@ -49,7 +49,7 @@ If you change what a function accepts or returns, update the contract.
 ## verify_jwt Configuration (supabase/config.toml)
 
 **Requires JWT (verify_jwt = true):**
-- Authentication gated: send-otp, verify-otp, process-inquiry, landlord-magic-login, claim-landlord-account, lead-magic-login, hard-delete-user, hard-delete-property, ghl-enroll, reset-for-testing
+- Authentication gated: send-otp, verify-otp, process-inquiry, landlord-magic-login, claim-landlord-account, lead-magic-login, hard-delete-user, hard-delete-property, ghl-enroll, reset-for-testing, bp-import (admin)
 - CRM authenticated: wk-sms-send, unipile-send, wk-email-send, wk-dialer-start, wk-dialer-hangup-leg, unipile-create-link (admin), reset-landlord-test-data (admin)
 - AI callers: ai-chat, ai-description, airbnb-pricing, ai-parse-listing
 - Internal: particle-generate-jwt, particle-jwks, track-referral, save-bank-details, create-admin, get-thread-phone, nfs-provision-nfstay-subdomain, run-migrations, generate-description

@@ -347,3 +347,8 @@ verify_jwt = false
 [functions.uptimerobot-health]
 # Public health proxy — no auth.
 verify_jwt = false
+
+# Better Proposals import — pulls all BP contracts into our DB so the
+# subscription can be cancelled. Admin-only, gated by JWT + email check inside.
+[functions.bp-import]
+verify_jwt = true

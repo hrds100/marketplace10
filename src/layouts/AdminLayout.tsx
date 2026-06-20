@@ -26,6 +26,7 @@ const marketplaceLinks = [
   { to: '/admin/marketplace/whatsapp-scraper', label: 'Deal Scanner', icon: MessageSquare },
   { to: '/admin/marketplace/growth', label: 'Growth', icon: BarChart3 },
   { to: '/admin/marketplace/contracts', label: 'Contracts', icon: FileSignature },
+  { to: '/agreements', label: 'Agreements', icon: FileSignature },
 ];
 
 const investLinks = [
@@ -37,7 +38,7 @@ const investLinks = [
   { to: '/admin/invest/commission-settings', label: 'Rates', icon: Sliders },
   { to: '/admin/invest/payouts', label: 'Payouts', icon: Banknote },
   { to: '/admin/invest/proposals', label: 'Proposals', icon: Vote },
-  { to: '/admin/invest/agreements', label: 'Agreements', icon: FileSignature },
+  { to: '/agreements', label: 'Agreements', icon: FileSignature },
   { to: '/admin/invest/endpoints', label: 'Endpoints', icon: Plug },
 ];
 
