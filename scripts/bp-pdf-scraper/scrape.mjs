@@ -157,11 +157,13 @@ async function phaseScrape() {
 //   4. Fetch the PDF using the browser context (which carries session)
 async function fetchOnePdf(ctx, viewId) {
   const page = await ctx.newPage();
-  const editUrl = `https://betterproposals.io/2/proposals/edit?id=${viewId}`;
+  // /view?id=N is the Document Activity page that has the "Preview document"
+  // button. /edit?id=N is the editor — different page, no preview button there.
+  const viewUrl = `https://betterproposals.io/2/proposals/view?id=${viewId}`;
 
   try {
-    await page.goto(editUrl, { timeout: 45_000, waitUntil: 'domcontentloaded' });
-    if (DEBUG) await page.screenshot({ path: join(DEBUG_DIR, `${viewId}-1-edit.png`), fullPage: true });
+    await page.goto(viewUrl, { timeout: 45_000, waitUntil: 'domcontentloaded' });
+    if (DEBUG) await page.screenshot({ path: join(DEBUG_DIR, `${viewId}-1-activity.png`), fullPage: true });
 
     // Find Preview Document button. BP uses different markup in different
     // sections — try a few resilient selectors in order.
@@ -196,7 +198,7 @@ async function fetchOnePdf(ctx, viewId) {
     // If no new tab was opened, the click may have navigated the current tab.
     if (!previewPage) {
       await page.waitForLoadState('domcontentloaded', { timeout: 10_000 }).catch(() => {});
-      if (page.url() !== editUrl) previewPage = page;
+      if (page.url() !== viewUrl) previewPage = page;
     }
     if (!previewPage) throw new Error('Preview Document did not open');
 
