@@ -107,9 +107,9 @@ export function useArchiveList(filters: ArchiveFilters) {
     let q: any = (supabase.from('agreements' as any) as any)
       .select(LIST_COLUMNS)
       .order('created_at', { ascending: false })
-      .limit(500);
+      .limit(500)
+      .eq('source', 'bp_import'); // /agreements is BP-only — native rows live in their own admin
 
-    if (filters.source !== 'all') q = q.eq('source', filters.source);
     const bucket = STATUS_BUCKETS[filters.status];
     if (bucket) q = q.in('status', bucket);
     if (filters.bpTypeId !== null) q = q.eq('bp_type_id', filters.bpTypeId);
@@ -192,21 +192,20 @@ export function useArchiveCounts() {
   });
 
   const load = useCallback(async () => {
-    const { count: total } = await (supabase.from('agreements' as any) as any)
-      .select('id', { count: 'exact', head: true });
+    // /agreements is BP-only — count BP-imported rows only, never natives.
     const { count: bp } = await (supabase.from('agreements' as any) as any)
       .select('id', { count: 'exact', head: true }).eq('source', 'bp_import');
-    const { count: native } = await (supabase.from('agreements' as any) as any)
-      .select('id', { count: 'exact', head: true }).eq('source', 'native');
 
     const byStatus: Record<BpStatus, number> = { draft: 0, pending: 0, outstanding: 0, accepted: 0, lost: 0 };
     for (const bucket of Object.keys(STATUS_BUCKETS) as BpStatus[]) {
       const { count } = await (supabase.from('agreements' as any) as any)
-        .select('id', { count: 'exact', head: true }).in('status', STATUS_BUCKETS[bucket]);
+        .select('id', { count: 'exact', head: true })
+        .eq('source', 'bp_import')
+        .in('status', STATUS_BUCKETS[bucket]);
       byStatus[bucket] = count ?? 0;
     }
 
-    setCounts({ total: total ?? 0, bp: bp ?? 0, native: native ?? 0, byStatus });
+    setCounts({ total: bp ?? 0, bp: bp ?? 0, native: 0, byStatus });
   }, []);
 
   useEffect(() => { void load(); }, [load]);
