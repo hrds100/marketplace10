@@ -40,6 +40,8 @@ export interface ArchiveRow {
   signed_at: string | null;
   created_at: string;
   imported_at: string | null;
+  bp_date_created: string | null;
+  bp_date_edited: string | null;
 }
 
 export interface ArchiveDetail extends ArchiveRow {
@@ -79,7 +81,8 @@ const LIST_COLUMNS = `
   id, source, bp_id, bp_type_id, bp_preview_url, bp_view_url, token,
   title, recipient_name, recipient_email, signer_name, signer_email,
   company_name, amount, currency, status,
-  date_sent, signed_at, created_at, imported_at
+  date_sent, signed_at, created_at, imported_at,
+  bp_date_created, bp_date_edited
 `;
 
 const DETAIL_COLUMNS = `
@@ -87,6 +90,7 @@ const DETAIL_COLUMNS = `
   title, recipient_name, recipient_email, signer_name, signer_email,
   company_name, amount, currency, status,
   date_sent, signed_at, created_at, imported_at,
+  bp_date_created, bp_date_edited,
   terms_html, description, subject_line, personal_message, bp_raw,
   html_storage_path, pdf_storage_path
 `;
@@ -300,6 +304,32 @@ export async function getSignedPdfUrl(path: string | null): Promise<string | nul
   if (!path) return null;
   const { data } = await supabase.storage.from('agreements').createSignedUrl(path, 3600);
   return data?.signedUrl ?? null;
+}
+
+export async function triggerImportByIds(ids: string[], fetchHtml = true) {
+  const supabaseUrl = import.meta.env.VITE_SUPABASE_URL as string;
+  const anonKey = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY as string;
+  const { data: { session } } = await supabase.auth.getSession();
+  if (!session) throw new Error('Not signed in');
+
+  const url = `${supabaseUrl}/functions/v1/bp-import?action=import-by-ids&fetchHtml=${fetchHtml ? '1' : '0'}`;
+  const r = await fetch(url, {
+    method: 'POST',
+    headers: {
+      'Authorization': `Bearer ${session.access_token}`,
+      'apikey': anonKey,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({ ids }),
+  });
+  const body = (await r.json().catch(() => ({}))) as {
+    ok?: boolean;
+    run_id?: string;
+    totals?: { pulled: number; inserted: number; notFound: number; pdfFetched: number; pdfFailed: number; errors: string[] };
+    error?: string;
+  };
+  if (!r.ok) throw new Error(body.error ?? `import-by-ids HTTP ${r.status}`);
+  return body;
 }
 
 export async function triggerBpImport(
