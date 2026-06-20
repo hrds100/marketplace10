@@ -432,9 +432,17 @@ async function syncProposals(
 }
 
 // ---------- Sync: by explicit ID list -----------------------------------------
-// BP's REST API caps the listing at ~223 records, hiding old archives behind
-// the web UI. This action takes an explicit ID list (paste from BP UI URLs)
-// and fetches /proposal/{id} for each one, bypassing the listing cap.
+// BP's REST API caps the proposal listing at ~223 records and 404s
+// /proposal/{id} for older / deleted ones — BUT /quote/{id} keeps working
+// for those old records. The IDs in BP's web UI (`/proposals/view?id=N`)
+// are actually QuoteIDs, not Proposal record IDs. So this action:
+//   1. Tries /proposal/{id} first (works for current 223)
+//   2. If 404, treats the id as a QuoteID and fetches /quote/{id}
+//   3. Tries to look up the matching Proposal record via /proposal/{id}
+//      using the actual Proposal ID derived from /proposal listing's
+//      QuoteID → ProposalID map (built once at start)
+//   4. If still no Proposal record, inserts a metadata-only row
+//      (no PDF — BP no longer has the proposal record)
 async function syncByIds(
   supabase: SupabaseClient,
   bpKey: string,
@@ -445,99 +453,102 @@ async function syncByIds(
     ids.map((x) => String(x).trim()).filter((x) => /^\d+$/.test(x))
   ));
 
+  // Build QuoteID → Proposal record map from the bulk listing once
+  // (covers any id where the proposal record still exists in the API).
+  const quoteIdToProposal = new Map<string, any>();
+  try {
+    const r = await bpGet<{ data: any[] }>('/proposal?per_page=500', bpKey);
+    if (Array.isArray(r.data)) {
+      for (const p of r.data) {
+        if (p.QuoteID) quoteIdToProposal.set(String(p.QuoteID), p);
+      }
+    }
+  } catch { /* best-effort */ }
+
   let inserted = 0;
   let pdfFetched = 0;
   let pdfFailed = 0;
   let notFound = 0;
+  let metadataOnly = 0;
   const errors: string[] = [];
 
-  const pickContactLink = (p: any): string | null => {
-    const contacts = Array.isArray(p.Contacts) ? p.Contacts : [];
-    if (contacts.length === 0) return null;
-    if (p.SignedEmail) {
-      const match = contacts.find((c: any) => c.Email && String(c.Email).toLowerCase() === String(p.SignedEmail).toLowerCase());
-      if (match?.Link) return match.Link;
-    }
-    return contacts[contacts.length - 1]?.Link ?? contacts[0]?.Link ?? null;
+  const companyCache = new Map<string, string | null>();
+  const getCompanyName = async (cid: string | null): Promise<string | null> => {
+    if (!cid) return null;
+    if (companyCache.has(cid)) return companyCache.get(cid) ?? null;
+    try {
+      const r = await bpGet<{ data: any }>(`/company/${cid}`, bpKey);
+      const name = r.data?.CompanyName ?? null;
+      companyCache.set(cid, name);
+      return name;
+    } catch { companyCache.set(cid, null); return null; }
   };
 
-  await pool(cleanIds, 4, async (bpId) => {
-    let p: any;
+  await pool(cleanIds, 4, async (rawId) => {
+    // Step 1: try /proposal/{rawId}
+    let p: any = null;
     try {
-      const r = await bpGet<{ data: any }>(`/proposal/${bpId}`, bpKey);
-      p = r.data;
-    } catch (e) {
-      notFound++;
-      errors.push(`bp_id ${bpId}: ${e instanceof Error ? e.message : 'fetch failed'}`);
+      const r = await bpGet<{ data: any }>(`/proposal/${rawId}`, bpKey);
+      if (r.data && r.data.ID) p = r.data;
+    } catch { /* fall through */ }
+
+    // Step 2: treat rawId as QuoteID, look up matching proposal in our map
+    if (!p && quoteIdToProposal.has(rawId)) {
+      const candidate = quoteIdToProposal.get(rawId);
+      try {
+        const r = await bpGet<{ data: any }>(`/proposal/${candidate.ID}`, bpKey);
+        if (r.data && r.data.ID) p = r.data;
+      } catch { /* fall through */ }
+    }
+
+    // Step 3a: found a proposal record — normal import with PDF
+    if (p) {
+      const r = await processProposal(supabase, p, new Set<string>(), opts.fetchHtml, errors);
+      if (r.inserted) inserted++;
+      if (r.pdfFetched) pdfFetched++;
+      if (r.pdfFailed) pdfFailed++;
       return;
     }
-    if (!p || !p.ID) {
+
+    // Step 3b: fall back to /quote/{rawId} for metadata-only row
+    let q: any = null;
+    try {
+      const r = await bpGet<{ data: any }>(`/quote/${rawId}`, bpKey);
+      if (r.data && r.data.ID) q = r.data;
+    } catch { /* fall through */ }
+
+    if (!q) {
       notFound++;
+      errors.push(`bp_id ${rawId}: no proposal or quote found`);
       return;
     }
 
-    const contactLink = pickContactLink(p);
-    const cleanedPreview = typeof contactLink === 'string' ? contactLink.replace(/&debug=yes/g, '') : null;
-
-    let pdfStoragePath: string | null = null;
-    if (opts.fetchHtml && cleanedPreview) {
-      const pdf = await fetchPdf(cleanedPreview);
-      if (pdf) {
-        const path = `bp-import/pdf/${bpId}.pdf`;
-        const { error: upErr } = await supabase.storage
-          .from(STORAGE_BUCKET)
-          .upload(path, pdf, { contentType: 'application/pdf', upsert: true });
-        if (!upErr) { pdfStoragePath = path; pdfFetched++; }
-        else { errors.push(`bp_id ${bpId} storage: ${upErr.message}`); pdfFailed++; }
-      } else {
-        pdfFailed++;
-      }
-    }
-
-    const signerFirst = (p.SignedFirstName ?? '').toString();
-    const signerLast = (p.SignedSurname ?? '').toString();
-    const signerFullFromParts = `${signerFirst} ${signerLast}`.trim();
-    const signerName = (p.SignedName ?? signerFullFromParts) || null;
-    const recipient = p.Contacts?.[Math.max(0, (p.Contacts?.length ?? 1) - 1)] ?? null;
-    const recipientName = recipient ? `${recipient.FirstName ?? ''} ${recipient.Surname ?? ''}`.trim() || null : null;
-    const signedAt = (() => {
-      if (p.SignedDate && p.SignedTime) return bpDate(`${p.SignedDate} ${p.SignedTime}`);
-      if (p.SignedDate) return bpDate(`${p.SignedDate} 00:00:00`);
-      return null;
-    })();
+    const companyName = await getCompanyName(q.CompanyID ? String(q.CompanyID) : null);
+    const acceptedAt = bpDate(q.DateAccepted);
+    const completedAt = bpDate(q.DateCompleted);
+    const isAccepted = !!acceptedAt || q.Status === '1' || q.Status === 1;
+    const isLost = bpBool(q.MarkDead) || bpBool(q.Deleted);
 
     const row = {
       source: 'bp_import',
-      bp_id: String(p.ID),
-      bp_type_id: p.TypeID !== null && p.TypeID !== undefined ? Number(p.TypeID) : null,
-      bp_brand_id: p.BrandID ?? null,
-      bp_company_id: p.CompanyID ?? null,
-      bp_quote_id: p.QuoteID ?? null,
-      bp_assigned_to: p.AssignedTo ?? null,
-      bp_preview_url: cleanedPreview,
-      bp_view_url: p.ProposalView ?? null,
-      bp_raw: p,
-      bp_archived: bpBool(p.Archived),
-      bp_deleted: bpBool(p.Deleted),
-      title: p.SubjectLine || p.CompanyName || `Proposal ${bpId}`,
-      recipient_name: recipientName,
-      recipient_email: recipient?.Email ?? null,
-      signer_name: signerName,
-      signer_email: p.SignedEmail ?? null,
-      signed_at: signedAt,
-      status: mapStatus(p, new Set<string>()),
-      amount: bpNum(p.Amount) ?? 0,
-      currency: (p.CurrencyCode as string) || 'USD',
-      company_name: p.CompanyName ?? null,
-      subject_line: p.SubjectLine ?? null,
-      description: p.Description ?? null,
-      personal_message: p.PersonalMessage ?? null,
-      date_sent: bpDate(p.DateSent),
-      bp_date_created: bpDate(p.DateCreated),
-      bp_date_edited: bpDate(p.DateEdited),
-      pdf_storage_path: pdfStoragePath,
+      bp_id: `q-${rawId}`,
+      bp_quote_id: String(q.ID),
+      bp_company_id: q.CompanyID ?? null,
+      bp_raw: { _metadata_only: true, _source: 'quote', quote: q, hint: 'Proposal record deleted in BP — only quote metadata available' },
+      bp_archived: bpBool(q.Archived),
+      bp_deleted: bpBool(q.Deleted),
+      title: companyName ? `${companyName} (archived)` : `Quote ${rawId}`,
+      company_name: companyName,
+      amount: bpNum(q.QuoteTotal) ?? bpNum(q.QuoteAmount) ?? 0,
+      currency: 'GBP',
+      status: isLost ? 'lost' : (isAccepted ? 'accepted' : 'outstanding'),
+      date_sent: bpDate(q.DateCreated),
+      signed_at: acceptedAt ?? completedAt,
+      bp_date_created: bpDate(q.DateCreated),
+      bp_date_edited: bpDate(q.DateEdited),
+      pdf_storage_path: null,
       imported_at: new Date().toISOString(),
-      token: `bp-${bpId}`,
+      token: `bp-q-${rawId}`,
       type: 'investor',
     } as Record<string, unknown>;
 
@@ -548,13 +559,16 @@ async function syncByIds(
       .single();
 
     if (upsertErr) {
-      errors.push(`bp_id ${bpId}: ${upsertErr.message}`);
+      errors.push(`bp_id ${rawId} (quote): ${upsertErr.message}`);
       return;
     }
-    if (data) inserted++;
+    if (data) {
+      inserted++;
+      metadataOnly++;
+    }
   });
 
-  return { pulled: cleanIds.length, inserted, notFound, pdfFetched, pdfFailed, errors };
+  return { pulled: cleanIds.length, inserted, notFound, pdfFetched, pdfFailed, metadataOnly, errors };
 }
 
 // ---------- Handler ----------------------------------------------------------
