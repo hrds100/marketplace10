@@ -1,6 +1,24 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 
+// Status vocabulary: BP archive uses draft/pending/outstanding/accepted/lost.
+// Legacy native flow uses draft/sent/opened/signed/paid. UI filter buckets
+// each BP label to include the equivalent native status so both flows show
+// up together — see STATUS_BUCKETS below.
+export type AgreementStatus =
+  | 'draft' | 'sent' | 'opened' | 'signed' | 'paid'      // native
+  | 'pending' | 'outstanding' | 'accepted' | 'lost';     // BP
+
+export type BpStatus = 'draft' | 'pending' | 'outstanding' | 'accepted' | 'lost';
+
+export const STATUS_BUCKETS: Record<BpStatus, AgreementStatus[]> = {
+  draft:       ['draft'],
+  pending:     ['pending', 'sent'],
+  outstanding: ['outstanding', 'opened'],
+  accepted:    ['accepted', 'signed', 'paid'],
+  lost:        ['lost'],
+};
+
 export interface ArchiveRow {
   id: string;
   source: 'native' | 'bp_import';
@@ -17,7 +35,7 @@ export interface ArchiveRow {
   company_name: string | null;
   amount: number;
   currency: string;
-  status: 'draft' | 'sent' | 'opened' | 'signed' | 'paid';
+  status: AgreementStatus;
   date_sent: string | null;
   signed_at: string | null;
   created_at: string;
@@ -52,7 +70,7 @@ export interface BpImportRun {
 export interface ArchiveFilters {
   source: 'all' | 'native' | 'bp_import';
   bpTypeId: number | null;
-  status: 'all' | 'draft' | 'sent' | 'opened' | 'signed' | 'paid';
+  status: BpStatus;
   search: string;
 }
 
@@ -87,7 +105,8 @@ export function useArchiveList(filters: ArchiveFilters) {
       .limit(500);
 
     if (filters.source !== 'all') q = q.eq('source', filters.source);
-    if (filters.status !== 'all') q = q.eq('status', filters.status);
+    const bucket = STATUS_BUCKETS[filters.status];
+    if (bucket) q = q.in('status', bucket);
     if (filters.bpTypeId !== null) q = q.eq('bp_type_id', filters.bpTypeId);
 
     const term = filters.search.trim();
@@ -160,11 +179,11 @@ export function useLastImportRun() {
 }
 
 export function useArchiveCounts() {
-  const [counts, setCounts] = useState<{ total: number; bp: number; native: number; byStatus: Record<string, number> }>({
+  const [counts, setCounts] = useState<{ total: number; bp: number; native: number; byStatus: Record<BpStatus, number> }>({
     total: 0,
     bp: 0,
     native: 0,
-    byStatus: {},
+    byStatus: { draft: 0, pending: 0, outstanding: 0, accepted: 0, lost: 0 },
   });
 
   const load = useCallback(async () => {
@@ -175,12 +194,11 @@ export function useArchiveCounts() {
     const { count: native } = await (supabase.from('agreements' as any) as any)
       .select('id', { count: 'exact', head: true }).eq('source', 'native');
 
-    const statuses = ['draft', 'sent', 'opened', 'signed', 'paid'] as const;
-    const byStatus: Record<string, number> = {};
-    for (const s of statuses) {
+    const byStatus: Record<BpStatus, number> = { draft: 0, pending: 0, outstanding: 0, accepted: 0, lost: 0 };
+    for (const bucket of Object.keys(STATUS_BUCKETS) as BpStatus[]) {
       const { count } = await (supabase.from('agreements' as any) as any)
-        .select('id', { count: 'exact', head: true }).eq('status', s);
-      byStatus[s] = count ?? 0;
+        .select('id', { count: 'exact', head: true }).in('status', STATUS_BUCKETS[bucket]);
+      byStatus[bucket] = count ?? 0;
     }
 
     setCounts({ total: total ?? 0, bp: bp ?? 0, native: native ?? 0, byStatus });
@@ -189,6 +207,86 @@ export function useArchiveCounts() {
   useEffect(() => { void load(); }, [load]);
 
   return { counts, reload: load };
+}
+
+export interface BpTemplateRow {
+  bp_id: string;
+  template_name: string | null;
+  description: string | null;
+  type_id: number | null;
+  brand_id: string | null;
+  is_default: boolean | null;
+  is_deleted: boolean | null;
+  date_created: string | null;
+  date_edited: string | null;
+  raw: any;
+}
+
+export interface TemplateFilters {
+  search: string;
+  typeId: number | null;
+  folder: 'all' | 'mine' | 'marketplace';
+}
+
+export function useTemplatesList(filters: TemplateFilters) {
+  const [rows, setRows] = useState<BpTemplateRow[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  const load = useCallback(async () => {
+    setLoading(true);
+    let q: any = (supabase.from('bp_templates' as any) as any)
+      .select('bp_id, template_name, description, type_id, brand_id, is_default, is_deleted, date_created, date_edited, raw')
+      .order('date_edited', { ascending: false })
+      .limit(500);
+
+    if (filters.typeId !== null) q = q.eq('type_id', filters.typeId);
+    if (filters.folder === 'mine') q = q.or('from_marketplace.is.null,from_marketplace.eq.0');
+    if (filters.folder === 'marketplace') q = q.not('from_marketplace', 'is', null).neq('from_marketplace', '0');
+
+    const term = filters.search.trim();
+    if (term.length > 0) {
+      q = q.ilike('template_name', `%${term}%`);
+    }
+
+    const { data } = await q;
+    setRows((data ?? []) as BpTemplateRow[]);
+    setLoading(false);
+  }, [filters.typeId, filters.folder, filters.search]);
+
+  useEffect(() => { void load(); }, [load]);
+
+  return { rows, loading, reload: load };
+}
+
+export function useTemplateCounts() {
+  const [counts, setCounts] = useState({ templates: 0, covers: 0, contentLibrary: 0 });
+
+  const load = useCallback(async () => {
+    const { count: templates } = await (supabase.from('bp_templates' as any) as any)
+      .select('bp_id', { count: 'exact', head: true });
+    // Covers + Content Library are BP-only concepts we don't have endpoints for yet —
+    // counts come from bp_doctypes when those endpoints become available.
+    setCounts({ templates: templates ?? 0, covers: 0, contentLibrary: 0 });
+  }, []);
+
+  useEffect(() => { void load(); }, [load]);
+
+  return { counts, reload: load };
+}
+
+export function useDoctypes() {
+  const [types, setTypes] = useState<Array<{ id: number; name: string; colour: string | null }>>([]);
+
+  const load = useCallback(async () => {
+    const { data } = await (supabase.from('bp_doctypes' as any) as any)
+      .select('bp_id, type_name, type_colour')
+      .order('bp_id', { ascending: true });
+    setTypes((data ?? []).map((d: any) => ({ id: d.bp_id, name: d.type_name, colour: d.type_colour })));
+  }, []);
+
+  useEffect(() => { void load(); }, [load]);
+
+  return { types, reload: load };
 }
 
 export async function getSignedHtmlUrl(path: string | null): Promise<string | null> {
