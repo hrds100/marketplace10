@@ -24,10 +24,12 @@ export interface ArchiveRow {
   source: 'native' | 'bp_import';
   bp_id: string | null;
   bp_type_id: number | null;
+  bp_type_name: string | null;
   bp_preview_url: string | null;
   bp_view_url: string | null;
   token: string | null;
   title: string;
+  description: string | null;
   recipient_name: string | null;
   recipient_email: string | null;
   signer_name: string | null;
@@ -78,8 +80,8 @@ export interface ArchiveFilters {
 }
 
 const LIST_COLUMNS = `
-  id, source, bp_id, bp_type_id, bp_preview_url, bp_view_url, token,
-  title, recipient_name, recipient_email, signer_name, signer_email,
+  id, source, bp_id, bp_type_id, bp_type_name, bp_preview_url, bp_view_url, token,
+  title, description, recipient_name, recipient_email, signer_name, signer_email,
   company_name, amount, currency, status,
   date_sent, signed_at, created_at, imported_at,
   bp_date_created, bp_date_edited
