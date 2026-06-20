@@ -1,23 +1,35 @@
 #!/usr/bin/env node
 /* eslint-disable no-console */
-// bp-pdf-scraper — three-phase tool to grab BP PDFs past the 223-record API cap.
+// bp-pdf-scraper — grabs the actual proposal PDF (not the admin dashboard).
 //
-//   node scrape.mjs --login    Open BP, you log in once, session saved to state.json
-//   node scrape.mjs --scrape   Iterate ids.json, download each PDF to ./pdfs/<view_id>.pdf
-//   node scrape.mjs --upload   Push ./pdfs/* into Supabase Storage + upsert agreement rows
+// Flow for each view_id:
+//   1. Open https://betterproposals.io/2/proposals/edit?id={view_id}
+//   2. Click "Preview Document" button  →  opens the client-view URL
+//      (proposal.<account>.com/cover.php?ProposalID=TOKEN&ContactID=TOKEN)
+//   3. Derive the PDF URL by replacing /cover.php → /pdf-output.php and
+//      appending &pdf-view=1
+//   4. Fetch that PDF using the browser context's cookies
 //
-//   node scrape.mjs --login --scrape --upload    (do it all in one go)
+//   --login    Open BP, you log in once, session saved to state.json
+//   --scrape   Iterate ids.json, save each PDF to ./pdfs/<view_id>.pdf
+//   --upload   Push ./pdfs/* into Supabase Storage + upsert agreement rows
+//
+//   --force    Re-scrape even if a PDF for that id is already on disk
+//   --debug    Headed browser + screenshots in ./debug/  (pairs with --scrape)
+//   --limit=N  Only process first N ids — useful for "test 1 first"
 //
 // First-time setup:
 //   cd scripts/bp-pdf-scraper
 //   npm install
 //   npx playwright install chromium
-//   cp .env.example .env   # fill SUPABASE_* + (optional) BP_LOGIN_URL
+//   echo "SUPABASE_SERVICE_ROLE_KEY=..." > .env
 //   node scrape.mjs --login
 
 import { chromium } from 'playwright';
 import { createClient } from '@supabase/supabase-js';
-import { readFileSync, writeFileSync, existsSync, mkdirSync, readdirSync, statSync } from 'node:fs';
+import {
+  readFileSync, writeFileSync, existsSync, mkdirSync, readdirSync, statSync, unlinkSync,
+} from 'node:fs';
 import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -36,32 +48,40 @@ if (existsSync(envPath)) {
 const STATE_PATH = join(__dirname, 'state.json');
 const IDS_PATH = join(__dirname, 'ids.json');
 const PDFS_DIR = join(__dirname, 'pdfs');
+const DEBUG_DIR = join(__dirname, 'debug');
 const BP_LOGIN_URL = process.env.BP_LOGIN_URL || 'https://betterproposals.io/login';
 const SUPABASE_URL = process.env.SUPABASE_URL || 'https://asazddtvjvmckouxcmmo.supabase.co';
 const SUPABASE_SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
-const args = new Set(process.argv.slice(2));
-const RUN_LOGIN = args.has('--login');
-const RUN_SCRAPE = args.has('--scrape');
-const RUN_UPLOAD = args.has('--upload');
+const args = process.argv.slice(2);
+const has = (f) => args.includes(f);
+const valOf = (f, dflt) => {
+  const x = args.find((a) => a.startsWith(`${f}=`));
+  return x ? x.slice(f.length + 1) : dflt;
+};
+const RUN_LOGIN = has('--login');
+const RUN_SCRAPE = has('--scrape');
+const RUN_UPLOAD = has('--upload');
+const FORCE = has('--force');
+const DEBUG = has('--debug');
+const LIMIT = parseInt(valOf('--limit', '0'), 10) || 0;
 
 if (!RUN_LOGIN && !RUN_SCRAPE && !RUN_UPLOAD) {
-  console.log('Usage:  node scrape.mjs --login | --scrape | --upload  (combinable)');
+  console.log('Usage: node scrape.mjs --login | --scrape | --upload  [--force] [--debug] [--limit=N]');
   process.exit(0);
 }
 
-// -----------------------------------------------------------------------------
-// Phase 1: LOGIN — open BP in a real browser, you log in once, save state.json
-// -----------------------------------------------------------------------------
+// ─────────────────────────────────────────────────────────────────────────────
+// LOGIN
+// ─────────────────────────────────────────────────────────────────────────────
 async function phaseLogin() {
-  console.log('[login] opening BP login page in a visible browser...');
-  console.log('[login] log in normally. Once you see the BP dashboard, come back here and press Enter.');
+  console.log('[login] opening BP login in a visible browser...');
+  console.log('[login] log in. When you see the BP dashboard, come back here and press Enter.');
   const browser = await chromium.launch({ headless: false });
   const ctx = await browser.newContext();
   const page = await ctx.newPage();
   await page.goto(BP_LOGIN_URL);
 
-  // Wait for Enter from stdin
   process.stdin.setRawMode?.(true);
   process.stdin.resume();
   await new Promise((res) => process.stdin.once('data', () => res()));
@@ -74,95 +94,149 @@ async function phaseLogin() {
   await browser.close();
 }
 
-// -----------------------------------------------------------------------------
-// Phase 2: SCRAPE — iterate ids.json, save each PDF to ./pdfs/<view_id>.pdf
-// -----------------------------------------------------------------------------
+// ─────────────────────────────────────────────────────────────────────────────
+// SCRAPE
+// ─────────────────────────────────────────────────────────────────────────────
 async function phaseScrape() {
   if (!existsSync(STATE_PATH)) throw new Error('Run --login first (no state.json)');
   if (!existsSync(IDS_PATH)) throw new Error(`Missing ${IDS_PATH}`);
   mkdirSync(PDFS_DIR, { recursive: true });
+  if (DEBUG) mkdirSync(DEBUG_DIR, { recursive: true });
 
   const ids = JSON.parse(readFileSync(IDS_PATH, 'utf8'));
-  const tasks = [];
+  let tasks = [];
   for (const [status, list] of Object.entries(ids)) {
     if (status.startsWith('_') || !Array.isArray(list)) continue;
     for (const id of list) tasks.push({ status, id: String(id) });
   }
-  console.log(`[scrape] ${tasks.length} view_ids to download`);
+  if (LIMIT > 0) tasks = tasks.slice(0, LIMIT);
+  console.log(`[scrape] ${tasks.length} view_ids to process${DEBUG ? ' (DEBUG headed mode)' : ''}${FORCE ? ' (FORCE re-download)' : ''}`);
 
-  const browser = await chromium.launch({ headless: true });
-  const ctx = await browser.newContext({
-    storageState: STATE_PATH,
-    acceptDownloads: true,
-  });
+  const browser = await chromium.launch({ headless: !DEBUG, slowMo: DEBUG ? 250 : 0 });
+  const ctx = await browser.newContext({ storageState: STATE_PATH, acceptDownloads: true });
 
-  let ok = 0, fail = 0, skipped = 0;
+  let ok = 0; let fail = 0; let skipped = 0;
   for (const t of tasks) {
     const out = join(PDFS_DIR, `${t.id}.pdf`);
-    if (existsSync(out) && statSync(out).size > 1024) {
+    if (!FORCE && existsSync(out) && statSync(out).size > 1024) {
       skipped++;
       continue;
     }
+
     try {
-      const page = await ctx.newPage();
-      // 1. try /2/proposals/edit?id=N — has a "Download PDF" action in the toolbar
-      await page.goto(`https://betterproposals.io/2/proposals/edit?id=${t.id}`, { timeout: 30_000, waitUntil: 'domcontentloaded' });
-
-      // Look for a Download / PDF link
-      let pdfBuffer = null;
-
-      // Strategy A: search the page for any anchor / button that triggers a PDF download
-      const downloadPromise = page.waitForEvent('download', { timeout: 5_000 }).catch(() => null);
-      const triggered = await page.evaluate(() => {
-        const cand = [...document.querySelectorAll('a,button')].find((el) => /download.*pdf|pdf.*download|export.*pdf/i.test((el.textContent || '') + ' ' + (el.getAttribute('href') || '')));
-        if (cand) { cand.click(); return true; }
-        return false;
-      });
-      if (triggered) {
-        const dl = await downloadPromise;
-        if (dl) { pdfBuffer = await dl.createReadStream().then(streamToBuffer); }
-      }
-
-      // Strategy B: render the page itself to PDF (Playwright built-in)
-      if (!pdfBuffer) {
-        // Navigate to the recipient-view page if present
-        try {
-          await page.goto(`https://betterproposals.io/2/proposals/view?id=${t.id}`, { timeout: 30_000, waitUntil: 'networkidle' });
-        } catch { /* fall through */ }
-        await page.emulateMedia({ media: 'print' });
-        pdfBuffer = await page.pdf({ format: 'A4', printBackground: true, preferCSSPageSize: true });
-      }
-
-      if (pdfBuffer && pdfBuffer.length > 1024) {
-        writeFileSync(out, pdfBuffer);
-        ok++;
-        process.stdout.write(`✓ ${t.id} (${(pdfBuffer.length / 1024).toFixed(0)} KB)\n`);
-      } else {
+      const pdf = await fetchOnePdf(ctx, t.id);
+      if (!pdf || pdf.length < 1024) {
         fail++;
         process.stdout.write(`✗ ${t.id} (empty)\n`);
+        continue;
       }
-      await page.close();
+      writeFileSync(out, pdf);
+      ok++;
+      process.stdout.write(`✓ ${t.id} (${(pdf.length / 1024).toFixed(0)} KB)\n`);
     } catch (e) {
       fail++;
       process.stdout.write(`✗ ${t.id}: ${e.message}\n`);
     }
   }
-  console.log(`[scrape] done: ${ok} ok, ${skipped} skipped (already on disk), ${fail} failed`);
+  console.log(`[scrape] done: ${ok} ok, ${skipped} skipped, ${fail} failed`);
   await browser.close();
 }
 
-function streamToBuffer(stream) {
-  return new Promise((resolve, reject) => {
-    const chunks = [];
-    stream.on('data', (c) => chunks.push(c));
-    stream.on('end', () => resolve(Buffer.concat(chunks)));
-    stream.on('error', reject);
-  });
+// Click flow for ONE view_id:
+//   1. Open /2/proposals/edit?id=<vid>
+//   2. Click "Preview Document"  → opens the client-view URL in a new tab
+//   3. Replace /cover.php → /pdf-output.php, append &pdf-view=1
+//   4. Fetch the PDF using the browser context (which carries session)
+async function fetchOnePdf(ctx, viewId) {
+  const page = await ctx.newPage();
+  const editUrl = `https://betterproposals.io/2/proposals/edit?id=${viewId}`;
+
+  try {
+    await page.goto(editUrl, { timeout: 45_000, waitUntil: 'domcontentloaded' });
+    if (DEBUG) await page.screenshot({ path: join(DEBUG_DIR, `${viewId}-1-edit.png`), fullPage: true });
+
+    // Find Preview Document button. BP uses different markup in different
+    // sections — try a few resilient selectors in order.
+    const previewPagePromise = ctx.waitForEvent('page', { timeout: 20_000 }).catch(() => null);
+
+    const selectors = [
+      'text=/preview document/i',
+      'a:has-text("Preview Document")',
+      'button:has-text("Preview Document")',
+      '[aria-label*="preview" i]',
+      'a:has-text("Preview")',
+      'button:has-text("Preview")',
+    ];
+
+    let clicked = false;
+    for (const sel of selectors) {
+      const el = await page.$(sel);
+      if (el) {
+        await el.scrollIntoViewIfNeeded().catch(() => {});
+        await el.click({ timeout: 10_000 }).catch(() => {});
+        clicked = true;
+        break;
+      }
+    }
+    if (!clicked) {
+      throw new Error('Could not find Preview Document button');
+    }
+
+    // Preview opens in a new tab — wait for it.
+    let previewPage = await previewPagePromise;
+
+    // If no new tab was opened, the click may have navigated the current tab.
+    if (!previewPage) {
+      await page.waitForLoadState('domcontentloaded', { timeout: 10_000 }).catch(() => {});
+      if (page.url() !== editUrl) previewPage = page;
+    }
+    if (!previewPage) throw new Error('Preview Document did not open');
+
+    // Give the preview page a moment to settle (BP often does a redirect).
+    await previewPage.waitForLoadState('domcontentloaded', { timeout: 30_000 }).catch(() => {});
+    await previewPage.waitForLoadState('networkidle', { timeout: 15_000 }).catch(() => {});
+    if (DEBUG) await previewPage.screenshot({ path: join(DEBUG_DIR, `${viewId}-2-preview.png`), fullPage: true });
+
+    const previewUrl = previewPage.url();
+    if (!/\/cover\.php/.test(previewUrl)) {
+      throw new Error(`Preview URL doesn't match cover.php pattern: ${previewUrl}`);
+    }
+
+    const pdfUrl = previewUrl
+      .replace(/\/cover\.php/, '/pdf-output.php')
+      + (previewUrl.includes('?') ? '&' : '?') + 'pdf-view=1';
+    if (DEBUG) console.log(`  [debug] ${viewId} pdf url = ${pdfUrl}`);
+
+    // Fetch the PDF via the browser context — cookies are carried automatically.
+    const resp = await ctx.request.get(pdfUrl, {
+      timeout: 60_000,
+      headers: { 'User-Agent': 'NFSTAY-bp-scraper/1.0' },
+    });
+    if (!resp.ok()) throw new Error(`PDF fetch HTTP ${resp.status()}`);
+    const ct = resp.headers()['content-type'] || '';
+    const body = await resp.body();
+    if (!ct.includes('pdf') || body.length < 1024) {
+      throw new Error(`Bad PDF response (CT=${ct}, ${body.length} bytes)`);
+    }
+    if (body[0] !== 0x25 || body[1] !== 0x50 || body[2] !== 0x44 || body[3] !== 0x46) {
+      throw new Error('Response not PDF (no %PDF magic)');
+    }
+
+    await previewPage.close().catch(() => {});
+    await page.close().catch(() => {});
+    return body;
+  } catch (e) {
+    if (DEBUG) {
+      try { await page.screenshot({ path: join(DEBUG_DIR, `${viewId}-FAIL.png`), fullPage: true }); } catch {}
+    }
+    await page.close().catch(() => {});
+    throw e;
+  }
 }
 
-// -----------------------------------------------------------------------------
-// Phase 3: UPLOAD — push ./pdfs/* to Supabase Storage + upsert agreement rows
-// -----------------------------------------------------------------------------
+// ─────────────────────────────────────────────────────────────────────────────
+// UPLOAD
+// ─────────────────────────────────────────────────────────────────────────────
 async function phaseUpload() {
   if (!SUPABASE_SERVICE_ROLE_KEY) throw new Error('SUPABASE_SERVICE_ROLE_KEY missing from .env');
   if (!existsSync(IDS_PATH)) throw new Error(`Missing ${IDS_PATH}`);
@@ -182,7 +256,7 @@ async function phaseUpload() {
   const files = readdirSync(PDFS_DIR).filter((f) => f.endsWith('.pdf'));
   console.log(`[upload] ${files.length} PDFs to push`);
 
-  let uploaded = 0, dbUpdated = 0, errors = 0;
+  let uploaded = 0; let dbUpdated = 0; let errors = 0;
   for (const f of files) {
     const viewId = f.replace(/\.pdf$/, '');
     if (!/^\d+$/.test(viewId)) continue;
@@ -191,8 +265,6 @@ async function phaseUpload() {
     if (size < 1024) { console.log(`✗ ${viewId} skipped (size ${size})`); continue; }
     const bytes = readFileSync(localPath);
 
-    // Two row identifiers: one for proposal-bp_id matches (if exists), one for quote-based
-    // First try to find existing row by QuoteID
     const { data: existing } = await supabase
       .from('agreements')
       .select('id, bp_id')
@@ -207,11 +279,7 @@ async function phaseUpload() {
     const { error: upErr } = await supabase.storage
       .from('agreements')
       .upload(storagePath, bytes, { contentType: 'application/pdf', upsert: true });
-    if (upErr) {
-      console.log(`✗ ${viewId} storage: ${upErr.message}`);
-      errors++;
-      continue;
-    }
+    if (upErr) { console.log(`✗ ${viewId} storage: ${upErr.message}`); errors++; continue; }
     uploaded++;
 
     const status = statusByVid.get(viewId) || 'accepted';
@@ -234,18 +302,12 @@ async function phaseUpload() {
     const { error: dbErr } = await supabase
       .from('agreements')
       .upsert(update, { onConflict: 'bp_id' });
-    if (dbErr) {
-      console.log(`✗ ${viewId} db: ${dbErr.message}`);
-      errors++;
-      continue;
-    }
+    if (dbErr) { console.log(`✗ ${viewId} db: ${dbErr.message}`); errors++; continue; }
     dbUpdated++;
     process.stdout.write(`✓ ${viewId} → ${targetBpId} (${(size / 1024).toFixed(0)} KB)\n`);
   }
   console.log(`[upload] ${uploaded} files in Storage · ${dbUpdated} rows updated · ${errors} errors`);
 }
-
-// -----------------------------------------------------------------------------
 
 (async () => {
   try {
