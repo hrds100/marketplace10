@@ -139,6 +139,14 @@ async function phaseScrape() {
     }
   }
   console.log(`[scrape] done: ${ok} ok, ${skipped} skipped, ${fail} failed`);
+  if (DEBUG) {
+    console.log('[scrape] --debug: browser left open. Press Enter here to close it.');
+    process.stdin.setRawMode?.(true);
+    process.stdin.resume();
+    await new Promise((res) => process.stdin.once('data', () => res()));
+    process.stdin.setRawMode?.(false);
+    process.stdin.pause();
+  }
   await browser.close();
 }
 
@@ -225,14 +233,17 @@ async function fetchOnePdf(ctx, viewId) {
       throw new Error('Response not PDF (no %PDF magic)');
     }
 
-    await previewPage.close().catch(() => {});
-    await page.close().catch(() => {});
+    if (!DEBUG) {
+      await previewPage.close().catch(() => {});
+      await page.close().catch(() => {});
+    }
     return body;
   } catch (e) {
     if (DEBUG) {
       try { await page.screenshot({ path: join(DEBUG_DIR, `${viewId}-FAIL.png`), fullPage: true }); } catch {}
+    } else {
+      await page.close().catch(() => {});
     }
-    await page.close().catch(() => {});
     throw e;
   }
 }
