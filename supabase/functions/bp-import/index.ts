@@ -207,22 +207,47 @@ async function syncTemplates(supabase: SupabaseClient, bpKey: string) {
   return rows.length;
 }
 
-// ---------- Preview HTML scrape ---------------------------------------------
-async function fetchPreviewHtml(previewUrl: string): Promise<string | null> {
+// ---------- PDF download ----------------------------------------------------
+// BP serves the rendered PDF at /pdf-output.php with the same ProposalID +
+// ContactID tokens as /cover.php, plus &pdf-view=1. For signed proposals the
+// PDF includes the signer name + signature image. No auth needed — tokens
+// are the gating mechanism.
+function derivePdfUrl(contactLink: string): string {
+  const cleaned = contactLink.replace(/&debug=yes/g, '');
+  const sep = cleaned.includes('?') ? '&' : '?';
+  return cleaned.replace(/\/cover\.php/, '/pdf-output.php') + `${sep}pdf-view=1`;
+}
+
+async function fetchPdf(contactLink: string): Promise<Uint8Array | null> {
   try {
-    // Strip "&debug=yes" if present — cleaner archived copy.
-    const url = previewUrl.replace(/&debug=yes/g, '');
-    const r = await fetch(url, {
+    const r = await fetch(derivePdfUrl(contactLink), {
       headers: { 'User-Agent': 'NFSTAY-bp-import/1.0' },
-      signal: AbortSignal.timeout(10_000),
+      signal: AbortSignal.timeout(30_000),
     });
     if (!r.ok) return null;
     const ct = r.headers.get('content-type') || '';
-    if (!ct.includes('text/html')) return null;
-    return await r.text();
+    if (!ct.includes('pdf')) return null;
+    const buf = new Uint8Array(await r.arrayBuffer());
+    // Sanity: PDFs start with "%PDF"
+    if (buf.length < 4 || buf[0] !== 0x25 || buf[1] !== 0x50 || buf[2] !== 0x44 || buf[3] !== 0x46) return null;
+    return buf;
   } catch {
     return null;
   }
+}
+
+// Simple worker-pool: caps concurrent PDF fetches so we fit in the 150 s
+// edge function budget without hammering BP's preview server.
+async function pool<T>(items: T[], concurrency: number, worker: (item: T, idx: number) => Promise<void>): Promise<void> {
+  let i = 0;
+  const runners = Array.from({ length: Math.min(concurrency, items.length) }, async () => {
+    while (true) {
+      const idx = i++;
+      if (idx >= items.length) return;
+      try { await worker(items[idx], idx); } catch { /* swallow — caller tracks per-row errors */ }
+    }
+  });
+  await Promise.all(runners);
 }
 
 // ---------- Sync: proposals (the heavy one) ----------------------------------
@@ -282,44 +307,57 @@ async function syncProposals(
   } catch { /* opened endpoint optional — fall back to pending only */ }
 
   let inserted = 0;
-  let updated = 0;
-  let previewFetches = 0;
-  let previewFailures = 0;
+  let pdfFetched = 0;
+  let pdfFailed = 0;
   const errors: string[] = [];
 
-  for (const p of all) {
+  // Pick the best contact link: prefer one whose email matches SignedEmail
+  // (true recipient); else last contact (usually the recipient, not the sender);
+  // else first; else null.
+  const pickContactLink = (p: any): string | null => {
+    const contacts = Array.isArray(p.Contacts) ? p.Contacts : [];
+    if (contacts.length === 0) return null;
+    if (p.SignedEmail) {
+      const match = contacts.find((c: any) => c.Email && String(c.Email).toLowerCase() === String(p.SignedEmail).toLowerCase());
+      if (match?.Link) return match.Link;
+    }
+    return contacts[contacts.length - 1]?.Link ?? contacts[0]?.Link ?? null;
+  };
+
+  await pool(all, 6, async (p) => {
     const bpId = String(p.ID);
-    const previewUrl = (p.Contacts?.[0]?.Link ?? p.Preview ?? null) as string | null;
-    const cleanedPreview = typeof previewUrl === 'string' ? previewUrl.replace(/&debug=yes/g, '') : null;
+    const contactLink = pickContactLink(p);
+    const cleanedPreview = typeof contactLink === 'string' ? contactLink.replace(/&debug=yes/g, '') : null;
 
-    let termsHtml: string | null = null;
-    let htmlStoragePath: string | null = null;
+    let pdfStoragePath: string | null = null;
 
-    if (opts.fetchHtml && cleanedPreview) {
-      const html = await fetchPreviewHtml(cleanedPreview);
-      previewFetches++;
-      if (html) {
-        termsHtml = html;
-        const path = `bp-import/html/${bpId}.html`;
+    if (opts.fetchHtml && cleanedPreview) {  // fetchHtml flag now means "fetch the binary doc"
+      const pdf = await fetchPdf(cleanedPreview);
+      if (pdf) {
+        const path = `bp-import/pdf/${bpId}.pdf`;
         const { error: upErr } = await supabase.storage
           .from(STORAGE_BUCKET)
-          .upload(path, new Blob([html], { type: 'text/html; charset=utf-8' }), {
-            contentType: 'text/html; charset=utf-8',
+          .upload(path, pdf, {
+            contentType: 'application/pdf',
             upsert: true,
           });
-        if (!upErr) htmlStoragePath = path;
+        if (!upErr) {
+          pdfStoragePath = path;
+          pdfFetched++;
+        } else {
+          errors.push(`bp_id ${bpId} storage: ${upErr.message}`);
+          pdfFailed++;
+        }
       } else {
-        previewFailures++;
+        pdfFailed++;
       }
-      // gentle throttle to avoid hammering BP's preview server
-      await new Promise((res) => setTimeout(res, 50));
     }
 
     const signerFirst = (p.SignedFirstName ?? '').toString();
     const signerLast = (p.SignedSurname ?? '').toString();
     const signerFullFromParts = `${signerFirst} ${signerLast}`.trim();
     const signerName = (p.SignedName ?? signerFullFromParts) || null;
-    const recipient = p.Contacts?.[0] ?? null;
+    const recipient = p.Contacts?.[Math.max(0, (p.Contacts?.length ?? 1) - 1)] ?? null;
     const recipientName = recipient
       ? `${recipient.FirstName ?? ''} ${recipient.Surname ?? ''}`.trim() || null
       : null;
@@ -360,13 +398,11 @@ async function syncProposals(
       description: p.Description ?? null,
       personal_message: p.PersonalMessage ?? null,
       date_sent: bpDate(p.DateSent),
-      terms_html: termsHtml,
-      html_storage_path: htmlStoragePath,
+      pdf_storage_path: pdfStoragePath,
       imported_at: new Date().toISOString(),
 
-      // For BP rows, set a unique-ish token mirroring bp_id so admin links still resolve
       token: `bp-${bpId}`,
-      type: 'investor', // re-use enum; doesn't gate UI
+      type: 'investor',
     } as Record<string, unknown>;
 
     const { error: upsertErr, data } = await supabase
@@ -377,14 +413,12 @@ async function syncProposals(
 
     if (upsertErr) {
       errors.push(`bp_id ${bpId}: ${upsertErr.message}`);
-      continue;
+      return;
     }
-    // PostgREST doesn't tell us insert vs update; approximate by checking imported_at against created_at.
-    // Cheap proxy: any row with imported_at set was touched by this run.
-    if (data) inserted++; // counted as "touched" — we differentiate in the run row's totals below
-  }
+    if (data) inserted++;
+  });
 
-  return { pulled: all.length, inserted, updated, previewFetches, previewFailures, errors };
+  return { pulled: all.length, inserted, updated: 0, previewFetches: pdfFetched, previewFailures: pdfFailed, errors };
 }
 
 // ---------- Handler ----------------------------------------------------------

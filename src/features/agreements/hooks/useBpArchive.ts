@@ -49,6 +49,7 @@ export interface ArchiveDetail extends ArchiveRow {
   personal_message: string | null;
   bp_raw: unknown | null;
   html_storage_path: string | null;
+  pdf_storage_path: string | null;
 }
 
 export interface BpImportRun {
@@ -87,7 +88,7 @@ const DETAIL_COLUMNS = `
   company_name, amount, currency, status,
   date_sent, signed_at, created_at, imported_at,
   terms_html, description, subject_line, personal_message, bp_raw,
-  html_storage_path
+  html_storage_path, pdf_storage_path
 `;
 
 export function useArchiveList(filters: ArchiveFilters) {
@@ -290,6 +291,12 @@ export function useDoctypes() {
 }
 
 export async function getSignedHtmlUrl(path: string | null): Promise<string | null> {
+  if (!path) return null;
+  const { data } = await supabase.storage.from('agreements').createSignedUrl(path, 3600);
+  return data?.signedUrl ?? null;
+}
+
+export async function getSignedPdfUrl(path: string | null): Promise<string | null> {
   if (!path) return null;
   const { data } = await supabase.storage.from('agreements').createSignedUrl(path, 3600);
   return data?.signedUrl ?? null;
