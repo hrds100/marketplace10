@@ -159,10 +159,18 @@ async function phaseScrape() {
         process.stdout.write(`✗ ${t.id} (empty)\n`);
         continue;
       }
-      const filename = `${safeFilename(result.docName, t.id)}.pdf`;
+      // Filename: `<view_id>_<doc name>.pdf`. The id prefix guarantees
+      // uniqueness even when two proposals share the same company name.
+      const namepart = safeFilename(result.docName, t.id);
+      const filename = `${t.id}_${namepart}.pdf`;
       const out = join(PDFS_DIR, filename);
       writeFileSync(out, result.pdf);
-      manifest[t.id] = { filename, docName: result.docName ?? null, status: t.status };
+      manifest[t.id] = {
+        filename,
+        docName: result.docName ?? null,
+        status: t.status,
+        meta: result.meta ?? null,
+      };
       saveManifest(manifest);
       ok++;
       process.stdout.write(`✓ ${t.id} → "${filename}" (${(result.pdf.length / 1024).toFixed(0)} KB)\n`);
@@ -196,25 +204,63 @@ async function fetchOnePdf(ctx, viewId) {
     await page.goto(viewUrl, { timeout: 45_000, waitUntil: 'domcontentloaded' });
     if (DEBUG) await page.screenshot({ path: join(DEBUG_DIR, `${viewId}-1-activity.png`), fullPage: true });
 
-    // Extract the document name. BP shows "Document for {NAME}" at the top of
-    // the Activity page. Try a few selectors, then strip the "Document for "
-    // prefix. Fall back to the page title.
-    const docName = await page.evaluate(() => {
+    // Extract document name + as much metadata as we can scrape from the
+    // Activity page. BP shows it as "Document for {NAME}" + a subtitle and
+    // a side panel with recipient/date/amount/sender. Selectors are
+    // best-effort because BP changes their markup. We capture the whole
+    // body text as fallback so we can debug what we missed.
+    const meta = await page.evaluate(() => {
       const stripPrefix = (s) => (s || '').replace(/^\s*Document\s+for\s+/i, '').trim();
+      const text = (sel) => {
+        const el = document.querySelector(sel);
+        return el ? (el.textContent || '').trim() : null;
+      };
+      const findByLabel = (labelRegex) => {
+        const labels = document.querySelectorAll('label, dt, .label, [class*="label" i], strong, b, span');
+        for (const l of labels) {
+          if (labelRegex.test(l.textContent || '')) {
+            const next = l.nextElementSibling;
+            if (next?.textContent?.trim()) return next.textContent.trim();
+            const parent = l.parentElement;
+            const sibText = (parent?.textContent || '').replace(l.textContent || '', '').trim();
+            if (sibText) return sibText;
+          }
+        }
+        return null;
+      };
+      const findEmail = () => {
+        const m = (document.body.innerText || '').match(/[\w.+\-]+@[\w\-]+\.[\w.\-]+/);
+        return m ? m[0] : null;
+      };
+      const findMoney = () => {
+        const m = (document.body.innerText || '').match(/([£$€])\s?([0-9][0-9,]*(?:\.\d{2})?)/);
+        return m ? `${m[1]}${m[2]}` : null;
+      };
+      const findDate = (labelRegex) => {
+        const v = findByLabel(labelRegex);
+        if (!v) return null;
+        // Strip ordinals and trim
+        return v.replace(/(\d+)(st|nd|rd|th)/g, '$1').trim();
+      };
+
       const h1 = document.querySelector('h1');
-      if (h1?.textContent) {
-        const t = stripPrefix(h1.textContent);
-        if (t) return t;
-      }
-      const heading = document.querySelector('[class*="title" i], [class*="header" i] h1, [class*="header" i] h2');
-      if (heading?.textContent) {
-        const t = stripPrefix(heading.textContent);
-        if (t) return t;
-      }
-      const title = document.title || '';
-      return stripPrefix(title) || null;
-    }).catch(() => null);
-    if (DEBUG) console.log(`  [debug] ${viewId} docName = ${JSON.stringify(docName)}`);
+      const docName = stripPrefix(h1?.textContent || document.title);
+
+      return {
+        docName: docName || null,
+        subtitle: text('h1 + p, h1 ~ p') || null,
+        dateCreated: findDate(/created|date created/i),
+        dateSent: findDate(/sent|date sent/i),
+        dateSigned: findDate(/signed|accepted|date signed/i),
+        recipientEmail: findEmail(),
+        recipient: findByLabel(/recipient|to|prospect|client/i),
+        sender: findByLabel(/from|sender|owner|author/i),
+        amount: findMoney(),
+        status: findByLabel(/status|state/i),
+      };
+    }).catch(() => ({ docName: null }));
+    if (DEBUG) console.log(`  [debug] ${viewId} meta = ${JSON.stringify(meta)}`);
+    const docName = meta.docName;
 
     // Find Preview Document button. BP uses different markup in different
     // sections — try a few resilient selectors in order.
@@ -315,7 +361,7 @@ async function fetchOnePdf(ctx, viewId) {
       await previewPage.close().catch(() => {});
       await page.close().catch(() => {});
     }
-    return { pdf: body, docName };
+    return { pdf: body, docName, meta };
   } catch (e) {
     if (DEBUG) {
       try { await page.screenshot({ path: join(DEBUG_DIR, `${viewId}-FAIL.png`), fullPage: true }); } catch {}
@@ -345,24 +391,28 @@ async function phaseUpload() {
     for (const id of list) statusByVid.set(String(id), status);
   }
 
-  // Manifest maps view_id → { filename, docName, status }. With manifest we
-  // can look up each PDF by view_id; without it we fall back to assuming
-  // <view_id>.pdf filenames.
+  // Manifest maps view_id → { filename, docName, status, meta }. Preferred.
+  // Without manifest, fall back to filenames starting with `<viewId>_…` or
+  // pure `<viewId>.pdf` (older runs).
   const manifest = loadManifest();
   const filesOnDisk = new Set(readdirSync(PDFS_DIR).filter((f) => f.endsWith('.pdf')));
 
-  // Build the work list: prefer manifest entries (they have docName too),
-  // fall back to numeric-named files for any leftover.
   const tasks = [];
   for (const [vid, entry] of Object.entries(manifest)) {
     if (entry?.filename && filesOnDisk.has(entry.filename)) {
-      tasks.push({ viewId: vid, filename: entry.filename, docName: entry.docName });
+      tasks.push({
+        viewId: vid,
+        filename: entry.filename,
+        docName: entry.docName,
+        meta: entry.meta || null,
+      });
       filesOnDisk.delete(entry.filename);
     }
   }
   for (const f of filesOnDisk) {
-    const m = f.match(/^(\d+)\.pdf$/);
-    if (m) tasks.push({ viewId: m[1], filename: f, docName: null });
+    // accepts "<id>_<name>.pdf" OR plain "<id>.pdf"
+    const m = f.match(/^(\d+)(?:_.*)?\.pdf$/);
+    if (m) tasks.push({ viewId: m[1], filename: f, docName: null, meta: null });
   }
   console.log(`[upload] ${tasks.length} PDFs to push`);
 
@@ -391,6 +441,25 @@ async function phaseUpload() {
     uploaded++;
 
     const status = statusByVid.get(t.viewId) || 'accepted';
+    const meta = t.meta || {};
+    const parseLooseDate = (s) => {
+      if (!s) return null;
+      const d = new Date(s);
+      return isNaN(d.getTime()) ? null : d.toISOString();
+    };
+    const parseMoney = (s) => {
+      if (!s) return null;
+      const n = parseFloat(String(s).replace(/[^0-9.]/g, ''));
+      return Number.isFinite(n) ? n : null;
+    };
+    const inferCurrency = (s) => {
+      if (!s) return null;
+      if (/£/.test(s)) return 'GBP';
+      if (/\$/.test(s)) return 'USD';
+      if (/€/.test(s)) return 'EUR';
+      return null;
+    };
+
     const update = {
       source: 'bp_import',
       bp_id: targetBpId,
@@ -401,16 +470,29 @@ async function phaseUpload() {
       token: `bp-q-${t.viewId}`,
       type: 'investor',
     };
-    // Set the title to the doc name when we have one — both for new rows
-    // and to replace generic auto-titles like "Quote 12345" on existing.
-    if (t.docName) {
-      update.title = t.docName;
-    } else if (!existing) {
-      update.title = `Quote ${t.viewId}`;
-    }
+    // Title — doc name if we scraped one, else generic
+    if (t.docName) update.title = t.docName;
+    else if (!existing) update.title = `Quote ${t.viewId}`;
+
+    // Metadata harvested from the BP Activity page
+    const dateCreated = parseLooseDate(meta.dateCreated);
+    const dateSent = parseLooseDate(meta.dateSent);
+    const dateSigned = parseLooseDate(meta.dateSigned);
+    if (dateCreated) update.bp_date_created = dateCreated;
+    if (dateSent) update.date_sent = dateSent;
+    if (dateSigned) update.signed_at = dateSigned;
+    if (meta.recipientEmail) update.recipient_email = meta.recipientEmail;
+    if (meta.recipient) update.recipient_name = meta.recipient;
+    if (meta.sender) update.signer_name = meta.sender;
+    const amt = parseMoney(meta.amount);
+    if (amt !== null) update.amount = amt;
+    const cur = inferCurrency(meta.amount);
+    if (cur) update.currency = cur;
+
+    // Defaults for brand-new rows that didn't get any of the above
     if (!existing) {
-      update.currency = 'GBP';
-      update.amount = 0;
+      if (update.currency == null) update.currency = 'GBP';
+      if (update.amount == null) update.amount = 0;
     }
 
     const { error: dbErr } = await supabase
