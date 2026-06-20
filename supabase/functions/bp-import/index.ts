@@ -259,10 +259,12 @@ async function syncProposals(
   bpKey: string,
   opts: { fetchHtml: boolean; runId: string },
 ) {
-  // BP's /proposal paginates with ?per_page and ?page (undocumented, found
-  // empirically). per_page=500 returns ~223 of 239 in one shot. Loop pages
-  // as a safety net, plus fan out to status-scoped endpoints to catch
-  // archived/lost rows the default listing omits.
+  // BP API pagination quirks (probed empirically):
+  //  - Bare /proposal/sent  → 10 records (one page, can't paginate)
+  //  - /proposal/sent/?page=N&per_page=10&type=N → DOES paginate (trailing slash matters!)
+  //  - /proposal?per_page=500 → hard-capped at 223
+  // So: iterate every status-scoped endpoint × every TypeID × every page until
+  // a short page is returned. This is the only way to get past the 223 cap.
   const seen = new Set<string>();
   const all: any[] = [];
 
@@ -276,28 +278,31 @@ async function syncProposals(
     }
   };
 
-  // 1. Bulk pages
-  for (let page = 1; page <= 20; page++) {
-    try {
-      const r = await bpGet<{ data: any[] }>(`/proposal?per_page=500&page=${page}`, bpKey);
-      const list = Array.isArray(r.data) ? r.data : [];
-      if (list.length === 0) break;
-      ingest(list);
-      if (list.length < 500) break;
-    } catch { break; }
+  const STATUS_PATHS = ['/proposal/sent', '/proposal/signed', '/proposal/opened', '/proposal/new', '/proposal/paid'];
+  // TypeID 0 = type filter omitted (catches anything BP doesn't tag with a TypeID).
+  // Then known doctype IDs: 1 Proposal, 3 Brochure, 5 Contract, 6 Sign off, 7200 Agreement.
+  const TYPE_IDS = [1, 3, 5, 6, 7200];
+
+  for (const path of STATUS_PATHS) {
+    for (const tid of TYPE_IDS) {
+      for (let page = 1; page <= 50; page++) {
+        try {
+          const r = await bpGet<{ data: any[] }>(`${path}/?page=${page}&per_page=20&type=${tid}`, bpKey);
+          const list = Array.isArray(r.data) ? r.data : [];
+          if (list.length === 0) break;
+          ingest(list);
+          if (list.length < 20) break;  // short page = last page
+        } catch { break; }
+      }
+    }
   }
 
-  // 2. Status-scoped endpoints catch rows the default list omits
-  for (const path of ['/proposal/new', '/proposal/opened', '/proposal/sent', '/proposal/signed', '/proposal/paid']) {
-    try { const r = await bpGet<{ data: any[] }>(`${path}?per_page=500`, bpKey); ingest(r.data); }
-    catch { /* optional */ }
-  }
-
-  // 3. TypeID-filtered probes for non-Proposal doctypes
-  for (const tid of [3, 5, 6, 7200]) {
-    try { const r = await bpGet<{ data: any[] }>(`/proposal?type=${tid}&per_page=500`, bpKey); ingest(r.data); }
-    catch { /* type filter optional */ }
-  }
+  // Belt-and-braces: also pull the bulk /proposal listing (gets latest 223
+  // regardless of status/type — catches anything the status loops missed).
+  try {
+    const r = await bpGet<{ data: any[] }>('/proposal?per_page=500', bpKey);
+    ingest(r.data);
+  } catch { /* optional */ }
 
   // /proposal/opened lists proposals the recipient has actually viewed —
   // that's the "Outstanding" bucket vs raw "Pending".
