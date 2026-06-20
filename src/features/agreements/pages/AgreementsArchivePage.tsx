@@ -750,36 +750,62 @@ function statusLineFor(row: {
   const longDate = (iso: string) =>
     new Date(iso).toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' });
 
-  // 1) Try activityLog: pick the most recent meaningful entry.
-  const raw = row.bp_raw;
-  if (raw && typeof raw === 'object' && Array.isArray((raw as { activityLog?: unknown }).activityLog)) {
-    const log = (raw as { activityLog: Array<{ action: string; date: string | null }> }).activityLog;
-    // Prefer Sent/Opened/Received/Signed/Resent over scraper-noise entries.
-    const meaningful = log.find((e) =>
-      /^(sent|opened|received|signed|resent|viewed)/i.test(e?.action ?? ''),
-    ) ?? log[0];
-    if (meaningful?.action) {
-      // strip " at HH:MM" from "20 June 2026 at 13:29"
-      const dateLabel = meaningful.date ? meaningful.date.replace(/\s+at\s+\d{1,2}:\d{2}.*$/i, '') : null;
-      const verb = meaningful.action.replace(/\.$/, '').trim();
+  const raw = (row.bp_raw && typeof row.bp_raw === 'object') ? row.bp_raw as Record<string, unknown> : null;
+
+  // Helper — parse BP's "YYYY-MM-DD HH:MM:SS" or activityLog "20 June 2026" strings
+  const parseDate = (v: unknown): Date | null => {
+    if (!v || typeof v !== 'string') return null;
+    const s = v.trim();
+    if (!s || s === '0000-00-00 00:00:00' || s === '0000-00-00') return null;
+    const d = new Date(s.includes('T') ? s : s.replace(' ', 'T'));
+    return isNaN(d.getTime()) ? null : d;
+  };
+
+  // 1) Prefer real BP API fields if /proposal/{id} populated bp_raw
+  //    BP exposes DateOpened / DateLastOpened on proposal records.
+  const apiOpened = parseDate(raw?.DateLastOpened) ?? parseDate(raw?.DateOpened);
+  const apiSigned = (() => {
+    const sd = raw?.SignedDate, st = raw?.SignedTime;
+    if (typeof sd === 'string') {
+      return parseDate(typeof st === 'string' ? `${sd} ${st}` : sd);
+    }
+    return null;
+  })();
+  const apiSent = parseDate(raw?.DateSent);
+
+  if (apiSigned) return `Signed on ${longDate(apiSigned.toISOString())}`;
+  if (apiOpened && apiSent && apiOpened.getTime() > apiSent.getTime()) {
+    return `Opened on ${longDate(apiOpened.toISOString())}`;
+  }
+  if (apiSent) return `Sent on ${longDate(apiSent.toISOString())}`;
+
+  // 2) activityLog from scraper — ONLY use entries whose action starts with a
+  //    known verb. The earlier scraper captured BP's nav menu as garbage
+  //    entries ("New Document", "Documents", "Templates"…); never let those
+  //    leak into the Status column.
+  if (Array.isArray(raw?.activityLog)) {
+    const log = raw.activityLog as Array<{ action: string; date: string | null }>;
+    const knownVerb = /^(sent|opened|received|signed|resent|viewed|downloaded|pdf\s+downloaded)/i;
+    const real = log.filter((e) => e?.action && knownVerb.test(e.action) && e.date);
+    if (real.length > 0) {
+      const e = real[0];
+      const dateLabel = e.date!.replace(/\s+at\s+\d{1,2}:\d{2}.*$/i, '');
+      const verb = e.action.trim();
       const niceVerb = /^opened/i.test(verb) ? 'Opened'
         : /^sent/i.test(verb) ? 'Sent'
         : /^received/i.test(verb) ? 'Received'
         : /^signed/i.test(verb) ? 'Signed'
         : /^resent/i.test(verb) ? 'Resent'
         : /^viewed/i.test(verb) ? 'Opened'
-        : verb;
-      return dateLabel ? `${niceVerb} on ${dateLabel}` : niceVerb;
+        : 'Sent';
+      return `${niceVerb} on ${dateLabel}`;
     }
   }
 
-  // 2) Fall back to date_sent
+  // 3) Fall back to row columns
   if (row.date_sent) return `Sent on ${longDate(row.date_sent)}`;
-
-  // 3) Fall back to created date
   const created = row.bp_date_created ?? row.created_at;
   if (created) return `Created on ${longDate(created)}`;
-
   return '—';
 }
 

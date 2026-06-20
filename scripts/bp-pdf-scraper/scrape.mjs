@@ -85,12 +85,17 @@ const RUN_LOGIN = has('--login');
 const RUN_SCRAPE = has('--scrape');
 const RUN_UPLOAD = has('--upload');
 const RUN_PURGE = has('--purge');
+const RUN_REPORT = has('--report');
+const RUN_ENRICH = has('--enrich');
+const RUN_API_FIX = has('--api-fix');
+const RUN_API_PROBE = has('--api-probe');
 const FORCE = has('--force');
 const DEBUG = has('--debug');
 const LIMIT = parseInt(valOf('--limit', '0'), 10) || 0;
+const STATUS_FILTER = valOf('--status', null);  // process only this bucket
 
-if (!RUN_LOGIN && !RUN_SCRAPE && !RUN_UPLOAD && !RUN_PURGE) {
-  console.log('Usage: node scrape.mjs --login | --scrape | --upload | --purge  [--force] [--debug] [--limit=N]');
+if (!RUN_LOGIN && !RUN_SCRAPE && !RUN_UPLOAD && !RUN_PURGE && !RUN_REPORT && !RUN_ENRICH && !RUN_API_FIX && !RUN_API_PROBE) {
+  console.log('Usage: node scrape.mjs --login | --scrape | --enrich | --upload | --api-fix | --api-probe=ID | --purge | --report  [--force] [--debug] [--limit=N] [--status=outstanding]');
   process.exit(0);
 }
 
@@ -130,6 +135,7 @@ async function phaseScrape() {
   let tasks = [];
   for (const [status, list] of Object.entries(ids)) {
     if (status.startsWith('_') || !Array.isArray(list)) continue;
+    if (STATUS_FILTER && status !== STATUS_FILTER) continue;
     for (const id of list) tasks.push({ status, id: String(id) });
   }
   if (LIMIT > 0) tasks = tasks.slice(0, LIMIT);
@@ -137,6 +143,23 @@ async function phaseScrape() {
 
   const browser = await chromium.launch({ headless: !DEBUG, slowMo: DEBUG ? 250 : 0 });
   const ctx = await browser.newContext({ storageState: STATE_PATH, acceptDownloads: true });
+
+  // Pre-flight: make sure the session still works before churning through
+  // hundreds of IDs. Hit the dashboard — if BP redirects to /login, the
+  // session expired and every iteration would fail the same way.
+  {
+    const p = await ctx.newPage();
+    try {
+      await p.goto('https://betterproposals.io/2/proposals/', { timeout: 30_000, waitUntil: 'domcontentloaded' });
+      const u = p.url();
+      if (/\/login|\/signin|\/auth/i.test(u)) {
+        await browser.close();
+        throw new Error(`Session expired — BP redirected to ${u}. Run \`node scrape.mjs --login\` to refresh.`);
+      }
+    } finally {
+      await p.close().catch(() => {});
+    }
+  }
 
   const manifest = loadManifest();
 
@@ -159,10 +182,18 @@ async function phaseScrape() {
         process.stdout.write(`✗ ${t.id} (empty)\n`);
         continue;
       }
-      const filename = `${safeFilename(result.docName, t.id)}.pdf`;
+      // Filename: `<view_id>_<doc name>.pdf`. The id prefix guarantees
+      // uniqueness even when two proposals share the same company name.
+      const namepart = safeFilename(result.docName, t.id);
+      const filename = `${t.id}_${namepart}.pdf`;
       const out = join(PDFS_DIR, filename);
       writeFileSync(out, result.pdf);
-      manifest[t.id] = { filename, docName: result.docName ?? null, status: t.status };
+      manifest[t.id] = {
+        filename,
+        docName: result.docName ?? null,
+        status: t.status,
+        meta: result.meta ?? null,
+      };
       saveManifest(manifest);
       ok++;
       process.stdout.write(`✓ ${t.id} → "${filename}" (${(result.pdf.length / 1024).toFixed(0)} KB)\n`);
@@ -183,6 +214,130 @@ async function phaseScrape() {
   await browser.close();
 }
 
+// Pull docName / subtitle / docType / activityLog / dates / amount / etc from
+// the BP Activity page (assumes page is already navigated to /view?id=N).
+// Pure in-browser scrape — does not touch the network.
+async function scrapeActivityPageMeta(page) {
+  return await page.evaluate(() => {
+    const stripPrefix = (s) => (s || '').replace(/^\s*Document\s+for\s+/i, '').trim();
+    const text = (sel) => { const el = document.querySelector(sel); return el ? (el.textContent || '').trim() : null; };
+    const findByLabel = (labelRegex) => {
+      const labels = document.querySelectorAll('label, dt, .label, [class*="label" i], strong, b, span');
+      for (const l of labels) {
+        if (labelRegex.test(l.textContent || '')) {
+          const next = l.nextElementSibling;
+          if (next?.textContent?.trim()) return next.textContent.trim();
+          const parent = l.parentElement;
+          const sibText = (parent?.textContent || '').replace(l.textContent || '', '').trim();
+          if (sibText) return sibText;
+        }
+      }
+      return null;
+    };
+    const findEmail = () => {
+      const m = (document.body.innerText || '').match(/[\w.+\-]+@[\w\-]+\.[\w.\-]+/);
+      return m ? m[0] : null;
+    };
+    const findMoney = () => {
+      const m = (document.body.innerText || '').match(/([£$€])\s?([0-9][0-9,]*(?:\.\d{2})?)/);
+      return m ? `${m[1]}${m[2]}` : null;
+    };
+    const findDate = (labelRegex) => {
+      const v = findByLabel(labelRegex);
+      if (!v) return null;
+      return v.replace(/(\d+)(st|nd|rd|th)/g, '$1').trim();
+    };
+
+    const h1 = document.querySelector('h1');
+    const rawDocName = stripPrefix(h1?.textContent || document.title);
+    // Reject BP error pages — they hijack the H1 and would become the row title.
+    const isErrorPage = /^(403\b|404\b|500\b|access\s+denied|forbidden|not\s+found|page\s+not\s+found|page\s+unavailable|login|sign\s*in|unauthori[sz]ed|server\s+error)/i.test(rawDocName);
+    const docName = isErrorPage ? null : rawDocName;
+
+    const subtitle = (() => {
+      if (!h1 || isErrorPage) return null;
+      let n = h1.nextElementSibling;
+      while (n) {
+        const t = (n.textContent || '').trim();
+        if (t && t.length < 400 && !/preview document|edit document|send document|options/i.test(t)) return t;
+        n = n.nextElementSibling;
+      }
+      return null;
+    })();
+
+    const docType = (() => {
+      const known = /^(Proposals?|Agreements?|Contracts?|Brochures?|Quotes?|Sign\s*offs?|Job\s*Offers?|Statements?\s*of\s*Work)$/i;
+      const el = [...document.querySelectorAll('span, div, button, a, strong, em')]
+        .find((e) => known.test((e.textContent || '').trim()));
+      return el ? el.textContent.trim() : null;
+    })();
+
+    const activityLog = (() => {
+      // Don't grab the whole body — find the SMALLEST element whose text starts
+      // with the "Document Activity" heading. That isolates the actual panel
+      // from BP's left-nav menu (which also contains the words "Documents",
+      // "Activity", etc.).
+      const dateRe = /(\d{1,2}\s*(?:st|nd|rd|th)?\s+(?:January|February|March|April|May|June|July|August|September|October|November|December|Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)\s+\d{4}(?:\s+at\s+[\d:]+)?)/i;
+      const actionRe = /^(Sent|Opened|Viewed|Received|Signed|Resent|Created|Downloaded|PDF\s+downloaded|Document\s+downloaded|Marked\s+\w+|Forwarded|Commented)/i;
+
+      // Candidate panels — must contain "Document Activity" but be small
+      // enough to NOT be the whole page (rule out the body and root <main>).
+      const all = [...document.querySelectorAll('div, section, aside, article')];
+      const candidates = all.filter((e) => /document\s+activity/i.test(e.textContent || '') && e.textContent.length < 8000);
+      // Pick the smallest by text length — innermost match wins.
+      const panel = candidates.reduce((sm, e) => (!sm || (e.textContent || '').length < (sm.textContent || '').length) ? e : sm, null);
+      if (!panel) return [];
+
+      // Walk every descendant element of the panel. For each text node group,
+      // look for a recognised action verb followed by a date.
+      const items = [];
+      const seen = new Set();
+      const push = (action, date) => {
+        const niceAction = action.replace(/\s+/g, ' ').trim();
+        const niceDate = date ? date.replace(/(\d+)(st|nd|rd|th)/g, '$1').replace(/\s+/g, ' ').trim() : null;
+        const k = `${niceAction.toLowerCase()}|${niceDate || ''}`;
+        if (seen.has(k)) return;
+        seen.add(k);
+        items.push({ action: niceAction, date: niceDate });
+      };
+
+      // Strategy 1: structured rows — find every element whose innerText (just
+      // direct children's combined text) matches "<action> ... <date>".
+      const rows = [...panel.querySelectorAll('li, div, p, span')];
+      for (const row of rows) {
+        const txt = (row.textContent || '').replace(/\s+/g, ' ').trim();
+        if (!txt || txt.length > 400) continue;
+        if (!actionRe.test(txt)) continue;
+        const dm = txt.match(dateRe);
+        // Action portion = text before the date (or whole text if no date)
+        const actionPart = dm ? txt.slice(0, dm.index).trim().replace(/\bon$/i, '').trim() : txt;
+        // Keep only the leading action verb phrase (up to first ~80 chars), not the whole record name.
+        const m2 = actionPart.match(/^(.{0,80}?)(?:\s+(?:by|to|for|from)\b.*)?$/i);
+        const action = (m2 ? m2[1] : actionPart).trim();
+        if (!action || !actionRe.test(action)) continue;
+        push(action, dm ? dm[1] : null);
+      }
+
+      return items.slice(0, 50);
+    })();
+
+    return {
+      docName: docName || null,
+      subtitle: subtitle || null,
+      docType: docType || null,
+      activityLog,
+      dateCreated: findDate(/created|date created/i),
+      dateSent: findDate(/sent|date sent/i),
+      dateSigned: findDate(/signed|accepted|date signed/i),
+      recipientEmail: findEmail(),
+      recipient: findByLabel(/recipient|to|prospect|client/i),
+      sender: findByLabel(/from|sender|owner|author/i),
+      amount: findMoney(),
+      status: findByLabel(/status|state/i),
+    };
+  }).catch(() => ({ docName: null, subtitle: null, docType: null, activityLog: [] }));
+}
+
 // Click flow for ONE view_id:
 //   1. Open /2/proposals/edit?id=<vid>
 //   2. Click "Preview Document"  → opens the client-view URL in a new tab
@@ -196,25 +351,120 @@ async function fetchOnePdf(ctx, viewId) {
     await page.goto(viewUrl, { timeout: 45_000, waitUntil: 'domcontentloaded' });
     if (DEBUG) await page.screenshot({ path: join(DEBUG_DIR, `${viewId}-1-activity.png`), fullPage: true });
 
-    // Extract the document name. BP shows "Document for {NAME}" at the top of
-    // the Activity page. Try a few selectors, then strip the "Document for "
-    // prefix. Fall back to the page title.
-    const docName = await page.evaluate(() => {
+    const meta = await scrapeActivityPageMeta(page);
+    if (DEBUG) console.log(`  [debug] ${viewId} meta = ${JSON.stringify(meta)}`);
+    const docName = meta.docName;
+
+    /* OLD INLINE EXTRACTION — replaced by scrapeActivityPageMeta() helper.
+       Kept commented for the diff:
+    const meta = await page.evaluate(() => {
       const stripPrefix = (s) => (s || '').replace(/^\s*Document\s+for\s+/i, '').trim();
+      const text = (sel) => {
+        const el = document.querySelector(sel);
+        return el ? (el.textContent || '').trim() : null;
+      };
+      const findByLabel = (labelRegex) => {
+        const labels = document.querySelectorAll('label, dt, .label, [class*="label" i], strong, b, span');
+        for (const l of labels) {
+          if (labelRegex.test(l.textContent || '')) {
+            const next = l.nextElementSibling;
+            if (next?.textContent?.trim()) return next.textContent.trim();
+            const parent = l.parentElement;
+            const sibText = (parent?.textContent || '').replace(l.textContent || '', '').trim();
+            if (sibText) return sibText;
+          }
+        }
+        return null;
+      };
+      const findEmail = () => {
+        const m = (document.body.innerText || '').match(/[\w.+\-]+@[\w\-]+\.[\w.\-]+/);
+        return m ? m[0] : null;
+      };
+      const findMoney = () => {
+        const m = (document.body.innerText || '').match(/([£$€])\s?([0-9][0-9,]*(?:\.\d{2})?)/);
+        return m ? `${m[1]}${m[2]}` : null;
+      };
+      const findDate = (labelRegex) => {
+        const v = findByLabel(labelRegex);
+        if (!v) return null;
+        // Strip ordinals and trim
+        return v.replace(/(\d+)(st|nd|rd|th)/g, '$1').trim();
+      };
+
       const h1 = document.querySelector('h1');
-      if (h1?.textContent) {
-        const t = stripPrefix(h1.textContent);
-        if (t) return t;
-      }
-      const heading = document.querySelector('[class*="title" i], [class*="header" i] h1, [class*="header" i] h2');
-      if (heading?.textContent) {
-        const t = stripPrefix(heading.textContent);
-        if (t) return t;
-      }
-      const title = document.title || '';
-      return stripPrefix(title) || null;
-    }).catch(() => null);
-    if (DEBUG) console.log(`  [debug] ${viewId} docName = ${JSON.stringify(docName)}`);
+      const docName = stripPrefix(h1?.textContent || document.title);
+
+      // Subtitle / description — usually the line right after the H1.
+      // BP shows "Duplicated from X - Duplicated from Y" or similar.
+      const subtitle = (() => {
+        if (!h1) return null;
+        let n = h1.nextElementSibling;
+        while (n) {
+          const t = (n.textContent || '').trim();
+          if (t && t.length < 400 && !/preview document|edit document|send document|options/i.test(t)) return t;
+          n = n.nextElementSibling;
+        }
+        return null;
+      })();
+
+      // Document type — BP shows a pill/badge somewhere near the title.
+      // Look for any element whose text matches one of the known types.
+      const docType = (() => {
+        const known = /^(Proposals?|Agreements?|Contracts?|Brochures?|Quotes?|Sign\s*offs?|Job\s*Offers?|Statements?\s*of\s*Work)$/i;
+        const el = [...document.querySelectorAll('span, div, button, a, strong, em')]
+          .find((e) => known.test((e.textContent || '').trim()));
+        return el ? el.textContent.trim() : null;
+      })();
+
+      // Activity log entries — each row in BP's "Document Activity" list
+      // has a title (action) + a relative or absolute date.
+      const activityLog = (() => {
+        const items = [];
+        // Pick the section that contains "Document Activity" text and walk
+        // its child rows.
+        const allEls = [...document.querySelectorAll('div, section, ul, ol')];
+        const activitySection = allEls.find((e) => /document activity/i.test(e.textContent || '')) ;
+        if (!activitySection) return [];
+        // Heuristic: rows are flex/grid children with a title + a sibling timestamp.
+        const rows = [...activitySection.querySelectorAll('li, [class*="activity" i] > *, [class*="row" i]')];
+        for (const row of rows) {
+          const txt = (row.textContent || '').replace(/\s+/g, ' ').trim();
+          if (!txt || txt.length > 300) continue;
+          // Try to split into action + date
+          // BP typically shows: "PDF downloaded from the preview\n20th June 2026 at 13:29"
+          const m = txt.match(/^(.+?)\s+(\d{1,2}\s*(st|nd|rd|th)?\s+\w+\s+\d{4}(?:\s+at\s+[\d:]+)?)\s*$/i);
+          if (m) {
+            items.push({ action: m[1].trim(), date: m[2].replace(/(\d+)(st|nd|rd|th)/g, '$1').trim() });
+          } else if (/^[A-Z]/.test(txt) && txt.length < 200) {
+            items.push({ action: txt, date: null });
+          }
+        }
+        // Dedupe by exact match
+        const seen = new Set();
+        return items.filter((it) => {
+          const k = `${it.action}|${it.date}`;
+          if (seen.has(k)) return false;
+          seen.add(k);
+          return true;
+        }).slice(0, 50);
+      })();
+
+      return {
+        docName: docName || null,
+        subtitle: subtitle || null,
+        docType: docType || null,
+        activityLog,
+        dateCreated: findDate(/created|date created/i),
+        dateSent: findDate(/sent|date sent/i),
+        dateSigned: findDate(/signed|accepted|date signed/i),
+        recipientEmail: findEmail(),
+        recipient: findByLabel(/recipient|to|prospect|client/i),
+        sender: findByLabel(/from|sender|owner|author/i),
+        amount: findMoney(),
+        status: findByLabel(/status|state/i),
+      };
+    }).catch(() => ({ docName: null }));
+    END OLD INLINE */
 
     // Find Preview Document button. BP uses different markup in different
     // sections — try a few resilient selectors in order.
@@ -284,38 +534,93 @@ async function fetchOnePdf(ctx, viewId) {
     }
 
     const previewUrl = previewPage.url();
-    // BP previews land on either /cover.php or /index.php depending on the
-    // account/template. Both work for /pdf-output.php derivation.
-    if (!/\/(cover|index)\.php/.test(previewUrl)) {
-      throw new Error(`Preview URL doesn't match expected pattern: ${previewUrl}`);
+    // BP preview URLs come in three known shapes:
+    //   1. proposal.<account>.com/cover.php?ProposalID=...&ContactID=...
+    //   2. proposal.<account>.com/index.php?ProposalID=...
+    //   3. betterproposals.io/proposal/index?ProposalID=...    (no .php)
+    // The PDF endpoint pattern differs per host — we try multiple
+    // candidates and accept whichever returns application/pdf.
+    if (!/ProposalID=/i.test(previewUrl)) {
+      throw new Error(`Preview URL has no ProposalID: ${previewUrl}`);
     }
 
-    const pdfUrl = previewUrl
-      .replace(/&debug=yes/g, '')          // pdf-output.php doesn't like debug=yes
-      .replace(/\/(cover|index)\.php/, '/pdf-output.php')
-      + (previewUrl.includes('?') ? '&' : '?') + 'pdf-view=1';
-    if (DEBUG) console.log(`  [debug] ${viewId} pdf url = ${pdfUrl}`);
+    const cleanUrl = previewUrl.replace(/&debug=yes/g, '');
+    const appendPdfView = (u) => u + (u.includes('?') ? '&' : '?') + 'pdf-view=1';
+    const pdfCandidates = [
+      cleanUrl.replace(/\/(cover|index)\.php/, '/pdf-output.php'),                  // white-label .php hosts
+      cleanUrl.replace(/\/proposal\/index(?=[?#]|$)/, '/proposal/pdf'),             // betterproposals.io path-style
+      cleanUrl.replace(/\/proposal\/index(?=[?#]|$)/, '/proposal/pdf-output'),      // alt path-style
+      cleanUrl.replace(/\/(cover|index)\.php/, '/pdf.php'),                         // some templates use pdf.php
+    ]
+      .filter((u, i, arr) => u && u !== cleanUrl && arr.indexOf(u) === i)           // unique + actually changed
+      .map(appendPdfView);
 
-    // Fetch the PDF via the browser context — cookies are carried automatically.
-    const resp = await ctx.request.get(pdfUrl, {
-      timeout: 60_000,
-      headers: { 'User-Agent': 'NFSTAY-bp-scraper/1.0' },
-    });
-    if (!resp.ok()) throw new Error(`PDF fetch HTTP ${resp.status()}`);
-    const ct = resp.headers()['content-type'] || '';
-    const body = await resp.body();
-    if (!ct.includes('pdf') || body.length < 1024) {
-      throw new Error(`Bad PDF response (CT=${ct}, ${body.length} bytes)`);
+    if (DEBUG) console.log(`  [debug] ${viewId} pdf candidates:\n    ${pdfCandidates.join('\n    ')}`);
+
+    let body = null;
+    let lastErr = null;
+    for (const pdfUrl of pdfCandidates) {
+      try {
+        const resp = await ctx.request.get(pdfUrl, {
+          timeout: 60_000,
+          headers: { 'User-Agent': 'NFSTAY-bp-scraper/1.0' },
+        });
+        if (!resp.ok()) { lastErr = `HTTP ${resp.status()} on ${pdfUrl}`; continue; }
+        const ct = resp.headers()['content-type'] || '';
+        const buf = await resp.body();
+        if (!ct.includes('pdf')) { lastErr = `CT=${ct} on ${pdfUrl}`; continue; }
+        if (buf.length < 1024 || buf[0] !== 0x25 || buf[1] !== 0x50 || buf[2] !== 0x44 || buf[3] !== 0x46) {
+          lastErr = `not PDF magic on ${pdfUrl}`;
+          continue;
+        }
+        body = buf;
+        if (DEBUG) console.log(`  [debug] ${viewId} got PDF from ${pdfUrl}`);
+        break;
+      } catch (e) {
+        lastErr = `${e.message} on ${pdfUrl}`;
+      }
     }
-    if (body[0] !== 0x25 || body[1] !== 0x50 || body[2] !== 0x44 || body[3] !== 0x46) {
-      throw new Error('Response not PDF (no %PDF magic)');
+
+    // URL-derivation fallback didn't work — click a Download button on the page.
+    if (!body) {
+      const dlPromise = previewPage.waitForEvent('download', { timeout: 15_000 }).catch(() => null);
+      const dlSelectors = [
+        'a:has-text("Download PDF")',
+        'button:has-text("Download PDF")',
+        'a:has-text("Download")',
+        'button:has-text("Download")',
+        '[aria-label*="download" i]',
+      ];
+      let clicked = false;
+      for (const sel of dlSelectors) {
+        const el = await previewPage.$(sel);
+        if (el) {
+          await el.scrollIntoViewIfNeeded().catch(() => {});
+          await el.click({ timeout: 10_000 }).catch(() => {});
+          clicked = true;
+          break;
+        }
+      }
+      if (clicked) {
+        const dl = await dlPromise;
+        if (dl) {
+          const tmpPath = join(PDFS_DIR, `.${viewId}.download.pdf`);
+          await dl.saveAs(tmpPath);
+          try { body = readFileSync(tmpPath); } catch {}
+          try { unlinkSync(tmpPath); } catch {}
+        }
+      }
+    }
+
+    if (!body || body.length < 1024) {
+      throw new Error(`No PDF (last error: ${lastErr || 'unknown'})`);
     }
 
     if (!DEBUG) {
       await previewPage.close().catch(() => {});
       await page.close().catch(() => {});
     }
-    return { pdf: body, docName };
+    return { pdf: body, docName, meta };
   } catch (e) {
     if (DEBUG) {
       try { await page.screenshot({ path: join(DEBUG_DIR, `${viewId}-FAIL.png`), fullPage: true }); } catch {}
@@ -342,75 +647,161 @@ async function phaseUpload() {
   const statusByVid = new Map();
   for (const [status, list] of Object.entries(ids)) {
     if (status.startsWith('_') || !Array.isArray(list)) continue;
+    if (STATUS_FILTER && status !== STATUS_FILTER) continue;
     for (const id of list) statusByVid.set(String(id), status);
   }
 
-  // Manifest maps view_id → { filename, docName, status }. With manifest we
-  // can look up each PDF by view_id; without it we fall back to assuming
-  // <view_id>.pdf filenames.
+  // Manifest maps view_id → { filename, docName, status, meta }. Build tasks
+  // from BOTH manifest entries (have docName + meta) and stray files on disk
+  // (no manifest entry — we extract the view_id from filename).
   const manifest = loadManifest();
-  const filesOnDisk = new Set(readdirSync(PDFS_DIR).filter((f) => f.endsWith('.pdf')));
+  const filesOnDisk = existsSync(PDFS_DIR)
+    ? new Set(readdirSync(PDFS_DIR).filter((f) => f.endsWith('.pdf')))
+    : new Set();
 
-  // Build the work list: prefer manifest entries (they have docName too),
-  // fall back to numeric-named files for any leftover.
   const tasks = [];
   for (const [vid, entry] of Object.entries(manifest)) {
-    if (entry?.filename && filesOnDisk.has(entry.filename)) {
-      tasks.push({ viewId: vid, filename: entry.filename, docName: entry.docName });
-      filesOnDisk.delete(entry.filename);
-    }
+    if (STATUS_FILTER && entry?.status && entry.status !== STATUS_FILTER) continue;
+    const filename = entry?.filename || null;
+    const hasFile = filename && filesOnDisk.has(filename);
+    tasks.push({
+      viewId: vid,
+      filename: hasFile ? filename : null,   // null = no local PDF, metadata-only push
+      docName: entry?.docName ?? null,
+      meta: entry?.meta || null,
+    });
+    if (hasFile) filesOnDisk.delete(filename);
   }
   for (const f of filesOnDisk) {
-    const m = f.match(/^(\d+)\.pdf$/);
-    if (m) tasks.push({ viewId: m[1], filename: f, docName: null });
+    // accepts "<id>_<name>.pdf" OR plain "<id>.pdf"
+    const m = f.match(/^(\d+)(?:_.*)?\.pdf$/);
+    if (!m) continue;
+    if (STATUS_FILTER && statusByVid.get(m[1]) !== STATUS_FILTER) continue;
+    tasks.push({ viewId: m[1], filename: f, docName: null, meta: null });
   }
-  console.log(`[upload] ${tasks.length} PDFs to push`);
+  const withFile = tasks.filter((t) => t.filename).length;
+  const metaOnly = tasks.length - withFile;
+  console.log(`[upload] ${tasks.length} rows · ${withFile} with PDF · ${metaOnly} metadata-only`);
 
   let uploaded = 0; let dbUpdated = 0; let errors = 0;
   for (const t of tasks) {
-    const localPath = join(PDFS_DIR, t.filename);
-    const size = statSync(localPath).size;
-    if (size < 1024) { console.log(`✗ ${t.viewId} skipped (size ${size})`); continue; }
-    const bytes = readFileSync(localPath);
+    let storagePath = null;
+    let pdfSize = null;
+    if (t.filename) {
+      const localPath = join(PDFS_DIR, t.filename);
+      pdfSize = statSync(localPath).size;
+      if (pdfSize < 1024) { console.log(`✗ ${t.viewId} skipped (size ${pdfSize})`); continue; }
+      const bytes = readFileSync(localPath);
+
+      const { data: existing0 } = await supabase
+        .from('agreements')
+        .select('id, bp_id')
+        .eq('source', 'bp_import')
+        .or(`bp_quote_id.eq.${t.viewId},bp_id.eq.q-${t.viewId}`)
+        .limit(1)
+        .maybeSingle();
+      const tmpBpId = existing0?.bp_id ?? `q-${t.viewId}`;
+      storagePath = `bp-import/pdf/${tmpBpId}.pdf`;
+
+      const { error: upErr } = await supabase.storage
+        .from('agreements')
+        .upload(storagePath, bytes, { contentType: 'application/pdf', upsert: true });
+      if (upErr) { console.log(`✗ ${t.viewId} storage: ${upErr.message}`); errors++; continue; }
+      uploaded++;
+    }
 
     const { data: existing } = await supabase
       .from('agreements')
-      .select('id, bp_id, title')
+      .select('id, bp_id, title, pdf_storage_path')
       .eq('source', 'bp_import')
       .or(`bp_quote_id.eq.${t.viewId},bp_id.eq.q-${t.viewId}`)
       .limit(1)
       .maybeSingle();
 
     const targetBpId = existing?.bp_id ?? `q-${t.viewId}`;
-    const storagePath = `bp-import/pdf/${targetBpId}.pdf`;
-
-    const { error: upErr } = await supabase.storage
-      .from('agreements')
-      .upload(storagePath, bytes, { contentType: 'application/pdf', upsert: true });
-    if (upErr) { console.log(`✗ ${t.viewId} storage: ${upErr.message}`); errors++; continue; }
-    uploaded++;
 
     const status = statusByVid.get(t.viewId) || 'accepted';
+    const meta = t.meta || {};
+    const parseLooseDate = (s) => {
+      if (!s) return null;
+      const d = new Date(s);
+      return isNaN(d.getTime()) ? null : d.toISOString();
+    };
+    const parseMoney = (s) => {
+      if (!s) return null;
+      const n = parseFloat(String(s).replace(/[^0-9.]/g, ''));
+      return Number.isFinite(n) ? n : null;
+    };
+    const inferCurrency = (s) => {
+      if (!s) return null;
+      if (/£/.test(s)) return 'GBP';
+      if (/\$/.test(s)) return 'USD';
+      if (/€/.test(s)) return 'EUR';
+      return null;
+    };
+
     const update = {
       source: 'bp_import',
       bp_id: targetBpId,
       bp_quote_id: t.viewId,
-      pdf_storage_path: storagePath,
       status,
       imported_at: new Date().toISOString(),
       token: `bp-q-${t.viewId}`,
       type: 'investor',
     };
-    // Set the title to the doc name when we have one — both for new rows
-    // and to replace generic auto-titles like "Quote 12345" on existing.
-    if (t.docName) {
-      update.title = t.docName;
-    } else if (!existing) {
-      update.title = `Quote ${t.viewId}`;
+    // Only set pdf_storage_path when we just uploaded a file. For metadata-only
+    // pushes, preserve whatever's already on the row (don't blank out an
+    // existing PDF reference).
+    if (storagePath) update.pdf_storage_path = storagePath;
+    // Title — doc name if we scraped one, else generic
+    if (t.docName) update.title = t.docName;
+    else if (!existing) update.title = `Quote ${t.viewId}`;
+
+    // Metadata harvested from the BP Activity page
+    const dateCreated = parseLooseDate(meta.dateCreated);
+    const dateSent = parseLooseDate(meta.dateSent);
+    const dateSigned = parseLooseDate(meta.dateSigned);
+    if (dateCreated) update.bp_date_created = dateCreated;
+    if (dateSent) update.date_sent = dateSent;
+    if (dateSigned) update.signed_at = dateSigned;
+    if (meta.recipientEmail) update.recipient_email = meta.recipientEmail;
+    if (meta.recipient) update.recipient_name = meta.recipient;
+    if (meta.sender) update.signer_name = meta.sender;
+    const amt = parseMoney(meta.amount);
+    if (amt !== null) update.amount = amt;
+    const cur = inferCurrency(meta.amount);
+    if (cur) update.currency = cur;
+
+    // Subtitle ("Duplicated from..." line) → description column
+    if (meta.subtitle) update.description = meta.subtitle;
+
+    // Document type → bp_type_name + bp_type_id
+    if (meta.docType) {
+      update.bp_type_name = meta.docType;
+      const typeMap = {
+        proposal: 1, proposals: 1,
+        quote: 2, quotes: 2,
+        brochure: 3, brochures: 3,
+        'statement of work': 4, 'statements of work': 4,
+        contract: 5, contracts: 5,
+        'sign off': 6, 'sign offs': 6, signoff: 6, signoffs: 6,
+        'job offer': 7, 'job offers': 7,
+        agreement: 7200, agreements: 7200,
+      };
+      const k = meta.docType.toLowerCase().replace(/\s+/g, ' ').trim();
+      if (typeMap[k]) update.bp_type_id = typeMap[k];
     }
+
+    // Activity log → store in bp_raw under activityLog (jsonb)
+    if (meta.activityLog && meta.activityLog.length > 0) {
+      const raw = (typeof update.bp_raw === 'object' && update.bp_raw !== null) ? update.bp_raw : {};
+      update.bp_raw = { ...raw, _scraper: 'bp-pdf-scraper', activityLog: meta.activityLog };
+    }
+
+    // Defaults for brand-new rows that didn't get any of the above
     if (!existing) {
-      update.currency = 'GBP';
-      update.amount = 0;
+      if (update.currency == null) update.currency = 'GBP';
+      if (update.amount == null) update.amount = 0;
     }
 
     const { error: dbErr } = await supabase
@@ -419,9 +810,115 @@ async function phaseUpload() {
     if (dbErr) { console.log(`✗ ${t.viewId} db: ${dbErr.message}`); errors++; continue; }
     dbUpdated++;
     const label = t.docName ? `"${t.docName.slice(0, 40)}"` : t.viewId;
-    process.stdout.write(`✓ ${t.viewId} → ${label} (${(size / 1024).toFixed(0)} KB)\n`);
+    const sizeLabel = pdfSize !== null ? `${(pdfSize / 1024).toFixed(0)} KB` : 'meta';
+    process.stdout.write(`✓ ${t.viewId} → ${label} (${sizeLabel})\n`);
   }
   console.log(`[upload] ${uploaded} files in Storage · ${dbUpdated} rows updated · ${errors} errors`);
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// ENRICH — visit each view_id and refresh the manifest's meta (subtitle,
+// doc type, activity log, etc.) WITHOUT downloading the PDF. Useful after
+// upgrading the scraper to extract more fields — re-run --enrich, then
+// --upload, no need to re-download 128 PDFs.
+// ─────────────────────────────────────────────────────────────────────────────
+async function phaseEnrich() {
+  if (!existsSync(STATE_PATH)) throw new Error('Run --login first (no state.json)');
+  if (!existsSync(IDS_PATH)) throw new Error(`Missing ${IDS_PATH}`);
+  mkdirSync(PDFS_DIR, { recursive: true });
+  if (DEBUG) mkdirSync(DEBUG_DIR, { recursive: true });
+
+  const ids = JSON.parse(readFileSync(IDS_PATH, 'utf8'));
+  let tasks = [];
+  for (const [status, list] of Object.entries(ids)) {
+    if (status.startsWith('_') || !Array.isArray(list)) continue;
+    if (STATUS_FILTER && status !== STATUS_FILTER) continue;
+    for (const id of list) tasks.push({ status, id: String(id) });
+  }
+  if (LIMIT > 0) tasks = tasks.slice(0, LIMIT);
+  console.log(`[enrich] ${tasks.length} view_ids to refresh meta on${DEBUG ? ' (DEBUG)' : ''}`);
+
+  const browser = await chromium.launch({ headless: !DEBUG, slowMo: DEBUG ? 100 : 0 });
+  const ctx = await browser.newContext({ storageState: STATE_PATH });
+
+  const manifest = loadManifest();
+  let ok = 0; let fail = 0;
+  for (const t of tasks) {
+    try {
+      const page = await ctx.newPage();
+      const viewUrl = `https://betterproposals.io/2/proposals/view?id=${t.id}`;
+      await page.goto(viewUrl, { timeout: 45_000, waitUntil: 'domcontentloaded' });
+      const meta = await scrapeActivityPageMeta(page);
+      const existing = manifest[t.id] || {};
+      manifest[t.id] = { ...existing, status: t.status, docName: meta.docName ?? existing.docName ?? null, meta };
+      saveManifest(manifest);
+      ok++;
+      process.stdout.write(`✓ ${t.id} meta refreshed (docType=${meta.docType || '—'}, ${meta.activityLog?.length || 0} activity items)\n`);
+      if (!DEBUG) await page.close().catch(() => {});
+    } catch (e) {
+      fail++;
+      process.stdout.write(`✗ ${t.id}: ${e.message}\n`);
+    }
+  }
+  console.log(`[enrich] done: ${ok} ok, ${fail} failed`);
+  if (!DEBUG) await browser.close();
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// REPORT — show which ids from ids.json don't have a matching PDF/manifest
+// entry. Useful after a partial scrape to see what still needs retrying.
+// ─────────────────────────────────────────────────────────────────────────────
+async function phaseReport() {
+  if (!existsSync(IDS_PATH)) throw new Error(`Missing ${IDS_PATH}`);
+  const ids = JSON.parse(readFileSync(IDS_PATH, 'utf8'));
+  const manifest = loadManifest();
+  const filesOnDisk = existsSync(PDFS_DIR)
+    ? readdirSync(PDFS_DIR).filter((f) => f.endsWith('.pdf'))
+    : [];
+
+  // A view_id counts as "done" if we have a manifest entry whose filename
+  // exists on disk, OR if there's a numeric file `<id>.pdf` / `<id>_*.pdf`.
+  const fileViewIds = new Set();
+  for (const f of filesOnDisk) {
+    const m = f.match(/^(\d+)(?:_.*)?\.pdf$/);
+    if (m) fileViewIds.add(m[1]);
+  }
+  const isDone = (vid) => {
+    const m = manifest[vid];
+    if (m?.filename && filesOnDisk.includes(m.filename)) return true;
+    return fileViewIds.has(vid);
+  };
+
+  let totalExpected = 0;
+  let totalDone = 0;
+  const failedByStatus = {};
+  for (const [status, list] of Object.entries(ids)) {
+    if (status.startsWith('_') || !Array.isArray(list)) continue;
+    if (STATUS_FILTER && status !== STATUS_FILTER) continue;
+    const missing = list.filter((id) => !isDone(String(id)));
+    totalExpected += list.length;
+    totalDone += list.length - missing.length;
+    if (missing.length > 0) failedByStatus[status] = missing;
+    console.log(`[report] ${status.padEnd(12)} ${list.length - missing.length}/${list.length} done${missing.length ? `  →  ${missing.length} missing` : ''}`);
+  }
+  console.log(`[report] TOTAL ${totalDone}/${totalExpected} done`);
+
+  const totalMissing = totalExpected - totalDone;
+  if (totalMissing === 0) {
+    console.log('[report] all ids accounted for.');
+    return;
+  }
+
+  console.log(`\n[report] missing ids:`);
+  for (const [status, list] of Object.entries(failedByStatus)) {
+    console.log(`\n--- ${status} (${list.length}) ---`);
+    console.log(list.join('\n'));
+  }
+
+  const reportPath = join(PDFS_DIR, '_failed.json');
+  mkdirSync(PDFS_DIR, { recursive: true });
+  writeFileSync(reportPath, JSON.stringify(failedByStatus, null, 2));
+  console.log(`\n[report] written to ${reportPath} — you can paste from here into ids.json or feed to --scrape`);
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -473,12 +970,226 @@ async function phasePurge() {
   console.log(`[purge] done — ${totalDeleted} storage objects removed`);
 }
 
+// ─────────────────────────────────────────────────────────────────────────────
+// API FIX — pull clean metadata for every existing DB row directly from BP's
+// REST API. Screen-scraping admin pages misses dates, company, all recipients,
+// and doctype because BP's DOM is heavy and inconsistent. The API returns
+// structured data: DateSent, DateAccepted, CompanyName, Contacts[] (all emails),
+// TypeID, etc. This phase updates DB rows in place WITHOUT touching:
+//   - pdf_storage_path (PDFs are already in Storage)
+//   - status           (set by ids.json bucket)
+//   - title fallback   (only overrides if API has SubjectLine or CompanyName)
+//
+// Required env: BP_API_KEY (paste in scripts/bp-pdf-scraper/.env)
+// ─────────────────────────────────────────────────────────────────────────────
+async function phaseApiFix() {
+  const BP_API_KEY = process.env.BP_API_KEY;
+  if (!BP_API_KEY) throw new Error('BP_API_KEY missing. Add to scripts/bp-pdf-scraper/.env');
+  if (!SUPABASE_SERVICE_ROLE_KEY) throw new Error('SUPABASE_SERVICE_ROLE_KEY missing');
+
+  const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, { auth: { persistSession: false } });
+
+  const bpGet = async (path) => {
+    const url = `https://api.betterproposals.io${path}`;
+    const r = await fetch(url, { headers: { Bptoken: BP_API_KEY, Accept: 'application/json' } });
+    if (r.status === 401 || r.status === 403) {
+      throw new Error(`BP API ${r.status} on ${path} — bad/expired BP_API_KEY`);
+    }
+    if (r.status === 404) return { _404: true };
+    if (!r.ok) return { _err: r.status };
+    return r.json();
+  };
+
+  const bpDate = (s) => {
+    if (!s) return null;
+    // BP returns "YYYY-MM-DD HH:MM:SS" — convert to ISO assuming UTC.
+    const t = String(s).trim();
+    if (!t || t === '0000-00-00 00:00:00' || t === '0000-00-00') return null;
+    const iso = t.includes('T') ? t : t.replace(' ', 'T') + 'Z';
+    const d = new Date(iso);
+    return isNaN(d.getTime()) ? null : d.toISOString();
+  };
+  const bpNum = (n) => { const x = parseFloat(n); return Number.isFinite(x) ? x : null; };
+
+  // Fetch every BP-imported row's bp_quote_id (the BP view ID we scraped from).
+  const { data: rows, error: selErr } = await supabase
+    .from('agreements')
+    .select('id, bp_id, bp_quote_id, title, pdf_storage_path, bp_raw')
+    .eq('source', 'bp_import');
+  if (selErr) throw new Error(`Supabase select failed: ${selErr.message}`);
+  if (!rows || rows.length === 0) {
+    console.log('[api-fix] no bp_import rows in DB. Nothing to do.');
+    return;
+  }
+
+  const limited = LIMIT > 0 ? rows.slice(0, LIMIT) : rows;
+  console.log(`[api-fix] ${limited.length} rows to refresh from BP API`);
+
+  let ok = 0, proposalHits = 0, quoteHits = 0, miss = 0, errs = 0;
+  for (let i = 0; i < limited.length; i++) {
+    const row = limited[i];
+    const vid = row.bp_quote_id;
+    if (!vid) { miss++; continue; }
+    try {
+      // /proposal/{id} first — full metadata
+      let kind = 'proposal';
+      let res = await bpGet(`/proposal/${vid}`);
+      if (res?._404 || res?._err) {
+        // Fallback: /quote/{id} — works for older / deleted-proposal records
+        kind = 'quote';
+        res = await bpGet(`/quote/${vid}`);
+      }
+      if (res?._404 || res?._err) { miss++; process.stdout.write(`✗ ${vid} not in BP\n`); continue; }
+
+      const p = res?.data || res;  // BP wraps in {data: ...}
+      const update = { imported_at: new Date().toISOString() };
+
+      if (kind === 'proposal') {
+        proposalHits++;
+        // Title — only overwrite if API has SubjectLine or CompanyName.
+        // Don't clobber our "Proposal #X" fallbacks unless we have something real.
+        const apiTitle = p.SubjectLine || p.CompanyName;
+        if (apiTitle) update.title = apiTitle;
+
+        // ALL recipient emails — join with comma; recipient_name = first contact's full name
+        const contacts = Array.isArray(p.Contacts) ? p.Contacts : [];
+        const emails = contacts.map((c) => c?.Email).filter((e) => e && /@/.test(e));
+        if (emails.length > 0) update.recipient_email = [...new Set(emails)].join(', ');
+        if (contacts.length > 0) {
+          const c0 = contacts[0];
+          const fullName = `${c0.FirstName ?? ''} ${c0.Surname ?? ''}`.trim();
+          if (fullName) update.recipient_name = fullName;
+        }
+
+        // Signer info
+        if (p.SignedEmail) update.signer_email = p.SignedEmail;
+        const sName = p.SignedName || `${p.SignedFirstName ?? ''} ${p.SignedSurname ?? ''}`.trim();
+        if (sName) update.signer_name = sName;
+
+        // Dates
+        const dateSent = bpDate(p.DateSent);
+        if (dateSent) update.date_sent = dateSent;
+        const dateCreated = bpDate(p.DateCreated);
+        if (dateCreated) update.bp_date_created = dateCreated;
+        const dateEdited = bpDate(p.DateEdited);
+        if (dateEdited) update.bp_date_edited = dateEdited;
+        const signedAt = (() => {
+          if (p.SignedDate && p.SignedTime) return bpDate(`${p.SignedDate} ${p.SignedTime}`);
+          if (p.SignedDate) return bpDate(`${p.SignedDate} 00:00:00`);
+          return null;
+        })();
+        if (signedAt) update.signed_at = signedAt;
+
+        // Money
+        const amt = bpNum(p.Amount);
+        if (amt !== null) update.amount = amt;
+        if (p.CurrencyCode) update.currency = p.CurrencyCode;
+
+        // Company / subtitle
+        if (p.CompanyName) update.company_name = p.CompanyName;
+        if (p.SubjectLine) update.subject_line = p.SubjectLine;
+        if (p.Description) update.description = p.Description;
+        if (p.PersonalMessage) update.personal_message = p.PersonalMessage;
+
+        // Doc type
+        if (p.TypeID !== null && p.TypeID !== undefined) {
+          const tid = Number(p.TypeID);
+          if (Number.isFinite(tid)) {
+            update.bp_type_id = tid;
+            const typeNames = { 1: 'Proposals', 3: 'Brochures', 5: 'Contracts', 6: 'Sign Offs', 7: 'Job Offers', 7200: 'Agreement' };
+            if (typeNames[tid]) update.bp_type_name = typeNames[tid];
+          }
+        }
+        if (p.BrandID) update.bp_brand_id = String(p.BrandID);
+        if (p.CompanyID) update.bp_company_id = String(p.CompanyID);
+
+        // Preserve scraper activityLog inside bp_raw, merge API payload on top.
+        const prevRaw = (typeof row.bp_raw === 'object' && row.bp_raw !== null) ? row.bp_raw : {};
+        const activityLog = Array.isArray(prevRaw.activityLog) ? prevRaw.activityLog : undefined;
+        update.bp_raw = activityLog ? { ...p, activityLog, _scraper: prevRaw._scraper } : p;
+      } else {
+        // Quote-only fallback — BP no longer has the full proposal, just the quote stub
+        quoteHits++;
+        const dateCreated = bpDate(p.DateCreated);
+        if (dateCreated) {
+          update.bp_date_created = dateCreated;
+          update.date_sent = update.date_sent || dateCreated;  // best guess
+        }
+        const dateAccepted = bpDate(p.DateAccepted);
+        const dateCompleted = bpDate(p.DateCompleted);
+        if (dateAccepted || dateCompleted) update.signed_at = dateAccepted ?? dateCompleted;
+        const amt = bpNum(p.QuoteAmount ?? p.QuoteTotal);
+        if (amt !== null) update.amount = amt;
+        if (p.CompanyID) {
+          update.bp_company_id = String(p.CompanyID);
+          // Fetch company name
+          try {
+            const cRes = await bpGet(`/company/${p.CompanyID}`);
+            const c = cRes?.data || cRes;
+            if (c?.CompanyName) {
+              update.company_name = c.CompanyName;
+              if (!update.title || /^Proposal #/.test(row.title)) update.title = c.CompanyName;
+            }
+          } catch { /* ignore */ }
+        }
+      }
+
+      const { error: upErr } = await supabase
+        .from('agreements')
+        .update(update)
+        .eq('id', row.id);
+      if (upErr) { errs++; console.log(`✗ ${vid} db: ${upErr.message}`); continue; }
+      ok++;
+      if ((i + 1) % 25 === 0) process.stdout.write(`  ${i + 1}/${limited.length} done (${proposalHits} prop · ${quoteHits} quote · ${miss} miss · ${errs} err)\n`);
+      // small delay to be nice to BP API
+      await new Promise((r) => setTimeout(r, 80));
+    } catch (e) {
+      errs++;
+      console.log(`✗ ${vid} ${e.message}`);
+    }
+  }
+  console.log(`[api-fix] done: ${ok} updated · ${proposalHits} via /proposal · ${quoteHits} via /quote · ${miss} not in BP · ${errs} errors`);
+}
+
+// Probe BP API for a single ID — prints every field returned by /proposal/{id}
+// and /quote/{id} so we can see what's actually available.
+//   node scrape.mjs --api-probe=2589230
+async function phaseApiProbe() {
+  const BP_API_KEY = process.env.BP_API_KEY;
+  if (!BP_API_KEY) throw new Error('BP_API_KEY missing. Add to scripts/bp-pdf-scraper/.env');
+  const id = valOf('--api-probe', null);
+  if (!id) throw new Error('Usage: --api-probe=ID');
+  const tryEndpoint = async (path) => {
+    const url = `https://api.betterproposals.io${path}`;
+    const r = await fetch(url, { headers: { Bptoken: BP_API_KEY, Accept: 'application/json' } });
+    const body = await r.text();
+    console.log(`\n=== ${path} → HTTP ${r.status} ===`);
+    if (body.length < 4000) {
+      console.log(body);
+    } else {
+      try {
+        const j = JSON.parse(body);
+        console.log('keys:', Object.keys(j?.data ?? j).join(', '));
+        console.log('sample:', JSON.stringify(j?.data ?? j, null, 2).slice(0, 3500));
+      } catch {
+        console.log(body.slice(0, 1500));
+      }
+    }
+  };
+  await tryEndpoint(`/proposal/${id}`);
+  await tryEndpoint(`/quote/${id}`);
+}
+
 (async () => {
   try {
+    if (RUN_REPORT) await phaseReport();
     if (RUN_PURGE) await phasePurge();
     if (RUN_LOGIN) await phaseLogin();
     if (RUN_SCRAPE) await phaseScrape();
+    if (RUN_ENRICH) await phaseEnrich();
     if (RUN_UPLOAD) await phaseUpload();
+    if (RUN_API_FIX) await phaseApiFix();
+    if (RUN_API_PROBE) await phaseApiProbe();
   } catch (e) {
     console.error('FATAL:', e.message);
     process.exit(1);
