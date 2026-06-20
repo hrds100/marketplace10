@@ -44,6 +44,7 @@ export interface ArchiveRow {
   imported_at: string | null;
   bp_date_created: string | null;
   bp_date_edited: string | null;
+  bp_raw: unknown | null;
 }
 
 export interface ArchiveDetail extends ArchiveRow {
@@ -84,7 +85,7 @@ const LIST_COLUMNS = `
   title, description, recipient_name, recipient_email, signer_name, signer_email,
   company_name, amount, currency, status,
   date_sent, signed_at, created_at, imported_at,
-  bp_date_created, bp_date_edited
+  bp_date_created, bp_date_edited, bp_raw
 `;
 
 const DETAIL_COLUMNS = `

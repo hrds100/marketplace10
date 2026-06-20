@@ -321,6 +321,9 @@ function ProposalsSection({
   const { types: docTypes } = useDoctypes();
   const [selectedId, setSelectedId] = useState<string | null>(null);
 
+  // Tab-aware column count: Draft has 4, others have 5.
+  const colCount = activeStatus === 'draft' ? 4 : 5;
+
   return (
     <>
       {/* Status tabs (BP-style underline) */}
@@ -384,19 +387,24 @@ function ProposalsSection({
                   <TableHead className="text-[#1A1A1A] font-bold">Document type</TableHead>
                   <TableHead className="text-[#1A1A1A] font-bold">Value</TableHead>
                   <TableHead className="text-[#1A1A1A] font-bold">Date Created</TableHead>
-                  <TableHead className="text-[#1A1A1A] font-bold">Signed On</TableHead>
+                  {activeStatus === 'accepted' && (
+                    <TableHead className="text-[#1A1A1A] font-bold">Signed On</TableHead>
+                  )}
+                  {(activeStatus === 'pending' || activeStatus === 'outstanding' || activeStatus === 'lost') && (
+                    <TableHead className="text-[#1A1A1A] font-bold">Status</TableHead>
+                  )}
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {listLoading ? (
                   <TableRow>
-                    <TableCell colSpan={5} className="text-center py-16">
+                    <TableCell colSpan={colCount} className="text-center py-16">
                       <Loader2 className="h-6 w-6 animate-spin text-[#6B7280] mx-auto" />
                     </TableCell>
                   </TableRow>
                 ) : rows.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={5} className="text-center text-[#6B7280] py-16">
+                    <TableCell colSpan={colCount} className="text-center text-[#6B7280] py-16">
                       No proposals in this bucket.
                       {counts.bp === 0 && (
                         <div className="mt-1 text-xs">Click <b>Sync now</b> to import from Better Proposals.</div>
@@ -437,11 +445,18 @@ function ProposalsSection({
                           return d ? new Date(d).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }) : '—';
                         })()}
                       </TableCell>
-                      <TableCell className="text-sm text-[#6B7280]">
-                        {r.signed_at
-                          ? new Date(r.signed_at).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })
-                          : '—'}
-                      </TableCell>
+                      {activeStatus === 'accepted' && (
+                        <TableCell className="text-sm text-[#6B7280]">
+                          {r.signed_at
+                            ? new Date(r.signed_at).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })
+                            : '—'}
+                        </TableCell>
+                      )}
+                      {(activeStatus === 'pending' || activeStatus === 'outstanding' || activeStatus === 'lost') && (
+                        <TableCell className="text-sm text-[#6B7280]">
+                          {statusLineFor(r)}
+                        </TableCell>
+                      )}
                     </TableRow>
                   ))
                 )}
@@ -721,6 +736,51 @@ function LastSyncBadge({ run }: { run: ReturnType<typeof useLastImportRun>['run'
       )}
     </div>
   );
+}
+
+// BP shows things like "Sent on 8 September 2025", "Opened on 26 September 2025",
+// "Received on 8 September 2025". Derive from activityLog (most recent entry),
+// falling back to date_sent and created_at.
+function statusLineFor(row: {
+  bp_raw: unknown;
+  date_sent: string | null;
+  bp_date_created: string | null;
+  created_at: string | null;
+}): string {
+  const longDate = (iso: string) =>
+    new Date(iso).toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' });
+
+  // 1) Try activityLog: pick the most recent meaningful entry.
+  const raw = row.bp_raw;
+  if (raw && typeof raw === 'object' && Array.isArray((raw as { activityLog?: unknown }).activityLog)) {
+    const log = (raw as { activityLog: Array<{ action: string; date: string | null }> }).activityLog;
+    // Prefer Sent/Opened/Received/Signed/Resent over scraper-noise entries.
+    const meaningful = log.find((e) =>
+      /^(sent|opened|received|signed|resent|viewed)/i.test(e?.action ?? ''),
+    ) ?? log[0];
+    if (meaningful?.action) {
+      // strip " at HH:MM" from "20 June 2026 at 13:29"
+      const dateLabel = meaningful.date ? meaningful.date.replace(/\s+at\s+\d{1,2}:\d{2}.*$/i, '') : null;
+      const verb = meaningful.action.replace(/\.$/, '').trim();
+      const niceVerb = /^opened/i.test(verb) ? 'Opened'
+        : /^sent/i.test(verb) ? 'Sent'
+        : /^received/i.test(verb) ? 'Received'
+        : /^signed/i.test(verb) ? 'Signed'
+        : /^resent/i.test(verb) ? 'Resent'
+        : /^viewed/i.test(verb) ? 'Opened'
+        : verb;
+      return dateLabel ? `${niceVerb} on ${dateLabel}` : niceVerb;
+    }
+  }
+
+  // 2) Fall back to date_sent
+  if (row.date_sent) return `Sent on ${longDate(row.date_sent)}`;
+
+  // 3) Fall back to created date
+  const created = row.bp_date_created ?? row.created_at;
+  if (created) return `Created on ${longDate(created)}`;
+
+  return '—';
 }
 
 function formatMoney(amount: number, currency: string): string {
