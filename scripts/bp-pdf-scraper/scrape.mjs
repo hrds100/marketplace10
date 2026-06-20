@@ -49,6 +49,28 @@ const STATE_PATH = join(__dirname, 'state.json');
 const IDS_PATH = join(__dirname, 'ids.json');
 const PDFS_DIR = join(__dirname, 'pdfs');
 const DEBUG_DIR = join(__dirname, 'debug');
+const MANIFEST_PATH = join(__dirname, 'pdfs', '_manifest.json');
+
+// Replace any character Windows / NTFS can't have in a filename, collapse
+// whitespace, trim, fall back to the view_id if the result is empty.
+function safeFilename(name, fallback) {
+  if (!name) return fallback;
+  const cleaned = String(name)
+    .replace(/[\\/:*?"<>|]+/g, '-')  // Windows-illegal chars only — keep spaces + hyphens
+    .replace(/\s+/g, ' ')                          // collapse whitespace
+    .replace(/\.+$/, '')                           // no trailing dots
+    .trim();
+  return cleaned.length === 0 ? fallback : cleaned.slice(0, 180); // cap length
+}
+
+function loadManifest() {
+  if (!existsSync(MANIFEST_PATH)) return {};
+  try { return JSON.parse(readFileSync(MANIFEST_PATH, 'utf8')); } catch { return {}; }
+}
+function saveManifest(m) {
+  mkdirSync(PDFS_DIR, { recursive: true });
+  writeFileSync(MANIFEST_PATH, JSON.stringify(m, null, 2));
+}
 const BP_LOGIN_URL = process.env.BP_LOGIN_URL || 'https://betterproposals.io/login';
 const SUPABASE_URL = process.env.SUPABASE_URL || 'https://asazddtvjvmckouxcmmo.supabase.co';
 const SUPABASE_SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
@@ -116,24 +138,34 @@ async function phaseScrape() {
   const browser = await chromium.launch({ headless: !DEBUG, slowMo: DEBUG ? 250 : 0 });
   const ctx = await browser.newContext({ storageState: STATE_PATH, acceptDownloads: true });
 
+  const manifest = loadManifest();
+
   let ok = 0; let fail = 0; let skipped = 0;
   for (const t of tasks) {
-    const out = join(PDFS_DIR, `${t.id}.pdf`);
-    if (!FORCE && existsSync(out) && statSync(out).size > 1024) {
-      skipped++;
-      continue;
+    // If we already have a file recorded in the manifest for this id, skip.
+    const prev = manifest[t.id];
+    if (!FORCE && prev?.filename) {
+      const prevPath = join(PDFS_DIR, prev.filename);
+      if (existsSync(prevPath) && statSync(prevPath).size > 1024) {
+        skipped++;
+        continue;
+      }
     }
 
     try {
-      const pdf = await fetchOnePdf(ctx, t.id);
-      if (!pdf || pdf.length < 1024) {
+      const result = await fetchOnePdf(ctx, t.id);
+      if (!result?.pdf || result.pdf.length < 1024) {
         fail++;
         process.stdout.write(`✗ ${t.id} (empty)\n`);
         continue;
       }
-      writeFileSync(out, pdf);
+      const filename = `${safeFilename(result.docName, t.id)}.pdf`;
+      const out = join(PDFS_DIR, filename);
+      writeFileSync(out, result.pdf);
+      manifest[t.id] = { filename, docName: result.docName ?? null, status: t.status };
+      saveManifest(manifest);
       ok++;
-      process.stdout.write(`✓ ${t.id} (${(pdf.length / 1024).toFixed(0)} KB)\n`);
+      process.stdout.write(`✓ ${t.id} → "${filename}" (${(result.pdf.length / 1024).toFixed(0)} KB)\n`);
     } catch (e) {
       fail++;
       process.stdout.write(`✗ ${t.id}: ${e.message}\n`);
@@ -158,13 +190,31 @@ async function phaseScrape() {
 //   4. Fetch the PDF using the browser context (which carries session)
 async function fetchOnePdf(ctx, viewId) {
   const page = await ctx.newPage();
-  // /view?id=N is the Document Activity page that has the "Preview document"
-  // button. /edit?id=N is the editor — different page, no preview button there.
   const viewUrl = `https://betterproposals.io/2/proposals/view?id=${viewId}`;
 
   try {
     await page.goto(viewUrl, { timeout: 45_000, waitUntil: 'domcontentloaded' });
     if (DEBUG) await page.screenshot({ path: join(DEBUG_DIR, `${viewId}-1-activity.png`), fullPage: true });
+
+    // Extract the document name. BP shows "Document for {NAME}" at the top of
+    // the Activity page. Try a few selectors, then strip the "Document for "
+    // prefix. Fall back to the page title.
+    const docName = await page.evaluate(() => {
+      const stripPrefix = (s) => (s || '').replace(/^\s*Document\s+for\s+/i, '').trim();
+      const h1 = document.querySelector('h1');
+      if (h1?.textContent) {
+        const t = stripPrefix(h1.textContent);
+        if (t) return t;
+      }
+      const heading = document.querySelector('[class*="title" i], [class*="header" i] h1, [class*="header" i] h2');
+      if (heading?.textContent) {
+        const t = stripPrefix(heading.textContent);
+        if (t) return t;
+      }
+      const title = document.title || '';
+      return stripPrefix(title) || null;
+    }).catch(() => null);
+    if (DEBUG) console.log(`  [debug] ${viewId} docName = ${JSON.stringify(docName)}`);
 
     // Find Preview Document button. BP uses different markup in different
     // sections — try a few resilient selectors in order.
@@ -208,6 +258,31 @@ async function fetchOnePdf(ctx, viewId) {
     await previewPage.waitForLoadState('networkidle', { timeout: 15_000 }).catch(() => {});
     if (DEBUG) await previewPage.screenshot({ path: join(DEBUG_DIR, `${viewId}-2-preview.png`), fullPage: true });
 
+    // Some proposals open at a cover page (cover.php) with a "Start Reading
+    // Proposal" button — click it to advance to the real proposal content
+    // (index.php). Others open straight to the content; do nothing.
+    if (/\/cover\.php/.test(previewPage.url())) {
+      const startBtnSelectors = [
+        'text=/start reading proposal/i',
+        'a:has-text("Start Reading Proposal")',
+        'button:has-text("Start Reading Proposal")',
+        'a:has-text("Start Reading")',
+        'button:has-text("Start Reading")',
+      ];
+      for (const sel of startBtnSelectors) {
+        const el = await previewPage.$(sel);
+        if (el) {
+          await el.scrollIntoViewIfNeeded().catch(() => {});
+          await Promise.all([
+            previewPage.waitForLoadState('networkidle', { timeout: 30_000 }).catch(() => {}),
+            el.click({ timeout: 10_000 }).catch(() => {}),
+          ]);
+          break;
+        }
+      }
+      if (DEBUG) await previewPage.screenshot({ path: join(DEBUG_DIR, `${viewId}-3-after-start.png`), fullPage: true });
+    }
+
     const previewUrl = previewPage.url();
     // BP previews land on either /cover.php or /index.php depending on the
     // account/template. Both work for /pdf-output.php derivation.
@@ -240,7 +315,7 @@ async function fetchOnePdf(ctx, viewId) {
       await previewPage.close().catch(() => {});
       await page.close().catch(() => {});
     }
-    return body;
+    return { pdf: body, docName };
   } catch (e) {
     if (DEBUG) {
       try { await page.screenshot({ path: join(DEBUG_DIR, `${viewId}-FAIL.png`), fullPage: true }); } catch {}
@@ -270,48 +345,70 @@ async function phaseUpload() {
     for (const id of list) statusByVid.set(String(id), status);
   }
 
-  const files = readdirSync(PDFS_DIR).filter((f) => f.endsWith('.pdf'));
-  console.log(`[upload] ${files.length} PDFs to push`);
+  // Manifest maps view_id → { filename, docName, status }. With manifest we
+  // can look up each PDF by view_id; without it we fall back to assuming
+  // <view_id>.pdf filenames.
+  const manifest = loadManifest();
+  const filesOnDisk = new Set(readdirSync(PDFS_DIR).filter((f) => f.endsWith('.pdf')));
+
+  // Build the work list: prefer manifest entries (they have docName too),
+  // fall back to numeric-named files for any leftover.
+  const tasks = [];
+  for (const [vid, entry] of Object.entries(manifest)) {
+    if (entry?.filename && filesOnDisk.has(entry.filename)) {
+      tasks.push({ viewId: vid, filename: entry.filename, docName: entry.docName });
+      filesOnDisk.delete(entry.filename);
+    }
+  }
+  for (const f of filesOnDisk) {
+    const m = f.match(/^(\d+)\.pdf$/);
+    if (m) tasks.push({ viewId: m[1], filename: f, docName: null });
+  }
+  console.log(`[upload] ${tasks.length} PDFs to push`);
 
   let uploaded = 0; let dbUpdated = 0; let errors = 0;
-  for (const f of files) {
-    const viewId = f.replace(/\.pdf$/, '');
-    if (!/^\d+$/.test(viewId)) continue;
-    const localPath = join(PDFS_DIR, f);
+  for (const t of tasks) {
+    const localPath = join(PDFS_DIR, t.filename);
     const size = statSync(localPath).size;
-    if (size < 1024) { console.log(`✗ ${viewId} skipped (size ${size})`); continue; }
+    if (size < 1024) { console.log(`✗ ${t.viewId} skipped (size ${size})`); continue; }
     const bytes = readFileSync(localPath);
 
     const { data: existing } = await supabase
       .from('agreements')
-      .select('id, bp_id')
+      .select('id, bp_id, title')
       .eq('source', 'bp_import')
-      .or(`bp_quote_id.eq.${viewId},bp_id.eq.q-${viewId}`)
+      .or(`bp_quote_id.eq.${t.viewId},bp_id.eq.q-${t.viewId}`)
       .limit(1)
       .maybeSingle();
 
-    const targetBpId = existing?.bp_id ?? `q-${viewId}`;
+    const targetBpId = existing?.bp_id ?? `q-${t.viewId}`;
     const storagePath = `bp-import/pdf/${targetBpId}.pdf`;
 
     const { error: upErr } = await supabase.storage
       .from('agreements')
       .upload(storagePath, bytes, { contentType: 'application/pdf', upsert: true });
-    if (upErr) { console.log(`✗ ${viewId} storage: ${upErr.message}`); errors++; continue; }
+    if (upErr) { console.log(`✗ ${t.viewId} storage: ${upErr.message}`); errors++; continue; }
     uploaded++;
 
-    const status = statusByVid.get(viewId) || 'accepted';
+    const status = statusByVid.get(t.viewId) || 'accepted';
     const update = {
       source: 'bp_import',
       bp_id: targetBpId,
-      bp_quote_id: viewId,
+      bp_quote_id: t.viewId,
       pdf_storage_path: storagePath,
       status,
       imported_at: new Date().toISOString(),
-      token: `bp-q-${viewId}`,
+      token: `bp-q-${t.viewId}`,
       type: 'investor',
     };
+    // Set the title to the doc name when we have one — both for new rows
+    // and to replace generic auto-titles like "Quote 12345" on existing.
+    if (t.docName) {
+      update.title = t.docName;
+    } else if (!existing) {
+      update.title = `Quote ${t.viewId}`;
+    }
     if (!existing) {
-      update.title = `Quote ${viewId}`;
       update.currency = 'GBP';
       update.amount = 0;
     }
@@ -319,9 +416,10 @@ async function phaseUpload() {
     const { error: dbErr } = await supabase
       .from('agreements')
       .upsert(update, { onConflict: 'bp_id' });
-    if (dbErr) { console.log(`✗ ${viewId} db: ${dbErr.message}`); errors++; continue; }
+    if (dbErr) { console.log(`✗ ${t.viewId} db: ${dbErr.message}`); errors++; continue; }
     dbUpdated++;
-    process.stdout.write(`✓ ${viewId} → ${targetBpId} (${(size / 1024).toFixed(0)} KB)\n`);
+    const label = t.docName ? `"${t.docName.slice(0, 40)}"` : t.viewId;
+    process.stdout.write(`✓ ${t.viewId} → ${label} (${(size / 1024).toFixed(0)} KB)\n`);
   }
   console.log(`[upload] ${uploaded} files in Storage · ${dbUpdated} rows updated · ${errors} errors`);
 }
