@@ -198,12 +198,15 @@ async function fetchOnePdf(ctx, viewId) {
     if (DEBUG) await previewPage.screenshot({ path: join(DEBUG_DIR, `${viewId}-2-preview.png`), fullPage: true });
 
     const previewUrl = previewPage.url();
-    if (!/\/cover\.php/.test(previewUrl)) {
-      throw new Error(`Preview URL doesn't match cover.php pattern: ${previewUrl}`);
+    // BP previews land on either /cover.php or /index.php depending on the
+    // account/template. Both work for /pdf-output.php derivation.
+    if (!/\/(cover|index)\.php/.test(previewUrl)) {
+      throw new Error(`Preview URL doesn't match expected pattern: ${previewUrl}`);
     }
 
     const pdfUrl = previewUrl
-      .replace(/\/cover\.php/, '/pdf-output.php')
+      .replace(/&debug=yes/g, '')          // pdf-output.php doesn't like debug=yes
+      .replace(/\/(cover|index)\.php/, '/pdf-output.php')
       + (previewUrl.includes('?') ? '&' : '?') + 'pdf-view=1';
     if (DEBUG) console.log(`  [debug] ${viewId} pdf url = ${pdfUrl}`);
 
