@@ -64,7 +64,7 @@ import AgreementPage from "@/features/agreements/pages/AgreementPage";
 import AdminContracts from "@/features/admin-contracts/AdminContracts";
 import ContractSignPage from "@/features/admin-contracts/pages/ContractSignPage";
 import ScriptPage from "./pages/script/ScriptPage";
-import AdminAgreementsPage from "@/features/agreements/pages/AdminAgreementsPage";
+import AgreementsArchivePage from "@/features/agreements/pages/AgreementsArchivePage";
 import AdminTestConsole from "./pages/admin/invest/AdminTestConsole";
 import AdminWorkspaceSelector from "@/features/admin-dashboard/AdminWorkspaceSelector";
 import AdminArchitecture from "@/features/admin-dashboard/AdminArchitecture";
@@ -212,6 +212,7 @@ const App = () => (
           <Route path="/deals/:id" element={<DealDetail />} />
           {/* Lead details — token-based access, no login required */}
           <Route path="/agreement/:token" element={<AgreementPage />} />
+          <Route path="/agreements" element={<AdminGuard><AgreementsArchivePage /></AdminGuard>} />
           <Route path="/contract/:token" element={<ContractSignPage />} />
           <Route path="/lead/:token" element={<LeadDetailsPage />} />
           <Route path="/lead/:token/nda" element={<LeadNDAPage />} />
@@ -291,7 +292,7 @@ const App = () => (
             <Route path="invest/commission-settings" element={<AdminInvestCommissionSettings />} />
             <Route path="invest/payouts" element={<AdminInvestPayouts />} />
             <Route path="invest/proposals" element={<AdminInvestProposals />} />
-            <Route path="invest/agreements" element={<AdminAgreementsPage />} />
+            <Route path="invest/agreements" element={<Navigate to="/agreements" replace />} />
             <Route path="invest/endpoints" element={<AdminEndpoints />} />
             <Route path="invest/test-console" element={<AdminTestConsole />} />
 

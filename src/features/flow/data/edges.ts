@@ -175,4 +175,9 @@ export const flowEdges: Edge[] = [
   crypto('pw-pgj', 'particle-wallet', 'particle-generate-jwt'),
   system('ibc-pw', 'invest-buy-crypto', 'particle-wallet', 'Signs tx'),
 
+  // ═══════════════ AGREEMENTS ARCHIVE ═══════════════
+
+  E('adash-aarc', 'admin-dashboard', 'agreements-archive', 'Sidebar link'),
+  animated('aarc-bpi', 'agreements-archive', 'bp-import', 'Click "Sync now"'),
+
 ];

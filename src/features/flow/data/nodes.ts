@@ -978,4 +978,32 @@ export const flowNodes: Node<FlowNodeData>[] = [
     debugTrigger: 'POST from PayoutsPage bank form on first claim',
   }, GX.crypto - 200, 400),
 
+  // ═══════════════════════════════════════
+  // GROUP: AGREEMENTS ARCHIVE (Better Proposals import)
+  // ═══════════════════════════════════════
+
+  n('agreements-archive', 'Agreements Archive', {
+    description: 'Admin-only page listing every signed agreement, contract, proposal, brochure and template — native + Better Proposals imports — with filters, search and detail viewer. Built so the BP subscription can be cancelled.',
+    actor: 'admin',
+    route: '/agreements',
+    files: [
+      'src/features/agreements/pages/AgreementsArchivePage.tsx',
+      'src/features/agreements/hooks/useBpArchive.ts',
+    ],
+    tables: ['agreements', 'bp_templates', 'bp_companies', 'bp_quotes', 'bp_doctypes', 'bp_import_runs'],
+    edgeFunctions: ['bp-import'],
+    confidence: 'confirmed',
+    debugTrigger: 'Admin clicks "Sync now" or navigates to /agreements',
+  }, GX.admin, 1400),
+
+  n('bp-import', 'bp-import', {
+    description: 'Pulls everything from Better Proposals (proposals, templates, companies, quotes, doctypes, currencies) into our DB. Per proposal, scrapes the public Preview URL HTML and uploads to Storage `agreements` bucket. Idempotent — re-runs upsert by bp_id. Admin-only via JWT + email allowlist.',
+    actor: 'system',
+    edgeFunctions: ['bp-import'],
+    tables: ['agreements', 'bp_templates', 'bp_companies', 'bp_quotes', 'bp_doctypes', 'bp_currencies', 'bp_import_runs'],
+    integrations: ['Better Proposals API', 'Supabase Storage'],
+    confidence: 'confirmed',
+    debugTrigger: 'POST /functions/v1/bp-import?action=full-sync',
+  }, GX.admin + 200, 1560),
+
 ];
