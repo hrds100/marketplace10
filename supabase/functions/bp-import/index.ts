@@ -231,18 +231,10 @@ async function syncProposals(
   bpKey: string,
   opts: { fetchHtml: boolean; runId: string },
 ) {
-  // BP's /proposal returns just one bucket (~20 records). To get the full
-  // ~239 we have to hit every status-scoped endpoint and dedup. We also
-  // probe TypeID filters for non-Proposal doctypes (Contracts/Agreements/etc.)
-  const STATUS_ENDPOINTS = [
-    '/proposal',
-    '/proposal/new',
-    '/proposal/opened',
-    '/proposal/sent',
-    '/proposal/signed',
-    '/proposal/paid',
-  ];
-  const TYPE_IDS = [3, 5, 6, 7200];
+  // BP's /proposal paginates with ?per_page and ?page (undocumented, found
+  // empirically). per_page=500 returns ~223 of 239 in one shot. Loop pages
+  // as a safety net, plus fan out to status-scoped endpoints to catch
+  // archived/lost rows the default listing omits.
   const seen = new Set<string>();
   const all: any[] = [];
 
@@ -256,17 +248,27 @@ async function syncProposals(
     }
   };
 
-  for (const path of STATUS_ENDPOINTS) {
+  // 1. Bulk pages
+  for (let page = 1; page <= 20; page++) {
     try {
-      const r = await bpGet<{ data: any[] }>(path, bpKey);
-      ingest(r.data);
-    } catch { /* endpoint may not exist — ignore */ }
+      const r = await bpGet<{ data: any[] }>(`/proposal?per_page=500&page=${page}`, bpKey);
+      const list = Array.isArray(r.data) ? r.data : [];
+      if (list.length === 0) break;
+      ingest(list);
+      if (list.length < 500) break;
+    } catch { break; }
   }
-  for (const tid of TYPE_IDS) {
-    try {
-      const r = await bpGet<{ data: any[] }>(`/proposal?type=${tid}`, bpKey);
-      ingest(r.data);
-    } catch { /* type filter not supported — ignore */ }
+
+  // 2. Status-scoped endpoints catch rows the default list omits
+  for (const path of ['/proposal/new', '/proposal/opened', '/proposal/sent', '/proposal/signed', '/proposal/paid']) {
+    try { const r = await bpGet<{ data: any[] }>(`${path}?per_page=500`, bpKey); ingest(r.data); }
+    catch { /* optional */ }
+  }
+
+  // 3. TypeID-filtered probes for non-Proposal doctypes
+  for (const tid of [3, 5, 6, 7200]) {
+    try { const r = await bpGet<{ data: any[] }>(`/proposal?type=${tid}&per_page=500`, bpKey); ingest(r.data); }
+    catch { /* type filter optional */ }
   }
 
   // /proposal/opened lists proposals the recipient has actually viewed —
