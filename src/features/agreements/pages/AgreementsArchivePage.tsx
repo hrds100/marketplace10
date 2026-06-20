@@ -2,7 +2,8 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import {
   Search, RefreshCw, Loader2, ExternalLink, X, Download, Printer,
-  FileText, AlertCircle, ArrowLeft, CheckCircle2,
+  FileText, AlertCircle, ArrowLeft, CheckCircle2, FilePlus2, FileSignature,
+  BarChart3, Mail, Settings, FolderClosed, Eye, ChevronDown,
 } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent } from '@/components/ui/card';
@@ -14,49 +15,51 @@ import {
   useArchiveDetail,
   useLastImportRun,
   useArchiveCounts,
+  useTemplatesList,
+  useTemplateCounts,
+  useDoctypes,
   triggerBpImport,
   getSignedHtmlUrl,
   formatRelativeTime,
   BP_TYPE_LABELS,
   useDebouncedValue,
   type ArchiveFilters,
+  type BpStatus,
+  type TemplateFilters,
 } from '../hooks/useBpArchive';
 
+// ─── Status pill colors (match BP's tab/badge palette) ──────────────────────
 const STATUS_COLORS: Record<string, string> = {
-  draft:  'bg-gray-100 text-gray-600 border-gray-200',
-  sent:   'bg-blue-50 text-blue-600 border-blue-200',
-  opened: 'bg-amber-50 text-amber-600 border-amber-200',
-  signed: 'bg-emerald-50 text-emerald-600 border-emerald-200',
-  paid:   'bg-emerald-100 text-emerald-700 border-emerald-300',
+  draft:       'bg-gray-100 text-gray-600 border-gray-200',
+  pending:     'bg-blue-50 text-blue-600 border-blue-200',
+  sent:        'bg-blue-50 text-blue-600 border-blue-200',
+  outstanding: 'bg-amber-50 text-amber-600 border-amber-200',
+  opened:      'bg-amber-50 text-amber-600 border-amber-200',
+  accepted:    'bg-emerald-50 text-emerald-700 border-emerald-200',
+  signed:      'bg-emerald-50 text-emerald-700 border-emerald-200',
+  paid:        'bg-emerald-100 text-emerald-700 border-emerald-300',
+  lost:        'bg-red-50 text-red-600 border-red-200',
 };
 
-const STATUSES = ['all', 'draft', 'sent', 'opened', 'signed', 'paid'] as const;
-const BP_TYPE_TABS: Array<{ id: number | null; label: string }> = [
-  { id: null,  label: 'All' },
-  { id: 1,     label: 'Proposals' },
-  { id: 5,     label: 'Contracts' },
-  { id: 7200,  label: 'Agreements' },
-  { id: 3,     label: 'Brochures' },
-  { id: 6,     label: 'Sign-offs' },
-];
+// ─── Doc-type badge colors (mirror BP's pink/coral/purple system) ───────────
+const TYPE_BADGE: Record<number, { bg: string; text: string; border: string }> = {
+  1:    { bg: 'bg-purple-50',  text: 'text-purple-600',  border: 'border-purple-200' },  // Proposals
+  2:    { bg: 'bg-emerald-50', text: 'text-emerald-600', border: 'border-emerald-200' }, // Quotes
+  3:    { bg: 'bg-orange-50',  text: 'text-orange-600',  border: 'border-orange-200' },  // Brochures
+  4:    { bg: 'bg-fuchsia-50', text: 'text-fuchsia-600', border: 'border-fuchsia-200' }, // SoW
+  5:    { bg: 'bg-rose-50',    text: 'text-rose-600',    border: 'border-rose-200' },    // Contracts
+  6:    { bg: 'bg-violet-50',  text: 'text-violet-600',  border: 'border-violet-200' },  // Sign offs
+  7:    { bg: 'bg-violet-50',  text: 'text-violet-600',  border: 'border-violet-200' },  // Job Offers
+  7200: { bg: 'bg-blue-50',    text: 'text-blue-600',    border: 'border-blue-200' },    // Agreement
+};
+
+const STATUS_TABS: BpStatus[] = ['draft', 'pending', 'outstanding', 'accepted', 'lost'];
+
+type Section = 'proposals' | 'templates';
 
 export default function AgreementsArchivePage() {
-  const [filters, setFilters] = useState<ArchiveFilters>({
-    source: 'all',
-    bpTypeId: null,
-    status: 'all',
-    search: '',
-  });
-  const [searchInput, setSearchInput] = useState('');
-  const debouncedSearch = useDebouncedValue(searchInput, 300);
-  useEffect(() => {
-    setFilters((f) => ({ ...f, search: debouncedSearch }));
-  }, [debouncedSearch]);
-
-  const { rows, loading: listLoading, reload } = useArchiveList(filters);
-  const { counts, reload: reloadCounts } = useArchiveCounts();
+  const [section, setSection] = useState<Section>('proposals');
   const { run, reload: reloadRun } = useLastImportRun();
-  const [selectedId, setSelectedId] = useState<string | null>(null);
   const [syncing, setSyncing] = useState<null | 'ping' | 'full-sync'>(null);
 
   const handleSync = useCallback(async (action: 'ping' | 'full-sync') => {
@@ -68,21 +71,24 @@ export default function AgreementsArchivePage() {
       } else {
         toast.success('Import complete');
       }
-      reload();
-      reloadCounts();
       reloadRun();
+      window.location.reload();
     } catch (e) {
       toast.error(e instanceof Error ? e.message : 'Sync failed');
     } finally {
       setSyncing(null);
     }
-  }, [reload, reloadCounts, reloadRun]);
+  }, [reloadRun]);
 
   return (
-    <div data-feature="AGREEMENTS_ARCHIVE" className="min-h-screen bg-[#F3F3EE]">
-      {/* Top bar */}
-      <div className="bg-white border-b border-[#E5E7EB] px-6 py-4">
-        <div className="max-w-[1680px] mx-auto flex items-center justify-between gap-4">
+    <div data-feature="AGREEMENTS_ARCHIVE" className="min-h-screen bg-[#F3F3EE] flex">
+      {/* Left rail */}
+      <LeftRail section={section} onChange={setSection} />
+
+      {/* Main content */}
+      <div className="flex-1 min-w-0 flex flex-col">
+        {/* Top bar */}
+        <div className="bg-white border-b border-[#E5E7EB] px-6 py-3 flex items-center justify-between gap-4">
           <div className="flex items-center gap-3">
             <Link
               to="/admin"
@@ -91,15 +97,10 @@ export default function AgreementsArchivePage() {
             >
               <ArrowLeft className="h-5 w-5" />
             </Link>
-            <FileText className="h-6 w-6 text-[#1E9A80]" />
-            <div>
-              <h1 className="text-[20px] font-bold text-[#1A1A1A] leading-tight">Agreements</h1>
-              <p className="text-xs text-[#6B7280]">
-                {counts.total} total · {counts.native} native · {counts.bp} imported from Better Proposals
-              </p>
-            </div>
+            <h1 className="text-[20px] font-bold text-[#1A1A1A] leading-tight">
+              {section === 'proposals' ? 'Proposals' : 'Templates'}
+            </h1>
           </div>
-
           <div className="flex items-center gap-3">
             <LastSyncBadge run={run} />
             <button
@@ -119,114 +120,166 @@ export default function AgreementsArchivePage() {
             </button>
           </div>
         </div>
+
+        {section === 'proposals' ? <ProposalsSection /> : <TemplatesSection />}
       </div>
+    </div>
+  );
+}
 
-      {/* Filters */}
-      <div className="bg-white border-b border-[#E5E7EB] px-6 py-3">
-        <div className="max-w-[1680px] mx-auto space-y-3">
-          {/* Source + type tabs */}
-          <div className="flex items-center gap-1 flex-wrap">
-            <FilterTab
-              active={filters.source === 'all'}
-              label="All sources"
-              count={counts.total}
-              onClick={() => setFilters((f) => ({ ...f, source: 'all', bpTypeId: null }))}
-            />
-            <FilterTab
-              active={filters.source === 'bp_import'}
-              label="Better Proposals"
-              count={counts.bp}
-              onClick={() => setFilters((f) => ({ ...f, source: 'bp_import' }))}
-            />
-            <FilterTab
-              active={filters.source === 'native'}
-              label="Native"
-              count={counts.native}
-              onClick={() => setFilters((f) => ({ ...f, source: 'native', bpTypeId: null }))}
-            />
+// ─── Left rail nav (BP-style icon column) ───────────────────────────────────
+function LeftRail({ section, onChange }: { section: Section; onChange: (s: Section) => void }) {
+  return (
+    <div className="w-[64px] bg-white border-r border-[#E5E7EB] flex flex-col items-center py-4 gap-2 flex-shrink-0">
+      {/* Compose / new — disabled placeholder for parity with BP UI */}
+      <button
+        disabled
+        title="New proposal (not built yet)"
+        className="w-10 h-10 rounded-lg bg-[#0A0A0A] text-white flex items-center justify-center opacity-60 cursor-not-allowed"
+      >
+        <FilePlus2 className="h-5 w-5" />
+      </button>
 
-            {filters.source !== 'native' && (
-              <>
-                <div className="h-5 w-px bg-[#E5E7EB] mx-2" />
-                {BP_TYPE_TABS.map((t) => (
-                  <FilterTab
-                    key={String(t.id)}
-                    active={filters.bpTypeId === t.id}
-                    label={t.label}
-                    onClick={() => setFilters((f) => ({ ...f, bpTypeId: t.id, source: t.id === null ? f.source : 'bp_import' }))}
-                  />
-                ))}
-              </>
-            )}
-          </div>
+      <RailButton
+        active={section === 'proposals'}
+        label="Proposals"
+        icon={<FileSignature className="h-5 w-5" />}
+        onClick={() => onChange('proposals')}
+      />
+      <RailButton
+        active={section === 'templates'}
+        label="Templates"
+        icon={<FileText className="h-5 w-5" />}
+        onClick={() => onChange('templates')}
+      />
 
-          {/* Status + search */}
-          <div className="flex items-center gap-3 flex-wrap">
-            <div className="flex items-center gap-1">
-              {STATUSES.map((s) => (
-                <button
-                  key={s}
-                  onClick={() => setFilters((f) => ({ ...f, status: s }))}
-                  className={cn(
-                    'px-3 py-1.5 rounded-full text-xs font-semibold capitalize border transition',
-                    filters.status === s
-                      ? 'bg-[#1E9A80] text-white border-[#1E9A80]'
-                      : 'bg-white text-[#6B7280] border-[#E5E7EB] hover:bg-[#F3F3EE]',
-                  )}
-                >
-                  {s === 'all' ? 'All statuses' : s}
-                  {s !== 'all' && counts.byStatus[s] !== undefined && (
-                    <span className="ml-1.5 opacity-70">{counts.byStatus[s]}</span>
-                  )}
-                </button>
-              ))}
-            </div>
+      {/* Disabled placeholders so the column visually matches BP */}
+      <RailButton active={false} label="Stats" icon={<BarChart3 className="h-5 w-5" />} onClick={() => {}} disabled />
+      <RailButton active={false} label="Mail" icon={<Mail className="h-5 w-5" />} onClick={() => {}} disabled />
+      <RailButton active={false} label="Settings" icon={<Settings className="h-5 w-5" />} onClick={() => {}} disabled />
+    </div>
+  );
+}
 
-            <div className="flex-1 max-w-[400px] ml-auto relative">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-[#9CA3AF]" />
-              <input
-                value={searchInput}
-                onChange={(e) => setSearchInput(e.target.value)}
-                placeholder="Search by recipient, company, title, email..."
-                className="w-full pl-9 pr-3 py-2 border border-[#E5E7EB] rounded-[10px] text-sm bg-white focus:outline-none focus:border-[#1E9A80] focus:ring-2 focus:ring-[#1E9A80]/20"
-              />
-            </div>
-          </div>
+function RailButton({
+  active, label, icon, onClick, disabled,
+}: { active: boolean; label: string; icon: React.ReactNode; onClick: () => void; disabled?: boolean }) {
+  return (
+    <button
+      onClick={onClick}
+      disabled={disabled}
+      title={label}
+      className={cn(
+        'w-10 h-10 rounded-lg flex items-center justify-center transition',
+        active
+          ? 'bg-[#F3F3EE] text-[#1E9A80]'
+          : disabled
+            ? 'text-[#D1D5DB] cursor-not-allowed'
+            : 'text-[#6B7280] hover:bg-[#F3F3EE] hover:text-[#1A1A1A]',
+      )}
+    >
+      {icon}
+    </button>
+  );
+}
+
+// ─── PROPOSALS SECTION ──────────────────────────────────────────────────────
+function ProposalsSection() {
+  const [filters, setFilters] = useState<ArchiveFilters>({
+    source: 'all',
+    bpTypeId: null,
+    status: 'draft',
+    search: '',
+  });
+  const [searchInput, setSearchInput] = useState('');
+  const debouncedSearch = useDebouncedValue(searchInput, 300);
+  useEffect(() => {
+    setFilters((f) => ({ ...f, search: debouncedSearch }));
+  }, [debouncedSearch]);
+
+  const { rows, loading: listLoading } = useArchiveList(filters);
+  const { counts } = useArchiveCounts();
+  const { types: docTypes } = useDoctypes();
+  const [selectedId, setSelectedId] = useState<string | null>(null);
+
+  return (
+    <>
+      {/* Status tabs (BP-style underline) */}
+      <div className="bg-white border-b border-[#E5E7EB] px-6">
+        <div className="flex items-center gap-1">
+          {STATUS_TABS.map((s) => {
+            const active = filters.status === s;
+            const n = counts.byStatus[s] ?? 0;
+            return (
+              <button
+                key={s}
+                onClick={() => setFilters((f) => ({ ...f, status: s }))}
+                className={cn(
+                  'px-4 py-3 text-sm font-semibold transition border-b-2 capitalize',
+                  active
+                    ? 'text-[#1E9A80] border-[#1E9A80]'
+                    : 'text-[#6B7280] border-transparent hover:text-[#1A1A1A]',
+                )}
+              >
+                {s}
+                {n > 0 && (
+                  <span className={cn(
+                    'ml-2 inline-flex items-center justify-center min-w-[20px] h-[20px] px-1.5 rounded-full text-[11px] font-bold',
+                    active ? 'bg-[#1E9A80] text-white' : 'bg-[#F3F3EE] text-[#6B7280]',
+                  )}>
+                    {n}
+                  </span>
+                )}
+              </button>
+            );
+          })}
         </div>
       </div>
 
+      {/* Search + doc-type filter */}
+      <div className="px-6 py-4 flex items-center gap-3">
+        <div className="flex-1 max-w-[600px] relative">
+          <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-[#9CA3AF]" />
+          <input
+            value={searchInput}
+            onChange={(e) => setSearchInput(e.target.value)}
+            placeholder="Search by company..."
+            className="w-full pl-11 pr-4 py-3 border border-[#E5E7EB] rounded-xl text-sm bg-white focus:outline-none focus:border-[#1E9A80] focus:ring-2 focus:ring-[#1E9A80]/20"
+          />
+        </div>
+        <DocTypeDropdown
+          value={filters.bpTypeId}
+          types={docTypes}
+          onChange={(id) => setFilters((f) => ({ ...f, bpTypeId: id }))}
+        />
+      </div>
+
       {/* Table */}
-      <div className="max-w-[1680px] mx-auto px-6 py-6">
+      <div className="px-6 pb-6 flex-1 overflow-auto">
         <Card className="border-[#E5E7EB]">
           <CardContent className="p-0 overflow-x-auto">
             <Table>
               <TableHeader>
-                <TableRow>
-                  <TableHead>Type</TableHead>
-                  <TableHead>Title</TableHead>
-                  <TableHead>Recipient</TableHead>
-                  <TableHead>Company</TableHead>
-                  <TableHead className="text-right">Amount</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead>Signed</TableHead>
-                  <TableHead>Source</TableHead>
+                <TableRow className="bg-[#F3F3EE]/60">
+                  <TableHead className="text-[#1A1A1A] font-bold py-4">Company</TableHead>
+                  <TableHead className="text-[#1A1A1A] font-bold">Document type</TableHead>
+                  <TableHead className="text-[#1A1A1A] font-bold">Value</TableHead>
+                  <TableHead className="text-[#1A1A1A] font-bold">Date Created</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {listLoading ? (
                   <TableRow>
-                    <TableCell colSpan={8} className="text-center py-16">
+                    <TableCell colSpan={4} className="text-center py-16">
                       <Loader2 className="h-6 w-6 animate-spin text-[#6B7280] mx-auto" />
                     </TableCell>
                   </TableRow>
                 ) : rows.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={8} className="text-center text-[#6B7280] py-16">
-                      No agreements match your filters. {counts.bp === 0 && (
-                        <>
-                          <br />
-                          <span className="text-xs">Click <b>Sync now</b> above to import from Better Proposals.</span>
-                        </>
+                    <TableCell colSpan={4} className="text-center text-[#6B7280] py-16">
+                      No proposals in this bucket.
+                      {counts.bp === 0 && (
+                        <div className="mt-1 text-xs">Click <b>Sync now</b> to import from Better Proposals.</div>
                       )}
                     </TableCell>
                   </TableRow>
@@ -235,46 +288,31 @@ export default function AgreementsArchivePage() {
                     <TableRow
                       key={r.id}
                       onClick={() => setSelectedId(r.id)}
-                      className="cursor-pointer hover:bg-[#F3F3EE]/60"
+                      className="cursor-pointer hover:bg-[#F3F3EE]/60 border-b border-[#E5E7EB]"
                     >
-                      <TableCell>
-                        <span className="text-xs font-semibold text-[#525252]">
-                          {r.bp_type_id !== null ? BP_TYPE_LABELS[r.bp_type_id] ?? 'Doc' : 'Native'}
-                        </span>
-                      </TableCell>
-                      <TableCell className="font-medium text-[#1A1A1A] max-w-[280px] truncate">
-                        {r.title}
-                      </TableCell>
-                      <TableCell className="text-sm">
-                        <div className="text-[#1A1A1A]">{r.signer_name || r.recipient_name || '—'}</div>
-                        {r.signer_email && (
-                          <div className="text-xs text-[#9CA3AF]">{r.signer_email}</div>
+                      <TableCell className="py-4">
+                        <div className="font-semibold text-[#1A1A1A] truncate max-w-[400px]">
+                          {r.company_name || r.title}
+                        </div>
+                        {r.title && r.title !== r.company_name && (
+                          <div className="text-xs text-[#9CA3AF] truncate max-w-[400px] mt-0.5">
+                            {r.title}
+                          </div>
                         )}
                       </TableCell>
-                      <TableCell className="text-sm text-[#6B7280] max-w-[180px] truncate">
-                        {r.company_name || '—'}
-                      </TableCell>
-                      <TableCell className="text-right font-medium text-sm">
-                        {r.amount > 0 ? `${r.currency} ${Number(r.amount).toLocaleString()}` : '—'}
+                      <TableCell>
+                        <DocTypePill typeId={r.bp_type_id} />
                       </TableCell>
                       <TableCell>
-                        <Badge variant="outline" className={cn('text-xs capitalize', STATUS_COLORS[r.status])}>
-                          {r.status}
-                        </Badge>
+                        <div className="text-sm font-semibold text-[#1A1A1A]">
+                          {formatMoney(r.amount, r.currency)}
+                        </div>
+                        <button className="text-[11px] text-[#9CA3AF] hover:text-[#6B7280] underline-offset-2 hover:underline">
+                          See recurring values
+                        </button>
                       </TableCell>
-                      <TableCell className="text-xs text-[#6B7280]">
-                        {r.signed_at ? new Date(r.signed_at).toLocaleDateString('en-GB') : '—'}
-                      </TableCell>
-                      <TableCell>
-                        {r.source === 'bp_import' ? (
-                          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[11px] font-semibold bg-purple-50 text-purple-600 border border-purple-200">
-                            BP
-                          </span>
-                        ) : (
-                          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[11px] font-semibold bg-emerald-50 text-emerald-600 border border-emerald-200">
-                            Native
-                          </span>
-                        )}
+                      <TableCell className="text-sm text-[#6B7280]">
+                        {r.created_at ? new Date(r.created_at).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }) : '—'}
                       </TableCell>
                     </TableRow>
                   ))
@@ -283,48 +321,247 @@ export default function AgreementsArchivePage() {
             </Table>
           </CardContent>
         </Card>
-
         {rows.length === 500 && (
           <p className="text-xs text-[#9CA3AF] text-center mt-3">
-            Showing first 500 records. Refine filters to narrow.
+            Showing first 500. Refine filters to narrow.
           </p>
         )}
       </div>
 
-      {selectedId && (
-        <DetailPanel id={selectedId} onClose={() => setSelectedId(null)} />
-      )}
-    </div>
+      {selectedId && <DetailPanel id={selectedId} onClose={() => setSelectedId(null)} />}
+    </>
   );
 }
 
-function FilterTab({ active, label, count, onClick }: { active: boolean; label: string; count?: number; onClick: () => void }) {
+// ─── TEMPLATES SECTION ──────────────────────────────────────────────────────
+function TemplatesSection() {
+  const [tab, setTab] = useState<'templates' | 'covers' | 'content'>('templates');
+  const { counts: tplCounts } = useTemplateCounts();
+  const [folder, setFolder] = useState<'all' | 'mine' | 'marketplace'>('all');
+  const [searchInput, setSearchInput] = useState('');
+  const debouncedSearch = useDebouncedValue(searchInput, 300);
+  const [typeId, setTypeId] = useState<number | null>(null);
+  const filters: TemplateFilters = useMemo(
+    () => ({ search: debouncedSearch, typeId, folder }),
+    [debouncedSearch, typeId, folder],
+  );
+  const { rows, loading } = useTemplatesList(filters);
+  const { types: docTypes } = useDoctypes();
+
+  return (
+    <>
+      {/* Sub-tabs */}
+      <div className="bg-white border-b border-[#E5E7EB] px-6">
+        <div className="flex items-center gap-1">
+          <TabButton active={tab === 'templates'} onClick={() => setTab('templates')} label="Templates" count={tplCounts.templates} />
+          <TabButton active={tab === 'covers'} onClick={() => setTab('covers')} label="Covers" count={tplCounts.covers} />
+          <TabButton active={tab === 'content'} onClick={() => setTab('content')} label="Content Library" count={tplCounts.contentLibrary} />
+        </div>
+      </div>
+
+      {tab !== 'templates' ? (
+        <div className="flex-1 flex items-center justify-center text-sm text-[#6B7280]">
+          <div className="text-center">
+            <AlertCircle className="h-8 w-8 mx-auto mb-2 text-[#9CA3AF]" />
+            <p>{tab === 'covers' ? 'Covers' : 'Content Library'} not yet imported.</p>
+            <p className="text-xs mt-1">Better Proposals API doesn't expose this endpoint publicly.</p>
+          </div>
+        </div>
+      ) : (
+        <div className="flex-1 flex min-h-0">
+          {/* Folder rail */}
+          <div className="w-[240px] border-r border-[#E5E7EB] bg-white p-4 flex-shrink-0">
+            <div className="text-xs uppercase tracking-wide text-[#9CA3AF] font-semibold mb-3 px-2">Folders</div>
+            <FolderRow active={folder === 'all'} label="All templates" onClick={() => setFolder('all')} />
+            <FolderRow active={folder === 'mine'} label="My templates" onClick={() => setFolder('mine')} />
+            <FolderRow active={folder === 'marketplace'} label="From marketplace" onClick={() => setFolder('marketplace')} />
+          </div>
+
+          {/* Main */}
+          <div className="flex-1 min-w-0 flex flex-col">
+            <div className="px-6 py-4 flex items-center gap-3">
+              <div className="flex-1 max-w-[500px] relative">
+                <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-[#9CA3AF]" />
+                <input
+                  value={searchInput}
+                  onChange={(e) => setSearchInput(e.target.value)}
+                  placeholder="Search by template name..."
+                  className="w-full pl-11 pr-4 py-3 border border-[#E5E7EB] rounded-xl text-sm bg-white focus:outline-none focus:border-[#1E9A80] focus:ring-2 focus:ring-[#1E9A80]/20"
+                />
+              </div>
+              <DocTypeDropdown value={typeId} types={docTypes} onChange={setTypeId} />
+            </div>
+
+            <div className="px-6 pb-6 flex-1 overflow-auto">
+              <Card className="border-[#E5E7EB]">
+                <CardContent className="p-0 overflow-x-auto">
+                  <Table>
+                    <TableHeader>
+                      <TableRow className="bg-[#F3F3EE]/60">
+                        <TableHead className="text-[#1A1A1A] font-bold py-4">Template name</TableHead>
+                        <TableHead className="text-[#1A1A1A] font-bold">Document Types</TableHead>
+                        <TableHead className="text-[#1A1A1A] font-bold text-right">Actions</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {loading ? (
+                        <TableRow>
+                          <TableCell colSpan={3} className="text-center py-16">
+                            <Loader2 className="h-6 w-6 animate-spin text-[#6B7280] mx-auto" />
+                          </TableCell>
+                        </TableRow>
+                      ) : rows.length === 0 ? (
+                        <TableRow>
+                          <TableCell colSpan={3} className="text-center text-[#6B7280] py-16">
+                            No templates imported yet. Click <b>Sync now</b> above.
+                          </TableCell>
+                        </TableRow>
+                      ) : (
+                        rows.map((t) => (
+                          <TableRow key={t.bp_id} className="border-b border-[#E5E7EB]">
+                            <TableCell className="py-4 font-medium text-[#1A1A1A]">
+                              {t.template_name || `Untitled ${t.bp_id}`}
+                            </TableCell>
+                            <TableCell>
+                              <DocTypePill typeId={t.type_id} />
+                            </TableCell>
+                            <TableCell>
+                              <div className="flex items-center justify-end gap-2">
+                                <button
+                                  disabled
+                                  title="Use this template (sending not built yet)"
+                                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold text-[#9CA3AF] border border-[#E5E7EB] cursor-not-allowed"
+                                >
+                                  <FileText className="h-3.5 w-3.5" />
+                                  Use this template
+                                </button>
+                                <button
+                                  title="Preview (coming soon)"
+                                  className="p-1.5 rounded-lg hover:bg-[#F3F3EE] text-[#6B7280]"
+                                >
+                                  <Eye className="h-4 w-4" />
+                                </button>
+                              </div>
+                            </TableCell>
+                          </TableRow>
+                        ))
+                      )}
+                    </TableBody>
+                  </Table>
+                </CardContent>
+              </Card>
+            </div>
+          </div>
+        </div>
+      )}
+    </>
+  );
+}
+
+function TabButton({ active, onClick, label, count }: { active: boolean; onClick: () => void; label: string; count: number }) {
   return (
     <button
       onClick={onClick}
       className={cn(
-        'px-3 py-1.5 rounded-lg text-sm font-medium transition',
-        active
-          ? 'bg-[#1A1A1A] text-white'
-          : 'text-[#6B7280] hover:bg-[#F3F3EE] hover:text-[#1A1A1A]',
+        'px-4 py-3 text-sm font-semibold transition border-b-2',
+        active ? 'text-[#1E9A80] border-[#1E9A80]' : 'text-[#6B7280] border-transparent hover:text-[#1A1A1A]',
       )}
     >
       {label}
-      {count !== undefined && (
-        <span className={cn('ml-1.5 text-xs', active ? 'opacity-80' : 'opacity-60')}>{count}</span>
+      {count > 0 && (
+        <span className={cn(
+          'ml-2 inline-flex items-center justify-center min-w-[20px] h-[20px] px-1.5 rounded-full text-[11px] font-bold',
+          active ? 'bg-[#1E9A80] text-white' : 'bg-[#F3F3EE] text-[#6B7280]',
+        )}>
+          {count}
+        </span>
       )}
     </button>
   );
 }
 
-function LastSyncBadge({ run }: { run: ReturnType<typeof useLastImportRun>['run'] }) {
-  if (!run) {
-    return (
-      <div className="text-xs text-[#9CA3AF] hidden sm:block">
-        Never synced
-      </div>
-    );
+function FolderRow({ active, label, onClick }: { active: boolean; label: string; onClick: () => void }) {
+  return (
+    <button
+      onClick={onClick}
+      className={cn(
+        'w-full flex items-center gap-2 px-3 py-2 rounded-lg text-sm text-left transition',
+        active ? 'bg-[#F3F3EE] text-[#1A1A1A] font-semibold' : 'text-[#6B7280] hover:bg-[#F3F3EE] hover:text-[#1A1A1A]',
+      )}
+    >
+      <FolderClosed className="h-4 w-4 flex-shrink-0" />
+      <span className="truncate">{label}</span>
+    </button>
+  );
+}
+
+// ─── Reusable bits ──────────────────────────────────────────────────────────
+function DocTypePill({ typeId }: { typeId: number | null }) {
+  if (typeId === null || typeId === undefined) {
+    return <span className="text-xs text-[#9CA3AF]">—</span>;
   }
+  const c = TYPE_BADGE[typeId] ?? { bg: 'bg-gray-50', text: 'text-gray-600', border: 'border-gray-200' };
+  const label = BP_TYPE_LABELS[typeId] ?? `Type ${typeId}`;
+  return (
+    <span className={cn('inline-flex items-center gap-1.5 px-3 py-1 rounded-md text-xs font-semibold border', c.bg, c.text, c.border)}>
+      <FileSignature className="h-3 w-3" />
+      {label}
+    </span>
+  );
+}
+
+function DocTypeDropdown({
+  value, types, onChange,
+}: { value: number | null; types: Array<{ id: number; name: string; colour: string | null }>; onChange: (v: number | null) => void }) {
+  const [open, setOpen] = useState(false);
+  const selected = types.find((t) => t.id === value);
+
+  return (
+    <div className="relative">
+      <button
+        onClick={() => setOpen((o) => !o)}
+        className="flex items-center gap-2 px-4 py-3 border border-[#E5E7EB] rounded-xl text-sm bg-white hover:bg-[#F3F3EE] min-w-[220px] justify-between"
+      >
+        <span className="flex items-center gap-2 text-[#1A1A1A]">
+          <FileText className="h-4 w-4 text-[#6B7280]" />
+          {selected?.name ?? 'All Document Types'}
+        </span>
+        <ChevronDown className={cn('h-4 w-4 text-[#9CA3AF] transition', open && 'rotate-180')} />
+      </button>
+      {open && (
+        <>
+          <div className="fixed inset-0 z-10" onClick={() => setOpen(false)} />
+          <div className="absolute right-0 top-full mt-1 min-w-[220px] bg-white border border-[#E5E7EB] rounded-xl shadow-lg z-20 overflow-hidden">
+            <button
+              onClick={() => { onChange(null); setOpen(false); }}
+              className={cn(
+                'w-full text-left px-4 py-2.5 text-sm hover:bg-[#F3F3EE]',
+                value === null ? 'bg-[#F3F3EE] font-semibold' : '',
+              )}
+            >
+              All Document Types
+            </button>
+            {types.map((t) => (
+              <button
+                key={t.id}
+                onClick={() => { onChange(t.id); setOpen(false); }}
+                className={cn(
+                  'w-full text-left px-4 py-2.5 text-sm hover:bg-[#F3F3EE]',
+                  value === t.id ? 'bg-[#F3F3EE] font-semibold' : '',
+                )}
+              >
+                {t.name}
+              </button>
+            ))}
+          </div>
+        </>
+      )}
+    </div>
+  );
+}
+
+function LastSyncBadge({ run }: { run: ReturnType<typeof useLastImportRun>['run'] }) {
+  if (!run) return <div className="text-xs text-[#9CA3AF] hidden sm:block">Never synced</div>;
   const when = formatRelativeTime(run.finished_at ?? run.started_at);
   const statusIcon = run.status === 'completed' ? (
     <CheckCircle2 className="h-3.5 w-3.5 text-emerald-500" />
@@ -344,6 +581,19 @@ function LastSyncBadge({ run }: { run: ReturnType<typeof useLastImportRun>['run'
   );
 }
 
+function formatMoney(amount: number, currency: string): string {
+  if (amount === 0) {
+    const sym = currency === 'GBP' ? '£' : currency === 'EUR' ? '€' : '$';
+    return `${sym}0.00`;
+  }
+  try {
+    return new Intl.NumberFormat('en-GB', { style: 'currency', currency }).format(amount);
+  } catch {
+    return `${currency} ${amount.toLocaleString()}`;
+  }
+}
+
+// ─── Detail panel (unchanged from previous version, kept inline) ────────────
 function DetailPanel({ id, onClose }: { id: string; onClose: () => void }) {
   const { row, loading } = useArchiveDetail(id);
   const [signedHtmlUrl, setSignedHtmlUrl] = useState<string | null>(null);
@@ -374,11 +624,7 @@ function DetailPanel({ id, onClose }: { id: string; onClose: () => void }) {
 
   return (
     <div className="fixed inset-0 z-50 flex">
-      <div
-        className="flex-1 bg-black/40"
-        onClick={onClose}
-        aria-hidden="true"
-      />
+      <div className="flex-1 bg-black/40" onClick={onClose} aria-hidden="true" />
       <div className="w-full max-w-[900px] bg-white shadow-2xl flex flex-col h-full overflow-hidden">
         {loading ? (
           <div className="flex-1 flex items-center justify-center">
@@ -390,17 +636,13 @@ function DetailPanel({ id, onClose }: { id: string; onClose: () => void }) {
           </div>
         ) : (
           <>
-            {/* Header */}
             <div className="px-6 py-4 border-b border-[#E5E7EB] flex items-start justify-between gap-4">
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-2 mb-1">
                   <Badge variant="outline" className={cn('text-xs capitalize', STATUS_COLORS[row.status])}>
                     {row.status}
                   </Badge>
-                  <span className="text-xs text-[#9CA3AF]">
-                    {row.bp_type_id !== null ? BP_TYPE_LABELS[row.bp_type_id] ?? 'Doc' : 'Native agreement'}
-                  </span>
-                  <span className="text-xs text-[#9CA3AF]">·</span>
+                  <DocTypePill typeId={row.bp_type_id} />
                   <span className="text-xs text-[#9CA3AF] font-mono">
                     {row.source === 'bp_import' ? `BP #${row.bp_id}` : row.token}
                   </span>
@@ -410,17 +652,13 @@ function DetailPanel({ id, onClose }: { id: string; onClose: () => void }) {
                   {row.recipient_name || row.signer_name || row.company_name || 'No recipient'}
                 </p>
               </div>
-              <button
-                onClick={onClose}
-                className="p-1.5 rounded-lg hover:bg-[#F3F3EE] text-[#6B7280]"
-              >
+              <button onClick={onClose} className="p-1.5 rounded-lg hover:bg-[#F3F3EE] text-[#6B7280]">
                 <X className="h-5 w-5" />
               </button>
             </div>
 
-            {/* Metadata grid */}
             <div className="px-6 py-4 border-b border-[#E5E7EB] grid grid-cols-2 sm:grid-cols-4 gap-x-4 gap-y-3 text-sm">
-              <MetaItem label="Amount" value={row.amount > 0 ? `${row.currency} ${Number(row.amount).toLocaleString()}` : '—'} />
+              <MetaItem label="Amount" value={formatMoney(row.amount, row.currency)} />
               <MetaItem label="Sent" value={row.date_sent ? new Date(row.date_sent).toLocaleDateString('en-GB') : '—'} />
               <MetaItem label="Signed" value={row.signed_at ? new Date(row.signed_at).toLocaleDateString('en-GB') : '—'} />
               <MetaItem label="Signer" value={row.signer_name || '—'} />
@@ -430,7 +668,6 @@ function DetailPanel({ id, onClose }: { id: string; onClose: () => void }) {
               <MetaItem label="Imported" value={row.imported_at ? new Date(row.imported_at).toLocaleString('en-GB') : '—'} />
             </div>
 
-            {/* Actions */}
             <div className="px-6 py-3 border-b border-[#E5E7EB] flex items-center gap-2 flex-wrap bg-[#F3F3EE]/50">
               {row.bp_preview_url && (
                 <a
@@ -476,7 +713,6 @@ function DetailPanel({ id, onClose }: { id: string; onClose: () => void }) {
               )}
             </div>
 
-            {/* Document body */}
             <div className="flex-1 overflow-hidden">
               {row.terms_html ? (
                 <iframe

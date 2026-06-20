@@ -51,13 +51,15 @@ async function bpGet<T = any>(path: string, bpKey: string): Promise<T> {
 }
 
 // ---------- Status mapping ---------------------------------------------------
-// BP raw status fields → our agreement status enum.
-type AgreementStatus = 'draft' | 'sent' | 'opened' | 'signed' | 'paid';
-function mapStatus(bp: Record<string, unknown>): AgreementStatus {
-  if (bp.Paid === '1' || bp.Paid === 1) return 'paid';
-  if (bp.Signed === '1' || bp.Signed === 1) return 'signed';
-  if (bp.DateSent && String(bp.DateSent).length > 0) return 'sent';
-  return 'draft';
+// BP archive vocabulary — matches the tabs in BP's own admin UI.
+// See migration 20260620000002_bp_status_vocabulary.sql for the CHECK.
+type BpStatus = 'draft' | 'pending' | 'outstanding' | 'accepted' | 'lost';
+function mapStatus(bp: Record<string, unknown>, openedIds: Set<string>): BpStatus {
+  if (bp.MarkDead === '1' || bp.MarkDead === 1 || bp.Deleted === '1' || bp.Deleted === 1) return 'lost';
+  if (bp.Signed === '1' || bp.Signed === 1 || bp.Paid === '1' || bp.Paid === 1) return 'accepted';
+  if (!bp.DateSent || String(bp.DateSent).length === 0) return 'draft';
+  if (openedIds.has(String(bp.ID))) return 'outstanding';
+  return 'pending';
 }
 
 // ---------- Datetime helpers -------------------------------------------------
@@ -251,6 +253,16 @@ async function syncProposals(
     }
   }
 
+  // /proposal/opened lists proposals the recipient has actually viewed —
+  // that's the "Outstanding" bucket vs raw "Pending".
+  const openedIds = new Set<string>();
+  try {
+    const o = await bpGet<{ data: any[] }>('/proposal/opened', bpKey);
+    if (Array.isArray(o.data)) {
+      for (const p of o.data) openedIds.add(String(p.ID));
+    }
+  } catch { /* opened endpoint optional — fall back to pending only */ }
+
   let inserted = 0;
   let updated = 0;
   let previewFetches = 0;
@@ -320,7 +332,7 @@ async function syncProposals(
       signer_name: signerName,
       signer_email: p.SignedEmail ?? null,
       signed_at: signedAt,
-      status: mapStatus(p),
+      status: mapStatus(p, openedIds),
 
       amount: bpNum(p.Amount) ?? 0,
       currency: (p.CurrencyCode as string) || 'USD',
