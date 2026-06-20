@@ -779,24 +779,26 @@ function statusLineFor(row: {
   }
   if (apiSent) return `Sent on ${longDate(apiSent.toISOString())}`;
 
-  // 2) activityLog from scraper — ONLY use entries whose action starts with a
-  //    known verb. The earlier scraper captured BP's nav menu as garbage
-  //    entries ("New Document", "Documents", "Templates"…); never let those
-  //    leak into the Status column.
+  // 2) activityLog from scraper — match BP's actual phrasings. We pick the
+  //    most-recent entry (BP lists in reverse chronological order) and map to
+  //    a verb. Garbage entries that don't match any phrase are filtered out.
   if (Array.isArray(raw?.activityLog)) {
     const log = raw.activityLog as Array<{ action: string; date: string | null }>;
-    const knownVerb = /^(sent|opened|received|signed|resent|viewed|downloaded|pdf\s+downloaded)/i;
-    const real = log.filter((e) => e?.action && knownVerb.test(e.action) && e.date);
+    const phraseRe = /(Accepted\s+and\s+Signed|Email\s+opened|Document\s+opened|Sent\s+by|Opened\s+by|Read\s+by|Signed\s+by|Resent\s+by|Viewed\s+by|Forwarded\s+by|Downloaded|PDF\s+downloaded|Document\s+downloaded|Marked\s+\w+|Document\s+Created|Created)/i;
+    const real = log.filter((e) => e?.action && phraseRe.test(e.action) && e.date);
     if (real.length > 0) {
       const e = real[0];
       const dateLabel = e.date!.replace(/\s+at\s+\d{1,2}:\d{2}.*$/i, '');
-      const verb = e.action.trim();
-      const niceVerb = /^opened/i.test(verb) ? 'Opened'
-        : /^sent/i.test(verb) ? 'Sent'
-        : /^received/i.test(verb) ? 'Received'
-        : /^signed/i.test(verb) ? 'Signed'
-        : /^resent/i.test(verb) ? 'Resent'
-        : /^viewed/i.test(verb) ? 'Opened'
+      const a = e.action;
+      const niceVerb = /accepted\s+and\s+signed/i.test(a) ? 'Signed'
+        : /signed/i.test(a) ? 'Signed'
+        : /email\s+opened|document\s+opened|opened\s+by|read\s+by/i.test(a) ? 'Opened'
+        : /viewed/i.test(a) ? 'Opened'
+        : /resent/i.test(a) ? 'Resent'
+        : /sent/i.test(a) ? 'Sent'
+        : /downloaded/i.test(a) ? 'Downloaded'
+        : /forwarded/i.test(a) ? 'Forwarded'
+        : /created/i.test(a) ? 'Created'
         : 'Sent';
       return `${niceVerb} on ${dateLabel}`;
     }
@@ -824,13 +826,36 @@ function formatMoney(amount: number, currency: string): string {
 // ─── Detail panel (unchanged from previous version, kept inline) ────────────
 // ─── Activity timeline (rendered from bp_raw.activityLog) ───────────────────
 function ActivityTimeline({ raw }: { raw: unknown }) {
-  // bp_raw shape: either the full BP proposal record or our metadata-only
-  // wrapper. The scraper writes { _scraper, activityLog: [{action, date}] }.
-  const items: Array<{ action: string; date: string | null }> = (() => {
-    if (!raw || typeof raw !== 'object') return [];
+  // Scraper writes { _scraper, activityLog: [{action, date}] }.
+  // Filter to entries matching known BP phrases; dedupe near-identical
+  // entries (the scraper sometimes captures both a wrapper element and its
+  // inner copy, producing dateless + dated pairs of the same action).
+  const items = (() => {
+    if (!raw || typeof raw !== 'object') return [] as Array<{ action: string; date: string | null }>;
     const obj = raw as Record<string, unknown>;
     const log = obj.activityLog;
-    return Array.isArray(log) ? (log as Array<{ action: string; date: string | null }>) : [];
+    if (!Array.isArray(log)) return [];
+    const phraseRe = /(Accepted\s+and\s+Signed|Email\s+opened|Document\s+opened|Sent\s+by|Opened\s+by|Read\s+by|Signed\s+by|Resent\s+by|Viewed\s+by|Forwarded\s+by|Downloaded|PDF\s+downloaded|Document\s+downloaded|Marked\s+\w+|Document\s+Created|Created)/i;
+    const all = (log as Array<{ action: string; date: string | null }>)
+      .filter((e) => e?.action && phraseRe.test(e.action));
+
+    // Dedupe by normalised action key — prefer the entry that has a date.
+    type Entry = { action: string; date: string | null };
+    const byKey = new Map<string, Entry>();
+    const keyOf = (a: string) => a.toLowerCase().replace(/\s+/g, ' ').trim().slice(0, 60);
+    for (const e of all) {
+      const k = keyOf(e.action) + '|' + (e.date ?? '');
+      if (!byKey.has(k)) byKey.set(k, e);
+    }
+    // Then collapse same-action-different-cadence pairs: prefer ones with dates.
+    const byAction = new Map<string, Entry>();
+    for (const e of byKey.values()) {
+      const ak = keyOf(e.action);
+      const prev = byAction.get(ak);
+      if (!prev) byAction.set(ak, e);
+      else if (!prev.date && e.date) byAction.set(ak, e);
+    }
+    return [...byAction.values()].slice(0, 50);
   })();
 
   if (items.length === 0) {
@@ -849,7 +874,7 @@ function ActivityTimeline({ raw }: { raw: unknown }) {
       <div className="text-[11px] uppercase tracking-wide text-[#9CA3AF] font-semibold mb-3">
         Document Activity
       </div>
-      <ol className="relative border-l-2 border-[#E5E7EB] pl-4 space-y-3 max-h-[260px] overflow-auto">
+      <ol className="relative border-l-2 border-[#E5E7EB] pl-4 space-y-3 max-h-[400px] overflow-auto">
         {items.map((it, i) => (
           <li key={i} className="relative">
             <span className="absolute -left-[22px] top-1.5 w-2.5 h-2.5 rounded-full bg-[#1E9A80] ring-2 ring-white" />

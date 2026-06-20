@@ -88,7 +88,7 @@ const RUN_PURGE = has('--purge');
 const RUN_REPORT = has('--report');
 const RUN_ENRICH = has('--enrich');
 const RUN_API_FIX = has('--api-fix');
-const RUN_API_PROBE = has('--api-probe');
+const RUN_API_PROBE = valOf('--api-probe', null) !== null;
 const FORCE = has('--force');
 const DEBUG = has('--debug');
 const LIMIT = parseInt(valOf('--limit', '0'), 10) || 0;
@@ -273,23 +273,23 @@ async function scrapeActivityPageMeta(page) {
     })();
 
     const activityLog = (() => {
-      // Don't grab the whole body — find the SMALLEST element whose text starts
-      // with the "Document Activity" heading. That isolates the actual panel
-      // from BP's left-nav menu (which also contains the words "Documents",
-      // "Activity", etc.).
+      // BP's actual activity row phrases (from /view DOM):
+      //   "Sent by You"
+      //   "Email opened by <name>"
+      //   "Read by <name> for HH:MM:SS on <device>"
+      //   "Accepted and Signed by <name>"
+      //   "Document Created"
+      //   "PDF downloaded …" / "Document downloaded …"
       const dateRe = /(\d{1,2}\s*(?:st|nd|rd|th)?\s+(?:January|February|March|April|May|June|July|August|September|October|November|December|Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)\s+\d{4}(?:\s+at\s+[\d:]+)?)/i;
-      const actionRe = /^(Sent|Opened|Viewed|Received|Signed|Resent|Created|Downloaded|PDF\s+downloaded|Document\s+downloaded|Marked\s+\w+|Forwarded|Commented)/i;
+      const actionPhraseRe = /(Email\s+opened|Document\s+opened|Accepted\s+and\s+Signed|Sent\s+by|Opened\s+by|Read\s+by|Signed\s+by|Resent\s+by|Viewed\s+by|Forwarded\s+by|Downloaded|PDF\s+downloaded|Document\s+downloaded|Marked\s+\w+|Document\s+Created|Created)/i;
 
-      // Candidate panels — must contain "Document Activity" but be small
-      // enough to NOT be the whole page (rule out the body and root <main>).
+      // Find the Document Activity panel — smallest container whose text
+      // contains the heading AND is < 8KB (rules out body/main).
       const all = [...document.querySelectorAll('div, section, aside, article')];
       const candidates = all.filter((e) => /document\s+activity/i.test(e.textContent || '') && e.textContent.length < 8000);
-      // Pick the smallest by text length — innermost match wins.
       const panel = candidates.reduce((sm, e) => (!sm || (e.textContent || '').length < (sm.textContent || '').length) ? e : sm, null);
       if (!panel) return [];
 
-      // Walk every descendant element of the panel. For each text node group,
-      // look for a recognised action verb followed by a date.
       const items = [];
       const seen = new Set();
       const push = (action, date) => {
@@ -301,21 +301,22 @@ async function scrapeActivityPageMeta(page) {
         items.push({ action: niceAction, date: niceDate });
       };
 
-      // Strategy 1: structured rows — find every element whose innerText (just
-      // direct children's combined text) matches "<action> ... <date>".
-      const rows = [...panel.querySelectorAll('li, div, p, span')];
+      // Walk panel descendants. For each element, look for an action phrase.
+      // We want the CLOSEST element holding the phrase + date (so we don't
+      // gulp too much surrounding content).
+      const rows = [...panel.querySelectorAll('div, li, p, span')];
       for (const row of rows) {
         const txt = (row.textContent || '').replace(/\s+/g, ' ').trim();
-        if (!txt || txt.length > 400) continue;
-        if (!actionRe.test(txt)) continue;
+        if (!txt || txt.length > 600) continue;
+        const am = txt.match(actionPhraseRe);
+        if (!am) continue;
         const dm = txt.match(dateRe);
-        // Action portion = text before the date (or whole text if no date)
-        const actionPart = dm ? txt.slice(0, dm.index).trim().replace(/\bon$/i, '').trim() : txt;
-        // Keep only the leading action verb phrase (up to first ~80 chars), not the whole record name.
-        const m2 = actionPart.match(/^(.{0,80}?)(?:\s+(?:by|to|for|from)\b.*)?$/i);
-        const action = (m2 ? m2[1] : actionPart).trim();
-        if (!action || !actionRe.test(action)) continue;
-        push(action, dm ? dm[1] : null);
+        // Action = phrase + optional "by <name>" tail, capped at 80 chars
+        const startIdx = am.index;
+        const endIdx = dm ? dm.index : Math.min(startIdx + 80, txt.length);
+        const actionPart = txt.slice(startIdx, endIdx).trim().replace(/\bon$/i, '').trim();
+        if (!actionPart) continue;
+        push(actionPart, dm ? dm[1] : null);
       }
 
       return items.slice(0, 50);
@@ -847,7 +848,17 @@ async function phaseEnrich() {
     try {
       const page = await ctx.newPage();
       const viewUrl = `https://betterproposals.io/2/proposals/view?id=${t.id}`;
-      await page.goto(viewUrl, { timeout: 45_000, waitUntil: 'domcontentloaded' });
+      await page.goto(viewUrl, { timeout: 45_000, waitUntil: 'networkidle' });
+      // Wait for the activity panel to appear — up to 6s. Fail-soft if not found.
+      await page.waitForFunction(
+        () => /document\s+activity/i.test(document.body.innerText || ''),
+        { timeout: 6_000 },
+      ).catch(() => {});
+      if (DEBUG) {
+        const html = await page.content();
+        writeFileSync(join(DEBUG_DIR, `enrich-${t.id}.html`), html);
+        await page.screenshot({ path: join(DEBUG_DIR, `enrich-${t.id}.png`), fullPage: true }).catch(() => {});
+      }
       const meta = await scrapeActivityPageMeta(page);
       const existing = manifest[t.id] || {};
       manifest[t.id] = { ...existing, status: t.status, docName: meta.docName ?? existing.docName ?? null, meta };
@@ -861,7 +872,9 @@ async function phaseEnrich() {
     }
   }
   console.log(`[enrich] done: ${ok} ok, ${fail} failed`);
-  if (!DEBUG) await browser.close();
+  // Always close the browser at end. Debug HTML+PNG are already saved to disk;
+  // leaving Chromium open just hangs the terminal.
+  await browser.close().catch(() => {});
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
