@@ -2,6 +2,36 @@
 
 Pulls the 125+ PDFs from BP's web UI that the REST API can't reach (records past the 223-listing-cap). Runs locally on your machine, uses your BP browser session.
 
+## You don't need to wait for PRs to merge
+
+This scraper is a local Node script — Vercel deploys don't touch it. To run any branch's version:
+
+```powershell
+cd C:\Users\HP\Documents\marketplace10
+git fetch origin
+git checkout <branch-name>     # e.g. feat/bp-pdf-scraper-id-prefix-metadata
+cd scripts\bp-pdf-scraper
+node scrape.mjs --scrape --debug --force --limit=1
+```
+
+Only changes to the React `/agreements` UI need merging + Vercel rebuild.
+
+## Filename + metadata
+
+PDFs save as `<view_id>_<sanitized doc name>.pdf` — the id prefix prevents collisions when two proposals share a company name. Example: `2779285_laburnum street - Hitesh.pdf`.
+
+While the script is on the BP Activity page it also scrapes:
+
+- **docName** (`Document for {NAME}` → title field)
+- **dateCreated** → `bp_date_created`
+- **dateSent** → `date_sent`
+- **dateSigned** → `signed_at`
+- **recipientEmail / recipient** → `recipient_email`, `recipient_name`
+- **sender** → `signer_name`
+- **amount + currency** → `amount`, `currency`
+
+All of it lands in `pdfs/_manifest.json`, then `--upload` writes it onto the agreement row.
+
 ## One-time setup
 
 ```bash
