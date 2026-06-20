@@ -62,12 +62,13 @@ const valOf = (f, dflt) => {
 const RUN_LOGIN = has('--login');
 const RUN_SCRAPE = has('--scrape');
 const RUN_UPLOAD = has('--upload');
+const RUN_PURGE = has('--purge');
 const FORCE = has('--force');
 const DEBUG = has('--debug');
 const LIMIT = parseInt(valOf('--limit', '0'), 10) || 0;
 
-if (!RUN_LOGIN && !RUN_SCRAPE && !RUN_UPLOAD) {
-  console.log('Usage: node scrape.mjs --login | --scrape | --upload  [--force] [--debug] [--limit=N]');
+if (!RUN_LOGIN && !RUN_SCRAPE && !RUN_UPLOAD && !RUN_PURGE) {
+  console.log('Usage: node scrape.mjs --login | --scrape | --upload | --purge  [--force] [--debug] [--limit=N]');
   process.exit(0);
 }
 
@@ -157,11 +158,13 @@ async function phaseScrape() {
 //   4. Fetch the PDF using the browser context (which carries session)
 async function fetchOnePdf(ctx, viewId) {
   const page = await ctx.newPage();
-  const editUrl = `https://betterproposals.io/2/proposals/edit?id=${viewId}`;
+  // /view?id=N is the Document Activity page that has the "Preview document"
+  // button. /edit?id=N is the editor — different page, no preview button there.
+  const viewUrl = `https://betterproposals.io/2/proposals/view?id=${viewId}`;
 
   try {
-    await page.goto(editUrl, { timeout: 45_000, waitUntil: 'domcontentloaded' });
-    if (DEBUG) await page.screenshot({ path: join(DEBUG_DIR, `${viewId}-1-edit.png`), fullPage: true });
+    await page.goto(viewUrl, { timeout: 45_000, waitUntil: 'domcontentloaded' });
+    if (DEBUG) await page.screenshot({ path: join(DEBUG_DIR, `${viewId}-1-activity.png`), fullPage: true });
 
     // Find Preview Document button. BP uses different markup in different
     // sections — try a few resilient selectors in order.
@@ -196,7 +199,7 @@ async function fetchOnePdf(ctx, viewId) {
     // If no new tab was opened, the click may have navigated the current tab.
     if (!previewPage) {
       await page.waitForLoadState('domcontentloaded', { timeout: 10_000 }).catch(() => {});
-      if (page.url() !== editUrl) previewPage = page;
+      if (page.url() !== viewUrl) previewPage = page;
     }
     if (!previewPage) throw new Error('Preview Document did not open');
 
@@ -323,8 +326,58 @@ async function phaseUpload() {
   console.log(`[upload] ${uploaded} files in Storage · ${dbUpdated} rows updated · ${errors} errors`);
 }
 
+// ─────────────────────────────────────────────────────────────────────────────
+// PURGE — wipe every BP-imported agreement row + every Storage file under
+// agreements/bp-import/. Leaves native rows + reference tables untouched.
+// ─────────────────────────────────────────────────────────────────────────────
+async function phasePurge() {
+  if (!SUPABASE_SERVICE_ROLE_KEY) throw new Error('SUPABASE_SERVICE_ROLE_KEY missing from .env');
+  const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, {
+    auth: { autoRefreshToken: false, persistSession: false },
+  });
+
+  // 1. Rows
+  const { count: before } = await supabase
+    .from('agreements')
+    .select('id', { count: 'exact', head: true })
+    .eq('source', 'bp_import');
+  console.log(`[purge] ${before ?? 0} bp_import rows in agreements`);
+  if (before && before > 0) {
+    const { error } = await supabase.from('agreements').delete().eq('source', 'bp_import');
+    if (error) throw new Error(`agreements delete: ${error.message}`);
+    console.log(`[purge] deleted ${before} agreement rows`);
+  }
+
+  // 2. Storage — recursively list everything under bp-import/ and delete in batches
+  const prefixes = ['bp-import/pdf', 'bp-import/html', 'bp-import'];
+  let totalDeleted = 0;
+  for (const prefix of prefixes) {
+    let offset = 0;
+    while (true) {
+      const { data: list, error: listErr } = await supabase.storage
+        .from('agreements')
+        .list(prefix, { limit: 100, offset });
+      if (listErr) { console.warn(`[purge] list ${prefix}: ${listErr.message}`); break; }
+      if (!list || list.length === 0) break;
+
+      const paths = list
+        .filter((o) => o && o.name && !o.name.endsWith('/'))
+        .map((o) => `${prefix}/${o.name}`);
+      if (paths.length === 0) break;
+
+      const { error: delErr } = await supabase.storage.from('agreements').remove(paths);
+      if (delErr) { console.warn(`[purge] remove batch: ${delErr.message}`); break; }
+      totalDeleted += paths.length;
+      process.stdout.write(`[purge] removed ${paths.length} files from ${prefix} (total ${totalDeleted})\n`);
+      if (list.length < 100) break;
+    }
+  }
+  console.log(`[purge] done — ${totalDeleted} storage objects removed`);
+}
+
 (async () => {
   try {
+    if (RUN_PURGE) await phasePurge();
     if (RUN_LOGIN) await phaseLogin();
     if (RUN_SCRAPE) await phaseScrape();
     if (RUN_UPLOAD) await phaseUpload();
