@@ -684,7 +684,7 @@ async function phaseUpload() {
   const metaOnly = tasks.length - withFile;
   console.log(`[upload] ${tasks.length} rows · ${withFile} with PDF · ${metaOnly} metadata-only`);
 
-  let uploaded = 0; let dbUpdated = 0; let errors = 0;
+  let uploaded = 0; let dbUpdated = 0; let errors = 0; let skippedAlready = 0;
   for (const t of tasks) {
     let storagePath = null;
     let pdfSize = null;
@@ -692,23 +692,30 @@ async function phaseUpload() {
       const localPath = join(PDFS_DIR, t.filename);
       pdfSize = statSync(localPath).size;
       if (pdfSize < 1024) { console.log(`✗ ${t.viewId} skipped (size ${pdfSize})`); continue; }
-      const bytes = readFileSync(localPath);
 
       const { data: existing0 } = await supabase
         .from('agreements')
-        .select('id, bp_id')
+        .select('id, bp_id, pdf_storage_path')
         .eq('source', 'bp_import')
         .or(`bp_quote_id.eq.${t.viewId},bp_id.eq.q-${t.viewId}`)
         .limit(1)
         .maybeSingle();
       const tmpBpId = existing0?.bp_id ?? `q-${t.viewId}`;
-      storagePath = `bp-import/pdf/${tmpBpId}.pdf`;
 
-      const { error: upErr } = await supabase.storage
-        .from('agreements')
-        .upload(storagePath, bytes, { contentType: 'application/pdf', upsert: true });
-      if (upErr) { console.log(`✗ ${t.viewId} storage: ${upErr.message}`); errors++; continue; }
-      uploaded++;
+      // If Supabase already has a PDF for this row, skip the re-upload unless
+      // --force is set. We still let the metadata update run below.
+      if (!FORCE && existing0?.pdf_storage_path) {
+        storagePath = existing0.pdf_storage_path;  // keep existing path on the row
+        skippedAlready++;
+      } else {
+        const bytes = readFileSync(localPath);
+        storagePath = `bp-import/pdf/${tmpBpId}.pdf`;
+        const { error: upErr } = await supabase.storage
+          .from('agreements')
+          .upload(storagePath, bytes, { contentType: 'application/pdf', upsert: true });
+        if (upErr) { console.log(`✗ ${t.viewId} storage: ${upErr.message}`); errors++; continue; }
+        uploaded++;
+      }
     }
 
     const { data: existing } = await supabase
@@ -814,7 +821,7 @@ async function phaseUpload() {
     const sizeLabel = pdfSize !== null ? `${(pdfSize / 1024).toFixed(0)} KB` : 'meta';
     process.stdout.write(`✓ ${t.viewId} → ${label} (${sizeLabel})\n`);
   }
-  console.log(`[upload] ${uploaded} files in Storage · ${dbUpdated} rows updated · ${errors} errors`);
+  console.log(`[upload] ${uploaded} files in Storage · ${skippedAlready} already-in-storage skipped · ${dbUpdated} rows updated · ${errors} errors`);
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -859,7 +866,23 @@ async function phaseEnrich() {
         writeFileSync(join(DEBUG_DIR, `enrich-${t.id}.html`), html);
         await page.screenshot({ path: join(DEBUG_DIR, `enrich-${t.id}.png`), fullPage: true }).catch(() => {});
       }
+      // BP redirects /2/proposals/view?id=N → /2/<doctype>/view?id=N for non-
+      // proposal records (agreements, contracts, brochures, etc). Read the
+      // doctype off the final URL — that's far more reliable than scraping
+      // the DOM for a "Proposals" pill that may not exist.
+      const finalUrl = page.url();
+      const urlMatch = finalUrl.match(/\/2\/([a-z-]+)\/view/i);
+      const urlSegment = urlMatch ? urlMatch[1].toLowerCase() : null;
+      const docTypeFromUrl = urlSegment === 'proposals'   ? 'Proposals'
+        : urlSegment === 'agreements'  ? 'Agreement'
+        : urlSegment === 'contracts'   ? 'Contracts'
+        : urlSegment === 'brochures'   ? 'Brochures'
+        : urlSegment === 'quotes'      ? 'Quotes'
+        : urlSegment === 'signoffs' || urlSegment === 'sign-offs' ? 'Sign Offs'
+        : urlSegment === 'joboffers' || urlSegment === 'job-offers' ? 'Job Offers'
+        : null;
       const meta = await scrapeActivityPageMeta(page);
+      if (docTypeFromUrl) meta.docType = docTypeFromUrl;
       const existing = manifest[t.id] || {};
       manifest[t.id] = { ...existing, status: t.status, docName: meta.docName ?? existing.docName ?? null, meta };
       saveManifest(manifest);
