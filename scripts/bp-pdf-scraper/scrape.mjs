@@ -330,31 +330,86 @@ async function fetchOnePdf(ctx, viewId) {
     }
 
     const previewUrl = previewPage.url();
-    // BP previews land on either /cover.php or /index.php depending on the
-    // account/template. Both work for /pdf-output.php derivation.
-    if (!/\/(cover|index)\.php/.test(previewUrl)) {
-      throw new Error(`Preview URL doesn't match expected pattern: ${previewUrl}`);
+    // BP preview URLs come in three known shapes:
+    //   1. proposal.<account>.com/cover.php?ProposalID=...&ContactID=...
+    //   2. proposal.<account>.com/index.php?ProposalID=...
+    //   3. betterproposals.io/proposal/index?ProposalID=...    (no .php)
+    // The PDF endpoint pattern differs per host — we try multiple
+    // candidates and accept whichever returns application/pdf.
+    if (!/ProposalID=/i.test(previewUrl)) {
+      throw new Error(`Preview URL has no ProposalID: ${previewUrl}`);
     }
 
-    const pdfUrl = previewUrl
-      .replace(/&debug=yes/g, '')          // pdf-output.php doesn't like debug=yes
-      .replace(/\/(cover|index)\.php/, '/pdf-output.php')
-      + (previewUrl.includes('?') ? '&' : '?') + 'pdf-view=1';
-    if (DEBUG) console.log(`  [debug] ${viewId} pdf url = ${pdfUrl}`);
+    const cleanUrl = previewUrl.replace(/&debug=yes/g, '');
+    const appendPdfView = (u) => u + (u.includes('?') ? '&' : '?') + 'pdf-view=1';
+    const pdfCandidates = [
+      cleanUrl.replace(/\/(cover|index)\.php/, '/pdf-output.php'),                  // white-label .php hosts
+      cleanUrl.replace(/\/proposal\/index(?=[?#]|$)/, '/proposal/pdf'),             // betterproposals.io path-style
+      cleanUrl.replace(/\/proposal\/index(?=[?#]|$)/, '/proposal/pdf-output'),      // alt path-style
+      cleanUrl.replace(/\/(cover|index)\.php/, '/pdf.php'),                         // some templates use pdf.php
+    ]
+      .filter((u, i, arr) => u && u !== cleanUrl && arr.indexOf(u) === i)           // unique + actually changed
+      .map(appendPdfView);
 
-    // Fetch the PDF via the browser context — cookies are carried automatically.
-    const resp = await ctx.request.get(pdfUrl, {
-      timeout: 60_000,
-      headers: { 'User-Agent': 'NFSTAY-bp-scraper/1.0' },
-    });
-    if (!resp.ok()) throw new Error(`PDF fetch HTTP ${resp.status()}`);
-    const ct = resp.headers()['content-type'] || '';
-    const body = await resp.body();
-    if (!ct.includes('pdf') || body.length < 1024) {
-      throw new Error(`Bad PDF response (CT=${ct}, ${body.length} bytes)`);
+    if (DEBUG) console.log(`  [debug] ${viewId} pdf candidates:\n    ${pdfCandidates.join('\n    ')}`);
+
+    let body = null;
+    let lastErr = null;
+    for (const pdfUrl of pdfCandidates) {
+      try {
+        const resp = await ctx.request.get(pdfUrl, {
+          timeout: 60_000,
+          headers: { 'User-Agent': 'NFSTAY-bp-scraper/1.0' },
+        });
+        if (!resp.ok()) { lastErr = `HTTP ${resp.status()} on ${pdfUrl}`; continue; }
+        const ct = resp.headers()['content-type'] || '';
+        const buf = await resp.body();
+        if (!ct.includes('pdf')) { lastErr = `CT=${ct} on ${pdfUrl}`; continue; }
+        if (buf.length < 1024 || buf[0] !== 0x25 || buf[1] !== 0x50 || buf[2] !== 0x44 || buf[3] !== 0x46) {
+          lastErr = `not PDF magic on ${pdfUrl}`;
+          continue;
+        }
+        body = buf;
+        if (DEBUG) console.log(`  [debug] ${viewId} got PDF from ${pdfUrl}`);
+        break;
+      } catch (e) {
+        lastErr = `${e.message} on ${pdfUrl}`;
+      }
     }
-    if (body[0] !== 0x25 || body[1] !== 0x50 || body[2] !== 0x44 || body[3] !== 0x46) {
-      throw new Error('Response not PDF (no %PDF magic)');
+
+    // URL-derivation fallback didn't work — click a Download button on the page.
+    if (!body) {
+      const dlPromise = previewPage.waitForEvent('download', { timeout: 15_000 }).catch(() => null);
+      const dlSelectors = [
+        'a:has-text("Download PDF")',
+        'button:has-text("Download PDF")',
+        'a:has-text("Download")',
+        'button:has-text("Download")',
+        '[aria-label*="download" i]',
+      ];
+      let clicked = false;
+      for (const sel of dlSelectors) {
+        const el = await previewPage.$(sel);
+        if (el) {
+          await el.scrollIntoViewIfNeeded().catch(() => {});
+          await el.click({ timeout: 10_000 }).catch(() => {});
+          clicked = true;
+          break;
+        }
+      }
+      if (clicked) {
+        const dl = await dlPromise;
+        if (dl) {
+          const tmpPath = join(PDFS_DIR, `.${viewId}.download.pdf`);
+          await dl.saveAs(tmpPath);
+          try { body = readFileSync(tmpPath); } catch {}
+          try { unlinkSync(tmpPath); } catch {}
+        }
+      }
+    }
+
+    if (!body || body.length < 1024) {
+      throw new Error(`No PDF (last error: ${lastErr || 'unknown'})`);
     }
 
     if (!DEBUG) {
