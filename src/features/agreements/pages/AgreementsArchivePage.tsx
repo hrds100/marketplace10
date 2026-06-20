@@ -20,6 +20,7 @@ import {
   useDoctypes,
   triggerBpImport,
   getSignedHtmlUrl,
+  getSignedPdfUrl,
   formatRelativeTime,
   BP_TYPE_LABELS,
   useDebouncedValue,
@@ -597,6 +598,7 @@ function formatMoney(amount: number, currency: string): string {
 function DetailPanel({ id, onClose }: { id: string; onClose: () => void }) {
   const { row, loading } = useArchiveDetail(id);
   const [signedHtmlUrl, setSignedHtmlUrl] = useState<string | null>(null);
+  const [signedPdfUrl, setSignedPdfUrl] = useState<string | null>(null);
 
   useEffect(() => {
     if (row?.html_storage_path) {
@@ -608,6 +610,17 @@ function DetailPanel({ id, onClose }: { id: string; onClose: () => void }) {
       setSignedHtmlUrl(null);
     }
   }, [row?.html_storage_path]);
+
+  useEffect(() => {
+    if (row?.pdf_storage_path) {
+      void (async () => {
+        const url = await getSignedPdfUrl(row.pdf_storage_path);
+        setSignedPdfUrl(url);
+      })();
+    } else {
+      setSignedPdfUrl(null);
+    }
+  }, [row?.pdf_storage_path]);
 
   const printHtml = useCallback(() => {
     if (!row?.terms_html) return;
@@ -680,6 +693,16 @@ function DetailPanel({ id, onClose }: { id: string; onClose: () => void }) {
                   Open in Better Proposals
                 </a>
               )}
+              {signedPdfUrl && (
+                <a
+                  href={signedPdfUrl}
+                  download={`${row.title || row.bp_id || 'proposal'}.pdf`}
+                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold text-white bg-[#1E9A80] hover:opacity-90"
+                >
+                  <Download className="h-3.5 w-3.5" />
+                  Download PDF
+                </a>
+              )}
               {signedHtmlUrl && (
                 <a
                   href={signedHtmlUrl}
@@ -691,7 +714,7 @@ function DetailPanel({ id, onClose }: { id: string; onClose: () => void }) {
                   Download HTML
                 </a>
               )}
-              {row.terms_html && (
+              {row.terms_html && !signedPdfUrl && (
                 <button
                   onClick={printHtml}
                   className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold text-[#1A1A1A] bg-white border border-[#E5E7EB] hover:bg-[#F3F3EE]"
@@ -713,16 +736,22 @@ function DetailPanel({ id, onClose }: { id: string; onClose: () => void }) {
               )}
             </div>
 
-            <div className="flex-1 overflow-hidden">
-              {row.terms_html ? (
+            <div className="flex-1 overflow-hidden bg-[#2A2A2A]">
+              {signedPdfUrl ? (
+                <iframe
+                  title={row.title}
+                  src={signedPdfUrl + '#toolbar=1&navpanes=0'}
+                  className="w-full h-full border-0"
+                />
+              ) : row.terms_html ? (
                 <iframe
                   title={row.title}
                   srcDoc={row.terms_html}
                   sandbox="allow-same-origin"
-                  className="w-full h-full border-0"
+                  className="w-full h-full border-0 bg-white"
                 />
               ) : (
-                <div className="p-6 text-sm text-[#6B7280] flex items-center gap-2">
+                <div className="p-6 text-sm text-[#6B7280] flex items-center gap-2 bg-white">
                   <AlertCircle className="h-4 w-4" />
                   No document body archived. Click "Sync now" to fetch from Better Proposals.
                 </div>
