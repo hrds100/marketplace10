@@ -426,6 +426,132 @@ async function syncProposals(
   return { pulled: all.length, inserted, updated: 0, previewFetches: pdfFetched, previewFailures: pdfFailed, errors };
 }
 
+// ---------- Sync: by explicit ID list -----------------------------------------
+// BP's REST API caps the listing at ~223 records, hiding old archives behind
+// the web UI. This action takes an explicit ID list (paste from BP UI URLs)
+// and fetches /proposal/{id} for each one, bypassing the listing cap.
+async function syncByIds(
+  supabase: SupabaseClient,
+  bpKey: string,
+  ids: string[],
+  opts: { fetchHtml: boolean },
+) {
+  const cleanIds = Array.from(new Set(
+    ids.map((x) => String(x).trim()).filter((x) => /^\d+$/.test(x))
+  ));
+
+  let inserted = 0;
+  let pdfFetched = 0;
+  let pdfFailed = 0;
+  let notFound = 0;
+  const errors: string[] = [];
+
+  const pickContactLink = (p: any): string | null => {
+    const contacts = Array.isArray(p.Contacts) ? p.Contacts : [];
+    if (contacts.length === 0) return null;
+    if (p.SignedEmail) {
+      const match = contacts.find((c: any) => c.Email && String(c.Email).toLowerCase() === String(p.SignedEmail).toLowerCase());
+      if (match?.Link) return match.Link;
+    }
+    return contacts[contacts.length - 1]?.Link ?? contacts[0]?.Link ?? null;
+  };
+
+  await pool(cleanIds, 4, async (bpId) => {
+    let p: any;
+    try {
+      const r = await bpGet<{ data: any }>(`/proposal/${bpId}`, bpKey);
+      p = r.data;
+    } catch (e) {
+      notFound++;
+      errors.push(`bp_id ${bpId}: ${e instanceof Error ? e.message : 'fetch failed'}`);
+      return;
+    }
+    if (!p || !p.ID) {
+      notFound++;
+      return;
+    }
+
+    const contactLink = pickContactLink(p);
+    const cleanedPreview = typeof contactLink === 'string' ? contactLink.replace(/&debug=yes/g, '') : null;
+
+    let pdfStoragePath: string | null = null;
+    if (opts.fetchHtml && cleanedPreview) {
+      const pdf = await fetchPdf(cleanedPreview);
+      if (pdf) {
+        const path = `bp-import/pdf/${bpId}.pdf`;
+        const { error: upErr } = await supabase.storage
+          .from(STORAGE_BUCKET)
+          .upload(path, pdf, { contentType: 'application/pdf', upsert: true });
+        if (!upErr) { pdfStoragePath = path; pdfFetched++; }
+        else { errors.push(`bp_id ${bpId} storage: ${upErr.message}`); pdfFailed++; }
+      } else {
+        pdfFailed++;
+      }
+    }
+
+    const signerFirst = (p.SignedFirstName ?? '').toString();
+    const signerLast = (p.SignedSurname ?? '').toString();
+    const signerFullFromParts = `${signerFirst} ${signerLast}`.trim();
+    const signerName = (p.SignedName ?? signerFullFromParts) || null;
+    const recipient = p.Contacts?.[Math.max(0, (p.Contacts?.length ?? 1) - 1)] ?? null;
+    const recipientName = recipient ? `${recipient.FirstName ?? ''} ${recipient.Surname ?? ''}`.trim() || null : null;
+    const signedAt = (() => {
+      if (p.SignedDate && p.SignedTime) return bpDate(`${p.SignedDate} ${p.SignedTime}`);
+      if (p.SignedDate) return bpDate(`${p.SignedDate} 00:00:00`);
+      return null;
+    })();
+
+    const row = {
+      source: 'bp_import',
+      bp_id: String(p.ID),
+      bp_type_id: p.TypeID !== null && p.TypeID !== undefined ? Number(p.TypeID) : null,
+      bp_brand_id: p.BrandID ?? null,
+      bp_company_id: p.CompanyID ?? null,
+      bp_quote_id: p.QuoteID ?? null,
+      bp_assigned_to: p.AssignedTo ?? null,
+      bp_preview_url: cleanedPreview,
+      bp_view_url: p.ProposalView ?? null,
+      bp_raw: p,
+      bp_archived: bpBool(p.Archived),
+      bp_deleted: bpBool(p.Deleted),
+      title: p.SubjectLine || p.CompanyName || `Proposal ${bpId}`,
+      recipient_name: recipientName,
+      recipient_email: recipient?.Email ?? null,
+      signer_name: signerName,
+      signer_email: p.SignedEmail ?? null,
+      signed_at: signedAt,
+      status: mapStatus(p, new Set<string>()),
+      amount: bpNum(p.Amount) ?? 0,
+      currency: (p.CurrencyCode as string) || 'USD',
+      company_name: p.CompanyName ?? null,
+      subject_line: p.SubjectLine ?? null,
+      description: p.Description ?? null,
+      personal_message: p.PersonalMessage ?? null,
+      date_sent: bpDate(p.DateSent),
+      bp_date_created: bpDate(p.DateCreated),
+      bp_date_edited: bpDate(p.DateEdited),
+      pdf_storage_path: pdfStoragePath,
+      imported_at: new Date().toISOString(),
+      token: `bp-${bpId}`,
+      type: 'investor',
+    } as Record<string, unknown>;
+
+    const { error: upsertErr, data } = await supabase
+      .from('agreements')
+      .upsert(row, { onConflict: 'bp_id' })
+      .select('id')
+      .single();
+
+    if (upsertErr) {
+      errors.push(`bp_id ${bpId}: ${upsertErr.message}`);
+      return;
+    }
+    if (data) inserted++;
+  });
+
+  return { pulled: cleanIds.length, inserted, notFound, pdfFetched, pdfFailed, errors };
+}
+
 // ---------- Handler ----------------------------------------------------------
 serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders });
@@ -470,6 +596,37 @@ serve(async (req) => {
     if (action === 'ping') {
       const count = await bpGet<{ count: number }>('/proposal/count', bpKey);
       return json({ ok: true, bp_account_proposal_count: count.count, fetchHtml });
+    }
+
+    // import-by-ids: accepts {"ids":["123","456",...]} in body
+    if (action === 'import-by-ids') {
+      const body = await req.json().catch(() => null);
+      const ids = Array.isArray(body?.ids) ? body.ids : null;
+      if (!ids || ids.length === 0) {
+        return json({ error: 'Body must be {"ids":["bp_id",...]} with at least one id' }, 400);
+      }
+      const { data: run, error: runErr } = await admin
+        .from('bp_import_runs')
+        .insert({ action, triggered_by: user.id, status: 'running' })
+        .select('id').single();
+      if (runErr || !run) return json({ error: `Failed to create run: ${runErr?.message}` }, 500);
+      const runId = run.id as string;
+      try {
+        const r = await syncByIds(admin, bpKey, ids, { fetchHtml });
+        await admin.from('bp_import_runs').update({
+          proposals_pulled: r.pulled, proposals_inserted: r.inserted,
+          preview_fetches: r.pdfFetched, preview_failures: r.pdfFailed,
+          errors: r.errors,
+          status: 'completed', finished_at: new Date().toISOString(),
+        }).eq('id', runId);
+        return json({ ok: true, run_id: runId, totals: r });
+      } catch (err) {
+        const msg = err instanceof Error ? err.message : String(err);
+        await admin.from('bp_import_runs').update({
+          status: 'failed', errors: [msg], finished_at: new Date().toISOString(),
+        }).eq('id', runId);
+        return json({ ok: false, error: msg, run_id: runId }, 500);
+      }
     }
 
     // Log a run row from the start

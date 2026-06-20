@@ -306,6 +306,32 @@ export async function getSignedPdfUrl(path: string | null): Promise<string | nul
   return data?.signedUrl ?? null;
 }
 
+export async function triggerImportByIds(ids: string[], fetchHtml = true) {
+  const supabaseUrl = import.meta.env.VITE_SUPABASE_URL as string;
+  const anonKey = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY as string;
+  const { data: { session } } = await supabase.auth.getSession();
+  if (!session) throw new Error('Not signed in');
+
+  const url = `${supabaseUrl}/functions/v1/bp-import?action=import-by-ids&fetchHtml=${fetchHtml ? '1' : '0'}`;
+  const r = await fetch(url, {
+    method: 'POST',
+    headers: {
+      'Authorization': `Bearer ${session.access_token}`,
+      'apikey': anonKey,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({ ids }),
+  });
+  const body = (await r.json().catch(() => ({}))) as {
+    ok?: boolean;
+    run_id?: string;
+    totals?: { pulled: number; inserted: number; notFound: number; pdfFetched: number; pdfFailed: number; errors: string[] };
+    error?: string;
+  };
+  if (!r.ok) throw new Error(body.error ?? `import-by-ids HTTP ${r.status}`);
+  return body;
+}
+
 export async function triggerBpImport(
   action: 'ping' | 'full-sync' | 'sync-proposals' | 'sync-templates' | 'sync-companies' | 'sync-quotes' | 'sync-reference',
   fetchHtml = true,

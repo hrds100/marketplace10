@@ -19,6 +19,7 @@ import {
   useTemplateCounts,
   useDoctypes,
   triggerBpImport,
+  triggerImportByIds,
   getSignedHtmlUrl,
   getSignedPdfUrl,
   formatRelativeTime,
@@ -61,7 +62,8 @@ type Section = 'proposals' | 'templates';
 export default function AgreementsArchivePage() {
   const [section, setSection] = useState<Section>('proposals');
   const { run, reload: reloadRun } = useLastImportRun();
-  const [syncing, setSyncing] = useState<null | 'ping' | 'full-sync'>(null);
+  const [syncing, setSyncing] = useState<null | 'ping' | 'full-sync' | 'ids'>(null);
+  const [idsModalOpen, setIdsModalOpen] = useState(false);
 
   const handleSync = useCallback(async (action: 'ping' | 'full-sync') => {
     setSyncing(action);
@@ -76,6 +78,27 @@ export default function AgreementsArchivePage() {
       window.location.reload();
     } catch (e) {
       toast.error(e instanceof Error ? e.message : 'Sync failed');
+    } finally {
+      setSyncing(null);
+    }
+  }, [reloadRun]);
+
+  const handleImportByIds = useCallback(async (rawText: string) => {
+    const ids = rawText.split(/[\s,;]+/).map((s) => s.trim()).filter((s) => /^\d+$/.test(s));
+    if (ids.length === 0) {
+      toast.error('Paste at least one numeric BP proposal ID');
+      return;
+    }
+    setSyncing('ids');
+    try {
+      const res = await triggerImportByIds(ids, true);
+      const t = res.totals;
+      toast.success(`Imported ${t?.inserted ?? 0}/${t?.pulled ?? 0} · ${t?.pdfFetched ?? 0} PDFs · ${t?.notFound ?? 0} not found`);
+      setIdsModalOpen(false);
+      reloadRun();
+      window.location.reload();
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : 'Import failed');
     } finally {
       setSyncing(null);
     }
@@ -112,6 +135,14 @@ export default function AgreementsArchivePage() {
               {syncing === 'ping' ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Test BP API'}
             </button>
             <button
+              onClick={() => setIdsModalOpen(true)}
+              disabled={syncing !== null}
+              className="px-3 py-2 rounded-lg text-sm font-medium text-[#1A1A1A] border border-[#E5E7EB] hover:bg-[#F3F3EE] transition disabled:opacity-50"
+              title="Import specific BP proposals by ID — use for records past BP's API listing cap"
+            >
+              Import by IDs
+            </button>
+            <button
               onClick={() => handleSync('full-sync')}
               disabled={syncing !== null}
               className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-semibold text-white bg-[#1E9A80] hover:opacity-90 shadow-[rgba(30,154,128,0.35)_0_4px_16px] transition disabled:opacity-50"
@@ -123,6 +154,74 @@ export default function AgreementsArchivePage() {
         </div>
 
         {section === 'proposals' ? <ProposalsSection /> : <TemplatesSection />}
+      </div>
+
+      {idsModalOpen && (
+        <ImportByIdsModal
+          loading={syncing === 'ids'}
+          onClose={() => setIdsModalOpen(false)}
+          onSubmit={handleImportByIds}
+        />
+      )}
+    </div>
+  );
+}
+
+// ─── Import by IDs modal ───────────────────────────────────────────────────
+function ImportByIdsModal({
+  loading, onClose, onSubmit,
+}: { loading: boolean; onClose: () => void; onSubmit: (text: string) => void }) {
+  const [text, setText] = useState('');
+  const idCount = useMemo(() => text.split(/[\s,;]+/).filter((s) => /^\d+$/.test(s.trim())).length, [text]);
+
+  return (
+    <div className="fixed inset-0 z-50 bg-black/40 flex items-center justify-center p-4" onClick={onClose}>
+      <div
+        className="bg-white rounded-xl shadow-2xl w-full max-w-[600px] max-h-[80vh] flex flex-col overflow-hidden"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div className="px-6 py-4 border-b border-[#E5E7EB] flex items-start justify-between">
+          <div>
+            <h2 className="text-lg font-bold text-[#1A1A1A]">Import BP proposals by ID</h2>
+            <p className="text-xs text-[#6B7280] mt-1">
+              Paste BP proposal IDs (one per line, or comma-separated). Useful for archived records the BP API listing endpoint won't return — single-record fetches still work.
+            </p>
+            <p className="text-xs text-[#9CA3AF] mt-1">
+              Find IDs in BP UI URLs: <code className="text-[10px] bg-[#F3F3EE] px-1 rounded">betterproposals.io/2/proposals/edit?id=<b>2761909</b></code>
+            </p>
+          </div>
+          <button onClick={onClose} className="p-1.5 rounded-lg hover:bg-[#F3F3EE] text-[#6B7280]">
+            <X className="h-5 w-5" />
+          </button>
+        </div>
+
+        <textarea
+          autoFocus
+          value={text}
+          onChange={(e) => setText(e.target.value)}
+          placeholder={'2761909\n2705718\n2573500\n...'}
+          rows={12}
+          className="flex-1 px-6 py-4 text-sm font-mono border-0 outline-none resize-none focus:ring-0"
+        />
+
+        <div className="px-6 py-3 border-t border-[#E5E7EB] flex items-center justify-between bg-[#F3F3EE]/50">
+          <div className="text-xs text-[#6B7280]">
+            {idCount} valid ID{idCount === 1 ? '' : 's'} detected
+          </div>
+          <div className="flex items-center gap-2">
+            <button onClick={onClose} className="px-3 py-2 rounded-lg text-sm text-[#6B7280] hover:bg-[#F3F3EE]">
+              Cancel
+            </button>
+            <button
+              onClick={() => onSubmit(text)}
+              disabled={loading || idCount === 0}
+              className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-semibold text-white bg-[#1E9A80] hover:opacity-90 disabled:opacity-50"
+            >
+              {loading && <Loader2 className="h-4 w-4 animate-spin" />}
+              {loading ? `Importing ${idCount}...` : `Import ${idCount} ID${idCount === 1 ? '' : 's'}`}
+            </button>
+          </div>
+        </div>
       </div>
     </div>
   );
