@@ -15,7 +15,7 @@ import {
   useSortable,
 } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
-import { Plus, Trash2, GripVertical, ExternalLink, ChevronDown } from 'lucide-react';
+import { Plus, Trash2, GripVertical, ExternalLink, ChevronDown, Copy } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
   DropdownMenu,
@@ -25,7 +25,7 @@ import {
 } from '@/components/ui/dropdown-menu';
 import CellRenderer from '../components/CellRenderer';
 import { useFields, useCreateField, useDeleteField, useRenameField, useReorderFields } from '../hooks/useFields';
-import { useRows, useCreateRow, useDeleteRow, useUpdateRow } from '../hooks/useRows';
+import { useRows, useCreateRow, useDeleteRow, useDuplicateRow, useUpdateRow } from '../hooks/useRows';
 import { useCells, useSetCell } from '../hooks/useCells';
 import { useMyWorkspaceRole } from '../hooks/useMyWorkspaceRole';
 import type { PcrmField, PcrmFieldType, PcrmRow, PcrmCell } from '../types';
@@ -114,6 +114,7 @@ export default function TableView({ workspaceId, searchTerm }: Props) {
   const createRow = useCreateRow(workspaceId);
   const updateRow = useUpdateRow(workspaceId);
   const deleteRow = useDeleteRow(workspaceId);
+  const duplicateRow = useDuplicateRow(workspaceId);
   const setCell = useSetCell(workspaceId);
 
   const cellMap = useMemo(() => {
@@ -229,6 +230,13 @@ export default function TableView({ workspaceId, searchTerm }: Props) {
                         title="Open record"
                       >
                         <ExternalLink className="w-3.5 h-3.5" />
+                      </button>
+                      <button
+                        onClick={() => duplicateRow.mutate(row.id)}
+                        className="opacity-0 group-hover:opacity-100 text-[#6B7280] hover:text-[#1E9A80]"
+                        title="Duplicate row"
+                      >
+                        <Copy className="w-3.5 h-3.5" />
                       </button>
                       {canDelete && (
                         <button

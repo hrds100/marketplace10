@@ -1,9 +1,9 @@
 import { useState } from 'react';
 import { useParams, useNavigate, Navigate } from 'react-router-dom';
-import { Table2, LayoutGrid, Calendar, Image as ImageIcon, Search, Plus } from 'lucide-react';
+import { Table2, LayoutGrid, Calendar, Image as ImageIcon, Search, Plus, Copy } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
-import { useWorkspace, useRenameWorkspace } from '../hooks/useWorkspaces';
+import { useWorkspace, useRenameWorkspace, useDuplicateWorkspace } from '../hooks/useWorkspaces';
 import { useCreateRow } from '../hooks/useRows';
 import { useMyWorkspaceRole } from '../hooks/useMyWorkspaceRole';
 import TableView from '../views/TableView';
@@ -25,6 +25,7 @@ export default function WorkspacePage() {
   const { data: workspace, isLoading } = useWorkspace(workspaceId);
   const createRow = useCreateRow(workspaceId);
   const renameWorkspace = useRenameWorkspace();
+  const duplicateWorkspace = useDuplicateWorkspace();
   const { data: myRole } = useMyWorkspaceRole(workspaceId);
   const canRename = myRole === 'admin';
   const [view, setView] = useState<PcrmViewType>('table');
@@ -74,10 +75,24 @@ export default function WorkspacePage() {
             <p className="text-[13px] text-[#6B7280] mt-0.5">{workspace.description}</p>
           )}
         </div>
-        <Button onClick={handleAddProperty} className="bg-[#1E9A80] hover:bg-[#168f74] text-white">
-          <Plus className="w-4 h-4 mr-1.5" />
-          Add property
-        </Button>
+        <div className="flex items-center gap-2">
+          <Button
+            variant="outline"
+            onClick={async () => {
+              const ws = await duplicateWorkspace.mutateAsync(workspace);
+              navigate(`/properties/${ws.id}`);
+            }}
+            disabled={duplicateWorkspace.isPending}
+            title="Copy this workspace's structure (columns) into a new workspace"
+          >
+            <Copy className="w-4 h-4 mr-1.5" />
+            Duplicate workspace
+          </Button>
+          <Button onClick={handleAddProperty} className="bg-[#1E9A80] hover:bg-[#168f74] text-white">
+            <Plus className="w-4 h-4 mr-1.5" />
+            Add property
+          </Button>
+        </div>
       </div>
 
       <div className="flex items-center justify-between mb-4 gap-3 flex-wrap">
