@@ -76,6 +76,7 @@ import PropertyCrmLayout from "@/features/property-crm/layout/PropertyCrmLayout"
 import PropertyCrmHome from "@/features/property-crm/pages/PropertyCrmHome";
 import PcrmWorkspacePage from "@/features/property-crm/pages/WorkspacePage";
 import PcrmRecordPage from "@/features/property-crm/pages/RecordPage";
+import PropertyCrmLoginPage from "@/features/property-crm/pages/PropertyCrmLoginPage";
 import NotFound from "./pages/NotFound";
 import BrandPage from "./pages/BrandPage";
 import InvestMarketplacePage from "./pages/invest/InvestMarketplacePage";
@@ -321,7 +322,10 @@ const App = () => (
             {/* Architecture overview */}
             <Route path="architecture" element={<AdminArchitecture />} />
           </Route>
-          {/* Property Ops CRM — staff-gated workspaces (pcrm_* tables) */}
+          {/* Property Ops CRM — staff-gated workspaces (pcrm_* tables).
+              Dedicated /properties/login page so staff don't share the
+              public /signin (which has social, OTP, landlord/tenant CTAs). */}
+          <Route path="/properties/login" element={<PropertyCrmLoginPage />} />
           <Route path="/properties" element={<StaffGuard><PropertyCrmLayout /></StaffGuard>}>
             <Route index element={<PropertyCrmHome />} />
             <Route path=":workspaceId" element={<PcrmWorkspacePage />} />

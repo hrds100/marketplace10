@@ -46,7 +46,7 @@ export default function StaffGuard({ children }: Props) {
   }
 
   if (!user) {
-    return <Navigate to="/signin" replace state={{ from: location.pathname }} />;
+    return <Navigate to="/properties/login" replace state={{ from: location.pathname }} />;
   }
 
   if (!isAdmin && !hasRole) {
@@ -60,7 +60,7 @@ export default function StaffGuard({ children }: Props) {
             workspace access, then refresh this page.
           </p>
           <a
-            href="/signin"
+            href="/properties/login"
             className="mt-5 inline-block text-[13px] font-semibold text-white bg-[#1E9A80] px-4 py-2 rounded-[10px]"
           >
             Sign in
