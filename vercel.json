@@ -24,6 +24,8 @@
     { "source": "/sms/:path*", "has": [{ "type": "host", "value": "nfstay.com" }], "destination": "https://hub.nfstay.com/sms/:path*", "permanent": false },
     { "source": "/agreement/:path*", "has": [{ "type": "host", "value": "nfstay.com" }], "destination": "https://hub.nfstay.com/agreement/:path*", "permanent": false },
     { "source": "/agreements", "has": [{ "type": "host", "value": "nfstay.com" }], "destination": "https://hub.nfstay.com/agreements", "permanent": false },
+    { "source": "/properties", "has": [{ "type": "host", "value": "nfstay.com" }], "destination": "https://hub.nfstay.com/properties", "permanent": false },
+    { "source": "/properties/:path*", "has": [{ "type": "host", "value": "nfstay.com" }], "destination": "https://hub.nfstay.com/properties/:path*", "permanent": false },
     { "source": "/signin", "has": [{ "type": "host", "value": "www.nfstay.com" }], "destination": "https://hub.nfstay.com/signin", "permanent": false },
     { "source": "/signup", "has": [{ "type": "host", "value": "www.nfstay.com" }], "destination": "https://hub.nfstay.com/signup", "permanent": false },
     { "source": "/dashboard/:path*", "has": [{ "type": "host", "value": "www.nfstay.com" }], "destination": "https://hub.nfstay.com/dashboard/:path*", "permanent": false },
@@ -176,6 +178,14 @@
     },
     {
       "source": "/agreements",
+      "destination": "/app.html"
+    },
+    {
+      "source": "/properties",
+      "destination": "/app.html"
+    },
+    {
+      "source": "/properties/:path*",
       "destination": "/app.html"
     },
     {
