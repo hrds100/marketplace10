@@ -27,6 +27,7 @@ import CellRenderer from '../components/CellRenderer';
 import { useFields, useCreateField, useDeleteField, useRenameField, useReorderFields } from '../hooks/useFields';
 import { useRows, useCreateRow, useDeleteRow, useUpdateRow } from '../hooks/useRows';
 import { useCells, useSetCell } from '../hooks/useCells';
+import { useMyWorkspaceRole } from '../hooks/useMyWorkspaceRole';
 import type { PcrmField, PcrmFieldType, PcrmRow, PcrmCell } from '../types';
 
 interface Props {
@@ -54,10 +55,12 @@ function SortableHeader({
   field,
   onRename,
   onDelete,
+  canDelete,
 }: {
   field: PcrmField;
   onRename: () => void;
   onDelete: () => void;
+  canDelete: boolean;
 }) {
   const { attributes, listeners, setNodeRef, transform, transition } = useSortable({ id: field.id });
   const style = { transform: CSS.Transform.toString(transform), transition };
@@ -82,13 +85,15 @@ function SortableHeader({
         <span className="text-[10px] text-[#9CA3AF] uppercase">
           {FIELD_TYPE_LABELS[field.field_type]}
         </span>
-        <button
-          onClick={onDelete}
-          className="opacity-0 group-hover:opacity-100 text-[#9CA3AF] hover:text-[#dc2626] ml-1"
-          aria-label="Delete column"
-        >
-          <Trash2 className="w-3.5 h-3.5" />
-        </button>
+        {canDelete && (
+          <button
+            onClick={onDelete}
+            className="opacity-0 group-hover:opacity-100 text-[#9CA3AF] hover:text-[#dc2626] ml-1"
+            aria-label="Delete column"
+          >
+            <Trash2 className="w-3.5 h-3.5" />
+          </button>
+        )}
       </div>
     </th>
   );
@@ -99,6 +104,8 @@ export default function TableView({ workspaceId, searchTerm }: Props) {
   const { data: fields = [] } = useFields(workspaceId);
   const { data: rows = [] } = useRows(workspaceId);
   const { data: cells = [] } = useCells(workspaceId);
+  const { data: myRole } = useMyWorkspaceRole(workspaceId);
+  const canDelete = myRole === 'admin';
 
   const createField = useCreateField(workspaceId);
   const renameField = useRenameField(workspaceId);
@@ -179,6 +186,7 @@ export default function TableView({ workspaceId, searchTerm }: Props) {
                       field={f}
                       onRename={() => handleRenameField(f)}
                       onDelete={() => handleDeleteField(f)}
+                      canDelete={canDelete}
                     />
                   ))}
                 </SortableContext>
@@ -222,13 +230,15 @@ export default function TableView({ workspaceId, searchTerm }: Props) {
                       >
                         <ExternalLink className="w-3.5 h-3.5" />
                       </button>
-                      <button
-                        onClick={() => handleDeleteRow(row)}
-                        className="opacity-0 group-hover:opacity-100 text-[#9CA3AF] hover:text-[#dc2626]"
-                        title="Delete row"
-                      >
-                        <Trash2 className="w-3.5 h-3.5" />
-                      </button>
+                      {canDelete && (
+                        <button
+                          onClick={() => handleDeleteRow(row)}
+                          className="opacity-0 group-hover:opacity-100 text-[#9CA3AF] hover:text-[#dc2626]"
+                          title="Delete row"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </button>
+                      )}
                     </div>
                   </td>
                   {fields.map((f) => {

@@ -8,16 +8,22 @@ import {
   useDuplicateWorkspace,
   useRenameWorkspace,
 } from '../hooks/useWorkspaces';
+import { useMyMemberships } from '../hooks/useMyMemberships';
+import { useAuth } from '@/hooks/useAuth';
 import NewWorkspaceDialog from '../components/NewWorkspaceDialog';
 import type { PcrmWorkspace } from '../types';
 
 export default function PropertyCrmHome() {
   const navigate = useNavigate();
   const { data: workspaces = [], isLoading } = useWorkspaces();
+  const { data: memberships = {} } = useMyMemberships();
+  const { isAdmin } = useAuth();
   const duplicate = useDuplicateWorkspace();
   const remove = useDeleteWorkspace();
   const rename = useRenameWorkspace();
   const [openNew, setOpenNew] = useState(false);
+
+  const canAdmin = (workspaceId: string) => isAdmin || memberships[workspaceId] === 'admin';
 
   async function handleRename(ws: PcrmWorkspace) {
     const next = window.prompt('Rename workspace', ws.name);
@@ -97,13 +103,15 @@ export default function PropertyCrmHome() {
                   Created {new Date(ws.created_at).toLocaleDateString()}
                 </div>
                 <div className="flex items-center gap-1">
-                  <button
-                    onClick={() => handleRename(ws)}
-                    className="p-1.5 rounded hover:bg-[#F3F3EE] text-[#6B7280]"
-                    title="Rename"
-                  >
-                    <Pencil className="w-3.5 h-3.5" />
-                  </button>
+                  {canAdmin(ws.id) && (
+                    <button
+                      onClick={() => handleRename(ws)}
+                      className="p-1.5 rounded hover:bg-[#F3F3EE] text-[#6B7280]"
+                      title="Rename"
+                    >
+                      <Pencil className="w-3.5 h-3.5" />
+                    </button>
+                  )}
                   <button
                     onClick={() => duplicate.mutate(ws)}
                     className="p-1.5 rounded hover:bg-[#F3F3EE] text-[#6B7280]"
@@ -111,13 +119,15 @@ export default function PropertyCrmHome() {
                   >
                     <Copy className="w-3.5 h-3.5" />
                   </button>
-                  <button
-                    onClick={() => handleDelete(ws)}
-                    className="p-1.5 rounded hover:bg-[#FEF2F2] text-[#dc2626]"
-                    title="Delete"
-                  >
-                    <Trash2 className="w-3.5 h-3.5" />
-                  </button>
+                  {canAdmin(ws.id) && (
+                    <button
+                      onClick={() => handleDelete(ws)}
+                      className="p-1.5 rounded hover:bg-[#FEF2F2] text-[#dc2626]"
+                      title="Delete"
+                    >
+                      <Trash2 className="w-3.5 h-3.5" />
+                    </button>
+                  )}
                 </div>
               </div>
             </div>

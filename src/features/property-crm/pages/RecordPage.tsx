@@ -20,6 +20,7 @@ import { useFields } from '../hooks/useFields';
 import { useCells, useSetCell } from '../hooks/useCells';
 import { useCredentials, useUpsertCredentials } from '../hooks/useCredentials';
 import { useDocuments, useUploadDocument, useDeleteDocument } from '../hooks/useDocuments';
+import { useMyWorkspaceRole } from '../hooks/useMyWorkspaceRole';
 import { getDocumentUrl } from '../api/documents';
 import CredentialField from '../components/CredentialField';
 import CellRenderer from '../components/CellRenderer';
@@ -45,6 +46,8 @@ export default function RecordPage() {
   const { data: cells = [] } = useCells(workspaceId);
   const { data: credentials } = useCredentials(recordId);
   const { data: documents = [] } = useDocuments(recordId);
+  const { data: myRole } = useMyWorkspaceRole(workspaceId);
+  const canDelete = myRole === 'admin';
 
   const updateRow = useUpdateRow(workspaceId);
   const setCell = useSetCell(workspaceId);
@@ -314,15 +317,17 @@ export default function RecordPage() {
                     >
                       <Download className="w-3.5 h-3.5" />
                     </button>
-                    <button
-                      onClick={() => {
-                        if (window.confirm(`Delete "${doc.name}"?`)) deleteDoc.mutate(doc);
-                      }}
-                      className="p-1.5 rounded hover:bg-[#FEF2F2] text-[#dc2626]"
-                      title="Delete"
-                    >
-                      <Trash2 className="w-3.5 h-3.5" />
-                    </button>
+                    {canDelete && (
+                      <button
+                        onClick={() => {
+                          if (window.confirm(`Delete "${doc.name}"?`)) deleteDoc.mutate(doc);
+                        }}
+                        className="p-1.5 rounded hover:bg-[#FEF2F2] text-[#dc2626]"
+                        title="Delete"
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
+                      </button>
+                    )}
                   </div>
                 </li>
               ))}
