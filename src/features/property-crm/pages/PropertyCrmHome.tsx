@@ -96,7 +96,7 @@ export default function PropertyCrmHome() {
                 </div>
               </div>
               <div
-                className="mt-4 pt-3 border-t border-[#E8E5DF] flex items-center justify-between opacity-0 group-hover:opacity-100 transition-opacity"
+                className="mt-4 pt-3 border-t border-[#E8E5DF] flex items-center justify-between"
                 onClick={(e) => e.stopPropagation()}
               >
                 <div className="text-[11px] text-[#9CA3AF]">

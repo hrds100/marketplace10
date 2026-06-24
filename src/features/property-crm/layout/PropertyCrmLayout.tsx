@@ -2,11 +2,20 @@ import { Outlet, NavLink, useNavigate } from 'react-router-dom';
 import { Building2, Plus, LogOut } from 'lucide-react';
 import { useWorkspaces } from '../hooks/useWorkspaces';
 import { useAuth } from '@/hooks/useAuth';
+import { supabase } from '@/integrations/supabase/client';
 
 export default function PropertyCrmLayout() {
   const { data: workspaces = [], isLoading } = useWorkspaces();
   const navigate = useNavigate();
-  const { signOut, user } = useAuth();
+  const { user } = useAuth();
+
+  // Override the shared useAuth.signOut() — it hardcodes a redirect to
+  // /signin, but staff who logged in via /properties/login should bounce
+  // back there, not into the tenant marketplace sign-in.
+  async function handleSignOut() {
+    await supabase.auth.signOut();
+    window.location.href = '/properties/login';
+  }
 
   return (
     <div className="min-h-screen flex bg-[#F3F3EE]">
@@ -72,7 +81,7 @@ export default function PropertyCrmLayout() {
         <div className="px-3 py-3 border-t border-[#E5E7EB]">
           <div className="px-2 py-2 text-[11px] text-[#6B7280] truncate">{user?.email}</div>
           <button
-            onClick={() => signOut()}
+            onClick={handleSignOut}
             className="flex items-center gap-2 px-2 py-1.5 rounded-[8px] text-[12px] text-[#6B7280] hover:bg-[#F3F3EE] w-full"
           >
             <LogOut className="w-3.5 h-3.5" />
