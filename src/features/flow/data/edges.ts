@@ -180,4 +180,9 @@ export const flowEdges: Edge[] = [
   E('adash-aarc', 'admin-dashboard', 'agreements-archive', 'Sidebar link'),
   animated('aarc-bpi', 'agreements-archive', 'bp-import', 'Click "Sync now"'),
 
+  // ═══════════════ PROPERTY OPS CRM ═══════════════
+
+  E('pcrm-home-workspace', 'pcrm-home', 'pcrm-workspace', 'Open workspace'),
+  E('pcrm-workspace-record', 'pcrm-workspace', 'pcrm-record', 'Click row'),
+
 ];
