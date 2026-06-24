@@ -74,8 +74,9 @@ function SortableHeader({
         <button
           {...attributes}
           {...listeners}
-          className="opacity-0 group-hover:opacity-100 cursor-grab text-[#9CA3AF] hover:text-[#1A1A1A]"
+          className="cursor-grab text-[#D1D5DB] hover:text-[#1A1A1A]"
           aria-label="Drag column"
+          title="Drag to reorder"
         >
           <GripVertical className="w-3.5 h-3.5" />
         </button>
@@ -88,8 +89,9 @@ function SortableHeader({
         {canDelete && (
           <button
             onClick={onDelete}
-            className="opacity-0 group-hover:opacity-100 text-[#9CA3AF] hover:text-[#dc2626] ml-1"
+            className="text-[#9CA3AF] hover:text-[#dc2626] ml-1"
             aria-label="Delete column"
+            title="Delete column"
           >
             <Trash2 className="w-3.5 h-3.5" />
           </button>
@@ -226,14 +228,14 @@ export default function TableView({ workspaceId, searchTerm }: Props) {
                       />
                       <button
                         onClick={() => navigate(`/properties/${workspaceId}/${row.id}`)}
-                        className="opacity-0 group-hover:opacity-100 text-[#6B7280] hover:text-[#1E9A80]"
+                        className="text-[#6B7280] hover:text-[#1E9A80]"
                         title="Open record"
                       >
                         <ExternalLink className="w-3.5 h-3.5" />
                       </button>
                       <button
                         onClick={() => duplicateRow.mutate(row.id)}
-                        className="opacity-0 group-hover:opacity-100 text-[#6B7280] hover:text-[#1E9A80]"
+                        className="text-[#6B7280] hover:text-[#1E9A80]"
                         title="Duplicate row"
                       >
                         <Copy className="w-3.5 h-3.5" />
@@ -241,7 +243,7 @@ export default function TableView({ workspaceId, searchTerm }: Props) {
                       {canDelete && (
                         <button
                           onClick={() => handleDeleteRow(row)}
-                          className="opacity-0 group-hover:opacity-100 text-[#9CA3AF] hover:text-[#dc2626]"
+                          className="text-[#9CA3AF] hover:text-[#dc2626]"
                           title="Delete row"
                         >
                           <Trash2 className="w-3.5 h-3.5" />
