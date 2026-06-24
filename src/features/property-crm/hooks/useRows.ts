@@ -1,6 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useAuth } from '@/hooks/useAuth';
-import { createRow, deleteRow, getRow, listRows, updateRow } from '../api/rows';
+import { createRow, deleteRow, duplicateRow, getRow, listRows, updateRow } from '../api/rows';
 import type { PcrmRow } from '../types';
 
 export function useRows(workspaceId: string | undefined) {
@@ -53,5 +53,20 @@ export function useDeleteRow(workspaceId: string) {
   return useMutation({
     mutationFn: (id: string) => deleteRow(id),
     onSuccess: () => qc.invalidateQueries({ queryKey: ['pcrm', 'rows', workspaceId] }),
+  });
+}
+
+export function useDuplicateRow(workspaceId: string) {
+  const qc = useQueryClient();
+  const { user } = useAuth();
+  return useMutation({
+    mutationFn: (id: string) => {
+      if (!user) throw new Error('Not signed in');
+      return duplicateRow(id, user.id);
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['pcrm', 'rows', workspaceId] });
+      qc.invalidateQueries({ queryKey: ['pcrm', 'cells', workspaceId] });
+    },
   });
 }
