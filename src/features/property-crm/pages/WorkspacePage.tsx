@@ -3,8 +3,9 @@ import { useParams, useNavigate, Navigate } from 'react-router-dom';
 import { Table2, LayoutGrid, Calendar, Image as ImageIcon, Search, Plus } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
-import { useWorkspace } from '../hooks/useWorkspaces';
+import { useWorkspace, useRenameWorkspace } from '../hooks/useWorkspaces';
 import { useCreateRow } from '../hooks/useRows';
+import { useMyWorkspaceRole } from '../hooks/useMyWorkspaceRole';
 import TableView from '../views/TableView';
 import KanbanView from '../views/KanbanView';
 import CalendarView from '../views/CalendarView';
@@ -23,6 +24,9 @@ export default function WorkspacePage() {
   const navigate = useNavigate();
   const { data: workspace, isLoading } = useWorkspace(workspaceId);
   const createRow = useCreateRow(workspaceId);
+  const renameWorkspace = useRenameWorkspace();
+  const { data: myRole } = useMyWorkspaceRole(workspaceId);
+  const canRename = myRole === 'admin';
   const [view, setView] = useState<PcrmViewType>('table');
   const [searchTerm, setSearchTerm] = useState('');
 
@@ -42,8 +46,30 @@ export default function WorkspacePage() {
   return (
     <div className="px-8 py-6">
       <div className="flex items-center justify-between mb-5">
-        <div>
-          <h1 className="text-[22px] font-bold text-[#0A0A0A]">{workspace.name}</h1>
+        <div className="min-w-0 flex-1">
+          {canRename ? (
+            <input
+              type="text"
+              defaultValue={workspace.name}
+              onBlur={(e) => {
+                const next = e.target.value.trim();
+                if (next && next !== workspace.name) {
+                  renameWorkspace.mutate({ id: workspace.id, name: next });
+                }
+              }}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') (e.target as HTMLInputElement).blur();
+                if (e.key === 'Escape') {
+                  (e.target as HTMLInputElement).value = workspace.name;
+                  (e.target as HTMLInputElement).blur();
+                }
+              }}
+              className="text-[22px] font-bold text-[#0A0A0A] bg-transparent border-none outline-none w-full hover:bg-[#F3F3EE] focus:bg-white focus:ring-1 focus:ring-[#1E9A80]/40 rounded px-1 -mx-1"
+              title="Click to rename"
+            />
+          ) : (
+            <h1 className="text-[22px] font-bold text-[#0A0A0A]">{workspace.name}</h1>
+          )}
           {workspace.description && (
             <p className="text-[13px] text-[#6B7280] mt-0.5">{workspace.description}</p>
           )}
