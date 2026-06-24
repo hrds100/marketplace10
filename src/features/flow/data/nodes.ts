@@ -1006,4 +1006,52 @@ export const flowNodes: Node<FlowNodeData>[] = [
     debugTrigger: 'POST /functions/v1/bp-import?action=full-sync',
   }, GX.admin + 200, 1560),
 
+  // ═══════════════════════════════════════
+  // GROUP: PROPERTY OPS CRM (internal staff tool, pcrm_* tables)
+  // ═══════════════════════════════════════
+
+  n('pcrm-home', 'Property CRM', {
+    description: 'Internal staff CRM at /properties. Workspace list with create/rename/duplicate/delete. Gated by StaffGuard (profiles.workspace_role IS NOT NULL OR admin email).',
+    actor: 'admin',
+    route: '/properties',
+    files: [
+      'src/features/property-crm/pages/PropertyCrmHome.tsx',
+      'src/features/property-crm/layout/PropertyCrmLayout.tsx',
+      'src/components/StaffGuard.tsx',
+    ],
+    tables: ['pcrm_workspaces', 'pcrm_members'],
+    confidence: 'confirmed',
+    debugTrigger: 'Staff navigates to /properties',
+  }, GX.admin, 1720),
+
+  n('pcrm-workspace', 'CRM Workspace', {
+    description: 'Per-workspace view at /properties/:workspaceId. Four view modes: Table (Monday-style row/col builder, drag reorder, inline edit), Kanban (drag between statuses), Calendar (rows grouped by creation date), Gallery (card grid). Search filter and Add Property button.',
+    actor: 'admin',
+    route: '/properties/:workspaceId',
+    files: [
+      'src/features/property-crm/pages/WorkspacePage.tsx',
+      'src/features/property-crm/views/TableView.tsx',
+      'src/features/property-crm/views/KanbanView.tsx',
+      'src/features/property-crm/views/CalendarView.tsx',
+      'src/features/property-crm/views/GalleryView.tsx',
+    ],
+    tables: ['pcrm_workspaces', 'pcrm_fields', 'pcrm_rows', 'pcrm_cells', 'pcrm_views'],
+    confidence: 'confirmed',
+    debugTrigger: 'Staff opens a workspace from sidebar',
+  }, GX.admin + 200, 1880),
+
+  n('pcrm-record', 'Property Record', {
+    description: 'Detail view at /properties/:workspaceId/:recordId. Six tabs: General (workspace fields), Internet (wifi name/password/provider), Accounts (broadband + booking portal creds), Operations (ops-named fields), Documents (file uploads to pcrm-docs bucket), History (audit timeline).',
+    actor: 'admin',
+    route: '/properties/:workspaceId/:recordId',
+    files: [
+      'src/features/property-crm/pages/RecordPage.tsx',
+      'src/features/property-crm/components/CredentialField.tsx',
+      'src/features/property-crm/components/ActivityTimeline.tsx',
+    ],
+    tables: ['pcrm_rows', 'pcrm_cells', 'pcrm_credentials', 'pcrm_documents', 'pcrm_activity'],
+    confidence: 'confirmed',
+    debugTrigger: 'Staff clicks a property row',
+  }, GX.admin + 400, 2040),
+
 ];

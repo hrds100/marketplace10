@@ -70,6 +70,12 @@ import AdminWorkspaceSelector from "@/features/admin-dashboard/AdminWorkspaceSel
 import AdminArchitecture from "@/features/admin-dashboard/AdminArchitecture";
 import WhatsAppScraperPage from "@/features/whatsapp-scraper/WhatsAppScraperPage";
 import AdminGuard from "./components/AdminGuard";
+import StaffGuard from "./components/StaffGuard";
+// Property Ops CRM — internal staff tool at /properties (pcrm_* tables)
+import PropertyCrmLayout from "@/features/property-crm/layout/PropertyCrmLayout";
+import PropertyCrmHome from "@/features/property-crm/pages/PropertyCrmHome";
+import PcrmWorkspacePage from "@/features/property-crm/pages/WorkspacePage";
+import PcrmRecordPage from "@/features/property-crm/pages/RecordPage";
 import NotFound from "./pages/NotFound";
 import BrandPage from "./pages/BrandPage";
 import InvestMarketplacePage from "./pages/invest/InvestMarketplacePage";
@@ -314,6 +320,12 @@ const App = () => (
 
             {/* Architecture overview */}
             <Route path="architecture" element={<AdminArchitecture />} />
+          </Route>
+          {/* Property Ops CRM — staff-gated workspaces (pcrm_* tables) */}
+          <Route path="/properties" element={<StaffGuard><PropertyCrmLayout /></StaffGuard>}>
+            <Route index element={<PropertyCrmHome />} />
+            <Route path=":workspaceId" element={<PcrmWorkspacePage />} />
+            <Route path=":workspaceId/:recordId" element={<PcrmRecordPage />} />
           </Route>
           <Route path="/brand" element={<BrandPage />} />
           {/* nfstay operator routes — isolated module */}
