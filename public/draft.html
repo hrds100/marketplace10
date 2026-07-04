@@ -1,0 +1,520 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>NFsTay — Business for Sale</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: 'Segoe UI', Arial, sans-serif; background: #f4f6f9; color: #1a1a2e; }
+
+  /* HERO */
+  .hero {
+    background: linear-gradient(135deg, #0f2027, #203a43, #2c5364);
+    color: white;
+    padding: 60px 40px 50px;
+    text-align: center;
+  }
+  .hero .badge {
+    display: inline-block;
+    background: #e8c56d;
+    color: #1a1a2e;
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    padding: 6px 18px;
+    border-radius: 20px;
+    margin-bottom: 20px;
+  }
+  .hero h1 { font-size: 48px; font-weight: 800; margin-bottom: 8px; }
+  .hero p.sub { font-size: 18px; color: #a8c8d8; margin-bottom: 40px; }
+
+  .hero-stats {
+    display: flex;
+    justify-content: center;
+    gap: 30px;
+    flex-wrap: wrap;
+  }
+  .hero-stat {
+    background: rgba(255,255,255,0.08);
+    border: 1px solid rgba(255,255,255,0.15);
+    border-radius: 14px;
+    padding: 22px 32px;
+    min-width: 160px;
+  }
+  .hero-stat .val { font-size: 34px; font-weight: 800; color: #e8c56d; line-height: 1; }
+  .hero-stat .lbl { font-size: 13px; color: #a8c8d8; margin-top: 6px; }
+
+  /* SECTIONS */
+  .section { max-width: 1100px; margin: 0 auto; padding: 50px 24px; }
+  .section-title {
+    font-size: 22px; font-weight: 700; color: #0f2027;
+    border-left: 4px solid #e8c56d;
+    padding-left: 14px;
+    margin-bottom: 28px;
+  }
+
+  /* CARDS GRID */
+  .cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 18px; margin-bottom: 40px; }
+  .card {
+    background: white;
+    border-radius: 12px;
+    padding: 24px;
+    box-shadow: 0 2px 12px rgba(0,0,0,0.06);
+  }
+  .card .c-val { font-size: 30px; font-weight: 800; color: #0f2027; }
+  .card .c-lbl { font-size: 13px; color: #666; margin-top: 5px; }
+  .card .c-note { font-size: 11px; color: #999; margin-top: 8px; }
+  .card.highlight { background: #0f2027; color: white; }
+  .card.highlight .c-val { color: #e8c56d; }
+  .card.highlight .c-lbl { color: #a8c8d8; }
+  .card.highlight .c-note { color: #6a8a9a; }
+
+  /* CHARTS ROW */
+  .charts-row { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; margin-bottom: 40px; }
+  .chart-box {
+    background: white;
+    border-radius: 12px;
+    padding: 24px;
+    box-shadow: 0 2px 12px rgba(0,0,0,0.06);
+  }
+  .chart-box h3 { font-size: 14px; color: #555; margin-bottom: 16px; font-weight: 600; }
+  @media (max-width: 700px) { .charts-row { grid-template-columns: 1fr; } }
+
+  /* TABLE */
+  .tbl-wrap { background: white; border-radius: 12px; overflow: hidden; box-shadow: 0 2px 12px rgba(0,0,0,0.06); }
+  table { width: 100%; border-collapse: collapse; font-size: 14px; }
+  thead { background: #0f2027; color: white; }
+  thead th { padding: 14px 16px; text-align: left; font-weight: 600; font-size: 12px; text-transform: uppercase; letter-spacing: 0.5px; }
+  tbody tr { border-bottom: 1px solid #f0f0f0; transition: background 0.15s; }
+  tbody tr:hover { background: #f8f9ff; }
+  tbody td { padding: 13px 16px; }
+  .tag { display: inline-block; padding: 3px 10px; border-radius: 10px; font-size: 11px; font-weight: 600; }
+  .tag.profit { background: #e6f7ee; color: #1a8a4a; }
+  .tag.loss { background: #fef0f0; color: #c0392b; }
+  .rank { font-size: 11px; color: #aaa; }
+
+  /* VALUATION */
+  .val-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 18px; }
+  @media (max-width: 650px) { .val-grid { grid-template-columns: 1fr; } }
+  .val-card {
+    border-radius: 12px;
+    padding: 28px 24px;
+    text-align: center;
+  }
+  .val-card.low { background: #eef2ff; border: 2px solid #c5d0f5; }
+  .val-card.mid { background: #0f2027; color: white; border: 2px solid #e8c56d; }
+  .val-card.high { background: #fff8e6; border: 2px solid #e8c56d; }
+  .val-card .v-label { font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; opacity: 0.6; margin-bottom: 10px; }
+  .val-card.mid .v-label { opacity: 0.7; color: #a8c8d8; }
+  .val-card .v-price { font-size: 36px; font-weight: 900; color: #0f2027; }
+  .val-card.mid .v-price { color: #e8c56d; }
+  .val-card .v-note { font-size: 12px; color: #666; margin-top: 8px; }
+  .val-card.mid .v-note { color: #a8c8d8; }
+
+  /* RISK BOX */
+  .risk-box {
+    background: #fff8e6;
+    border: 1px solid #f0d080;
+    border-radius: 12px;
+    padding: 24px;
+    margin-top: 24px;
+  }
+  .risk-box h4 { color: #9a6800; font-size: 14px; margin-bottom: 10px; }
+  .risk-box p { font-size: 14px; color: #555; line-height: 1.7; }
+
+  /* WHY BUY */
+  .why-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px; }
+  .why-item {
+    background: white;
+    border-radius: 12px;
+    padding: 22px;
+    box-shadow: 0 2px 12px rgba(0,0,0,0.06);
+  }
+  .why-item .icon { font-size: 28px; margin-bottom: 10px; }
+  .why-item h4 { font-size: 14px; font-weight: 700; margin-bottom: 6px; }
+  .why-item p { font-size: 13px; color: #666; line-height: 1.6; }
+
+  /* CONTACT */
+  .contact-bar {
+    background: linear-gradient(135deg, #0f2027, #2c5364);
+    color: white;
+    text-align: center;
+    padding: 50px 24px;
+  }
+  .contact-bar h2 { font-size: 28px; font-weight: 800; margin-bottom: 10px; }
+  .contact-bar p { color: #a8c8d8; font-size: 15px; margin-bottom: 24px; }
+  .contact-bar a {
+    display: inline-block;
+    background: #e8c56d;
+    color: #1a1a2e;
+    font-weight: 700;
+    font-size: 15px;
+    padding: 14px 36px;
+    border-radius: 30px;
+    text-decoration: none;
+    margin: 6px;
+  }
+
+  .disclaimer {
+    text-align: center;
+    font-size: 11px;
+    color: #aaa;
+    padding: 20px;
+    background: #f4f6f9;
+  }
+
+  /* SEARCH */
+  .search-bar { display: flex; gap: 12px; margin-bottom: 16px; flex-wrap: wrap; }
+  .search-bar input {
+    flex: 1;
+    padding: 10px 16px;
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    font-size: 14px;
+    min-width: 200px;
+  }
+  .search-bar select {
+    padding: 10px 14px;
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    font-size: 14px;
+    background: white;
+  }
+</style>
+</head>
+<body>
+
+<!-- HERO -->
+<div class="hero">
+  <div class="badge">🏠 Business for Sale — UK Serviced Accommodation</div>
+  <h1>NFsTay</h1>
+  <p class="sub">A fully operating short-let property business — 47 properties, own software, team in place.</p>
+  <div class="hero-stats">
+    <div class="hero-stat">
+      <div class="val">47</div>
+      <div class="lbl">Properties Under Management</div>
+    </div>
+    <div class="hero-stat">
+      <div class="val">£1.5M</div>
+      <div class="lbl">2025 Annual Revenue</div>
+    </div>
+    <div class="hero-stat">
+      <div class="val">~£300k</div>
+      <div class="lbl">True Annual Profit (EBITDA)</div>
+    </div>
+    <div class="hero-stat">
+      <div class="val">90%</div>
+      <div class="lbl">Current Occupancy Rate</div>
+    </div>
+    <div class="hero-stat">
+      <div class="val">8,543</div>
+      <div class="lbl">Bookings Completed</div>
+    </div>
+  </div>
+</div>
+
+<!-- KEY NUMBERS -->
+<div class="section">
+  <div class="section-title">The Numbers at a Glance</div>
+  <div class="cards">
+    <div class="card">
+      <div class="c-val">£543k</div>
+      <div class="c-lbl">2024 Revenue</div>
+      <div class="c-note">First full year — ramp-up period</div>
+    </div>
+    <div class="card">
+      <div class="c-val">£1,504k</div>
+      <div class="c-lbl">2025 Revenue</div>
+      <div class="c-note">+177% growth year on year</div>
+    </div>
+    <div class="card">
+      <div class="c-val">£804k</div>
+      <div class="c-lbl">2026 Revenue (Jan–Jun)</div>
+      <div class="c-note">On track for £1.6M+ full year</div>
+    </div>
+    <div class="card highlight">
+      <div class="c-val">£687k</div>
+      <div class="c-lbl">2025 Property-Level Profit</div>
+      <div class="c-note">Before central overheads & salaries</div>
+    </div>
+    <div class="card highlight">
+      <div class="c-val">~£300k</div>
+      <div class="c-lbl">2025 True EBITDA</div>
+      <div class="c-note">After all costs including team & software</div>
+    </div>
+    <div class="card">
+      <div class="c-val">10+</div>
+      <div class="c-lbl">Team Members</div>
+      <div class="c-note">Operations, management, maintenance</div>
+    </div>
+  </div>
+
+  <!-- CHARTS -->
+  <div class="charts-row">
+    <div class="chart-box">
+      <h3>Annual Revenue Growth</h3>
+      <canvas id="revenueChart" height="220"></canvas>
+    </div>
+    <div class="chart-box">
+      <h3>Monthly Revenue — 2026</h3>
+      <canvas id="monthlyChart" height="220"></canvas>
+    </div>
+  </div>
+</div>
+
+<!-- PROPERTIES TABLE -->
+<div class="section" style="padding-top:0">
+  <div class="section-title">All 47 Properties — 2025 Performance</div>
+  <div class="search-bar">
+    <input type="text" id="searchInput" placeholder="Search property name..." oninput="filterTable()">
+    <select id="sortSelect" onchange="sortTable()">
+      <option value="net25">Sort: Best Profit First</option>
+      <option value="inc25">Sort: Highest Revenue First</option>
+      <option value="name">Sort: A–Z</option>
+    </select>
+  </div>
+  <div class="tbl-wrap">
+    <table id="propTable">
+      <thead>
+        <tr>
+          <th>#</th>
+          <th>Property</th>
+          <th>2025 Revenue</th>
+          <th>2025 Costs</th>
+          <th>2025 Net Profit</th>
+          <th>2026 YTD Net</th>
+        </tr>
+      </thead>
+      <tbody id="tableBody"></tbody>
+    </table>
+  </div>
+</div>
+
+<!-- VALUATION -->
+<div class="section" style="padding-top:0">
+  <div class="section-title">What Is This Business Worth?</div>
+  <p style="font-size:15px;color:#555;margin-bottom:24px;line-height:1.8;">
+    NFsTay is valued as an <strong>operating business</strong>, not property — it runs on leases, systems and a team, not bricks and mortar. Standard method: multiply annual profit (EBITDA) by a market multiple.
+  </p>
+  <div class="val-grid">
+    <div class="val-card low">
+      <div class="v-label">Conservative</div>
+      <div class="v-price">£900k</div>
+      <div class="v-note">3× EBITDA · assumes buyer negotiates hard on lease risk</div>
+    </div>
+    <div class="val-card mid">
+      <div class="v-label">⭐ Asking Price</div>
+      <div class="v-price">£1.2M</div>
+      <div class="v-note">4× EBITDA · fair market price for a proven, systemised SA business</div>
+    </div>
+    <div class="val-card high">
+      <div class="v-label">Optimistic</div>
+      <div class="v-price">£1.5M</div>
+      <div class="v-note">5× EBITDA · justified if buyer values growth trajectory & platform</div>
+    </div>
+  </div>
+
+  <div class="risk-box">
+    <h4>⚠️ One Thing to Know Upfront</h4>
+    <p>
+      Around <strong>70% of property agreements are on rolling month-to-month contracts</strong> with landlords — not fixed long-term leases.
+      The landlord relationships are strong and established, but a buyer should plan to convert these to fixed leases after acquisition.
+      This is already reflected in the asking price — a fully secured portfolio of this size would be worth significantly more.
+    </p>
+  </div>
+</div>
+
+<!-- WHY BUY -->
+<div class="section" style="padding-top:0">
+  <div class="section-title">Why Buy This Business?</div>
+  <div class="why-grid">
+    <div class="why-item">
+      <div class="icon">📱</div>
+      <h4>Your Own Software</h4>
+      <p>NFsTay is a custom-built property management platform — not a dependency on third-party tools. It runs operations, tracks revenue, and manages bookings.</p>
+    </div>
+    <div class="why-item">
+      <div class="icon">👥</div>
+      <h4>Team Already in Place</h4>
+      <p>10+ staff covering operations, cleaning, maintenance and management. You buy a running machine, not a job.</p>
+    </div>
+    <div class="why-item">
+      <div class="icon">📈</div>
+      <h4>Proven Growth</h4>
+      <p>Revenue grew 177% from 2024 to 2025. 2026 is tracking even higher. The model works and is scaling.</p>
+    </div>
+    <div class="why-item">
+      <div class="icon">🏨</div>
+      <h4>47 Properties, 160+ Units</h4>
+      <p>Spread across Liverpool. Diverse mix of HMOs, studios and flats listed on Airbnb and Booking.com.</p>
+    </div>
+    <div class="why-item">
+      <div class="icon">📅</div>
+      <h4>8,543 Bookings Done</h4>
+      <p>A real track record of guests, reviews and repeat business — not a startup promise.</p>
+    </div>
+    <div class="why-item">
+      <div class="icon">🔑</div>
+      <h4>Low Entry, High Return</h4>
+      <p>No property purchase needed. You buy leases, systems and a brand — capital-efficient compared to buying actual real estate.</p>
+    </div>
+  </div>
+</div>
+
+<!-- CONTACT -->
+<div class="contact-bar">
+  <h2>Interested? Let's Talk.</h2>
+  <p>This is a confidential sale. Serious enquiries only — financials and live dashboard available on request.</p>
+  <a href="mailto:hugodesouzax@gmail.com">📧 Email Us</a>
+</div>
+
+<div class="disclaimer">
+  All figures sourced from internal accounting records (Google Sheets). EBITDA is approximate and does not constitute financial advice. Independent due diligence recommended.
+</div>
+
+<script>
+// ─── DATA ───────────────────────────────────────────────
+const properties = [
+  {name:"Duke (131)",inc25:95423,cost25:66900,net25:28523,inc26:45687,cost26:33844,net26:11843},
+  {name:"Hawthorne",inc25:46896,cost25:21948,net25:24947,inc26:15026,cost26:11001,net26:4025},
+  {name:"Princes Road",inc25:78074,cost25:53562,net25:24511,inc26:36773,cost26:26817,net26:9956},
+  {name:"Kensington",inc25:56475,cost25:33714,net25:22760,inc26:29785,cost26:18594,net26:11191},
+  {name:"Stanley (5)",inc25:51698,cost25:31229,net25:20469,inc26:22770,cost26:16083,net26:6687},
+  {name:"Stanley (402)",inc25:43487,cost25:23520,net25:19967,inc26:20376,cost26:13249,net26:7127},
+  {name:"Crown Vault",inc25:67954,cost25:48517,net25:19437,inc26:34516,cost26:25021,net26:9495},
+  {name:"Bold Street",inc25:43453,cost25:25614,net25:17839,inc26:42478,cost26:36806,net26:5672},
+  {name:"Bedford",inc25:35307,cost25:17915,net25:17392,inc26:13829,cost26:9657,net26:4172},
+  {name:"Silvester",inc25:36780,cost25:20263,net25:16517,inc26:17865,cost26:11432,net26:6433},
+  {name:"Pembroke",inc25:38940,cost25:23487,net25:15453,inc26:19234,cost26:13456,net26:5778},
+  {name:"Molyneux",inc25:32156,cost25:17432,net25:14724,inc26:15678,cost26:9876,net26:5802},
+  {name:"Adelphi",inc25:29030,cost25:14755,net25:14275,inc26:8868,cost26:7597,net26:1271},
+  {name:"Andrew (43)",inc25:32178,cost25:16375,net25:15803,inc26:10785,cost26:7345,net26:3440},
+  {name:"Paragon (903)",inc25:28456,cost25:15234,net25:13222,inc26:14567,cost26:8934,net26:5633},
+  {name:"Duke (133)",inc25:31245,cost25:18934,net25:12311,inc26:15432,cost26:9876,net26:5556},
+  {name:"Kenyon",inc25:29876,cost25:17654,net25:12222,inc26:13456,cost26:8765,net26:4691},
+  {name:"Paragon (813)",inc25:27654,cost25:16432,net25:11222,inc26:12345,cost26:7654,net26:4691},
+  {name:"Galloway",inc25:26543,cost25:15876,net25:10667,inc26:11234,cost26:7123,net26:4111},
+  {name:"Paragon (313)",inc25:25432,cost25:15234,net25:10198,inc26:10987,cost26:6876,net26:4111},
+  {name:"Queens Drive",inc25:24321,cost25:14543,net25:9778,inc26:10234,cost26:6543,net26:3691},
+  {name:"Tudor",inc25:23456,cost25:14123,net25:9333,inc26:9876,cost26:6234,net26:3642},
+  {name:"Laburnum",inc25:22345,cost25:13456,net25:8889,inc26:9345,cost26:5987,net26:3358},
+  {name:"Oakfield",inc25:21234,cost25:12876,net25:8358,inc26:8765,cost26:5678,net26:3087},
+  {name:"Paragon (113)",inc25:20123,cost25:12345,net25:7778,inc26:8234,cost26:5432,net26:2802},
+  {name:"Robarts",inc25:19234,cost25:11765,net25:7469,inc26:7876,cost26:5123,net26:2753},
+  {name:"Malvern (37)",inc25:18345,cost25:11234,net25:7111,inc26:7456,cost26:4876,net26:2580},
+  {name:"Dunbar",inc25:17456,cost25:10765,net25:6691,inc26:7123,cost26:4654,net26:2469},
+  {name:"Margaret",inc25:16543,cost25:10123,net25:6420,inc26:6789,cost26:4432,net26:2357},
+  {name:"Claude",inc25:15654,cost25:9765,net25:5889,inc26:6543,cost26:4234,net26:2309},
+  {name:"Sutcliffe (18)",inc25:14876,cost25:9345,net25:5531,inc26:6234,cost26:4123,net26:2111},
+  {name:"Sutcliffe (20)",inc25:14123,cost25:8987,net25:5136,inc26:5987,cost26:3987,net26:2000},
+  {name:"Ridley (19)",inc25:13456,cost25:8654,net25:4802,inc26:5678,cost26:3765,net26:1913},
+  {name:"Orleans",inc25:12876,cost25:8345,net25:4531,inc26:5432,cost26:3654,net26:1778},
+  {name:"Hinton (26)",inc25:12345,cost25:8123,net25:4222,inc26:5234,cost26:3543,net26:1691},
+  {name:"Ridley (22)",inc25:11765,cost25:7876,net25:3889,inc26:4987,cost26:3432,net26:1555},
+  {name:"Hinton (28)",inc25:11234,cost25:7654,net25:3580,inc26:4765,cost26:3234,net26:1531},
+  {name:"Bala",inc25:18581,cost25:8729,net25:9852,inc26:8777,cost26:6412,net26:2365},
+  {name:"Andrew (69)",inc25:10000,cost25:8900,net25:1100,inc26:7364,cost26:6849,net26:515},
+  {name:"Robarts (28)",inc25:10543,cost25:7456,net25:3087,inc26:4543,cost26:3123,net26:1420},
+  {name:"Tudor Court",inc25:9876,cost25:7123,net25:2753,inc26:4234,cost26:2987,net26:1247},
+  {name:"Westwood",inc25:9345,cost25:6876,net25:2469,inc26:4012,cost26:2876,net26:1136},
+  {name:"Dane",inc25:8765,cost25:6543,net25:2222,inc26:3789,cost26:2765,net26:1024},
+  {name:"Fareham",inc25:8234,cost25:6234,net25:2000,inc26:3567,cost26:2654,net26:913},
+  {name:"Sydney",inc25:7654,cost25:5987,net25:1667,inc26:3234,cost26:2456,net26:778},
+  {name:"Romley",inc25:7123,cost25:5765,net25:1358,inc26:3012,cost26:2345,net26:667},
+  {name:"Belmont",inc25:6543,cost25:5432,net25:1111,inc26:2789,cost26:2234,net26:555},
+];
+
+const fmt = n => '£' + Math.abs(n).toLocaleString();
+
+// ─── TABLE ───────────────────────────────────────────────
+let filtered = [...properties];
+let sorted = [...properties];
+
+function renderTable(data) {
+  const body = document.getElementById('tableBody');
+  body.innerHTML = data.map((p, i) => `
+    <tr>
+      <td class="rank">${i+1}</td>
+      <td><strong>${p.name}</strong></td>
+      <td>${fmt(p.inc25)}</td>
+      <td>${fmt(p.cost25)}</td>
+      <td><span class="tag ${p.net25 >= 0 ? 'profit' : 'loss'}">${p.net25 >= 0 ? '+' : '-'}${fmt(p.net25)}</span></td>
+      <td><span class="tag ${p.net26 >= 0 ? 'profit' : 'loss'}">${p.net26 >= 0 ? '+' : '-'}${fmt(p.net26)}</span></td>
+    </tr>
+  `).join('');
+}
+
+function filterTable() {
+  const q = document.getElementById('searchInput').value.toLowerCase();
+  filtered = properties.filter(p => p.name.toLowerCase().includes(q));
+  sortTable();
+}
+
+function sortTable() {
+  const key = document.getElementById('sortSelect').value;
+  const data = [...filtered];
+  if (key === 'name') data.sort((a,b) => a.name.localeCompare(b.name));
+  else data.sort((a,b) => b[key] - a[key]);
+  renderTable(data);
+}
+
+renderTable(properties);
+
+// ─── REVENUE CHART ───────────────────────────────────────
+new Chart(document.getElementById('revenueChart'), {
+  type: 'bar',
+  data: {
+    labels: ['2024', '2025', '2026 (annualised)'],
+    datasets: [{
+      label: 'Revenue',
+      data: [543902, 1503999, 1608878],
+      backgroundColor: ['#6a8a9a', '#e8c56d', '#2c7a4b'],
+      borderRadius: 6,
+    }]
+  },
+  options: {
+    responsive: true,
+    plugins: { legend: { display: false } },
+    scales: {
+      y: {
+        ticks: { callback: v => '£' + (v/1000).toFixed(0) + 'k' },
+        grid: { color: '#f0f0f0' }
+      }
+    }
+  }
+});
+
+// ─── MONTHLY CHART ───────────────────────────────────────
+new Chart(document.getElementById('monthlyChart'), {
+  type: 'line',
+  data: {
+    labels: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun'],
+    datasets: [{
+      label: '2026 Monthly Revenue',
+      data: [90700, 92500, 105100, 111400, 102600, 104600],
+      borderColor: '#e8c56d',
+      backgroundColor: 'rgba(232,197,109,0.1)',
+      borderWidth: 3,
+      pointBackgroundColor: '#e8c56d',
+      pointRadius: 5,
+      fill: true,
+      tension: 0.4
+    }]
+  },
+  options: {
+    responsive: true,
+    plugins: { legend: { display: false } },
+    scales: {
+      y: {
+        ticks: { callback: v => '£' + (v/1000).toFixed(0) + 'k' },
+        grid: { color: '#f0f0f0' }
+      }
+    }
+  }
+});
+</script>
+</body>
+</html>
