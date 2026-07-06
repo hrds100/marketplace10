@@ -2,8 +2,9 @@
 //
 // AUTH MODEL:
 //   - Caller MUST send Authorization: Bearer <supabase_jwt>
-//   - We resolve the user from the JWT, confirm workspace_role IN ('agent','admin'),
-//     and use profiles.id (uuid) as the Twilio Client identity.
+//   - We resolve the user from the JWT, confirm workspace_role IN
+//     ('agent','admin','worker'), and use profiles.id (uuid) as the Twilio
+//     Client identity. ('worker' added 2026-07-06 — simple-dialer role.)
 //
 // CREDS REQUIRED:
 //   - TWILIO_ACCOUNT_SID         (already in env from /sms)
@@ -113,7 +114,7 @@ serve(async (req: Request) => {
     }
     const isAdmin = ['admin@hub.nfstay.com', 'hugo@nfstay.com', 'hugodesouzax@gmail.com'].includes(user.email ?? '');
     const role = profile?.workspace_role;
-    if (!isAdmin && role !== 'agent' && role !== 'admin') {
+    if (!isAdmin && role !== 'agent' && role !== 'admin' && role !== 'worker') {
       return new Response(JSON.stringify({ error: 'Not a workspace agent' }), {
         status: 403,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
