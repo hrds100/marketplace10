@@ -37,6 +37,7 @@ export default function Softphone() {
     muted,
     toggleMute,
     previewContactId,
+    isWorker,
   } = useActiveCallCtx();
   const spend = useSpendLimit();
   const { agent: me } = useCurrentAgent();
@@ -78,13 +79,16 @@ export default function Softphone() {
             <span className="relative w-2 h-2 rounded-full bg-white" />
           </span>
           <span className="text-[13px] font-semibold">Calling…</span>
-          <button
-            onClick={() => setFullScreen(true)}
-            className="ml-auto p-1 hover:bg-white/20 rounded"
-            title="Open full call screen"
-          >
-            <Maximize2 className="w-3.5 h-3.5" />
-          </button>
+          {/* 2026-07-06: workers get a simple dialer — no call room. */}
+          {!isWorker && (
+            <button
+              onClick={() => setFullScreen(true)}
+              className="ml-auto p-1 hover:bg-white/20 rounded"
+              title="Open full call screen"
+            >
+              <Maximize2 className="w-3.5 h-3.5" />
+            </button>
+          )}
         </div>
         <div className="px-4 py-3">
           <div className="text-[14px] font-semibold text-[#1A1A1A]">{call?.contactName}</div>
@@ -109,13 +113,15 @@ export default function Softphone() {
         <div className="px-4 py-2.5 bg-[#1E9A80] text-white flex items-center gap-2">
           <span className="w-2 h-2 rounded-full bg-white animate-pulse" />
           <span className="text-[13px] font-semibold">In call · {formatDuration(durationSec)}</span>
-          <button
-            onClick={() => setFullScreen(true)}
-            className="ml-auto p-1 hover:bg-white/20 rounded"
-            title="Open full call screen"
-          >
-            <Maximize2 className="w-3.5 h-3.5" />
-          </button>
+          {!isWorker && (
+            <button
+              onClick={() => setFullScreen(true)}
+              className="ml-auto p-1 hover:bg-white/20 rounded"
+              title="Open full call screen"
+            >
+              <Maximize2 className="w-3.5 h-3.5" />
+            </button>
+          )}
         </div>
         <div className="px-4 py-3">
           <div className="text-[14px] font-semibold text-[#1A1A1A]">{call?.contactName}</div>
