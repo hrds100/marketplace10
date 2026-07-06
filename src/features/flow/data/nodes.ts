@@ -561,7 +561,7 @@ export const flowNodes: Node<FlowNodeData>[] = [
   }, GX.crm, 360),
 
   n('crm-leaderboard', 'CRM Leaderboard', {
-    description: 'Agent performance dashboard at /crm/leaderboard. Shows top agents by metrics. Filter via wk_voice_agent_limits.show_on_leaderboard toggle in Settings → Agents. Trophy popover in top nav (top 5).',
+    description: 'Agent performance dashboard at /crm/leaderboard. Shows top agents by metrics. Filter via wk_voice_agent_limits.show_on_leaderboard toggle in Settings → Agents. Trophy popover in top nav (top 5). Hidden from workspace_role=worker (WorkerBlockedRoute — also blocks /crm/dialer-pro, /crm/pipelines, /crm/reports).',
     actor: 'tenant',
     route: '/crm/leaderboard',
     files: ['src/features/smsv2/pages/LeaderboardPage.tsx'],

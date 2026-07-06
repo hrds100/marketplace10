@@ -156,6 +156,7 @@ import Smsv2SettingsPage from '@/features/smsv2/pages/SettingsPage';
 // see docs/runbooks/CRM_RENAME.md.
 import CrmLoginPage from '@/features/smsv2/pages/CrmLoginPage';
 import AdminOnlyRoute from '@/features/smsv2/components/AdminOnlyRoute';
+import WorkerBlockedRoute from '@/features/smsv2/components/WorkerBlockedRoute';
 
 // Caller workspace — clean rebuild of the smsv2 frontend at /caller/*.
 // /caller/* routes removed — /crm/* is the official surface.
@@ -376,13 +377,15 @@ const App = () => (
             <Route path="templates" element={<Smsv2TemplatesPage />} />
             <Route path="calls/:callId" element={<Smsv2PastCallScreen />} />
             <Route path="dialer" element={<Navigate to="/crm/dialer-pro" replace />} />
-            <Route path="dialer-pro" element={<DialerProPage />} />
+            {/* 2026-07-06: Dialer / Pipelines / Reports / Leaderboard are
+                blocked for workspace_role='worker' (redirect to inbox). */}
+            <Route path="dialer-pro" element={<WorkerBlockedRoute><DialerProPage /></WorkerBlockedRoute>} />
 
             <Route path="contacts" element={<Smsv2ContactsPage />} />
             <Route path="contacts/:id" element={<Smsv2ContactDetailPage />} />
-            <Route path="pipelines" element={<Smsv2PipelinesPage />} />
-            <Route path="reports" element={<Smsv2ReportsPage />} />
-            <Route path="leaderboard" element={<Smsv2LeaderboardPage />} />
+            <Route path="pipelines" element={<WorkerBlockedRoute><Smsv2PipelinesPage /></WorkerBlockedRoute>} />
+            <Route path="reports" element={<WorkerBlockedRoute><Smsv2ReportsPage /></WorkerBlockedRoute>} />
+            <Route path="leaderboard" element={<WorkerBlockedRoute><Smsv2LeaderboardPage /></WorkerBlockedRoute>} />
             <Route path="settings" element={<AdminOnlyRoute><Smsv2SettingsPage /></AdminOnlyRoute>} />
 
           </Route>

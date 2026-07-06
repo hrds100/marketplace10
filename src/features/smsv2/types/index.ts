@@ -16,7 +16,9 @@ export interface Agent {
   name: string;
   email: string;
   extension: string;
-  role: 'admin' | 'agent' | 'viewer';
+  /** 'worker' (2026-07-06) = agent without Dialer / Pipelines / Reports /
+   *  Leaderboard — those surfaces are sidebar-hidden + route-blocked. */
+  role: 'admin' | 'agent' | 'viewer' | 'worker';
   status: AgentStatus;
   callsToday: number;
   answeredToday: number;

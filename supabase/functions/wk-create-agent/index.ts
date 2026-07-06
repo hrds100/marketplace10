@@ -26,7 +26,7 @@ interface CreateAgentBody {
   password: string;
   name: string;
   extension?: string;
-  role?: 'agent' | 'admin' | 'viewer';
+  role?: 'agent' | 'admin' | 'viewer' | 'worker';
   daily_limit_pence?: number;
 }
 
@@ -76,7 +76,7 @@ serve(async (req: Request) => {
     if (!email || !email.includes('@')) return json(400, { error: 'Valid email required' });
     if (password.length < 8) return json(400, { error: 'Password must be ≥ 8 chars' });
     if (!name) return json(400, { error: 'Name required' });
-    if (!['agent', 'admin', 'viewer'].includes(role)) return json(400, { error: 'Bad role' });
+    if (!['agent', 'admin', 'viewer', 'worker'].includes(role)) return json(400, { error: 'Bad role' });
 
     // Service-role client for privileged work
     const admin = createClient(SUPABASE_URL, SUPABASE_SERVICE_KEY, {
