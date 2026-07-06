@@ -404,6 +404,48 @@ serve(async (req: Request) => {
       kickJobsWorker();
     }
 
+    // 2026-07-06 (Hugo): unanswered/busy message playback. When a <Dial>
+    // rings out, THIS response is the TwiML the caller continues with (the
+    // verbs after </Dial> in wk-voice-twiml-incoming never run — action
+    // wins). For INBOUND calls whose number is configured with
+    // unanswered_action='message' (/crm/settings → Channels → Calls),
+    // return <Play> + <Hangup> so the caller hears the admin's audio
+    // instead of dead air. Outbound dials and default-voicemail numbers
+    // keep the empty response below (unchanged behavior).
+    const dialStatus = (params.DialCallStatus ?? '').trim();
+    if (['no-answer', 'busy', 'failed', 'canceled'].includes(dialStatus)) {
+      try {
+        const { data: callRow } = await supabase
+          .from('wk_calls')
+          .select('direction, number_id')
+          .eq('twilio_call_sid', callSid)
+          .maybeSingle();
+        const cr = callRow as { direction: string | null; number_id: string | null } | null;
+        if (cr?.direction === 'inbound' && cr.number_id) {
+          const { data: numRow } = await supabase
+            .from('wk_numbers')
+            .select('unanswered_action, unanswered_message_url')
+            .eq('id', cr.number_id)
+            .maybeSingle();
+          const nr = numRow as
+            | { unanswered_action: string | null; unanswered_message_url: string | null }
+            | null;
+          if (nr?.unanswered_action === 'message' && nr.unanswered_message_url) {
+            const safeUrl = nr.unanswered_message_url
+              .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+              .replace(/"/g, '&quot;').replace(/'/g, '&apos;');
+            const twiml = `<?xml version="1.0" encoding="UTF-8"?><Response><Play>${safeUrl}</Play><Hangup/></Response>`;
+            return new Response(twiml, {
+              status: 200,
+              headers: { 'Content-Type': 'text/xml' },
+            });
+          }
+        }
+      } catch (e) {
+        console.warn('[wk-voice-status] unanswered-message lookup failed', e);
+      }
+    }
+
     // Twilio expects a 200 with empty TwiML on action callbacks.
     return new Response('<?xml version="1.0" encoding="UTF-8"?><Response/>', {
       status: 200,

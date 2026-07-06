@@ -83,9 +83,21 @@ serve(async (req: Request) => {
     // Look up the called number in wk_numbers (so we know how to route)
     const { data: num } = await supabase
       .from('wk_numbers')
-      .select('id, e164, assigned_agent_id, voicemail_greeting_url')
+      .select('id, e164, assigned_agent_id, voicemail_greeting_url, unanswered_action, unanswered_message_url')
       .eq('e164', to)
       .maybeSingle();
+
+    // 2026-07-06 (Hugo): per-number unanswered/busy behavior, set in
+    // /crm/settings → Channels → Calls. 'message' = play the uploaded
+    // audio and hang up (no voicemail). Anything else = legacy voicemail.
+    const playMessageInstead =
+      num?.unanswered_action === 'message' && !!num?.unanswered_message_url;
+    const messageBlock = playMessageInstead
+      ? [
+          `<Play>${escapeXml(num!.unanswered_message_url as string)}</Play>`,
+          `<Hangup/>`,
+        ].join('\n')
+      : null;
 
     let agentId: string | null = num?.assigned_agent_id ?? null;
     let agentClientIdentity: string | null = null;
@@ -132,6 +144,12 @@ serve(async (req: Request) => {
     // Route 1: agent online → ring their browser. If no answer in 25s,
     // fall through to voicemail.
     if (agentClientIdentity) {
+      // NOTE (2026-07-06): because <Dial> has an action URL, Twilio
+      // CONTINUES with the TwiML that wk-voice-status returns when the
+      // dial finishes — the verbs after </Dial> below are unreachable.
+      // The unanswered/busy behavior (play the admin's uploaded message)
+      // therefore lives in wk-voice-status' Dial-action branch, which
+      // reads wk_numbers.unanswered_action for this number.
       const dial = [
         `<Dial answerOnBridge="true" timeout="25"`,
         `      record="record-from-answer-dual"`,
@@ -141,7 +159,6 @@ serve(async (req: Request) => {
         `      method="POST">`,
         `  <Client>${escapeXml(agentClientIdentity)}</Client>`,
         `</Dial>`,
-        // If <Dial> returns without an answered call, drop into voicemail.
         `<Say voice="alice">Sorry, no agents are available right now. Please leave a message after the beep.</Say>`,
         `<Record maxLength="180" playBeep="true" finishOnKey="#"`,
         `        recordingStatusCallback="${escapeXml(voicemailUrl)}"`,
@@ -155,11 +172,12 @@ serve(async (req: Request) => {
       });
     }
 
-    // Route 2: nobody to ring → voicemail straight away.
+    // Route 2: nobody to ring. If the number is set to 'message', play the
+    // admin's audio and hang up (no voicemail). Otherwise voicemail as before.
     const greeting = num?.voicemail_greeting_url
       ? `<Play>${escapeXml(num.voicemail_greeting_url)}</Play>`
       : `<Say voice="alice">Thanks for calling. Please leave a message after the beep.</Say>`;
-    const vm = [
+    const vm = messageBlock ?? [
       greeting,
       `<Record maxLength="180" playBeep="true" finishOnKey="#"`,
       `        recordingStatusCallback="${escapeXml(voicemailUrl)}"`,
