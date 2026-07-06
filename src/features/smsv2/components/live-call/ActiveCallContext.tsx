@@ -11,6 +11,7 @@ import {
   muteAllCalls,
 } from '@/core/integrations/twilio-voice';
 import { startCallOrchestration, type StartCallResult } from '../../lib/startCallOrchestration';
+import { getCallerIdPreference } from '../../lib/callerIdPreference';
 
 export type CallPhase = 'idle' | 'placing' | 'in_call' | 'post_call';
 
@@ -392,7 +393,16 @@ export function ActiveCallProvider({ children }: { children: ReactNode }) {
             }
             return { data, error };
           },
-          dial: device.dial,
+          // Agent-picked caller ID (softphone "Calling from" dropdown). The
+          // id rides along as a custom Twilio param; wk-voice-twiml-outgoing
+          // validates it against wk_numbers before honouring it.
+          dial: (dialPhone, params) => {
+            const fromNumberId = getCallerIdPreference();
+            return device.dial(
+              dialPhone,
+              fromNumberId ? { ...params, FromNumberId: fromNumberId } : params
+            );
+          },
           pushToast: store.pushToast,
         }
       );

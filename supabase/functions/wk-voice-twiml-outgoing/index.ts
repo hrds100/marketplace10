@@ -141,6 +141,10 @@ serve(async (req: Request) => {
     // present we UPDATE the existing row instead of inserting a duplicate.
     const preMintedCallId = (params.CallId ?? '').trim();
     const preContactId = (params.ContactId ?? '').trim() || null;
+    // Optional: agent-picked caller ID (softphone "Calling from" dropdown).
+    // The browser only sends a wk_numbers.id — validated below against our
+    // own voice-enabled numbers, so the client can request but never spoof.
+    const requestedFromNumberId = (params.FromNumberId ?? '').trim();
 
     if (!to) {
       return new Response('<Response><Say>Missing destination.</Say></Response>', {
@@ -228,12 +232,29 @@ serve(async (req: Request) => {
 
     if (identity) {
       agentId = identity;
+      // 1. Agent-picked number for THIS call (softphone dropdown). Only
+      //    honoured when the id matches one of our wk_numbers rows with
+      //    voice_enabled=true; anything else falls through to the default
+      //    chain below.
+      if (/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(requestedFromNumberId)) {
+        const { data: picked } = await supabase
+          .from('wk_numbers')
+          .select('id, e164')
+          .eq('id', requestedFromNumberId)
+          .eq('voice_enabled', true)
+          .maybeSingle();
+        if (picked) {
+          callerIdE164 = picked.e164;
+          numberId = picked.id;
+        }
+      }
+      // 2. Agent's saved default caller ID.
       const { data: profile } = await supabase
         .from('profiles')
         .select('default_caller_id_number_id')
         .eq('id', identity)
         .maybeSingle();
-      if (profile?.default_caller_id_number_id) {
+      if (!callerIdE164 && profile?.default_caller_id_number_id) {
         const { data: num } = await supabase
           .from('wk_numbers')
           .select('id, e164')
@@ -244,7 +265,7 @@ serve(async (req: Request) => {
           numberId = num.id;
         }
       }
-      // Fallback: first voice-enabled number
+      // 3. Fallback: first voice-enabled number
       if (!callerIdE164) {
         const { data: anyNum } = await supabase
           .from('wk_numbers')

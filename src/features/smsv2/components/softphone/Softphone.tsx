@@ -16,6 +16,11 @@ import { useSpendLimit } from '../../hooks/useSpendLimit';
 import { formatDuration, formatPence } from '../../data/helpers';
 import LiveCallScreen from '../live-call/LiveCallScreen';
 import { useCurrentAgent } from '../../hooks/useCurrentAgent';
+import { useVoiceNumbers } from '../../hooks/useVoiceNumbers';
+import {
+  getCallerIdPreference,
+  setCallerIdPreference,
+} from '../../lib/callerIdPreference';
 
 export default function Softphone() {
   const [open, setOpen] = useState(false);
@@ -233,6 +238,8 @@ export default function Softphone() {
         </>
       )}
 
+      <FromNumberSelect />
+
       <div className="px-3 pb-3">
         <DialPad onCall={handleCall} />
       </div>
@@ -247,6 +254,42 @@ export default function Softphone() {
           <span className="text-[#6B7280]">Headphones</span>
         </div>
       </div>
+    </div>
+  );
+}
+
+// "Calling from" picker — lets the agent choose which of our voice-enabled
+// numbers shows as caller ID. Lives in its own component so the wk_numbers
+// fetch only fires when the softphone panel is actually open (also keeps the
+// post-call vitest, which renders Softphone closed, network-free). The
+// selection persists in localStorage and is read at dial time by
+// ActiveCallContext, so calls started from the inbox use it too.
+function FromNumberSelect() {
+  const { numbers, loading } = useVoiceNumbers();
+  const [selected, setSelected] = useState<string>(() => getCallerIdPreference() ?? '');
+
+  if (loading || numbers.length === 0) return null;
+
+  return (
+    <div className="px-3 pb-2">
+      <label className="block text-[10px] font-medium text-[#6B7280] mb-1">
+        Calling from
+      </label>
+      <select
+        value={selected}
+        onChange={(e) => {
+          setSelected(e.target.value);
+          setCallerIdPreference(e.target.value || null);
+        }}
+        className="w-full px-2 py-1.5 text-[12px] bg-white border border-[#E5E5E5] rounded-[10px] text-[#0A0A0A] focus:outline-none focus:ring-2 focus:ring-[#1E9A80]/30 focus:border-[#1E9A80]"
+      >
+        <option value="">Auto (default number)</option>
+        {numbers.map((n) => (
+          <option key={n.id} value={n.id}>
+            {n.label ? `${n.label} · ${n.e164}` : n.e164}
+          </option>
+        ))}
+      </select>
     </div>
   );
 }

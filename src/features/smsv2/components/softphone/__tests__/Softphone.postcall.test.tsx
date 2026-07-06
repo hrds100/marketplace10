@@ -54,6 +54,12 @@ vi.mock('../../../hooks/useSpendLimit', () => ({
   }),
 }));
 
+// useVoiceNumbers imports the real supabase client (no SUPABASE_URL in the
+// test env) — mock it like the other hooks. Empty list = picker not rendered.
+vi.mock('../../../hooks/useVoiceNumbers', () => ({
+  useVoiceNumbers: () => ({ numbers: [], loading: false }),
+}));
+
 vi.mock('../../../hooks/useCurrentAgent', () => ({
   useCurrentAgent: () => ({
     agent: { id: 'u1', name: 'Hugo', email: 'hugo@nfstay.com' },
