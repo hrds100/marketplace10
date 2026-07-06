@@ -21,7 +21,7 @@ interface ProfileRow {
   email: string | null;
   agent_status: AgentStatus | null;
   agent_extension: string | null;
-  workspace_role: 'admin' | 'agent' | 'viewer' | null;
+  workspace_role: 'admin' | 'agent' | 'viewer' | 'worker' | null;
 }
 
 interface LimitRow {
@@ -54,7 +54,7 @@ export function rowToCurrentAgent(input: RowToCurrentAgentInput): Agent {
     name: profile.name ?? profile.email ?? 'Agent',
     email: profile.email ?? '',
     extension: profile.agent_extension ?? '',
-    role: role === 'viewer' ? 'viewer' : role === 'admin' ? 'admin' : 'agent',
+    role: role === 'viewer' || role === 'admin' || role === 'worker' ? role : 'agent',
     status: profile.agent_status ?? 'offline',
     callsToday,
     answeredToday,

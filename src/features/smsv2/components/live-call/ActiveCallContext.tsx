@@ -91,6 +91,10 @@ interface ActiveCallCtx {
   durationSec: number;
   fullScreen: boolean;
   setFullScreen: (v: boolean) => void;
+  /** 2026-07-06: true when workspace_role='worker'. Workers get a simple
+   *  dialer — setFullScreen(true) is a no-op for them (no call room) and
+   *  the UI hides the maximize/expand affordances. */
+  isWorker: boolean;
   /** Hugo 2026-04-26 (PR 10): "calling room" preview — open the live-
    *  call screen layout for a contact WITHOUT dialling. The agent uses
    *  it to look at the lead's context (script, glossary, mid-call SMS
@@ -167,8 +171,45 @@ export function ActiveCallProvider({ children }: { children: ReactNode }) {
   const [phase, setPhase] = useState<CallPhase>('idle');
   const [call, setCall] = useState<ActiveCall | null>(null);
   const [, setTick] = useState(0);
-  const [fullScreen, setFullScreen] = useState(true);
+  const [fullScreen, setFullScreenRaw] = useState(true);
   const [muted, setMuted] = useState(false);
+
+  // 2026-07-06 (Hugo): workers get a SIMPLE dialer — no full-screen call
+  // room, ever. The gated setter below makes setFullScreen(true) a no-op
+  // for workers, so every existing call site (manual dial, inbound accept,
+  // dialer broadcast, preview) collapses to the small softphone pill,
+  // which already has Cancel/End. isWorkerRef mirrors the state so the
+  // stable useCallback closures (startCall etc.) read the live value.
+  const [isWorker, setIsWorker] = useState(false);
+  const isWorkerRef = useRef(false);
+
+  useEffect(() => {
+    let cancelled = false;
+    void (async () => {
+      try {
+        const { data: u } = await supabase.auth.getUser();
+        const uid = u.user?.id;
+        if (!uid) return;
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const { data } = await (supabase.from('profiles' as any) as any)
+          .select('workspace_role')
+          .eq('id', uid)
+          .maybeSingle();
+        if (cancelled) return;
+        const w = data?.workspace_role === 'worker';
+        setIsWorker(w);
+        isWorkerRef.current = w;
+        if (w) setFullScreenRaw(false);
+      } catch {
+        // Role lookup failed — keep the default (full call room).
+      }
+    })();
+    return () => { cancelled = true; };
+  }, []);
+
+  const setFullScreen = useCallback((v: boolean) => {
+    setFullScreenRaw(v && !isWorkerRef.current);
+  }, []);
   const [previewContactId, setPreviewContactId] = useState<string | null>(null);
   const [lastEndedContactId, setLastEndedContactId] = useState<string | null>(null);
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
@@ -320,6 +361,11 @@ export function ActiveCallProvider({ children }: { children: ReactNode }) {
         const onEnd = () => {
           if (!isThisCall()) return;
           activeTwilioCallRef.current = null;
+          if (isWorkerRef.current) {
+            setPhase('idle');
+            setCall(null);
+            return;
+          }
           setPhase('post_call');
         };
         call.on('disconnect', onEnd);
@@ -439,6 +485,13 @@ export function ActiveCallProvider({ children }: { children: ReactNode }) {
       const onEnd = () => {
         if (!isThisCall()) return;
         activeTwilioCallRef.current = null;
+        // Workers skip the outcome-picking step (no pipelines) — straight
+        // back to idle so the softphone is ready for the next dial.
+        if (isWorkerRef.current) {
+          setPhase('idle');
+          setCall(null);
+          return;
+        }
         setPhase('post_call');
       };
       const onCancel = () => {
@@ -538,6 +591,7 @@ export function ActiveCallProvider({ children }: { children: ReactNode }) {
       durationSec,
       fullScreen,
       setFullScreen,
+      isWorker,
       previewContactId,
       openCallRoom: (contactId: string) => {
         // Preview mode: no dial, no Twilio Call, just the layout. Skip
@@ -596,7 +650,13 @@ export function ActiveCallProvider({ children }: { children: ReactNode }) {
         // also need to be evicted so they stop streaming the mic.
         try { disconnectAllCalls(); } catch { /* ignore */ }
         activeTwilioCallRef.current = null;
-        setPhase('post_call');
+        if (isWorkerRef.current) {
+          // Simple-dialer mode: no outcome step, straight back to idle.
+          setPhase('idle');
+          setCall(null);
+        } else {
+          setPhase('post_call');
+        }
         setMuted(false);
       },
       clearCall: () => {
@@ -761,7 +821,7 @@ export function ActiveCallProvider({ children }: { children: ReactNode }) {
         }
       },
     };
-  }, [phase, call, fullScreen, muted, toggleMute, store, startCall, resumeFromBroadcast, enterDialingPlaceholder, previewContactId, lastEndedContactId]);
+  }, [phase, call, fullScreen, setFullScreen, isWorker, muted, toggleMute, store, startCall, resumeFromBroadcast, enterDialingPlaceholder, previewContactId, lastEndedContactId]);
 
   return <Ctx.Provider value={value}>{children}</Ctx.Provider>;
 }
