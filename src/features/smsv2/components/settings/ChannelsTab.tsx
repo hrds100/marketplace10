@@ -26,6 +26,7 @@ import {
   type UnipileProvider,
 } from '../../hooks/useChannels';
 import { useSmsV2 } from '../../store/SmsV2Store';
+import CallAudioSettings from './CallAudioSettings';
 
 interface SectionDef {
   provider: ChannelProvider;
@@ -281,6 +282,10 @@ export default function ChannelsTab() {
           </div>
         );
       })}
+
+      {/* 2026-07-06 (Hugo): unanswered/busy call behavior — upload an
+          audio message + pick which numbers play it instead of voicemail. */}
+      <CallAudioSettings />
     </div>
   );
 }
