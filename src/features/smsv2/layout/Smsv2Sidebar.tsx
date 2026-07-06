@@ -28,18 +28,28 @@ interface Smsv2SidebarProps {
 // for agents), then Inbox, Pipelines, Contacts, Reports, Leaderboard,
 // then Call history at the bottom. Dashboard + Settings stay
 // admin-only at the ends. "Calls" renamed to "Call history".
-const NAV_ITEMS = [
+// 2026-07-06: workerHidden items are removed for workspace_role='worker'
+// (WorkerBlockedRoute enforces the same set at the route level).
+interface NavItem {
+  label: string;
+  path: string;
+  icon: typeof LayoutDashboard;
+  adminOnly?: boolean;
+  workerHidden?: boolean;
+}
+
+const NAV_ITEMS: NavItem[] = [
   { label: 'Dashboard', path: '/crm/dashboard', icon: LayoutDashboard, adminOnly: true },
-  { label: 'Dialer', path: '/crm/dialer-pro', icon: Radio },
+  { label: 'Dialer', path: '/crm/dialer-pro', icon: Radio, workerHidden: true },
   { label: 'Inbox', path: '/crm/inbox', icon: MessageSquare },
-  { label: 'Pipelines', path: '/crm/pipelines', icon: Kanban },
+  { label: 'Pipelines', path: '/crm/pipelines', icon: Kanban, workerHidden: true },
   { label: 'Contacts', path: '/crm/contacts', icon: Users },
-  { label: 'Reports', path: '/crm/reports', icon: BarChart3 },
-  { label: 'Leaderboard', path: '/crm/leaderboard', icon: Trophy },
+  { label: 'Reports', path: '/crm/reports', icon: BarChart3, workerHidden: true },
+  { label: 'Leaderboard', path: '/crm/leaderboard', icon: Trophy, workerHidden: true },
   { label: 'Call history', path: '/crm/calls', icon: PhoneCall },
   { label: 'Templates', path: '/crm/templates', icon: FileText },
   { label: 'Settings', path: '/crm/settings', icon: Settings, adminOnly: true },
-] as const;
+];
 
 const MOBILE_TAB_ITEMS = NAV_ITEMS.filter(({ label }) =>
   ['Dialer', 'Inbox', 'Pipelines', 'Contacts', 'Dashboard'].includes(label)
@@ -84,7 +94,9 @@ export default function Smsv2Sidebar({ collapsed, onCollapse }: Smsv2SidebarProp
   if (isMobile) {
     return (
       <nav className="fixed bottom-0 left-0 right-0 z-[100] bg-white border-t border-[#E5E7EB] flex items-center justify-around px-1 py-1.5">
-        {MOBILE_TAB_ITEMS.map(({ label, path, icon: Icon }) => (
+        {MOBILE_TAB_ITEMS
+          .filter(({ workerHidden }) => !workerHidden || workspaceRole !== 'worker')
+          .map(({ label, path, icon: Icon }) => (
           <Link
             key={path}
             to={path}
@@ -125,6 +137,8 @@ export default function Smsv2Sidebar({ collapsed, onCollapse }: Smsv2SidebarProp
         {NAV_ITEMS
           // PR 62: hide admin-only items from agents entirely.
           .filter(({ adminOnly }) => !adminOnly || isAdminOrWorkspaceAdmin)
+          // 2026-07-06: hide dialer/pipelines/reports/leaderboard from workers.
+          .filter(({ workerHidden }) => !workerHidden || workspaceRole !== 'worker')
           .map(({ label, path, icon: Icon, adminOnly }) => (
           <Link
             key={path}

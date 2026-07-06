@@ -2421,6 +2421,7 @@ function AgentsTab() {
                 className="px-2 py-1.5 text-[12px] border border-[#E5E7EB] rounded-[8px] bg-white"
               >
                 <option value="agent">Agent</option>
+                <option value="worker">Worker (no dialer/reports)</option>
                 <option value="admin">Admin (no spend cap)</option>
                 <option value="viewer">Viewer (read-only)</option>
               </select>

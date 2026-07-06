@@ -56,7 +56,7 @@ export function useAgentsToday(): {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const profilesRes = await (supabase.from('profiles' as any) as any)
       .select('id, email, name, agent_status, agent_extension, workspace_role')
-      .in('workspace_role', ['agent', 'admin']);
+      .in('workspace_role', ['agent', 'admin', 'worker']);
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const limitsRes = await (supabase.from('wk_voice_agent_limits' as any) as any)
@@ -108,7 +108,7 @@ export function useAgentsToday(): {
         name: (p.name as string | null) ?? (p.email as string | null) ?? 'Agent',
         email: (p.email as string | null) ?? '',
         extension: (p.agent_extension as string | null) ?? '',
-        role: (p.workspace_role as 'admin' | 'agent' | 'viewer' | null) ?? 'agent',
+        role: (p.workspace_role as Agent['role'] | null) ?? 'agent',
         status: ((p.agent_status as Agent['status'] | null) ?? 'offline'),
         callsToday: calls.length,
         answeredToday: answered.length,

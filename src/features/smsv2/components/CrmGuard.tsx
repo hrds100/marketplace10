@@ -22,7 +22,7 @@ interface Props {
   children: ReactNode;
 }
 
-const ALLOWED_ROLES = new Set(['admin', 'agent', 'viewer']);
+const ALLOWED_ROLES = new Set(['admin', 'agent', 'viewer', 'worker']);
 
 export default function CrmGuard({ children }: Props) {
   const { user, loading: authLoading, isAdmin } = useAuth();
