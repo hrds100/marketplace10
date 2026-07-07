@@ -414,30 +414,52 @@ export function ActiveCallProvider({ children }: { children: ReactNode }) {
         { contactId, contactName, phone },
         {
           invokeCreateCall: async (input) => {
-            const { data, error } = await (
-              supabase.functions as unknown as CreateCallInvoke
-            ).invoke('wk-calls-create', { body: input });
-            // supabase-js wraps every non-2xx into FunctionsHttpError with the
-            // useless message "Edge Function returned a non-2xx status code".
-            // Pull the real status + body off the captured Response so the
-            // toast tells the agent what actually happened (auth expired,
-            // spend block, missing env, etc.).
-            if (error && (error as { context?: Response }).context) {
-              try {
-                const ctx = (error as { context: Response }).context;
-                const body = await ctx.clone().text();
-                let parsed: { error?: string; reason?: string } | null = null;
-                try { parsed = body ? JSON.parse(body) : null; } catch { /* not JSON */ }
-                const real = parsed?.error || parsed?.reason || body || error.message;
-                return {
-                  data,
-                  error: { message: `${ctx.status} ${real}`.trim() },
-                };
-              } catch {
-                return { data, error };
+            // Hugo 2026-07-07: the supabase-js function invoke intermittently
+            // fails at the network layer ("Failed to send a request to the
+            // Edge Function" — a FunctionsFetchError with NO Response context)
+            // due to transient client↔edge connectivity blips. The function
+            // itself is healthy (server-side calls never fail). Retry ONLY
+            // that network-failure case a few times with a short backoff; a
+            // real HTTP response (non-2xx) is returned immediately, never
+            // retried.
+            const MAX_ATTEMPTS = 3;
+            let last: { data: unknown; error: { message: string } | null } = {
+              data: null,
+              error: { message: 'Failed to send a request to the Edge Function' },
+            };
+            for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt++) {
+              const { data, error } = await (
+                supabase.functions as unknown as CreateCallInvoke
+              ).invoke('wk-calls-create', { body: input });
+
+              // Real HTTP response captured (non-2xx). supabase-js wraps every
+              // non-2xx into FunctionsHttpError with the useless message "Edge
+              // Function returned a non-2xx status code". Pull the real status
+              // + body so the toast tells the agent what actually happened
+              // (auth expired, spend block, missing env, etc.). Not retried.
+              if (error && (error as { context?: Response }).context) {
+                try {
+                  const ctx = (error as { context: Response }).context;
+                  const body = await ctx.clone().text();
+                  let parsed: { error?: string; reason?: string } | null = null;
+                  try { parsed = body ? JSON.parse(body) : null; } catch { /* not JSON */ }
+                  const real = parsed?.error || parsed?.reason || body || error.message;
+                  return { data, error: { message: `${ctx.status} ${real}`.trim() } };
+                } catch {
+                  return { data, error };
+                }
+              }
+
+              // Success.
+              if (!error) return { data, error: null };
+
+              // Network-level failure (no Response). Transient — retry.
+              last = { data, error: { message: error.message } };
+              if (attempt < MAX_ATTEMPTS) {
+                await new Promise((r) => setTimeout(r, 400 * attempt));
               }
             }
-            return { data, error };
+            return last;
           },
           // Agent-picked caller ID (softphone "Calling from" dropdown). The
           // id rides along as a custom Twilio param; wk-voice-twiml-outgoing
