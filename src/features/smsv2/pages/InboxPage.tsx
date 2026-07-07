@@ -115,7 +115,10 @@ export default function InboxPage() {
   // PR 88 (Hugo 2026-04-27): templates dropdown in the inbox composer.
   // Filter by selected channel; universal templates show in every channel.
   const { items: templates } = useSmsTemplates();
-  const { firstName: agentFirstName } = useCurrentAgent();
+  const { firstName: agentFirstName, agent } = useCurrentAgent();
+  // 2026-07-07 (Hugo): workers get a slimmed inbox — no Agreement button
+  // and no template picker. Admins/agents keep them.
+  const isWorker = agent?.role === 'worker';
   const [selectedTemplateId, setSelectedTemplateId] = useState<string>('');
 
   // PR 89 (Hugo 2026-04-27): inbox search bar \u2014 was rendered with no
@@ -207,6 +210,7 @@ export default function InboxPage() {
       channelCounts: Record<ChannelKindUI, number>;
       isHot: boolean;
       tags: string[];
+      viaNumber: string | null;
     };
     const out: Row[] = [];
 
@@ -226,6 +230,7 @@ export default function InboxPage() {
         channelCounts: t.channelCounts,
         isHot: !!c?.isHot,
         tags: c?.tags ?? [],
+        viaNumber: t.viaNumber,
       });
     }
 
@@ -583,6 +588,11 @@ export default function InboxPage() {
                           : '—'}
                       </span>
                     </div>
+                    {r.viaNumber && (
+                      <div className="text-[10px] text-[#9CA3AF] truncate">
+                        Via: {r.viaNumber}
+                      </div>
+                    )}
                   </div>
                   {r.lastMessageAt && (
                     <div className="text-[10px] text-[#9CA3AF] tabular-nums">
@@ -614,12 +624,15 @@ export default function InboxPage() {
               {activeContact.phone}
             </div>
           </div>
-          {/* Stage selector — change stage from inbox */}
-          <StageSelector
-            value={activeContact.pipelineColumnId}
-            onChange={setStage}
-            size="md"
-          />
+          {/* Stage selector — change stage from inbox. Hidden for workers
+              (2026-07-07, Hugo): they don't manage pipeline stages. */}
+          {!isWorker && (
+            <StageSelector
+              value={activeContact.pipelineColumnId}
+              onChange={setStage}
+              size="md"
+            />
+          )}
           <button
             onClick={() => void openEditModal(activeContact)}
             className="flex items-center gap-1.5 border border-[#E5E7EB] text-[#1A1A1A] text-[12px] font-medium px-3 py-1.5 rounded-[10px] hover:bg-[#F3F3EE]"
@@ -803,7 +816,7 @@ export default function InboxPage() {
                   </button>
                 ))}
               </div>
-              {activeContact && (
+              {activeContact && !isWorker && (
                 <button
                   type="button"
                   onClick={() => setAgreementTo(activeContact)}
@@ -822,7 +835,7 @@ export default function InboxPage() {
             {/* PR 88: templates dropdown — filtered by selected channel.
                 Picking a template fills body (and subject for email),
                 substituting {first_name}/{agent_first_name}. */}
-            {replyChannel !== null && visibleTemplates.length > 0 && (
+            {replyChannel !== null && visibleTemplates.length > 0 && !isWorker && (
               <select
                 value={selectedTemplateId}
                 onChange={(e) => applyTemplate(e.target.value)}
