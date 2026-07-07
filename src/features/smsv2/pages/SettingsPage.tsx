@@ -2208,6 +2208,51 @@ function AgentsTab() {
     void refreshAgents();
   };
 
+  // 2026-07-07 (Hugo): admin edits an agent's login email and/or role from
+  // the agents table. Uses wk-update-agent (updates auth.users email +
+  // profiles.workspace_role, with the admin/self-protect rails enforced
+  // server-side). No-op when the value is unchanged.
+  const updateAgentAccount = async (
+    agentId: string,
+    patch: { email?: string; role?: Agent['role'] }
+  ) => {
+    const target = agents.find((a) => a.id === agentId);
+    if (!target) return;
+    const body: Record<string, unknown> = { agent_id: agentId };
+    if (patch.email !== undefined) {
+      const e = patch.email.trim().toLowerCase();
+      if (!e || !e.includes('@')) { pushToast('Enter a valid email address', 'error'); return; }
+      if (e === (target.email ?? '').toLowerCase()) return;
+      body.email = e;
+    }
+    if (patch.role !== undefined) {
+      if (patch.role === target.role) return;
+      body.role = patch.role;
+    }
+    if (Object.keys(body).length === 1) return;
+    setBusyAgentId(agentId);
+    try {
+      const { data, error } = await (
+        supabase.functions as unknown as CreateAgentInvoke
+      ).invoke('wk-update-agent', { body });
+      let msg: string | null = data?.error ?? null;
+      if (error) {
+        const ctx = (error as { context?: Response }).context;
+        if (ctx) {
+          try { const b = await ctx.clone().json(); msg = b?.error ?? error.message; }
+          catch { msg = error.message; }
+        } else msg = error.message;
+      }
+      if (msg) { pushToast(msg, 'error'); return; }
+      pushToast(`${target.name} updated`, 'success');
+      void refreshAgents();
+    } catch (e) {
+      pushToast(e instanceof Error ? e.message : 'Update failed', 'error');
+    } finally {
+      setBusyAgentId(null);
+    }
+  };
+
   const randomPassword = () => {
     const charset = 'abcdefghjkmnpqrstuvwxyzABCDEFGHJKMNPQRSTUVWXYZ23456789';
     let out = '';
@@ -2272,6 +2317,7 @@ function AgentsTab() {
           <thead className="text-[10px] uppercase tracking-wide text-[#9CA3AF]">
             <tr>
               <th className="text-left py-2">Name</th>
+              <th className="text-left py-2">Login email</th>
               <th className="text-left py-2">Role</th>
               <th className="text-left py-2">Ext.</th>
               <th className="text-right py-2">Spend</th>
@@ -2284,7 +2330,32 @@ function AgentsTab() {
             {agents.map((a) => (
               <tr key={a.id}>
                 <td className="py-2 font-semibold text-[#1A1A1A]">{a.name}</td>
-                <td className="py-2 text-[#6B7280] capitalize">{a.role}</td>
+                <td className="py-2">
+                  <input
+                    type="email"
+                    defaultValue={a.email}
+                    onBlur={(e) => void updateAgentAccount(a.id, { email: e.target.value })}
+                    disabled={busyAgentId === a.id}
+                    data-testid={`agent-email-${a.id}`}
+                    title="Login email — edit to change the agent's sign-in email"
+                    className="w-52 px-2 py-1 text-[12px] text-[#1A1A1A] border border-[#E5E7EB] rounded-[8px] disabled:opacity-50"
+                  />
+                </td>
+                <td className="py-2">
+                  <select
+                    value={a.role}
+                    onChange={(e) => void updateAgentAccount(a.id, { role: e.target.value as Agent['role'] })}
+                    disabled={busyAgentId === a.id}
+                    data-testid={`agent-role-${a.id}`}
+                    title="Change this agent's role"
+                    className="px-2 py-1 text-[12px] capitalize bg-white border border-[#E5E7EB] rounded-[8px] disabled:opacity-50"
+                  >
+                    <option value="agent">Agent</option>
+                    <option value="worker">Worker</option>
+                    <option value="admin">Admin</option>
+                    <option value="viewer">Viewer</option>
+                  </select>
+                </td>
                 <td className="py-2 text-[#6B7280] tabular-nums">{a.extension}</td>
                 <td className="py-2 text-right tabular-nums">{formatPence(a.spendPence)}</td>
                 <td className="py-2 text-right">

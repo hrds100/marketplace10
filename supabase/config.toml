@@ -289,6 +289,9 @@ verify_jwt = false
 [functions.wk-create-agent]
 verify_jwt = false
 
+[functions.wk-update-agent]
+verify_jwt = false
+
 [functions.wk-delete-agent]
 verify_jwt = false
 
