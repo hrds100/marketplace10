@@ -105,31 +105,22 @@ serve(async (req: Request) => {
     //     workspace member (both numbers were assigned to Elijah, whose
     //     workspace_role is NULL — his client never registers, so inbound
     //     calls rang nobody for 25s)
-    //   - every 'worker' profile (Shyra + Shanto) — Hugo: "call goes to
-    //     them if they're logged in"
+    //   - every workspace member: admin, agent AND worker (Hugo 2026-07-07:
+    //     "accessible all admin and worker to call/receive"). The ported
+    //     GHL→Twilio numbers have no single owner, so inbound rings the
+    //     whole team; whoever is logged in picks up.
     // Multiple <Client> nouns in one <Dial> ring simultaneously; the first
     // to answer wins and Twilio cancels the rest. A target whose browser
     // isn't open just never rings — the others are unaffected.
     // Identity = profile UUID (matches what wk-voice-token grants).
     const ringIds = new Set<string>();
-    if (num?.assigned_agent_id) {
-      const { data: assigned } = await supabase
-        .from('profiles')
-        .select('id, workspace_role')
-        .eq('id', num.assigned_agent_id)
-        .maybeSingle();
-      if (
-        assigned?.workspace_role &&
-        ['admin', 'agent', 'worker'].includes(assigned.workspace_role as string)
-      ) {
-        ringIds.add(assigned.id as string);
-      }
-    }
-    const { data: workerRows } = await supabase
+    const { data: memberRows } = await supabase
       .from('profiles')
       .select('id')
-      .eq('workspace_role', 'worker');
-    for (const w of workerRows ?? []) ringIds.add(w.id as string);
+      .in('workspace_role', ['admin', 'agent', 'worker']);
+    for (const m of memberRows ?? []) ringIds.add(m.id as string);
+    // Keep the assigned agent too (in case their role is unusual but set).
+    if (num?.assigned_agent_id) ringIds.add(num.assigned_agent_id as string);
 
     // wk_calls attribution: keep the assigned agent when they're a valid
     // ring target, else null (whoever answers is bridged either way).
