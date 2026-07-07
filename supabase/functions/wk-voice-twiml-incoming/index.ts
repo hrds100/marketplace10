@@ -129,11 +129,45 @@ serve(async (req: Request) => {
         ? num.assigned_agent_id
         : null;
 
+    // Link the caller to a wk_contacts row (find-or-create by phone) so the
+    // call threads into the inbox next to SMS/WhatsApp — 2026-07-07 (Hugo).
+    // Mirrors wk-sms-incoming's contact handling.
+    let callerContactId: string | null = null;
+    if (from) {
+      try {
+        const { data: existing } = await supabase
+          .from('wk_contacts')
+          .select('id')
+          .eq('phone', from)
+          .limit(1)
+          .maybeSingle();
+        if (existing?.id) {
+          callerContactId = existing.id as string;
+        } else {
+          const { data: created } = await supabase
+            .from('wk_contacts')
+            .insert({
+              name: from,
+              phone: from,
+              owner_agent_id: null,
+              custom_fields: { source: 'inbound_call' },
+              is_hot: false,
+            })
+            .select('id')
+            .single();
+          callerContactId = created?.id ?? null;
+        }
+      } catch (e) {
+        console.warn('caller contact upsert failed (continuing):', e);
+      }
+    }
+
     // Best-effort log into wk_calls
     try {
       await supabase.from('wk_calls').insert({
         twilio_call_sid: callSid,
         agent_id: agentId,
+        contact_id: callerContactId,
         number_id: num?.id ?? null,
         direction: 'inbound',
         status: 'in_progress',

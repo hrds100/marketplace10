@@ -49,6 +49,14 @@ export interface InboxThread {
   /** Inbound-only count of messages newer than the contact's
    *  last_read_at (not yet implemented — placeholder = 0). */
   unreadCount: number;
+  /** 2026-07-07 (Hugo): calls appear in the inbox next to messages. When
+   *  the latest activity on this thread is a call, lastKind='call' and
+   *  lastMessageBody carries a label ("Missed call" / "Incoming call" /
+   *  "Outgoing call"). */
+  lastKind: 'message' | 'call';
+  callCount: number;
+  hasMissedCall: boolean;
+  hasVoicemail: boolean;
 }
 
 interface MessageRow {
@@ -67,6 +75,20 @@ interface ContactRow {
   name: string;
   phone: string;
 }
+
+interface CallRow {
+  contact_id: string | null;
+  direction: 'inbound' | 'outbound';
+  status: string;
+  from_e164: string | null;
+  to_e164: string | null;
+  started_at: string;
+}
+
+// Inbound call statuses that mean "not connected" → shown as a missed call.
+const MISSED_CALL_STATUSES = new Set([
+  'no_answer', 'busy', 'missed', 'failed', 'canceled', 'cancelled',
+]);
 
 export function useInboxThreads(): { threads: InboxThread[]; loading: boolean; refetch: () => void } {
   const [threads, setThreads] = useState<InboxThread[]>([]);
@@ -143,8 +165,26 @@ export function useInboxThreads(): { threads: InboxThread[]; loading: boolean; r
     const msgsRes = await msgsQuery;
     const msgs = (msgsRes.data ?? []) as MessageRow[];
 
-    // Collect unique contact IDs from messages, then fetch just those.
-    const neededIds = Array.from(new Set(msgs.map((m) => m.contact_id)));
+    // Pull recent calls too, so incoming / missed / outgoing calls thread
+    // into the inbox next to messages (Hugo 2026-07-07). Only calls with a
+    // contact_id (inbound calls are linked in wk-voice-twiml-incoming).
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    let callsQuery = (supabase.from('wk_calls' as any) as any)
+      .select('contact_id, direction, status, from_e164, to_e164, started_at')
+      .not('contact_id', 'is', null)
+      .order('started_at', { ascending: false })
+      .limit(500);
+    if (allowedContactIds !== null) {
+      callsQuery = callsQuery.in('contact_id', allowedContactIds);
+    }
+    const callsRes = await callsQuery;
+    const calls = (callsRes.data ?? []) as CallRow[];
+
+    // Collect unique contact IDs from messages AND calls, then fetch those.
+    const neededIds = Array.from(new Set<string>([
+      ...msgs.map((m) => m.contact_id),
+      ...calls.map((c) => c.contact_id).filter((x): x is string => !!x),
+    ]));
     const contactById = new Map<string, ContactRow>();
     if (neededIds.length > 0) {
       // Supabase .in() has a practical limit; batch in chunks of 200.
@@ -169,33 +209,70 @@ export function useInboxThreads(): { threads: InboxThread[]; loading: boolean; r
       counts.set(m.contact_id, cur);
     }
 
-    // Walk newest → oldest, take the first message we see per contact.
-    const seen = new Set<string>();
+    // Latest message + latest call per contact, plus call flags for filters.
+    const latestMsg = new Map<string, MessageRow>();
+    for (const m of msgs) if (!latestMsg.has(m.contact_id)) latestMsg.set(m.contact_id, m);
+    const latestCall = new Map<string, CallRow>();
+    const callCount = new Map<string, number>();
+    const hasMissed = new Set<string>();
+    const hasVoicemail = new Set<string>();
+    for (const c of calls) {
+      const cid = c.contact_id as string;
+      if (!latestCall.has(cid)) latestCall.set(cid, c);
+      callCount.set(cid, (callCount.get(cid) ?? 0) + 1);
+      if (c.direction === 'inbound' && MISSED_CALL_STATUSES.has(c.status)) hasMissed.add(cid);
+      if (c.status === 'voicemail') hasVoicemail.add(cid);
+    }
+    const callLabel = (c: CallRow): string =>
+      c.direction === 'outbound'
+        ? 'Outgoing call'
+        : MISSED_CALL_STATUSES.has(c.status)
+          ? 'Missed call'
+          : 'Incoming call';
+
+    // One thread per contact; last activity = newer of latest message/call.
     const out: InboxThread[] = [];
-    for (const m of msgs) {
-      if (seen.has(m.contact_id)) continue;
-      seen.add(m.contact_id);
-      const c = contactById.get(m.contact_id);
-      // Derive the customer number and the workspace "via" number from the
-      // latest message. Inbound: customer = from, via = to. Outbound: flipped.
-      const customerPhone =
-        m.direction === 'inbound' ? m.from_e164 : m.to_e164;
-      const viaNumber =
-        m.direction === 'inbound' ? m.to_e164 : m.from_e164;
+    for (const cid of new Set<string>([...latestMsg.keys(), ...latestCall.keys()])) {
+      const c = contactById.get(cid);
+      const m = latestMsg.get(cid);
+      const call = latestCall.get(cid);
+      const mAt = m ? new Date(m.created_at).getTime() : -1;
+      const cAt = call ? new Date(call.started_at).getTime() : -1;
+      const useCall = !!call && cAt >= mAt;
+
+      let phone = '', via: string | null = null, body = '', at = '';
+      let dir: 'inbound' | 'outbound' = 'inbound';
+      let channel: ChannelKind | null = null;
+      let kind: 'message' | 'call' = 'message';
+      if (useCall && call) {
+        phone = c?.phone || (call.direction === 'inbound' ? call.from_e164 : call.to_e164) || '';
+        via = (call.direction === 'inbound' ? call.to_e164 : call.from_e164) ?? null;
+        body = callLabel(call); at = call.started_at; dir = call.direction; kind = 'call';
+      } else if (m) {
+        phone = c?.phone || (m.direction === 'inbound' ? m.from_e164 : m.to_e164) || '';
+        via = (m.direction === 'inbound' ? m.to_e164 : m.from_e164) ?? null;
+        body = m.body; at = m.created_at; dir = m.direction;
+        channel = (m.channel ?? 'sms') as ChannelKind; kind = 'message';
+      }
       out.push({
-        contactId: m.contact_id,
-        // Prefer a real contact name; otherwise show the number, never 'Unknown'.
-        contactName: c?.name || c?.phone || customerPhone || 'Unknown',
-        contactPhone: c?.phone || customerPhone || '',
-        viaNumber: viaNumber ?? null,
-        lastMessageBody: m.body,
-        lastMessageAt: m.created_at,
-        lastDirection: m.direction,
-        lastChannel: (m.channel ?? 'sms') as ChannelKind,
-        channelCounts: counts.get(m.contact_id) ?? { sms: 0, whatsapp: 0, email: 0 },
+        contactId: cid,
+        contactName: c?.name || c?.phone || phone || 'Unknown',
+        contactPhone: phone,
+        viaNumber: via,
+        lastMessageBody: body,
+        lastMessageAt: at,
+        lastDirection: dir,
+        lastChannel: channel,
+        channelCounts: counts.get(cid) ?? { sms: 0, whatsapp: 0, email: 0 },
         unreadCount: 0,
+        lastKind: kind,
+        callCount: callCount.get(cid) ?? 0,
+        hasMissedCall: hasMissed.has(cid),
+        hasVoicemail: hasVoicemail.has(cid),
       });
     }
+    // Newest activity first (ISO timestamps sort lexicographically).
+    out.sort((a, b) => (b.lastMessageAt || '').localeCompare(a.lastMessageAt || ''));
     setThreads(out);
     setLoading(false);
   }, []);
@@ -209,6 +286,14 @@ export function useInboxThreads(): { threads: InboxThread[]; loading: boolean; r
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         'postgres_changes' as any,
         { event: 'INSERT', schema: 'public', table: 'wk_sms_messages' },
+        () => { void load(); },
+      )
+      // 2026-07-07: also refresh when a call is logged/updated so incoming
+      // and missed calls surface in the inbox without a manual refresh.
+      .on(
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        'postgres_changes' as any,
+        { event: '*', schema: 'public', table: 'wk_calls' },
         () => { void load(); },
       )
       .subscribe();
