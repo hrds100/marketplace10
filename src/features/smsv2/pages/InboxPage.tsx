@@ -211,6 +211,10 @@ export default function InboxPage() {
       isHot: boolean;
       tags: string[];
       viaNumber: string | null;
+      lastKind: 'message' | 'call';
+      callCount: number;
+      hasMissedCall: boolean;
+      hasVoicemail: boolean;
     };
     const out: Row[] = [];
 
@@ -231,16 +235,25 @@ export default function InboxPage() {
         isHot: !!c?.isHot,
         tags: c?.tags ?? [],
         viaNumber: t.viaNumber,
+        lastKind: t.lastKind,
+        callCount: t.callCount,
+        hasMissedCall: t.hasMissedCall,
+        hasVoicemail: t.hasVoicemail,
       });
     }
 
-    // PR 78: filter by selected channel pill. 'all' / 'calls' / 'voicemail'
-    // / 'missed' don't filter messages (calls etc. aren't message rows
-    // here — those are timeline events). 'sms' / 'whatsapp' / 'email'
-    // restrict to threads whose latest message was on that channel.
+    // Filter by the selected pill. sms/whatsapp/email restrict to threads
+    // with that message channel; calls/missed/voicemail restrict to threads
+    // with call activity (2026-07-07: calls now appear in the inbox).
     let rows = out;
     if (filter === 'sms' || filter === 'whatsapp' || filter === 'email') {
       rows = rows.filter((r) => r.lastChannel === filter || r.channelCounts[filter] > 0);
+    } else if (filter === 'calls') {
+      rows = rows.filter((r) => r.lastKind === 'call' || r.callCount > 0);
+    } else if (filter === 'missed') {
+      rows = rows.filter((r) => r.hasMissedCall);
+    } else if (filter === 'voicemail') {
+      rows = rows.filter((r) => r.hasVoicemail);
     }
     // PR 89: free-text search across name, phone, last message body.
     const q = searchQuery.trim().toLowerCase();
@@ -581,11 +594,21 @@ export default function InboxPage() {
                       <EditableName value={r.name} onSave={(n) => renameContact(r.id, n)} className="text-[13px] font-semibold" />
                     </div>
                     <div className="text-[11px] text-[#6B7280] truncate flex items-center gap-1">
-                      {r.lastChannel && <ChannelGlyph channel={r.lastChannel} size={10} />}
-                      <span className="truncate">
-                        {r.lastMessageBody
-                          ? `${r.lastDirection === 'outbound' ? '↗' : '💬'} ${r.lastMessageBody.slice(0, 36)}`
-                          : '—'}
+                      {r.lastKind === 'call' ? (
+                        r.lastMessageBody?.startsWith('Missed')
+                          ? <PhoneMissed className="w-3 h-3 text-[#EF4444] flex-shrink-0" />
+                          : r.lastDirection === 'outbound'
+                            ? <PhoneOutgoing className="w-3 h-3 text-[#1E9A80] flex-shrink-0" />
+                            : <PhoneIncoming className="w-3 h-3 text-[#1E9A80] flex-shrink-0" />
+                      ) : (
+                        r.lastChannel && <ChannelGlyph channel={r.lastChannel} size={10} />
+                      )}
+                      <span className={cn('truncate', r.lastKind === 'call' && r.lastMessageBody?.startsWith('Missed') && 'text-[#EF4444] font-medium')}>
+                        {r.lastKind === 'call'
+                          ? r.lastMessageBody
+                          : r.lastMessageBody
+                            ? `${r.lastDirection === 'outbound' ? '↗' : '💬'} ${r.lastMessageBody.slice(0, 36)}`
+                            : '—'}
                       </span>
                     </div>
                     {r.viaNumber && (
