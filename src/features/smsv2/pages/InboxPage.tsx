@@ -624,12 +624,15 @@ export default function InboxPage() {
               {activeContact.phone}
             </div>
           </div>
-          {/* Stage selector — change stage from inbox */}
-          <StageSelector
-            value={activeContact.pipelineColumnId}
-            onChange={setStage}
-            size="md"
-          />
+          {/* Stage selector — change stage from inbox. Hidden for workers
+              (2026-07-07, Hugo): they don't manage pipeline stages. */}
+          {!isWorker && (
+            <StageSelector
+              value={activeContact.pipelineColumnId}
+              onChange={setStage}
+              size="md"
+            />
+          )}
           <button
             onClick={() => void openEditModal(activeContact)}
             className="flex items-center gap-1.5 border border-[#E5E7EB] text-[#1A1A1A] text-[12px] font-medium px-3 py-1.5 rounded-[10px] hover:bg-[#F3F3EE]"
