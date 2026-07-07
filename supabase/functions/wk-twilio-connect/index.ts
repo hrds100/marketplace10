@@ -17,6 +17,11 @@
 //   { action: 'toggle_number', e164, enabled }
 //     → flips wk_numbers.voice_enabled.
 //
+//   { action: 'configure_webhooks' }
+//     → for every twilio-provider, voice-enabled wk_numbers row, point its
+//       Twilio Voice + SMS webhooks at our edge functions (so inbound calls
+//       and texts reach the CRM). Also backfills wk_numbers.twilio_sid.
+//
 // AUTH: admin only (wk_is_admin RPC).
 
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
@@ -101,6 +106,7 @@ type Body =
   | { action: 'state' }
   | { action: 'disconnect' }
   | { action: 'sync_numbers' }
+  | { action: 'configure_webhooks' }
   | ConnectBody
   | ToggleBody;
 
@@ -246,6 +252,78 @@ serve(async (req: Request) => {
         synced++;
       }
       return json(200, { numbers_synced: synced });
+    }
+
+    // ---- configure_webhooks -----------------------------------------
+    // Point each twilio voice-enabled number's Voice + Messaging webhooks
+    // at our edge functions so inbound calls/texts reach the CRM.
+    if (body.action === 'configure_webhooks') {
+      const { data: acc } = await admin
+        .from('wk_twilio_account')
+        .select('account_sid, auth_token')
+        .eq('id', 'default')
+        .maybeSingle();
+      if (!acc) return json(400, { error: 'Twilio not connected' });
+
+      // Map every Twilio number's e164 → SID (also lets us backfill twilio_sid).
+      const list = await twilioListNumbers(acc.account_sid, acc.auth_token);
+      if (!list.ok) return json(502, { error: list.error });
+      const sidByE164 = new Map<string, string>();
+      for (const n of list.data ?? []) sidByE164.set(n.phone_number, n.sid);
+
+      // Our webhook targets.
+      const base = `${SUPABASE_URL}/functions/v1`;
+      const voiceUrl = `${base}/wk-voice-twiml-incoming`;
+      const smsUrl = `${base}/wk-sms-incoming`;
+      const statusUrl = `${base}/wk-voice-status`;
+
+      // Which numbers to configure: our twilio voice-enabled rows.
+      const { data: rows } = await admin
+        .from('wk_numbers')
+        .select('id, e164, twilio_sid')
+        .eq('provider', 'twilio')
+        .eq('voice_enabled', true);
+
+      const authHeader = 'Basic ' + btoa(`${acc.account_sid}:${acc.auth_token}`);
+      const configured: string[] = [];
+      const errors: Array<{ e164: string; error: string }> = [];
+
+      for (const row of rows ?? []) {
+        const sid = (row.twilio_sid as string | null) ?? sidByE164.get(row.e164 as string) ?? null;
+        if (!sid) { errors.push({ e164: row.e164 as string, error: 'no Twilio SID for this number' }); continue; }
+        const form = new URLSearchParams({
+          VoiceUrl: voiceUrl, VoiceMethod: 'POST',
+          SmsUrl: smsUrl, SmsMethod: 'POST',
+          StatusCallback: statusUrl, StatusCallbackMethod: 'POST',
+        });
+        try {
+          const r = await fetch(
+            `https://api.twilio.com/2010-04-01/Accounts/${acc.account_sid}/IncomingPhoneNumbers/${sid}.json`,
+            { method: 'POST', headers: { Authorization: authHeader, 'Content-Type': 'application/x-www-form-urlencoded' }, body: form.toString() }
+          );
+          if (!r.ok) {
+            let msg = `Twilio ${r.status}`;
+            try { const b = await r.json(); if (b?.message) msg = b.message; } catch { /* ignore */ }
+            errors.push({ e164: row.e164 as string, error: msg });
+            continue;
+          }
+          // Backfill twilio_sid if we didn't have it.
+          if (!row.twilio_sid) {
+            await admin.from('wk_numbers').update({ twilio_sid: sid }).eq('id', row.id);
+          }
+          configured.push(row.e164 as string);
+        } catch (e) {
+          errors.push({ e164: row.e164 as string, error: e instanceof Error ? e.message : 'fetch failed' });
+        }
+      }
+
+      await admin.from('wk_audit_log').insert({
+        actor_id: userResp.user.id,
+        action: 'twilio_webhooks_configured',
+        entity_type: 'twilio_account',
+        meta: { configured, errors },
+      });
+      return json(200, { configured, errors, voiceUrl, smsUrl });
     }
 
     // ---- toggle_number ----------------------------------------------

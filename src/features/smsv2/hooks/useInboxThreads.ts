@@ -74,22 +74,27 @@ export function useInboxThreads(): { threads: InboxThread[]; loading: boolean; r
     const uid = authData.user?.id ?? null;
     const email = authData.user?.email ?? '';
 
-    let isAdmin = ADMIN_EMAILS.includes(email);
-    if (!isAdmin && uid) {
+    // seesAll: full shared inbox. Admins always; workers too (2026-07-07,
+    // Hugo) — Shyra/Shanto work the shared ported Twilio lines, whose
+    // inbound contacts are unowned, so a scoped allow-list would hide
+    // every incoming message from them. Agents keep the scoped view.
+    let seesAll = ADMIN_EMAILS.includes(email);
+    if (!seesAll && uid) {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const { data: profile } = await (supabase.from('profiles' as any) as any)
         .select('workspace_role')
         .eq('id', uid)
         .maybeSingle();
-      if ((profile as { workspace_role: string | null } | null)?.workspace_role === 'admin') {
-        isAdmin = true;
+      const role = (profile as { workspace_role: string | null } | null)?.workspace_role;
+      if (role === 'admin' || role === 'worker') {
+        seesAll = true;
       }
     }
 
-    // Build the contact-id allow-list for non-admins. Mirrors the
+    // Build the contact-id allow-list for scoped roles (agents). Mirrors the
     // wk_contacts RLS predicate: owner OR active lead-assignment.
     let allowedContactIds: string[] | null = null;
-    if (!isAdmin && uid) {
+    if (!seesAll && uid) {
       const [ownedRes, assignedRes] = await Promise.all([
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         (supabase.from('wk_contacts' as any) as any)

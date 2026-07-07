@@ -99,27 +99,35 @@ serve(async (req: Request) => {
         ].join('\n')
       : null;
 
-    let agentId: string | null = num?.assigned_agent_id ?? null;
-    let agentClientIdentity: string | null = null;
+    // 2026-07-06 (Hugo): ring a GROUP, not just the single assigned agent.
+    // Targets:
+    //   - the number's assigned agent, but ONLY if they're still a
+    //     workspace member (both numbers were assigned to Elijah, whose
+    //     workspace_role is NULL — his client never registers, so inbound
+    //     calls rang nobody for 25s)
+    //   - every workspace member: admin, agent AND worker (Hugo 2026-07-07:
+    //     "accessible all admin and worker to call/receive"). The ported
+    //     GHL→Twilio numbers have no single owner, so inbound rings the
+    //     whole team; whoever is logged in picks up.
+    // Multiple <Client> nouns in one <Dial> ring simultaneously; the first
+    // to answer wins and Twilio cancels the rest. A target whose browser
+    // isn't open just never rings — the others are unaffected.
+    // Identity = profile UUID (matches what wk-voice-token grants).
+    const ringIds = new Set<string>();
+    const { data: memberRows } = await supabase
+      .from('profiles')
+      .select('id')
+      .in('workspace_role', ['admin', 'agent', 'worker']);
+    for (const m of memberRows ?? []) ringIds.add(m.id as string);
+    // Keep the assigned agent too (in case their role is unusual but set).
+    if (num?.assigned_agent_id) ringIds.add(num.assigned_agent_id as string);
 
-    // 2026-05-21 (Hugo): always ring the assigned agent if their profile
-    // exists. The old `agent_status !== 'offline'` gate sent calls to
-    // voicemail whenever the agent hadn't manually toggled to 'available',
-    // which was almost never. Now: if the number has an assigned agent,
-    // we ring them; Twilio's <Dial timeout="25"> falls through to the
-    // voicemail block below if their browser isn't open / doesn't pick up.
-    // Identity = profile UUID (matches what wk-voice-token grants — same
-    // value the agent's Device registers under).
-    if (agentId) {
-      const { data: profile } = await supabase
-        .from('profiles')
-        .select('id')
-        .eq('id', agentId)
-        .maybeSingle();
-      if (profile) {
-        agentClientIdentity = profile.id;
-      }
-    }
+    // wk_calls attribution: keep the assigned agent when they're a valid
+    // ring target, else null (whoever answers is bridged either way).
+    const agentId: string | null =
+      num?.assigned_agent_id && ringIds.has(num.assigned_agent_id)
+        ? num.assigned_agent_id
+        : null;
 
     // Best-effort log into wk_calls
     try {
@@ -143,13 +151,16 @@ serve(async (req: Request) => {
 
     // Route 1: agent online → ring their browser. If no answer in 25s,
     // fall through to voicemail.
-    if (agentClientIdentity) {
+    if (ringIds.size > 0) {
       // NOTE (2026-07-06): because <Dial> has an action URL, Twilio
       // CONTINUES with the TwiML that wk-voice-status returns when the
       // dial finishes — the verbs after </Dial> below are unreachable.
       // The unanswered/busy behavior (play the admin's uploaded message)
       // therefore lives in wk-voice-status' Dial-action branch, which
       // reads wk_numbers.unanswered_action for this number.
+      const clientNouns = Array.from(ringIds).map(
+        (id) => `  <Client>${escapeXml(id)}</Client>`
+      );
       const dial = [
         `<Dial answerOnBridge="true" timeout="25"`,
         `      record="record-from-answer-dual"`,
@@ -157,7 +168,7 @@ serve(async (req: Request) => {
         `      recordingStatusCallbackEvent="completed"`,
         `      action="${escapeXml(statusUrl)}"`,
         `      method="POST">`,
-        `  <Client>${escapeXml(agentClientIdentity)}</Client>`,
+        ...clientNouns,
         `</Dial>`,
         `<Say voice="alice">Sorry, no agents are available right now. Please leave a message after the beep.</Say>`,
         `<Record maxLength="180" playBeep="true" finishOnKey="#"`,
