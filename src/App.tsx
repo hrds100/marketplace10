@@ -374,7 +374,7 @@ const App = () => (
             <Route path="dashboard" element={<AdminOnlyRoute><Smsv2DashboardPage /></AdminOnlyRoute>} />
             <Route path="inbox" element={<Smsv2InboxPage />} />
             <Route path="calls" element={<Smsv2CallsPage />} />
-            <Route path="templates" element={<Smsv2TemplatesPage />} />
+            <Route path="templates" element={<WorkerBlockedRoute><Smsv2TemplatesPage /></WorkerBlockedRoute>} />
             <Route path="calls/:callId" element={<Smsv2PastCallScreen />} />
             <Route path="dialer" element={<Navigate to="/crm/dialer-pro" replace />} />
             {/* 2026-07-06: Dialer / Pipelines / Reports / Leaderboard are

@@ -33,6 +33,10 @@ export interface InboxThread {
   contactId: string;
   contactName: string;
   contactPhone: string;
+  /** 2026-07-07 (Hugo): the workspace number this thread came in on
+   *  ("Via: 07868…"), derived from the latest message's to/from. Null
+   *  when we can't resolve it (e.g. legacy rows without e164). */
+  viaNumber: string | null;
   lastMessageBody: string;
   lastMessageAt: string;
   lastDirection: 'inbound' | 'outbound';
@@ -54,6 +58,8 @@ interface MessageRow {
   body: string;
   created_at: string;
   channel: ChannelKind | null;
+  from_e164: string | null;
+  to_e164: string | null;
 }
 
 interface ContactRow {
@@ -126,7 +132,7 @@ export function useInboxThreads(): { threads: InboxThread[]; loading: boolean; r
     // 17k+ contacts). This keeps the query small and fast.
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     let msgsQuery = (supabase.from('wk_sms_messages' as any) as any)
-      .select('id, contact_id, direction, body, created_at, channel')
+      .select('id, contact_id, direction, body, created_at, channel, from_e164, to_e164')
       .order('created_at', { ascending: false })
       .limit(500);
     if (allowedContactIds !== null) {
@@ -168,10 +174,18 @@ export function useInboxThreads(): { threads: InboxThread[]; loading: boolean; r
       if (seen.has(m.contact_id)) continue;
       seen.add(m.contact_id);
       const c = contactById.get(m.contact_id);
+      // Derive the customer number and the workspace "via" number from the
+      // latest message. Inbound: customer = from, via = to. Outbound: flipped.
+      const customerPhone =
+        m.direction === 'inbound' ? m.from_e164 : m.to_e164;
+      const viaNumber =
+        m.direction === 'inbound' ? m.to_e164 : m.from_e164;
       out.push({
         contactId: m.contact_id,
-        contactName: c?.name || c?.phone || 'Unknown',
-        contactPhone: c?.phone ?? '',
+        // Prefer a real contact name; otherwise show the number, never 'Unknown'.
+        contactName: c?.name || c?.phone || customerPhone || 'Unknown',
+        contactPhone: c?.phone || customerPhone || '',
+        viaNumber: viaNumber ?? null,
         lastMessageBody: m.body,
         lastMessageAt: m.created_at,
         lastDirection: m.direction,

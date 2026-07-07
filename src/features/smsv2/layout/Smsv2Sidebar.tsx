@@ -47,7 +47,7 @@ const NAV_ITEMS: NavItem[] = [
   { label: 'Reports', path: '/crm/reports', icon: BarChart3, workerHidden: true },
   { label: 'Leaderboard', path: '/crm/leaderboard', icon: Trophy, workerHidden: true },
   { label: 'Call history', path: '/crm/calls', icon: PhoneCall },
-  { label: 'Templates', path: '/crm/templates', icon: FileText },
+  { label: 'Templates', path: '/crm/templates', icon: FileText, workerHidden: true },
   { label: 'Settings', path: '/crm/settings', icon: Settings, adminOnly: true },
 ];
 
