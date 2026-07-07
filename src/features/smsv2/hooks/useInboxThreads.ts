@@ -80,10 +80,11 @@ export function useInboxThreads(): { threads: InboxThread[]; loading: boolean; r
     const uid = authData.user?.id ?? null;
     const email = authData.user?.email ?? '';
 
-    // seesAll: full shared inbox. Admins always; workers too (2026-07-07,
-    // Hugo) — Shyra/Shanto work the shared ported Twilio lines, whose
-    // inbound contacts are unowned, so a scoped allow-list would hide
-    // every incoming message from them. Agents keep the scoped view.
+    // seesAll: full shared inbox. Admins, workers AND agents (2026-07-07,
+    // Hugo: "all admin agent and worker inbox all access") — the shared
+    // Circleloop/ported Twilio lines produce unowned inbound contacts, so a
+    // scoped allow-list would hide every incoming message. Everyone with a
+    // workspace role now sees the whole inbox.
     let seesAll = ADMIN_EMAILS.includes(email);
     if (!seesAll && uid) {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -92,7 +93,7 @@ export function useInboxThreads(): { threads: InboxThread[]; loading: boolean; r
         .eq('id', uid)
         .maybeSingle();
       const role = (profile as { workspace_role: string | null } | null)?.workspace_role;
-      if (role === 'admin' || role === 'worker') {
+      if (role === 'admin' || role === 'worker' || role === 'agent') {
         seesAll = true;
       }
     }
