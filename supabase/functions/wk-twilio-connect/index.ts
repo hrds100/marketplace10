@@ -280,7 +280,7 @@ serve(async (req: Request) => {
       // Which numbers to configure: our twilio voice-enabled rows.
       const { data: rows } = await admin
         .from('wk_numbers')
-        .select('id, e164, twilio_sid')
+        .select('id, e164, twilio_sid, label')
         .eq('provider', 'twilio')
         .eq('voice_enabled', true);
 
@@ -296,6 +296,9 @@ serve(async (req: Request) => {
           SmsUrl: smsUrl, SmsMethod: 'POST',
           StatusCallback: statusUrl, StatusCallbackMethod: 'POST',
         });
+        // Mirror the CRM label as the Twilio FriendlyName (Circleloop1..N).
+        const label = (row.label as string | null) ?? '';
+        if (label) form.set('FriendlyName', label);
         try {
           const r = await fetch(
             `https://api.twilio.com/2010-04-01/Accounts/${acc.account_sid}/IncomingPhoneNumbers/${sid}.json`,

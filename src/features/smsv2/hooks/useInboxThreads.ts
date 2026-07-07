@@ -83,7 +83,9 @@ export function useInboxThreads(): { threads: InboxThread[]; loading: boolean; r
     // seesAll: full shared inbox. Admins always; workers too (2026-07-07,
     // Hugo) — Shyra/Shanto work the shared ported Twilio lines, whose
     // inbound contacts are unowned, so a scoped allow-list would hide
-    // every incoming message from them. Agents keep the scoped view.
+    // every incoming message from them. Agents keep the scoped view
+    // (owned/assigned only) — Hugo 2026-07-07: agents see only their
+    // assigned numbers/inbox/pipeline, NOT everything.
     let seesAll = ADMIN_EMAILS.includes(email);
     if (!seesAll && uid) {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
