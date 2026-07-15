@@ -151,6 +151,9 @@ interface ActiveCallCtx {
   muted: boolean;
   /** Toggle the active TwilioCall's mute. No-op if no live call. */
   toggleMute: () => void;
+  /** Send a DTMF tone on the active call (IVR keypad). No-op if no live
+   *  call. Works for both outbound and answered-inbound calls. */
+  sendDigits: (digits: string) => void;
   /**
    * Apply a pipeline-column outcome to the just-ended call.
    * Mutates store (contact stage + activity + tags + queue) and auto-loads
@@ -638,6 +641,9 @@ export function ActiveCallProvider({ children }: { children: ReactNode }) {
       },
       muted,
       toggleMute,
+      sendDigits: (digits: string) => {
+        try { activeTwilioCallRef.current?.sendDigits(digits); } catch { /* no active call */ }
+      },
       startCall,
       resumeFromBroadcast,
       enterDialingPlaceholder,

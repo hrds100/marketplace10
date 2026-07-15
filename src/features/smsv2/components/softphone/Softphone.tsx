@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import {
   Phone,
   PhoneOff,
@@ -7,6 +7,7 @@ import {
   Maximize2,
   Minus,
   X,
+  Grid3X3,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import DialPad from './DialPad';
@@ -25,6 +26,10 @@ import {
 export default function Softphone() {
   const [open, setOpen] = useState(false);
   const [collapsed, setCollapsed] = useState(false);
+  // In-call DTMF keypad (for IVR prompts — "press 1 for…"). 2026-07-07 (Hugo):
+  // workers only ever see the collapsed pill, so the keypad has to live here.
+  const [showKeypad, setShowKeypad] = useState(false);
+  const [dtmf, setDtmf] = useState('');
   const device = useTwilioDevice();
   const {
     phase,
@@ -38,6 +43,7 @@ export default function Softphone() {
     toggleMute,
     previewContactId,
     isWorker,
+    sendDigits,
   } = useActiveCallCtx();
   const spend = useSpendLimit();
   const { agent: me } = useCurrentAgent();
@@ -53,6 +59,16 @@ export default function Softphone() {
         : device.status === 'registering'
           ? 'Connecting…'
           : 'Offline';
+
+  const sendDtmf = (digit: string) => {
+    sendDigits(digit);
+    setDtmf((s) => (s + digit).slice(-24));
+  };
+
+  // Reset the keypad between calls so it doesn't carry over.
+  useEffect(() => {
+    if (phase !== 'in_call') { setShowKeypad(false); setDtmf(''); }
+  }, [phase]);
 
   const handleCall = (phone: string) => {
     if (spend.isLimitReached) return;
@@ -127,10 +143,34 @@ export default function Softphone() {
           <div className="text-[14px] font-semibold text-[#1A1A1A]">{call?.contactName}</div>
           <div className="text-[12px] text-[#6B7280] tabular-nums">{call?.phone}</div>
         </div>
-        <div className="px-3 py-2 border-t border-[#E5E7EB] grid grid-cols-2 gap-1">
-          {/* PR 110 (Hugo 2026-04-28): Hold + Xfer were rendered with no
-              onClick — pure dead UI. PR 89 removed them from
-              LiveCallScreen for the same reason. Removed here too. */}
+
+        {/* DTMF keypad — for IVR / automated prompts ("press 1 for…"). */}
+        {showKeypad && (
+          <div className="px-3 pb-2 border-t border-[#E5E7EB] pt-2">
+            <div className="mb-2 h-6 px-2 flex items-center justify-center text-[13px] font-medium text-[#1A1A1A] tabular-nums tracking-widest bg-[#F3F3EE] rounded-[8px]">
+              {dtmf || <span className="text-[#9CA3AF] tracking-normal text-[11px]">Press a key to send tones</span>}
+            </div>
+            <div className="grid grid-cols-3 gap-1.5">
+              {['1', '2', '3', '4', '5', '6', '7', '8', '9', '*', '0', '#'].map((k) => (
+                <button
+                  key={k}
+                  onClick={() => sendDtmf(k)}
+                  className="h-9 rounded-[10px] bg-[#F3F3EE] hover:bg-[#1E9A80]/10 hover:text-[#1E9A80] text-base font-medium text-[#1A1A1A] transition-colors"
+                >
+                  {k}
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
+
+        <div className="px-3 py-2 border-t border-[#E5E7EB] grid grid-cols-3 gap-1">
+          <CallBtn
+            icon={<Grid3X3 className="w-4 h-4" />}
+            label="Keypad"
+            onClick={() => { setShowKeypad((v) => !v); if (!showKeypad) setDtmf(''); }}
+            active={showKeypad}
+          />
           <CallBtn
             icon={muted ? <Mic className="w-4 h-4" /> : <MicOff className="w-4 h-4" />}
             label={muted ? 'Unmute' : 'Mute'}
