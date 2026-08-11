@@ -879,6 +879,7 @@ export default function InvestPayoutsPage() {
                   size="sm"
                   className="w-full justify-between"
                   onClick={() => handleClaim(p)}
+                  disabled={hasPendingClaim}
                 >
                   <span className="truncate">{p.propertyTitle}</span>
                   <span className="text-green-500 font-bold">{formatCurrency(p.amount)}</span>
@@ -898,7 +899,7 @@ export default function InvestPayoutsPage() {
                   <Clock className="h-5 w-5 text-amber-500" />
                   <div>
                     <p className="text-sm font-medium">You have a claim being processed</p>
-                    <p className="text-xs text-muted-foreground">You can still submit new claims while this one is being processed.</p>
+                    <p className="text-xs text-muted-foreground">Please wait until it has been paid before submitting another claim.</p>
                   </div>
                 </div>
               </CardContent>
@@ -939,7 +940,7 @@ export default function InvestPayoutsPage() {
                         <p className="text-lg font-bold text-green-500 whitespace-nowrap" data-feature="INVEST__PAYOUT_AMOUNT">
                           {formatCurrency(payout.amount)}<BlockchainDot tooltip="Amount from blockchain" />
                         </p>
-                        <Button size="sm" onClick={() => handleClaim(payout)} data-feature="INVEST__PAYOUT_CLAIM">
+                        <Button size="sm" onClick={() => handleClaim(payout)} disabled={hasPendingClaim} data-feature="INVEST__PAYOUT_CLAIM">
                           {t('invest.claim')}
                         </Button>
                       </div>
