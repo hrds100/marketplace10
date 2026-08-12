@@ -45,6 +45,26 @@ serve(async (req) => {
       return new Response(JSON.stringify({ error: 'No bank details found. Please add bank details first.' }), { status: 400, headers: corsHeaders })
     }
 
+    // Guard: one active bank claim at a time.
+    // Bank-transfer claims are paid off-chain and never call withdrawRent, so
+    // the on-chain rent stays "claimable" and getRentDetails keeps returning the
+    // same amount. Without this check a user can re-claim the same rent every
+    // week while an earlier claim is still unpaid (this caused the Michael-Lund
+    // W29/W31/W32 duplicates). Block a new claim while one is pending/processing.
+    const { data: activeClaims } = await supabase
+      .from('payout_claims')
+      .select('id, week_ref')
+      .eq('user_id', user_id)
+      .in('status', ['pending', 'processing'])
+      .limit(1)
+
+    if (activeClaims && activeClaims.length > 0) {
+      return new Response(
+        JSON.stringify({ error: 'You already have a payout being processed. Please wait until it has been paid before claiming again.' }),
+        { status: 409, headers: corsHeaders }
+      )
+    }
+
     // Amount from frontend (read from blockchain getRentDetails)
     // Falls back to inv_payouts table if not provided
     let amount = Number(clientAmount) || 0
